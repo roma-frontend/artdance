@@ -15,16 +15,42 @@ import {
   withinBudget,
 } from './ingest';
 
-/** Шумная картинка: сплошная заливка сжимается в единицы килобайт и не проверяет ничего. */
-async function noiseImage(width: number, height: number, format: 'png' | 'jpeg' = 'png'): Promise<Buffer> {
+/**
+ * Изображение, похожее по сжимаемости на фотографию: плавный градиент плюс
+ * несколько блоков.
+ *
+ * Не случайный шум: шум несжимаем, поэтому AVIF-энкодинг такого кадра занимает
+ * секунды даже на маленьком разрешении, и тест начинает падать по таймауту на
+ * слабом раннере, ничего не проверив. Заодно шум не даёт проверить, что
+ * производная меньше мастера — у него нет избыточности.
+ */
+async function photoLikeImage(width: number, height: number, format: 'png' | 'jpeg' = 'png'): Promise<Buffer> {
   const channels = 3;
   const pixels = Buffer.alloc(width * height * channels);
-  for (let i = 0; i < pixels.length; i += 1) {
-    pixels[i] = (i * 2_654_435_761) % 251;
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * channels;
+      /** Диагональный градиент + два тёмных блока: есть и плавность, и контуры. */
+      const inBlock = x > width * 0.2 && x < width * 0.45 && y > height * 0.3 && y < height * 0.7;
+      const shade = inBlock ? 0.35 : 1;
+      pixels[offset] = Math.round(((x / width) * 220 + 20) * shade);
+      pixels[offset + 1] = Math.round(((y / height) * 200 + 30) * shade);
+      pixels[offset + 2] = Math.round((((x + y) / (width + height)) * 180 + 40) * shade);
+    }
   }
+
   const pipeline = sharp(pixels, { raw: { width, height, channels } });
-  return format === 'png' ? pipeline.png().toBuffer() : pipeline.jpeg({ quality: 95 }).toBuffer();
+  return format === 'png' ? pipeline.png().toBuffer() : pipeline.jpeg({ quality: 92 }).toBuffer();
 }
+
+/**
+ * AVIF-энкодинг дорог по CPU: на двухъядерном CI-раннере он не укладывается в
+ * дефолтные 5 секунд vitest. Таймаут поднят только для тестов, которые реально
+ * кодируют AVIF — уменьшать `avifEffort` ради скорости тестов нельзя, это
+ * продакшен-политика качества.
+ */
+const AVIF_TIMEOUT_MS = 30_000;
 
 describe('чистые проверки', () => {
   it('ловит превышение лимита пикселей', () => {
@@ -64,7 +90,7 @@ describe('чистые проверки', () => {
 
 describe('inspectImage', () => {
   it('возвращает размеры и формат для корректного файла', async () => {
-    const result = await inspectImage(await noiseImage(800, 600));
+    const result = await inspectImage(await photoLikeImage(800, 600));
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result).toMatchObject({ width: 800, height: 600, format: 'png' });
@@ -79,7 +105,7 @@ describe('inspectImage', () => {
   });
 
   it('отклоняет трекинг-пиксель', async () => {
-    const result = await inspectImage(await noiseImage(1, 1));
+    const result = await inspectImage(await photoLikeImage(1, 1));
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.rejection.code).toBe('MEDIA_TOO_SMALL');
@@ -87,7 +113,7 @@ describe('inspectImage', () => {
 
   it('учитывает поворот из EXIF при расчёте сторон', async () => {
     /** orientation 6 = повернуть на 90°: 600×800 после поворота становится 800×600. */
-    const rotated = await sharp(await noiseImage(600, 800, 'jpeg'))
+    const rotated = await sharp(await photoLikeImage(600, 800, 'jpeg'))
       .withMetadata({ orientation: 6 })
       .toBuffer();
 
@@ -100,7 +126,7 @@ describe('inspectImage', () => {
 
 describe('processImage', () => {
   it('удаляет метаданные, включая геолокацию', async () => {
-    const withExif = await sharp(await noiseImage(600, 400, 'jpeg'))
+    const withExif = await sharp(await photoLikeImage(600, 400, 'jpeg'))
       .withExif({
         IFD0: { Copyright: 'ArtDance', Make: 'Apple' },
         /** Координаты в центре Еревана — ровно то, что не должно уехать в бакет. */
@@ -120,7 +146,7 @@ describe('processImage', () => {
   });
 
   it('приводит мастер к максимальной стороне из конфига', async () => {
-    const oversized = await noiseImage(mediaProcessing.masterMaxDimension + 600, 400);
+    const oversized = await photoLikeImage(mediaProcessing.masterMaxDimension + 600, 400);
     const result = await processImage(oversized, { formats: ['webp'], masterOnly: true });
 
     expect(result.ok).toBe(true);
@@ -129,15 +155,19 @@ describe('processImage', () => {
     expect(result.image.master.format).toBe('webp');
   });
 
-  it('использует первый формат из конфига как формат мастера', async () => {
-    const result = await processImage(await noiseImage(600, 400, 'jpeg'), { masterOnly: true });
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-    expect(result.image.master.format).toBe(mediaProcessing.outputFormats[0]);
-  });
+  it(
+    'использует первый формат из конфига как формат мастера',
+    async () => {
+      const result = await processImage(await photoLikeImage(600, 400, 'jpeg'), { masterOnly: true });
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
+      expect(result.image.master.format).toBe(mediaProcessing.outputFormats[0]);
+    },
+    AVIF_TIMEOUT_MS,
+  );
 
   it('не увеличивает изображение, которое меньше целевой ширины', async () => {
-    const small = await noiseImage(500, 400);
+    const small = await photoLikeImage(500, 400);
     const result = await processImage(small, { formats: ['webp'], widths: [320, 768, 1280] });
 
     expect(result.ok).toBe(true);
@@ -148,30 +178,34 @@ describe('processImage', () => {
     }
   });
 
-  it('генерирует производные во всех форматах и не дублирует мастер', async () => {
-    const source = await noiseImage(900, 600, 'jpeg');
-    const result = await processImage(source, { widths: [320, 640] });
+  it(
+    'генерирует производные во всех форматах и не дублирует мастер',
+    async () => {
+      const source = await photoLikeImage(900, 600, 'jpeg');
+      const result = await processImage(source, { widths: [320, 640] });
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
+      expect(result.ok).toBe(true);
+      if (!result.ok) return;
 
-    const { master, variants } = result.image;
-    const formats = new Set(variants.map((variant) => variant.format));
-    for (const format of mediaProcessing.outputFormats) {
-      expect(formats.has(format)).toBe(true);
-    }
+      const { master, variants } = result.image;
+      const formats = new Set(variants.map((variant) => variant.format));
+      for (const format of mediaProcessing.outputFormats) {
+        expect(formats.has(format)).toBe(true);
+      }
 
-    const duplicates = variants.filter(
-      (variant) => variant.format === master.format && variant.width === master.width,
-    );
-    expect(duplicates).toHaveLength(0);
-    expect(result.image.totalBytes).toBe(
-      master.bytes + variants.reduce((sum, variant) => sum + variant.bytes, 0),
-    );
-  });
+      const duplicates = variants.filter(
+        (variant) => variant.format === master.format && variant.width === master.width,
+      );
+      expect(duplicates).toHaveLength(0);
+      expect(result.image.totalBytes).toBe(
+        master.bytes + variants.reduce((sum, variant) => sum + variant.bytes, 0),
+      );
+    },
+    AVIF_TIMEOUT_MS,
+  );
 
   it('уменьшает вес производной вместе с шириной', async () => {
-    const result = await processImage(await noiseImage(900, 600, 'jpeg'), {
+    const result = await processImage(await photoLikeImage(900, 600, 'jpeg'), {
       formats: ['webp'],
       widths: [320, 640],
     });
@@ -186,7 +220,7 @@ describe('processImage', () => {
   });
 
   it('отдаёт инлайновый blur-плейсхолдер разумного размера', async () => {
-    const result = await processImage(await noiseImage(600, 400, 'jpeg'), {
+    const result = await processImage(await photoLikeImage(600, 400, 'jpeg'), {
       formats: ['webp'],
       masterOnly: true,
     });
