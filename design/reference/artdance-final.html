@@ -1,0 +1,5160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ArtDance — Premium Dance Marketplace</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /*═══════════════════════════════════════════════════════
+  DESIGN TOKENS
+═══════════════════════════════════════════════════════*/
+      :root {
+        --accent: #8b1a2b;
+        --accent-hover: #6e1422;
+        --accent-light: rgba(139, 26, 43, 0.08);
+        --accent-glow: rgba(139, 26, 43, 0.25);
+        --gold: #b89a5e;
+        --gold-light: rgba(184, 154, 94, 0.12);
+        --success: #2d7a4f;
+        --warning: #c4841d;
+        --ff-display: "Playfair Display", Georgia, serif;
+        --ff-body: "DM Sans", sans-serif;
+        --pad: clamp(1.25rem, 4vw, 3rem);
+        --max-w: 1320px;
+        --ease: cubic-bezier(0.16, 1, 0.3, 1);
+        --r-sm: 6px;
+        --r-md: 10px;
+        --r-lg: 16px;
+        --r-xl: 24px;
+        --r-full: 999px;
+      }
+      [data-theme="light"] {
+        --bg: #f6f2ed;
+        --bg2: #ede7df;
+        --card: #ffffff;
+        --border: #e8e2da;
+        --text: #1a1715;
+        --text2: #6b645c;
+        --text3: #a09890;
+        --sh: 0 4px 20px rgba(0, 0, 0, 0.06);
+        --sh-lg: 0 12px 40px rgba(0, 0, 0, 0.1);
+      }
+      [data-theme="dark"] {
+        --bg: #0d0b09;
+        --bg2: #1a1715;
+        --card: #1a1715;
+        --border: rgba(255, 255, 255, 0.08);
+        --text: #f6f2ed;
+        --text2: rgba(255, 255, 255, 0.6);
+        --text3: rgba(255, 255, 255, 0.35);
+        --sh: 0 4px 20px rgba(0, 0, 0, 0.3);
+        --sh-lg: 0 12px 40px rgba(0, 0, 0, 0.4);
+      }
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: var(--ff-body);
+        color: var(--text);
+        background: var(--bg);
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        transition:
+          background 0.5s,
+          color 0.5s;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+      a {
+        text-decoration: none;
+        color: inherit;
+      }
+      button {
+        border: none;
+        background: none;
+        cursor: pointer;
+        font: inherit;
+      }
+      ul {
+        list-style: none;
+      }
+      ::selection {
+        background: var(--accent);
+        color: #fff;
+      }
+      .container {
+        max-width: var(--max-w);
+        margin: 0 auto;
+        padding: 0 var(--pad);
+      }
+
+      /*═══════════════════════════════════════════════════════
+  BUTTONS
+═══════════════════════════════════════════════════════*/
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border: none;
+        cursor: pointer;
+        transition: all 0.4s var(--ease);
+        overflow: hidden;
+      }
+      .btn-lg {
+        padding: 1rem 2.5rem;
+        border-radius: var(--r-full);
+        font-size: 0.82rem;
+      }
+      .btn-md {
+        padding: 0.75rem 1.75rem;
+        border-radius: var(--r-full);
+        font-size: 0.75rem;
+      }
+      .btn-sm {
+        padding: 0.5rem 1.2rem;
+        border-radius: var(--r-full);
+        font-size: 0.7rem;
+      }
+      .btn-accent {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: 0 4px 20px var(--accent-glow);
+      }
+      .btn-accent:hover {
+        background: var(--accent-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px var(--accent-glow);
+      }
+      .btn-outline {
+        background: transparent;
+        color: var(--text);
+        border: 1.5px solid var(--border);
+      }
+      .btn-outline:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .btn-white {
+        background: #fff;
+        color: #1a1715;
+      }
+      .btn-white:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+      }
+      .btn-ghost {
+        background: transparent;
+        color: var(--accent);
+        border: 1.5px solid var(--accent);
+      }
+      .btn-ghost:hover {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-full {
+        width: 100%;
+      }
+      .btn-arrow {
+        transition: transform 0.3s var(--ease);
+      }
+      .btn:hover .btn-arrow {
+        transform: translateX(4px);
+      }
+
+      /*═══════════════════════════════════════════════════════
+  THEME TOGGLE
+═══════════════════════════════════════════════════════*/
+      .theme-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 999;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 20px var(--accent-glow);
+        cursor: pointer;
+        transition: all 0.4s var(--ease);
+        border: 3px solid var(--card);
+      }
+      .theme-btn:hover {
+        transform: scale(1.1) rotate(30deg);
+      }
+
+      /*═══════════════════════════════════════════════════════
+  NAV
+═══════════════════════════════════════════════════════*/
+      .nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        padding: 1.2rem 0;
+        transition: all 0.4s;
+      }
+      .nav.scrolled {
+        background: var(--bg);
+        backdrop-filter: blur(20px);
+        padding: 0.7rem 0;
+        box-shadow: 0 1px 0 var(--border);
+      }
+      .nav-in {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: var(--max-w);
+        margin: 0 auto;
+        padding: 0 var(--pad);
+      }
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        cursor: pointer;
+      }
+      .nav-logo svg {
+        width: 30px;
+        height: 30px;
+      }
+      .nav-logo b {
+        font-family: var(--ff-display);
+        font-size: 1.25rem;
+        color: var(--text);
+        transition: color 0.5s;
+      }
+      .nav-links {
+        display: flex;
+        gap: 1.75rem;
+      }
+      .nav-links a {
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--text2);
+        transition: color 0.3s;
+        cursor: pointer;
+        position: relative;
+      }
+      .nav-links a::after {
+        content: "";
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+        width: 0;
+        height: 1.5px;
+        background: var(--accent);
+        transition: width 0.4s var(--ease);
+      }
+      .nav-links a:hover,
+      .nav-links a.active {
+        color: var(--text);
+      }
+      .nav-links a:hover::after,
+      .nav-links a.active::after {
+        width: 100%;
+      }
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .nav-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text2);
+        transition: all 0.3s;
+        font-size: 1rem;
+        border: 1px solid transparent;
+      }
+      .nav-icon:hover {
+        background: var(--accent-light);
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      /*═══════════════════════════════════════════════════════
+  HERO — Always dark premium
+═══════════════════════════════════════════════════════*/
+      .hero {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        background: #0d0b09;
+        overflow: hidden;
+      }
+      .hero-bg {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+      }
+      .hero-bg img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.75;
+        transform: scale(1.04);
+        transition: transform 12s linear;
+      }
+      .hero:hover .hero-bg img {
+        transform: scale(1.1);
+      }
+      .hero-ov {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: linear-gradient(
+          160deg,
+          rgba(13, 11, 9, 0.92) 0%,
+          rgba(13, 11, 9, 0.6) 35%,
+          rgba(139, 26, 43, 0.25) 100%
+        );
+      }
+      .hero-c {
+        position: relative;
+        z-index: 2;
+        max-width: var(--max-w);
+        margin: 0 auto;
+        padding: 0 var(--pad);
+        padding-top: 8rem;
+        width: 100%;
+      }
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(184, 154, 94, 0.1);
+        border: 1px solid rgba(184, 154, 94, 0.2);
+        padding: 0.4rem 1rem;
+        border-radius: var(--r-full);
+        margin-bottom: 2rem;
+        animation: fadeUp 0.7s var(--ease) 0.2s both;
+      }
+      .hero-badge span {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--gold);
+      }
+      .hero-title {
+        font-size: clamp(3rem, 8vw, 6rem);
+        font-family: var(--ff-display);
+        font-weight: 900;
+        color: #fff;
+        margin-bottom: 1.5rem;
+        max-width: 700px;
+        line-height: 1.02;
+        animation: fadeUp 0.8s var(--ease) 0.4s both;
+      }
+      .hero-title em {
+        font-style: italic;
+        color: var(--accent);
+      }
+      .hero-sub {
+        font-size: clamp(1rem, 2vw, 1.15rem);
+        color: rgba(255, 255, 255, 0.55);
+        max-width: 460px;
+        line-height: 1.7;
+        margin-bottom: 2.5rem;
+        animation: fadeUp 0.8s var(--ease) 0.6s both;
+      }
+      .hero-btns {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        animation: fadeUp 0.8s var(--ease) 0.8s both;
+      }
+      .hero-stats {
+        display: flex;
+        gap: 3rem;
+        margin-top: 4rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        animation: fadeUp 0.8s var(--ease) 1s both;
+      }
+      .hero-sv {
+        font-family: var(--ff-display);
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #fff;
+      }
+      .hero-sv .g {
+        color: var(--gold);
+      }
+      .hero-sl {
+        font-size: 0.68rem;
+        color: rgba(255, 255, 255, 0.35);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-top: 0.25rem;
+      }
+      .hero-scroll {
+        position: absolute;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        animation: fadeUp 0.8s var(--ease) 1.4s both;
+      }
+      .hero-scroll i {
+        width: 1px;
+        height: 40px;
+        background: linear-gradient(to bottom, var(--gold), transparent);
+        animation: pulse 2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.3;
+          transform: scaleY(0.5);
+        }
+        50% {
+          opacity: 1;
+          transform: scaleY(1);
+        }
+      }
+
+      /*═══════════════════════════════════════════════════════
+  MARQUEE
+═══════════════════════════════════════════════════════*/
+      .marquee {
+        background: var(--accent);
+        padding: 0.7rem 0;
+        overflow: hidden;
+      }
+      .marquee-t {
+        display: flex;
+        animation: scroll 40s linear infinite;
+        white-space: nowrap;
+      }
+      .marquee-t span {
+        display: inline-flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 0 1.5rem;
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .marquee-t i {
+        width: 4px;
+        height: 4px;
+        background: var(--gold);
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      @keyframes scroll {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(-50%);
+        }
+      }
+
+      /*═══════════════════════════════════════════════════════
+  SECTIONS
+═══════════════════════════════════════════════════════*/
+      .section {
+        padding: clamp(4rem, 10vw, 8rem) 0;
+        transition:
+          background 0.5s,
+          color 0.5s;
+      }
+      .sec-h {
+        max-width: 600px;
+        margin-bottom: 3rem;
+      }
+      .sec-h.c {
+        text-align: center;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--accent);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-bottom: 0.75rem;
+      }
+      .label::before {
+        content: "";
+        width: 24px;
+        height: 1.5px;
+        background: var(--gold);
+      }
+      .sec-h h2 {
+        font-family: var(--ff-display);
+        font-size: clamp(1.8rem, 4vw, 3rem);
+        font-weight: 700;
+        line-height: 1.12;
+        margin-bottom: 0.75rem;
+        transition: color 0.5s;
+      }
+      .sec-h p {
+        font-size: 1rem;
+        color: var(--text2);
+        line-height: 1.7;
+      }
+
+      /*═══════════════════════════════════════════════════════
+  CATEGORY CARDS
+═══════════════════════════════════════════════════════*/
+      .cats {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1rem;
+      }
+      .cat {
+        position: relative;
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        aspect-ratio: 3/4;
+        cursor: pointer;
+      }
+      .cat img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: all 0.8s var(--ease);
+      }
+      .cat:hover img {
+        transform: scale(1.08);
+        filter: brightness(0.65) saturate(1.2);
+      }
+      .cat-ov {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.9) 0%,
+          rgba(0, 0, 0, 0.1) 50%,
+          transparent 100%
+        );
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 1.25rem;
+        transition: all 0.5s;
+      }
+      .cat-n {
+        font-family: var(--ff-display);
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 0.15rem;
+        transition: transform 0.4s var(--ease);
+      }
+      .cat:hover .cat-n {
+        transform: translateY(-4px);
+      }
+      .cat-c {
+        font-size: 0.7rem;
+        color: rgba(255, 255, 255, 0.5);
+        opacity: 0;
+        transform: translateY(8px);
+        transition: all 0.4s var(--ease) 0.1s;
+      }
+      .cat:hover .cat-c {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .cat-a {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        width: 36px;
+        height: 36px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 0.8rem;
+        opacity: 0;
+        transform: translateY(8px) rotate(-45deg);
+        transition: all 0.4s var(--ease);
+      }
+      .cat:hover .cat-a {
+        opacity: 1;
+        transform: translateY(0) rotate(0);
+      }
+
+      /*═══════════════════════════════════════════════════════
+  CLASS CARDS
+═══════════════════════════════════════════════════════*/
+      .classes {
+        display: flex;
+        gap: 1.25rem;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 1rem;
+        scrollbar-width: none;
+      }
+      .classes::-webkit-scrollbar {
+        display: none;
+      }
+      .cc {
+        min-width: 300px;
+        max-width: 320px;
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        background: var(--card);
+        flex-shrink: 0;
+        scroll-snap-align: start;
+        transition: all 0.5s var(--ease);
+        border: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .cc:hover {
+        transform: translateY(-6px);
+        box-shadow: var(--sh-lg);
+      }
+      .cc-img {
+        position: relative;
+        aspect-ratio: 11/10;
+        overflow: hidden;
+      }
+      .cc-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.7s var(--ease);
+      }
+      .cc:hover .cc-img img {
+        transform: scale(1.05);
+      }
+      .cc-badge {
+        position: absolute;
+        top: 0.75rem;
+        left: 0.75rem;
+        background: var(--card);
+        color: var(--accent);
+        padding: 0.3rem 0.7rem;
+        border-radius: var(--r-full);
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
+      .cc-fav {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        width: 32px;
+        height: 32px;
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: none;
+        opacity: 0;
+        transform: scale(0.8);
+      }
+      .cc:hover .cc-fav {
+        opacity: 1;
+        transform: scale(1);
+      }
+      .cc-fav:hover {
+        background: var(--accent);
+        color: #fff;
+        transform: scale(1.1) !important;
+      }
+      .cc-body {
+        padding: 1.25rem;
+      }
+      .cc-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.72rem;
+        color: var(--text3);
+      }
+      .cc-meta b {
+        width: 3px;
+        height: 3px;
+        background: var(--border);
+        border-radius: 50%;
+      }
+      .cc-title {
+        font-family: var(--ff-display);
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+        color: var(--text);
+      }
+      .cc-inst {
+        font-size: 0.82rem;
+        color: var(--text2);
+        margin-bottom: 0.75rem;
+      }
+      .cc-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border);
+      }
+      .cc-price {
+        font-weight: 700;
+        color: var(--accent);
+        font-size: 0.95rem;
+      }
+      .cc-price small {
+        font-weight: 400;
+        color: var(--text3);
+        font-size: 0.72rem;
+      }
+      .cc-spots {
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+      .cc-spots.ok {
+        color: var(--success);
+      }
+      .cc-spots.low {
+        color: var(--warning);
+      }
+
+      /*═══════════════════════════════════════════════════════
+  INSTRUCTOR CARDS
+═══════════════════════════════════════════════════════*/
+      .insts {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+      }
+      .inst {
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        background: var(--card);
+        transition: all 0.5s var(--ease);
+        border: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .inst:hover {
+        transform: translateY(-6px);
+        box-shadow: var(--sh-lg);
+      }
+      .inst-img {
+        aspect-ratio: 1;
+        overflow: hidden;
+        position: relative;
+      }
+      .inst-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: all 0.7s var(--ease);
+      }
+      .inst:hover .inst-img img {
+        transform: scale(1.06);
+        filter: brightness(0.85);
+      }
+      .inst-v {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        background: var(--success);
+        color: #fff;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.6rem;
+        z-index: 2;
+      }
+      .inst-info {
+        padding: 1.1rem;
+      }
+      .inst-name {
+        font-family: var(--ff-display);
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+        color: var(--text);
+      }
+      .inst-style {
+        font-size: 0.7rem;
+        color: var(--gold);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.6rem;
+      }
+      .inst-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.72rem;
+        color: var(--text3);
+      }
+      .inst-rating {
+        color: var(--gold);
+      }
+      .inst-price {
+        margin-top: 0.6rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .inst-price small {
+        font-weight: 400;
+        color: var(--text3);
+        font-size: 0.72rem;
+      }
+
+      /*═══════════════════════════════════════════════════════
+  EDITORIAL
+═══════════════════════════════════════════════════════*/
+      .editorial {
+        position: relative;
+        padding: clamp(6rem, 15vw, 12rem) 0;
+        background: #0d0b09;
+        overflow: hidden;
+        text-align: center;
+      }
+      .editorial-bg {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+      }
+      .editorial-bg img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.3;
+        filter: blur(1px);
+      }
+      .editorial-ov {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(139, 26, 43, 0.3) 0%,
+          rgba(13, 11, 9, 0.9) 70%
+        );
+      }
+      .editorial-c {
+        position: relative;
+        z-index: 2;
+        transition: transform 0.1s linear;
+      }
+      .editorial-c h2 {
+        transition: transform 0.1s linear;
+      }
+      .editorial-c h2 {
+        font-family: var(--ff-display);
+        font-size: clamp(3rem, 9vw, 8rem);
+        font-weight: 900;
+        line-height: 0.95;
+        letter-spacing: -0.03em;
+        color: #fff;
+        margin-bottom: 1rem;
+      }
+      .editorial-c .accent {
+        color: var(--accent);
+      }
+      .editorial-c p {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.45);
+        margin-bottom: 2rem;
+      }
+
+      /*═══════════════════════════════════════════════════════
+  STUDIO / PRODUCT / EVENT / TESTIMONIAL CARDS
+═══════════════════════════════════════════════════════*/
+      .grid3 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+      }
+      .grid4 {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+      }
+      .card {
+        border-radius: var(--r-lg);
+        overflow: hidden;
+        background: var(--card);
+        transition: all 0.5s var(--ease);
+        border: 1px solid var(--border);
+        cursor: pointer;
+      }
+      .card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--sh-lg);
+      }
+      .card-img {
+        position: relative;
+        overflow: hidden;
+      }
+      .card-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.7s var(--ease);
+      }
+      .card:hover .card-img img {
+        transform: scale(1.05);
+      }
+      .card-body {
+        padding: 1.25rem;
+      }
+      .card-body h3 {
+        font-family: var(--ff-display);
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+        color: var(--text);
+      }
+      .card-body p {
+        font-size: 0.82rem;
+        color: var(--text2);
+        line-height: 1.6;
+      }
+      .card-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-top: 0.75rem;
+        border-top: 1px solid var(--border);
+        margin-top: 0.75rem;
+      }
+      .card-price {
+        font-weight: 700;
+        color: var(--text);
+      }
+      .card-price small {
+        font-weight: 400;
+        color: var(--text3);
+        font-size: 0.72rem;
+      }
+      .card-rating {
+        color: var(--gold);
+        font-weight: 600;
+      }
+      .tag {
+        padding: 0.25rem 0.6rem;
+        background: var(--accent-light);
+        color: var(--accent);
+        border-radius: var(--r-full);
+        font-size: 0.65rem;
+        font-weight: 600;
+      }
+      .tags {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.75rem;
+      }
+      .loc {
+        font-size: 0.72rem;
+        color: var(--text3);
+        margin-bottom: 0.3rem;
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+      .date-badge {
+        position: absolute;
+        top: 0.75rem;
+        left: 0.75rem;
+        background: var(--accent);
+        color: #fff;
+        padding: 0.5rem 0.7rem;
+        border-radius: var(--r-md);
+        text-align: center;
+        line-height: 1.2;
+        box-shadow: 0 4px 16px rgba(139, 26, 43, 0.3);
+      }
+      .date-badge b {
+        font-size: 1.2rem;
+        font-weight: 800;
+        display: block;
+        font-family: var(--ff-display);
+      }
+      .date-badge small {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+      }
+      .event-type {
+        font-size: 0.68rem;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+        margin-bottom: 0.3rem;
+      }
+      .spots {
+        font-size: 0.7rem;
+        font-weight: 600;
+      }
+      .spots.ok {
+        color: var(--success);
+      }
+      .spots.low {
+        color: var(--warning);
+      }
+      .prod-quick {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 0.75rem;
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+        display: flex;
+        justify-content: center;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: all 0.4s var(--ease);
+      }
+      .card:hover .prod-quick {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .prod-brand {
+        font-size: 0.68rem;
+        color: var(--text3);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.2rem;
+      }
+
+      /*═══════════════════════════════════════════════════════
+  TESTIMONIALS
+═══════════════════════════════════════════════════════*/
+      .test {
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+      }
+      .test::before {
+        content: '"';
+        position: absolute;
+        top: -10px;
+        right: 10px;
+        font-family: var(--ff-display);
+        font-size: 8rem;
+        color: var(--accent);
+        opacity: 0.06;
+        line-height: 1;
+      }
+      .test-stars {
+        color: var(--gold);
+        font-size: 0.8rem;
+        margin-bottom: 1rem;
+      }
+      .test-quote {
+        font-family: var(--ff-display);
+        font-size: 1.05rem;
+        font-style: italic;
+        line-height: 1.65;
+        color: var(--text);
+        margin-bottom: 1.25rem;
+        padding-left: 1rem;
+        border-left: 2px solid var(--accent);
+      }
+      .test-author {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .test-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      .test-name {
+        font-weight: 600;
+        font-size: 0.85rem;
+      }
+      .test-role {
+        font-size: 0.72rem;
+        color: var(--text3);
+      }
+
+      /*═══════════════════════════════════════════════════════
+  NEWSLETTER
+═══════════════════════════════════════════════════════*/
+      .newsletter {
+        padding: clamp(3rem, 8vw, 6rem) 0;
+        background: var(--bg2);
+        text-align: center;
+        transition: background 0.5s;
+      }
+      .nl-form {
+        display: flex;
+        gap: 0.5rem;
+        max-width: 420px;
+        margin: 1.5rem auto 0;
+      }
+      .nl-form input {
+        flex: 1;
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-full);
+        padding: 0.85rem 1.25rem;
+        font-size: 0.85rem;
+        background: var(--card);
+        outline: none;
+        font-family: var(--ff-body);
+        color: var(--text);
+        transition:
+          border-color 0.3s,
+          background 0.5s;
+      }
+      .nl-form input:focus {
+        border-color: var(--accent);
+      }
+
+      /*═══════════════════════════════════════════════════════
+  FOOTER
+═══════════════════════════════════════════════════════*/
+      .footer {
+        background: var(--bg2);
+        border-top: 1px solid var(--border);
+        padding: 4rem 0 2rem;
+        transition: all 0.5s;
+      }
+      .footer-g {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+        gap: 2.5rem;
+        margin-bottom: 3rem;
+      }
+      .footer-desc {
+        font-size: 0.85rem;
+        line-height: 1.7;
+        color: var(--text3);
+        margin-top: 0.75rem;
+        max-width: 280px;
+      }
+      .footer-social {
+        display: flex;
+        gap: 0.6rem;
+        margin-top: 1.25rem;
+      }
+      .footer-social a {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text3);
+        font-size: 0.7rem;
+        font-weight: 600;
+        transition: all 0.3s;
+      }
+      .footer-social a:hover {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #fff;
+      }
+      .footer-h {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--text);
+        margin-bottom: 1rem;
+      }
+      .footer-l {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+      }
+      .footer-l a {
+        font-size: 0.85rem;
+        color: var(--text3);
+        transition: color 0.3s;
+      }
+      .footer-l a:hover {
+        color: var(--accent);
+      }
+      .footer-bt {
+        border-top: 1px solid var(--border);
+        padding-top: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--text3);
+      }
+
+      /*═══════════════════════════════════════════════════════
+  PAGE SYSTEM
+═══════════════════════════════════════════════════════*/
+      .page {
+        display: none;
+      }
+      .page.active {
+        display: block;
+        animation: pageIn 0.6s var(--ease);
+      }
+      @keyframes pageIn {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      /*═══════════════════════════════════════════════════════
+  RESPONSIVE
+═══════════════════════════════════════════════════════*/
+      @media (max-width: 1024px) {
+        .cats {
+          grid-template-columns: repeat(3, 1fr);
+        }
+        .insts,
+        .grid4 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .grid3 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .footer-g {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 768px) {
+        .nav-links {
+          display: none;
+        }
+        .cats {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .hero-stats {
+          flex-wrap: wrap;
+          gap: 1.5rem;
+        }
+        .editorial-c h2 {
+          font-size: clamp(2.5rem, 12vw, 4rem);
+        }
+        .footer-g {
+          grid-template-columns: 1fr;
+        }
+        .footer-bt {
+          flex-direction: column;
+          gap: 0.75rem;
+          text-align: center;
+        }
+        .nl-form {
+          flex-direction: column;
+        }
+        .theme-btn {
+          bottom: 1.5rem;
+          right: 1.5rem;
+          width: 48px;
+          height: 48px;
+        }
+      }
+      @media (max-width: 480px) {
+        .cats {
+          grid-template-columns: 1fr 1fr;
+          gap: 0.75rem;
+        }
+        .cat {
+          aspect-ratio: 1;
+        }
+        .insts,
+        .grid4,
+        .grid3 {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- SEARCH OVERLAY -->
+    <div
+      id="searchOverlay"
+      style="
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        background: rgba(13, 11, 9, 0.95);
+        backdrop-filter: blur(24px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 15vh;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.4s var(--ease);
+      "
+    >
+      <button
+        onclick="
+          document.getElementById('searchOverlay').style.opacity = '0';
+          document.getElementById('searchOverlay').style.visibility = 'hidden';
+        "
+        style="
+          position: absolute;
+          top: 2rem;
+          right: 2rem;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.08);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #fff;
+          font-size: 1.2rem;
+          cursor: pointer;
+          border: none;
+        "
+      >
+        ✕
+      </button>
+      <input
+        type="text"
+        placeholder="SEARCH DANCERS, CLASSES, STUDIOS..."
+        style="
+          width: 90%;
+          max-width: 700px;
+          border: none;
+          border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+          background: transparent;
+          color: #fff;
+          font-family: var(--ff-display);
+          font-size: clamp(1.5rem, 4vw, 2.5rem);
+          padding: 1rem 0;
+          outline: none;
+          text-align: center;
+        "
+      />
+      <div
+        style="
+          display: flex;
+          gap: 0.5rem;
+          margin-top: 2rem;
+          flex-wrap: wrap;
+          justify-content: center;
+        "
+      >
+        <span
+          style="
+            padding: 0.4rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--r-full);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+          "
+          >Everything</span
+        >
+        <span
+          style="
+            padding: 0.4rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--r-full);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+          "
+          >Classes</span
+        >
+        <span
+          style="
+            padding: 0.4rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--r-full);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+          "
+          >Instructors</span
+        >
+        <span
+          style="
+            padding: 0.4rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--r-full);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+          "
+          >Studios</span
+        >
+        <span
+          style="
+            padding: 0.4rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--r-full);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+          "
+          >Products</span
+        >
+        <span
+          style="
+            padding: 0.4rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--r-full);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+          "
+          >Events</span
+        >
+      </div>
+    </div>
+
+    <button class="theme-btn" id="themeBtn">🌙</button>
+
+    <!-- NAV -->
+    <nav class="nav" id="nav">
+      <div class="nav-in">
+        <a class="nav-logo" onclick="go('home')">
+          <svg viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="6" r="3.2" fill="#8B1A2B" />
+            <path
+              d="M16 10.5C16 10.5 9 13.8 7.5 21C6 28 11.5 29.5 14.5 28C17.5 26.5 16 22.5 16 22.5C16 22.5 14.5 26.5 17.5 28C20.5 29.5 26 28 24.5 21C23 13.8 16 10.5 16 10.5Z"
+              fill="#8B1A2B"
+            />
+            <path
+              d="M11 15.5C11 15.5 8 12.5 5 14"
+              stroke="#8B1A2B"
+              stroke-width="1.6"
+              stroke-linecap="round"
+            />
+            <path
+              d="M21 15.5C21 15.5 24 12.5 27 14"
+              stroke="#8B1A2B"
+              stroke-width="1.6"
+              stroke-linecap="round"
+            />
+          </svg>
+          <b>ArtDance</b>
+        </a>
+        <ul class="nav-links">
+          <li><a class="active" onclick="go('home')">Home</a></li>
+          <li><a onclick="go('discover')">Discover</a></li>
+          <li><a onclick="go('class')">Classes</a></li>
+          <li><a onclick="go('instructor')">Instructors</a></li>
+          <li><a onclick="go('shop')">Shop</a></li>
+          <li><a onclick="go('booking')">Calendar</a></li>
+          <li><a onclick="go('cart')">Cart</a></li>
+        </ul>
+        <div class="nav-right">
+          <button
+            class="nav-icon"
+            onclick="
+              document.getElementById('searchOverlay').style.opacity = '1';
+              document.getElementById('searchOverlay').style.visibility =
+                'visible';
+            "
+          >
+            🔍
+          </button>
+          <button class="nav-icon" onclick="go('cart')">🛒</button>
+          <button class="nav-icon">♡</button>
+          <button class="nav-icon">👤</button>
+          <a class="btn btn-accent btn-sm">Book Now</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ═══════════ PAGE: HOME ═══════════ -->
+    <div class="page active" id="p-home">
+      <section class="hero">
+        <div class="hero-bg">
+          <img
+            src="photos/01a8724c-2a8f-4949-b140-afd241b012b8.png"
+            alt="Dancer"
+          />
+        </div>
+        <div class="hero-ov"></div>
+        <div class="hero-c">
+          <div class="hero-badge">
+            <span>◆ Yerevan's #1 Dance Platform</span>
+          </div>
+          <h1 class="hero-title">Move<br /><em>Different.</em></h1>
+          <p class="hero-sub">
+            Discover classes, instructors, studios, courses and everything you
+            need to move. Armenia's premium dance marketplace.
+          </p>
+          <div class="hero-btns">
+            <a class="btn btn-accent btn-lg" onclick="go('discover')"
+              >Explore Classes <span class="btn-arrow">→</span></a
+            >
+            <a class="btn btn-white btn-lg" onclick="go('instructor')"
+              >Find an Instructor</a
+            >
+          </div>
+          <div class="hero-stats">
+            <div>
+              <div class="hero-sv">
+                <span class="g" data-count="2500">0</span>+
+              </div>
+              <div class="hero-sl">Active Dancers</div>
+            </div>
+            <div>
+              <div class="hero-sv">
+                <span class="g" data-count="150">0</span>+
+              </div>
+              <div class="hero-sl">Expert Instructors</div>
+            </div>
+            <div>
+              <div class="hero-sv">
+                <span class="g" data-count="50">0</span>+
+              </div>
+              <div class="hero-sl">Dance Styles</div>
+            </div>
+            <div>
+              <div class="hero-sv">
+                <span class="g" data-count="4.9" data-dec="1">0</span>
+              </div>
+              <div class="hero-sl">Average Rating</div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-scroll"><i></i></div>
+      </section>
+
+      <!-- SEARCH BAR -->
+      <div
+        style="
+          position: relative;
+          z-index: 2;
+          max-width: var(--max-w);
+          margin: -3.7rem auto 0;
+          padding: 0 var(--pad);
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            background: var(--card);
+            border-radius: var(--r-xl);
+            padding: 0.5rem;
+            box-shadow: var(--sh-lg);
+            gap: 0.5rem;
+            transition: all 0.5s;
+          "
+        >
+          <input
+            type="text"
+            placeholder="What do you want to dance?"
+            style="
+              flex: 1;
+              border: none;
+              outline: none;
+              padding: 0.75rem 1rem;
+              font-size: 0.9rem;
+              background: transparent;
+              color: var(--text);
+              font-family: var(--ff-body);
+            "
+            id="heroSearch"
+          />
+          <div
+            style="
+              width: 1px;
+              height: 32px;
+              background: var(--border);
+              flex-shrink: 0;
+            "
+          ></div>
+          <div style="display: flex; gap: 0.25rem; align-items: center">
+            <span
+              style="
+                padding: 0.5rem 1rem;
+                border-radius: var(--r-full);
+                font-size: 0.78rem;
+                font-weight: 500;
+                color: var(--text);
+                cursor: pointer;
+                transition: all 0.3s;
+                background: var(--accent-light);
+              "
+              >Yerevan</span
+            >
+            <span
+              style="
+                padding: 0.5rem 1rem;
+                border-radius: var(--r-full);
+                font-size: 0.78rem;
+                font-weight: 500;
+                color: var(--text3);
+                cursor: pointer;
+                transition: all 0.3s;
+              "
+              >Any date</span
+            >
+            <span
+              style="
+                padding: 0.5rem 1rem;
+                border-radius: var(--r-full);
+                font-size: 0.78rem;
+                font-weight: 500;
+                color: var(--text3);
+                cursor: pointer;
+                transition: all 0.3s;
+              "
+              >Any style</span
+            >
+          </div>
+          <button class="btn btn-accent btn-md" style="white-space: nowrap">
+            Explore
+          </button>
+        </div>
+      </div>
+
+      <div class="marquee">
+        <div class="marquee-t">
+          <span>Ballet <i></i></span><span>Hip-Hop <i></i></span
+          ><span>Salsa <i></i></span><span>Bachata <i></i></span
+          ><span>Contemporary <i></i></span><span>Heels <i></i></span
+          ><span>K-Pop <i></i></span><span>Latin <i></i></span
+          ><span>Tango <i></i></span><span>Armenian Folk <i></i></span>
+          <span>Ballet <i></i></span><span>Hip-Hop <i></i></span
+          ><span>Salsa <i></i></span><span>Bachata <i></i></span
+          ><span>Contemporary <i></i></span><span>Heels <i></i></span
+          ><span>K-Pop <i></i></span><span>Latin <i></i></span
+          ><span>Tango <i></i></span><span>Armenian Folk <i></i></span>
+        </div>
+      </div>
+
+      <section class="section">
+        <div class="container">
+          <div class="sec-h c">
+            <div class="label">Discover</div>
+            <h2>Find Your Way to Dance.</h2>
+            <p>
+              10 dance styles, hundreds of classes, and the best instructors in
+              Yerevan.
+            </p>
+          </div>
+          <div class="cats">
+            <div class="cat">
+              <img
+                src="photos/23bdec28-c439-479f-ad23-d19debdac9e7.png"
+                alt="Hip-Hop"
+                loading="lazy"
+              />
+              <div class="cat-ov">
+                <div class="cat-n">Hip-Hop</div>
+                <div class="cat-c">48 Classes</div>
+              </div>
+              <div class="cat-a">→</div>
+            </div>
+            <div class="cat">
+              <img
+                src="photos/377aa17c-8217-4aee-8874-831ab6ecb04a.png"
+                alt="Ballet"
+                loading="lazy"
+              />
+              <div class="cat-ov">
+                <div class="cat-n">Ballet</div>
+                <div class="cat-c">24 Classes</div>
+              </div>
+              <div class="cat-a">→</div>
+            </div>
+            <div class="cat">
+              <img
+                src="photos/5c2a57f4-b8e2-440d-bfb2-09359d2411ab.png"
+                alt="Salsa"
+                loading="lazy"
+              />
+              <div class="cat-ov">
+                <div class="cat-n">Salsa</div>
+                <div class="cat-c">32 Classes</div>
+              </div>
+              <div class="cat-a">→</div>
+            </div>
+            <div class="cat">
+              <img
+                src="photos/6aeafcb1-3d7c-4e52-8100-ee646104e531.png"
+                alt="Contemporary"
+                loading="lazy"
+              />
+              <div class="cat-ov">
+                <div class="cat-n">Contemporary</div>
+                <div class="cat-c">18 Classes</div>
+              </div>
+              <div class="cat-a">→</div>
+            </div>
+            <div class="cat">
+              <img
+                src="photos/955d573b-63a2-49ef-9a0c-0eb3abe212fe.png"
+                alt="Heels"
+                loading="lazy"
+              />
+              <div class="cat-ov">
+                <div class="cat-n">Heels</div>
+                <div class="cat-c">15 Classes</div>
+              </div>
+              <div class="cat-a">→</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="sec-h">
+            <div class="label">Popular Right Now</div>
+            <h2>Classes Everyone's Talking About</h2>
+          </div>
+          <div class="classes">
+            <div class="cc" onclick="go('class')">
+              <div class="cc-img">
+                <img
+                  src="photos/5c2a57f4-b8e2-440d-bfb2-09359d2411ab.png"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="cc-badge">TRENDING</div>
+                <button class="cc-fav">♡</button>
+              </div>
+              <div class="cc-body">
+                <div class="cc-meta">
+                  <span>Salsa</span><b></b><span>Intermediate</span>
+                </div>
+                <div class="cc-title">Latin Fusion</div>
+                <div class="cc-inst">Anna Mkrtchyan · Saturday, 18:00</div>
+                <div class="cc-foot">
+                  <div class="cc-price">12,000 AMD <small>/class</small></div>
+                  <div class="cc-spots ok">8 spots left</div>
+                </div>
+              </div>
+            </div>
+            <div class="cc">
+              <div class="cc-img">
+                <img
+                  src="photos/23bdec28-c439-479f-ad23-d19debdac9e7.png"
+                  alt=""
+                  loading="lazy"
+                /><button class="cc-fav">♡</button>
+              </div>
+              <div class="cc-body">
+                <div class="cc-meta">
+                  <span>Hip-Hop</span><b></b><span>All Levels</span>
+                </div>
+                <div class="cc-title">Street Flow</div>
+                <div class="cc-inst">Arman Harutyunyan · Sunday, 14:00</div>
+                <div class="cc-foot">
+                  <div class="cc-price">10,000 AMD <small>/class</small></div>
+                  <div class="cc-spots ok">12 spots left</div>
+                </div>
+              </div>
+            </div>
+            <div class="cc">
+              <div class="cc-img">
+                <img
+                  src="photos/377aa17c-8217-4aee-8874-831ab6ecb04a.png"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="cc-badge">FULL</div>
+                <button class="cc-fav">♡</button>
+              </div>
+              <div class="cc-body">
+                <div class="cc-meta">
+                  <span>Ballet</span><b></b><span>Advanced</span>
+                </div>
+                <div class="cc-title">Classical Ballet Intensive</div>
+                <div class="cc-inst">Sona Hovhannisyan · Mon/Wed/Fri</div>
+                <div class="cc-foot">
+                  <div class="cc-price">15,000 AMD <small>/class</small></div>
+                  <div class="cc-spots low">Waitlist</div>
+                </div>
+              </div>
+            </div>
+            <div class="cc">
+              <div class="cc-img">
+                <img
+                  src="photos/6aeafcb1-3d7c-4e52-8100-ee646104e531.png"
+                  alt=""
+                  loading="lazy"
+                /><button class="cc-fav">♡</button>
+              </div>
+              <div class="cc-body">
+                <div class="cc-meta">
+                  <span>Contemporary</span><b></b><span>Intermediate</span>
+                </div>
+                <div class="cc-title">Contemporary Flow</div>
+                <div class="cc-inst">Nare Grigoryan · Thu, 19:00</div>
+                <div class="cc-foot">
+                  <div class="cc-price">12,000 AMD <small>/class</small></div>
+                  <div class="cc-spots ok">5 spots left</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" style="background: var(--bg2)">
+        <div class="container">
+          <div class="sec-h">
+            <div class="label">Meet the Masters</div>
+            <h2>Learn from People Who Live the Movement.</h2>
+          </div>
+          <div class="insts">
+            <div class="inst" onclick="go('instructor')">
+              <div class="inst-img">
+                <img
+                  src="photos/c976391d-3a63-4193-acd5-82872d310bca.png"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="inst-v">✓</div>
+              </div>
+              <div class="inst-info">
+                <div class="inst-name">Anna Mkrtchyan</div>
+                <div class="inst-style">Salsa · Latin · Bachata</div>
+                <div class="inst-meta">
+                  <span class="inst-rating">★ 4.9</span><span>·</span
+                  ><span>320+ students</span>
+                </div>
+                <div class="inst-price">
+                  From 15,000 AMD <small>/hour</small>
+                </div>
+              </div>
+            </div>
+            <div class="inst">
+              <div class="inst-img">
+                <img
+                  src="photos/a3edf9e0-794b-455e-8815-fc1f9f75107a.png"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="inst-v">✓</div>
+              </div>
+              <div class="inst-info">
+                <div class="inst-name">Arman Harutyunyan</div>
+                <div class="inst-style">Hip-Hop · Choreography</div>
+                <div class="inst-meta">
+                  <span class="inst-rating">★ 4.8</span><span>·</span
+                  ><span>280+ students</span>
+                </div>
+                <div class="inst-price">
+                  From 12,000 AMD <small>/hour</small>
+                </div>
+              </div>
+            </div>
+            <div class="inst">
+              <div class="inst-img">
+                <img
+                  src="photos/bd5b4c2f-144f-4360-ac84-b401b07d9636.png"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="inst-v">✓</div>
+              </div>
+              <div class="inst-info">
+                <div class="inst-name">Nare Grigoryan</div>
+                <div class="inst-style">Contemporary · Modern</div>
+                <div class="inst-meta">
+                  <span class="inst-rating">★ 5.0</span><span>·</span
+                  ><span>180+ students</span>
+                </div>
+                <div class="inst-price">
+                  From 18,000 AMD <small>/hour</small>
+                </div>
+              </div>
+            </div>
+            <div class="inst">
+              <div class="inst-img">
+                <img
+                  src="photos/23bdec28-c439-479f-ad23-d19debdac9e7.png"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="inst-v">✓</div>
+              </div>
+              <div class="inst-info">
+                <div class="inst-name">David Sargsyan</div>
+                <div class="inst-style">Ballet · Classical</div>
+                <div class="inst-meta">
+                  <span class="inst-rating">★ 4.9</span><span>·</span
+                  ><span>450+ students</span>
+                </div>
+                <div class="inst-price">
+                  From 20,000 AMD <small>/hour</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="editorial" id="editorial">
+        <div class="editorial-bg">
+          <img
+            src="photos/5eab5a05-f148-4e4c-91bf-688a65cf53bc.png"
+            alt=""
+            loading="lazy"
+          />
+        </div>
+        <div class="editorial-ov"></div>
+        <div class="container editorial-c">
+          <h2>EVERY BODY<br />HAS A <span class="accent">RHYTHM.</span></h2>
+          <p>FIND YOURS.</p>
+          <a class="btn btn-accent btn-lg">Start Dancing →</a>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="sec-h">
+            <div class="label">Find Your Space</div>
+            <h2>Premium Studios in Yerevan.</h2>
+          </div>
+          <div class="grid3">
+            <div class="card">
+              <div class="card-img" style="aspect-ratio: 16/10">
+                <img
+                  src="photos/nano-banana-2_Group_dance_class_in_a_premium_studio_diverse_dancers_in_synchronized_movement_w-0.jpg"
+                  alt=""
+                  loading="lazy"
+                />
+              </div>
+              <div class="card-body">
+                <div class="loc">📍 Kentron, Yerevan</div>
+                <h3>Pulse Dance Studio</h3>
+                <div class="tags">
+                  <span class="tag">Mirrors</span
+                  ><span class="tag">Sound System</span
+                  ><span class="tag">Floor</span>
+                </div>
+                <div class="card-foot">
+                  <div class="card-price">20,000 AMD <small>/hour</small></div>
+                  <div class="card-rating">★ 4.8</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-img" style="aspect-ratio: 16/10">
+                <img
+                  src="photos/ChatGPT Image Aug 31, 2026, 07_11_59 PM.png"
+                  alt=""
+                  loading="lazy"
+                />
+              </div>
+              <div class="card-body">
+                <div class="loc">📍 Arabkir, Yerevan</div>
+                <h3>Rhythm Space</h3>
+                <div class="tags">
+                  <span class="tag">Mirrors</span
+                  ><span class="tag">Equipment</span
+                  ><span class="tag">Showers</span>
+                </div>
+                <div class="card-foot">
+                  <div class="card-price">25,000 AMD <small>/hour</small></div>
+                  <div class="card-rating">★ 4.9</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-img" style="aspect-ratio: 16/10">
+                <img
+                  src="photos/ee53e9da-8fec-4d03-abd9-01d883646372.png"
+                  alt=""
+                  loading="lazy"
+                />
+              </div>
+              <div class="card-body">
+                <div class="loc">📍 Ajapnyak, Yerevan</div>
+                <h3>Flow Studio</h3>
+                <div class="tags">
+                  <span class="tag">Wood Floor</span
+                  ><span class="tag">Barre</span
+                  ><span class="tag">Windows</span>
+                </div>
+                <div class="card-foot">
+                  <div class="card-price">15,000 AMD <small>/hour</small></div>
+                  <div class="card-rating">★ 4.7</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" style="background: var(--bg2)">
+        <div class="container">
+          <div class="sec-h">
+            <div class="label">Shop</div>
+            <h2>Dancewear & Accessories.</h2>
+          </div>
+          <div class="grid4">
+            <div class="card">
+              <div class="card-img" style="aspect-ratio: 3/4">
+                <img
+                  src="photos/nano-banana-2_A_sleek_black_premium_dance_duffel_bag_with_subtle_gold_accents_placed_on_polish-0_14b96210-8d53-484b-978b-d66a022dfee8.jpg"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="prod-quick">
+                  <button class="btn btn-accent btn-sm">Quick Add</button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="prod-brand">ArtDance</div>
+                <h3>Premium Dance Bag</h3>
+                <div class="card-price">18,000 AMD</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-img" style="aspect-ratio: 3/4">
+                <img
+                  src="photos/nano-banana-2_An_artistic_arrangement_of_professional_dance_shoes___Latin_heels_ballet_slipp-0_bfd55e87-c36e-40a1-baae-68c6aab08f63.jpg"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="prod-quick">
+                  <button class="btn btn-accent btn-sm">Quick Add</button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="prod-brand">ArtDance</div>
+                <h3>Dance Shoes Collection</h3>
+                <div class="card-price">12,500 AMD</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-img" style="aspect-ratio: 3/4">
+                <img
+                  src="photos/nano-banana-2_A_neatly_folded_set_of_premium_dance_training_clothes___black_leggings_fitted_-0_1d9c5b91-b6b5-40f8-b2f6-21e77732d82c.jpg"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="prod-quick">
+                  <button class="btn btn-accent btn-sm">Quick Add</button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="prod-brand">ArtDance</div>
+                <h3>Training Apparel Set</h3>
+                <div class="card-price">15,000 AMD</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-img" style="aspect-ratio: 3/4">
+                <img
+                  src="photos/nano-banana-2_An_elegant_burgundy_and_gold_gift_card_with_a_subtle_embossed_dance_figure_motif-0_15649766-2675-4c53-b115-05ab4ce79cb7.jpg"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="prod-quick">
+                  <button class="btn btn-accent btn-sm">Quick Add</button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="prod-brand">ArtDance</div>
+                <h3>Gift Card</h3>
+                <div class="card-price">From 5,000 AMD</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="sec-h">
+            <div class="label">Upcoming Events</div>
+            <h2>Workshops, Battles & More.</h2>
+          </div>
+          <div class="grid3">
+            <div class="card">
+              <div class="card-img" style="aspect-ratio: 16/10">
+                <img
+                  src="photos/5eab5a05-f148-4e4c-91bf-688a65cf53bc.png"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="date-badge"><b>15</b><small>Sep</small></div>
+              </div>
+              <div class="card-body">
+                <div class="event-type">Workshop</div>
+                <h3>Bachata Night Workshop</h3>
+                <p>📍 Pulse Studio · 19:00–21:00</p>
+                <div class="card-foot">
+                  <div class="card-price">8,000 AMD</div>
+                  <div class="spots ok">15 spots left</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-img" style="aspect-ratio: 16/10">
+                <img
+                  src="photos/23bdec28-c439-479f-ad23-d19debdac9e7.png"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="date-badge"><b>22</b><small>Sep</small></div>
+              </div>
+              <div class="card-body">
+                <div class="event-type">Battle</div>
+                <h3>Yerevan Street Battle</h3>
+                <p>📍 Republic Square · 16:00–22:00</p>
+                <div class="card-foot">
+                  <div class="card-price">Free</div>
+                  <div class="spots">Open</div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-img" style="aspect-ratio: 16/10">
+                <img
+                  src="photos/6aeafcb1-3d7c-4e52-8100-ee646104e531.png"
+                  alt=""
+                  loading="lazy"
+                />
+                <div class="date-badge"><b>30</b><small>Sep</small></div>
+              </div>
+              <div class="card-body">
+                <div class="event-type">Masterclass</div>
+                <h3>Contemporary Masterclass</h3>
+                <p>📍 Rhythm Space · 14:00–17:00</p>
+                <div class="card-foot">
+                  <div class="card-price">12,000 AMD</div>
+                  <div class="spots low">8 spots left</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" style="background: var(--bg2)">
+        <div class="container">
+          <div class="sec-h c">
+            <div class="label">Testimonials</div>
+            <h2>What Our Dancers Say.</h2>
+          </div>
+          <div class="grid3">
+            <div class="card test">
+              <div class="test-stars">★ ★ ★ ★ ★</div>
+              <p class="test-quote">
+                ArtDance completely transformed my dance journey. The
+                instructors are world-class, and booking is seamless.
+              </p>
+              <div class="test-author">
+                <img
+                  src="photos/c976391d-3a63-4193-acd5-82872d310bca.png"
+                  class="test-avatar"
+                  alt=""
+                  loading="lazy"
+                />
+                <div>
+                  <div class="test-name">Mariam Ghazaryan</div>
+                  <div class="test-role">Ballet · 2 years on ArtDance</div>
+                </div>
+              </div>
+            </div>
+            <div class="card test">
+              <div class="test-stars">★ ★ ★ ★ ★</div>
+              <p class="test-quote">
+                As an instructor, ArtDance gave me visibility I never had. My
+                classes are always full now.
+              </p>
+              <div class="test-author">
+                <img
+                  src="photos/nano-banana-2_An_artistic_arrangement_of_professional_dance_shoes___Latin_heels_ballet_slipp-0_bfd55e87-c36e-40a1-baae-68c6aab08f63.jpg"
+                  class="test-avatar"
+                  alt=""
+                  loading="lazy"
+                />
+                <div>
+                  <div class="test-name">Arman Harutyunyan</div>
+                  <div class="test-role">Hip-Hop Instructor</div>
+                </div>
+              </div>
+            </div>
+            <div class="card test">
+              <div class="test-stars">★ ★ ★ ★ ★</div>
+              <p class="test-quote">
+                I was intimidated to try salsa, but the community is so
+                welcoming. Now I'm hooked!
+              </p>
+              <div class="test-author">
+                <img
+                  src="photos/ChatGPT Image Aug 31, 2026, 07_11_59 PM.png"
+                  class="test-avatar"
+                  alt=""
+                  loading="lazy"
+                />
+                <div>
+                  <div class="test-name">Narine Hovhannisyan</div>
+                  <div class="test-role">Salsa · 6 months on ArtDance</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="newsletter">
+        <div class="container">
+          <div class="sec-h c" style="margin-left: auto; margin-right: auto">
+            <div class="label" style="justify-content: center">
+              Stay in the Rhythm
+            </div>
+            <h2>Get Dance Updates</h2>
+            <p>
+              New classes, events, workshops and exclusive offers — delivered
+              weekly.
+            </p>
+          </div>
+          <div class="nl-form">
+            <input type="email" placeholder="Your email address" /><button
+              class="btn btn-accent btn-md"
+            >
+              Subscribe
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <div class="container">
+          <div class="footer-g">
+            <div>
+              <a class="nav-logo" style="margin-bottom: 0.5rem"
+                ><svg
+                  viewBox="0 0 32 32"
+                  fill="none"
+                  style="width: 28px; height: 28px"
+                >
+                  <circle cx="16" cy="6" r="3.2" fill="#8B1A2B" />
+                  <path
+                    d="M16 10.5C16 10.5 9 13.8 7.5 21C6 28 11.5 29.5 14.5 28C17.5 26.5 16 22.5 16 22.5C16 22.5 14.5 26.5 17.5 28C20.5 29.5 26 28 24.5 21C23 13.8 16 10.5 16 10.5Z"
+                    fill="#8B1A2B"
+                  />
+                  <path
+                    d="M11 15.5C11 15.5 8 12.5 5 14"
+                    stroke="#8B1A2B"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                  />
+                  <path
+                    d="M21 15.5C21 15.5 24 12.5 27 14"
+                    stroke="#8B1A2B"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                  /></svg
+                ><b style="font-family: var(--ff-display); font-size: 1.1rem"
+                  >ArtDance</b
+                ></a
+              >
+              <p class="footer-desc">
+                Armenia's premium dance marketplace. Connecting dancers,
+                instructors, studios, and everything you need to move.
+              </p>
+              <div class="footer-social">
+                <a href="#">IG</a><a href="#">TK</a><a href="#">YT</a>
+              </div>
+            </div>
+            <div>
+              <div class="footer-h">Explore</div>
+              <ul class="footer-l">
+                <li><a href="#">Classes</a></li>
+                <li><a href="#">Instructors</a></li>
+                <li><a href="#">Studios</a></li>
+                <li><a href="#">Shop</a></li>
+              </ul>
+            </div>
+            <div>
+              <div class="footer-h">Company</div>
+              <ul class="footer-l">
+                <li><a href="#">About</a></li>
+                <li><a href="#">Contact</a></li>
+                <li><a href="#">FAQ</a></li>
+              </ul>
+            </div>
+            <div>
+              <div class="footer-h">Support</div>
+              <ul class="footer-l">
+                <li><a href="#">Help Center</a></li>
+                <li><a href="#">Terms</a></li>
+                <li><a href="#">Privacy</a></li>
+              </ul>
+            </div>
+            <div>
+              <div class="footer-h">Business</div>
+              <ul class="footer-l">
+                <li><a href="#">Teach</a></li>
+                <li><a href="#">List Studio</a></li>
+                <li><a href="#">Sell Products</a></li>
+              </ul>
+            </div>
+          </div>
+          <div class="footer-bt">
+            <span>© 2026 ArtDance. All rights reserved.</span
+            ><span>Made with ❤️ in Yerevan</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <!-- /p-home -->
+
+    <!-- ═══════════ PAGE: CLASS DETAIL ═══════════ -->
+    <div class="page" id="p-class">
+      <div style="padding-top: 5rem"></div>
+      <div
+        style="
+          position: relative;
+          height: 60vh;
+          min-height: 350px;
+          overflow: hidden;
+        "
+      >
+        <img
+          src="photos/nano-banana-2_A_professional_editorial_photograph_of_a_couple_dancing_bachata_in_an_intimate_d-0_0c5a9b8c-7c03-49be-aa3e-4ce0fae9186b.jpg"
+          alt=""
+          style="width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0.6"
+        />
+        <div
+          style="
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+          "
+        ></div>
+        <div
+          style="
+            position: absolute;
+            bottom: 2rem;
+            left: var(--pad);
+            right: var(--pad);
+            max-width: var(--max-w);
+            margin: 0 auto;
+          "
+        >
+          <div
+            style="
+              display: inline-flex;
+              background: var(--accent);
+              color: #fff;
+              padding: 0.3rem 0.7rem;
+              border-radius: var(--r-full);
+              font-size: 0.65rem;
+              font-weight: 700;
+              letter-spacing: 0.08em;
+              margin-bottom: 0.75rem;
+            "
+          >
+            🔥 TRENDING
+          </div>
+          <h1
+            style="
+              font-family: var(--ff-display);
+              font-size: clamp(1.8rem, 4vw, 3rem);
+              font-weight: 700;
+              margin-bottom: 0.5rem;
+            "
+          >
+            Latin Fusion
+          </h1>
+          <div
+            style="
+              display: flex;
+              gap: 0.75rem;
+              font-size: 0.85rem;
+              color: var(--text2);
+              flex-wrap: wrap;
+            "
+          >
+            <span>Salsa</span><span>·</span><span>Intermediate</span
+            ><span>·</span><span>Saturday, 18:00</span><span>·</span
+            ><span>90 min</span>
+          </div>
+        </div>
+      </div>
+      <div
+        class="container"
+        style="
+          display: grid;
+          grid-template-columns: 1fr 360px;
+          gap: 3rem;
+          padding: 2rem var(--pad) 4rem;
+        "
+      >
+        <div>
+          <h3
+            style="
+              font-family: var(--ff-display);
+              font-size: 1.2rem;
+              margin-bottom: 0.75rem;
+            "
+          >
+            About This Class
+          </h3>
+          <p
+            style="
+              color: var(--text2);
+              line-height: 1.75;
+              margin-bottom: 1.5rem;
+            "
+          >
+            Dive into the vibrant world of Latin dance! This class blends salsa,
+            bachata, and cha-cha into one electrifying session. Perfect for
+            intermediate dancers looking to expand their Latin repertoire.
+          </p>
+          <h3
+            style="
+              font-family: var(--ff-display);
+              font-size: 1.2rem;
+              margin-bottom: 0.75rem;
+            "
+          >
+            What You'll Learn
+          </h3>
+          <div class="tags" style="margin-bottom: 1.5rem">
+            <span class="tag">Salsa Basics</span
+            ><span class="tag">Bachata Footwork</span
+            ><span class="tag">Partner Connection</span
+            ><span class="tag">Musicality</span>
+          </div>
+          <h3
+            style="
+              font-family: var(--ff-display);
+              font-size: 1.2rem;
+              margin-bottom: 0.75rem;
+            "
+          >
+            Instructor
+          </h3>
+          <div
+            style="
+              display: flex;
+              gap: 1rem;
+              align-items: center;
+              cursor: pointer;
+            "
+            onclick="go('instructor')"
+          >
+            <img
+              src="photos/c976391d-3a63-4193-acd5-82872d310bca.png"
+              style="
+                width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                object-fit: cover;
+              "
+            />
+            <div>
+              <div style="font-weight: 600">Anna Mkrtchyan</div>
+              <div style="font-size: 0.82rem; color: var(--text2)">
+                Salsa · Latin · Bachata · 8 years
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="position: sticky; top: 5rem; align-self: start">
+          <div
+            style="
+              background: var(--card);
+              border-radius: var(--r-xl);
+              padding: 2rem;
+              box-shadow: var(--sh-lg);
+              border: 1px solid var(--border);
+            "
+          >
+            <div
+              style="
+                font-family: var(--ff-display);
+                font-size: 2rem;
+                font-weight: 800;
+                color: var(--accent);
+              "
+            >
+              12,000 AMD
+            </div>
+            <div
+              style="
+                font-size: 0.8rem;
+                color: var(--text3);
+                margin-bottom: 1.25rem;
+              "
+            >
+              per class · 90 minutes
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.5rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              📅 Saturday, Sep 7
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.5rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              🕐 18:00 – 19:30
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.5rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              📍 Pulse Dance Studio
+            </div>
+            <div
+              style="height: 1px; background: var(--border); margin: 0.75rem 0"
+            ></div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.5rem 0;
+                font-size: 0.82rem;
+                color: var(--success);
+                font-weight: 600;
+              "
+            >
+              ⚡ 8 spots left
+            </div>
+            <button
+              class="btn btn-accent btn-lg btn-full"
+              style="margin-top: 1rem"
+              onclick="go('booking')"
+            >
+              Book Class <span class="btn-arrow">→</span>
+            </button>
+            <button
+              class="btn btn-outline btn-md btn-full"
+              style="margin-top: 0.75rem"
+            >
+              ♡ Save to Favorites
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: INSTRUCTOR ═══════════ -->
+    <div class="page" id="p-instructor">
+      <div
+        style="
+          position: relative;
+          height: 90vh;
+          min-height: 400px;
+          overflow: hidden;
+          background: var(--bg2);
+        "
+      >
+        <img
+          src="photos/c976391d-3a63-4193-acd5-82872d310bca.png"
+          alt=""
+          style="
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+            opacity: 0.55;
+            filter: brightness(0.8);
+          "
+        />
+        <div
+          style="
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+              to top,
+              var(--bg) 0%,
+              rgba(0, 0, 0, 0.3) 40%,
+              transparent 100%
+            );
+          "
+        ></div>
+        <div
+          style="
+            position: absolute;
+            bottom: 2.5rem;
+            left: var(--pad);
+            right: var(--pad);
+            max-width: var(--max-w);
+            margin: 0 auto;
+            display: flex;
+            align-items: flex-end;
+            gap: 1.5rem;
+          "
+        >
+          <img
+            src="photos/c976391d-3a63-4193-acd5-82872d310bca.png"
+            style="
+              width: 90px;
+              height: 90px;
+              border-radius: 50%;
+              object-fit: cover;
+              border: 3px solid var(--card);
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            "
+          />
+          <div>
+            <h1
+              style="
+                font-family: var(--ff-display);
+                font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+                font-weight: 700;
+                line-height: 1.1;
+              "
+            >
+              Anna Mkrtchyan
+              <span
+                style="
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 0.3rem;
+                  background: var(--success);
+                  color: #fff;
+                  padding: 0.2rem 0.5rem;
+                  border-radius: var(--r-full);
+                  font-size: 0.6rem;
+                  font-family: var(--ff-body);
+                  font-weight: 700;
+                  vertical-align: middle;
+                "
+                >✓ Verified</span
+              >
+            </h1>
+            <div
+              style="color: var(--gold); font-size: 0.85rem; margin: 0.3rem 0"
+            >
+              Salsa · Latin · Bachata
+            </div>
+            <div
+              style="
+                display: flex;
+                gap: 0.75rem;
+                font-size: 0.8rem;
+                color: var(--text2);
+                flex-wrap: wrap;
+              "
+            >
+              <span>★ 4.9 (128)</span><span>·</span><span>8 years</span
+              ><span>·</span><span>320+ students</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="container"
+        style="
+          display: grid;
+          grid-template-columns: 1fr 360px;
+          gap: 3rem;
+          padding: 2rem var(--pad) 4rem;
+        "
+      >
+        <div>
+          <h3
+            style="
+              font-family: var(--ff-display);
+              font-size: 1.2rem;
+              margin-bottom: 0.75rem;
+            "
+          >
+            About Anna
+          </h3>
+          <p
+            style="
+              color: var(--text2);
+              line-height: 1.75;
+              margin-bottom: 1.5rem;
+            "
+          >
+            Anna is one of Yerevan's most sought-after Latin dance instructors.
+            With 8 years of teaching experience and performance credits across
+            Europe, she brings infectious energy and deep technical knowledge to
+            every class.
+          </p>
+          <div class="tags">
+            <span class="tag">Salsa On1</span
+            ><span class="tag">Bachata Sensual</span
+            ><span class="tag">Cha-Cha</span
+            ><span class="tag">Body Movement</span>
+          </div>
+        </div>
+        <div style="position: sticky; top: 5rem; align-self: start">
+          <div
+            style="
+              background: var(--card);
+              border-radius: var(--r-xl);
+              padding: 2rem;
+              box-shadow: var(--sh-lg);
+              border: 1px solid var(--border);
+            "
+          >
+            <h3
+              style="
+                font-family: var(--ff-display);
+                font-size: 1.15rem;
+                margin-bottom: 1rem;
+              "
+            >
+              Book a Session
+            </h3>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.5rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              💰 From 15,000 AMD / hour
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.5rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              📍 Pulse Studio or your location
+            </div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.5rem 0;
+                font-size: 0.82rem;
+                color: var(--success);
+                font-weight: 600;
+              "
+            >
+              ⚡ Available this week
+            </div>
+            <div
+              style="height: 1px; background: var(--border); margin: 0.75rem 0"
+            ></div>
+            <button class="btn btn-accent btn-md btn-full">
+              Book a Session →
+            </button>
+            <button
+              class="btn btn-outline btn-md btn-full"
+              style="margin-top: 0.5rem"
+            >
+              Send Message
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: DISCOVER ═══════════ -->
+    <div class="page" id="p-discover">
+      <div style="padding-top: 5rem"></div>
+      <div class="container" style="padding: 2rem var(--pad) 4rem">
+        <h1
+          style="
+            font-family: var(--ff-display);
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+          "
+        >
+          Discover Classes
+        </h1>
+        <p style="color: var(--text2); margin-bottom: 2rem">
+          Find the perfect class for your level, style and schedule.
+        </p>
+        <div
+          style="
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+          "
+        >
+          <button class="btn btn-accent btn-sm">All Styles</button>
+          <button class="btn btn-outline btn-sm">Hip-Hop</button>
+          <button class="btn btn-outline btn-sm">Ballet</button>
+          <button class="btn btn-outline btn-sm">Salsa</button>
+          <button class="btn btn-outline btn-sm">Contemporary</button>
+        </div>
+        <div class="grid3">
+          <div class="cc" onclick="go('class')">
+            <div class="cc-img">
+              <img
+                src="photos/5c2a57f4-b8e2-440d-bfb2-09359d2411ab.png"
+                alt=""
+                loading="lazy"
+              />
+              <div class="cc-badge">TRENDING</div>
+              <button class="cc-fav">♡</button>
+            </div>
+            <div class="cc-body">
+              <div class="cc-meta">
+                <span>Salsa</span><b></b><span>Intermediate</span>
+              </div>
+              <div class="cc-title">Latin Fusion</div>
+              <div class="cc-inst">Anna Mkrtchyan · Saturday, 18:00</div>
+              <div class="cc-foot">
+                <div class="cc-price">12,000 AMD <small>/class</small></div>
+                <div class="cc-spots ok">8 spots left</div>
+              </div>
+            </div>
+          </div>
+          <div class="cc">
+            <div class="cc-img">
+              <img
+                src="photos/23bdec28-c439-479f-ad23-d19debdac9e7.png"
+                alt=""
+                loading="lazy"
+              /><button class="cc-fav">♡</button>
+            </div>
+            <div class="cc-body">
+              <div class="cc-meta">
+                <span>Hip-Hop</span><b></b><span>All Levels</span>
+              </div>
+              <div class="cc-title">Street Flow</div>
+              <div class="cc-inst">Arman Harutyunyan · Sunday, 14:00</div>
+              <div class="cc-foot">
+                <div class="cc-price">10,000 AMD <small>/class</small></div>
+                <div class="cc-spots ok">12 spots left</div>
+              </div>
+            </div>
+          </div>
+          <div class="cc">
+            <div class="cc-img">
+              <img
+                src="photos/377aa17c-8217-4aee-8874-831ab6ecb04a.png"
+                alt=""
+                loading="lazy"
+              />
+              <div class="cc-badge">FULL</div>
+              <button class="cc-fav">♡</button>
+            </div>
+            <div class="cc-body">
+              <div class="cc-meta">
+                <span>Ballet</span><b></b><span>Advanced</span>
+              </div>
+              <div class="cc-title">Classical Ballet Intensive</div>
+              <div class="cc-inst">Sona Hovhannisyan · Mon/Wed/Fri</div>
+              <div class="cc-foot">
+                <div class="cc-price">15,000 AMD <small>/class</small></div>
+                <div class="cc-spots low">Waitlist</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: SHOP ═══════════ -->
+    <div class="page" id="p-shop">
+      <div style="padding-top: 5rem"></div>
+      <div class="container" style="padding: 2rem var(--pad) 4rem">
+        <h1
+          style="
+            font-family: var(--ff-display);
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+          "
+        >
+          Shop
+        </h1>
+        <p style="color: var(--text2); margin-bottom: 2rem">
+          Premium dancewear, shoes and accessories.
+        </p>
+        <div class="grid4">
+          <div class="card">
+            <div class="card-img" style="aspect-ratio: 3/4">
+              <img
+                src="photos/nano-banana-2_A_sleek_black_premium_dance_duffel_bag_with_subtle_gold_accents_placed_on_polish-0_14b96210-8d53-484b-978b-d66a022dfee8.jpg"
+                alt=""
+                loading="lazy"
+              />
+              <div class="prod-quick">
+                <button class="btn btn-accent btn-sm">Quick Add</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="prod-brand">ArtDance</div>
+              <h3>Premium Dance Bag</h3>
+              <div class="card-price">18,000 AMD</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-img" style="aspect-ratio: 3/4">
+              <img
+                src="photos/nano-banana-2_An_artistic_arrangement_of_professional_dance_shoes___Latin_heels_ballet_slipp-0_bfd55e87-c36e-40a1-baae-68c6aab08f63.jpg"
+                alt=""
+                loading="lazy"
+              />
+              <div class="prod-quick">
+                <button class="btn btn-accent btn-sm">Quick Add</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="prod-brand">ArtDance</div>
+              <h3>Dance Shoes Collection</h3>
+              <div class="card-price">12,500 AMD</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-img" style="aspect-ratio: 3/4">
+              <img
+                src="photos/nano-banana-2_A_neatly_folded_set_of_premium_dance_training_clothes___black_leggings_fitted_-0_1d9c5b91-b6b5-40f8-b2f6-21e77732d82c.jpg"
+                alt=""
+                loading="lazy"
+              />
+              <div class="prod-quick">
+                <button class="btn btn-accent btn-sm">Quick Add</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="prod-brand">ArtDance</div>
+              <h3>Training Apparel Set</h3>
+              <div class="card-price">15,000 AMD</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-img" style="aspect-ratio: 3/4">
+              <img
+                src="photos/nano-banana-2_An_elegant_burgundy_and_gold_gift_card_with_a_subtle_embossed_dance_figure_motif-0_15649766-2675-4c53-b115-05ab4ce79cb7.jpg"
+                alt=""
+                loading="lazy"
+              />
+              <div class="prod-quick">
+                <button class="btn btn-accent btn-sm">Quick Add</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="prod-brand">ArtDance</div>
+              <h3>Gift Card</h3>
+              <div class="card-price">From 5,000 AMD</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: BOOKING CALENDAR ═══════════ -->
+    <div class="page" id="p-booking">
+      <div style="padding-top: 5rem"></div>
+      <div class="container" style="padding: 2rem var(--pad) 4rem">
+        <a
+          style="
+            font-size: 0.82rem;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+          "
+          onclick="go('class')"
+          >← Back to Latin Fusion</a
+        >
+        <h1
+          style="
+            font-family: var(--ff-display);
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+          "
+        >
+          Choose Date & Time
+        </h1>
+        <p style="color: var(--text2); font-size: 0.95rem">
+          Latin Fusion with Anna Mkrtchyan · Pulse Dance Studio
+        </p>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 3rem;
+            margin-top: 2rem;
+          "
+        >
+          <div>
+            <div
+              style="
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 1.5rem;
+              "
+            >
+              <h3 style="font-family: var(--ff-display); font-size: 1.2rem">
+                September 2026
+              </h3>
+              <div style="display: flex; gap: 0.5rem">
+                <button
+                  style="
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    border: 1px solid var(--border);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.3s;
+                    color: var(--text);
+                  "
+                >
+                  ←</button
+                ><button
+                  style="
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    border: 1px solid var(--border);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.3s;
+                    color: var(--text);
+                  "
+                >
+                  →
+                </button>
+              </div>
+            </div>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 0.25rem;
+              "
+            >
+              <div
+                style="
+                  font-size: 0.7rem;
+                  font-weight: 600;
+                  color: var(--text3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                  padding: 0.75rem 0;
+                  text-align: center;
+                "
+              >
+                Mon
+              </div>
+              <div
+                style="
+                  font-size: 0.7rem;
+                  font-weight: 600;
+                  color: var(--text3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                  padding: 0.75rem 0;
+                  text-align: center;
+                "
+              >
+                Tue
+              </div>
+              <div
+                style="
+                  font-size: 0.7rem;
+                  font-weight: 600;
+                  color: var(--text3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                  padding: 0.75rem 0;
+                  text-align: center;
+                "
+              >
+                Wed
+              </div>
+              <div
+                style="
+                  font-size: 0.7rem;
+                  font-weight: 600;
+                  color: var(--text3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                  padding: 0.75rem 0;
+                  text-align: center;
+                "
+              >
+                Thu
+              </div>
+              <div
+                style="
+                  font-size: 0.7rem;
+                  font-weight: 600;
+                  color: var(--text3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                  padding: 0.75rem 0;
+                  text-align: center;
+                "
+              >
+                Fri
+              </div>
+              <div
+                style="
+                  font-size: 0.7rem;
+                  font-weight: 600;
+                  color: var(--text3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                  padding: 0.75rem 0;
+                  text-align: center;
+                "
+              >
+                Sat
+              </div>
+              <div
+                style="
+                  font-size: 0.7rem;
+                  font-weight: 600;
+                  color: var(--text3);
+                  text-transform: uppercase;
+                  letter-spacing: 0.1em;
+                  padding: 0.75rem 0;
+                  text-align: center;
+                "
+              >
+                Sun
+              </div>
+              <div></div>
+              <div></div>
+              <div></div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                1
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                2
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                3
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                4
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                5
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                6
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                7
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                8
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                9
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  background: var(--accent);
+                  color: #fff;
+                  font-weight: 700;
+                  cursor: pointer;
+                  box-shadow: 0 4px 16px var(--accent-glow);
+                "
+              >
+                10
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                11
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                12
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                13
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                14
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                15
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                16
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  border: 1.5px solid var(--accent);
+                  font-weight: 700;
+                  cursor: pointer;
+                  font-size: 0.85rem;
+                "
+              >
+                17
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                18
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                19
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                20
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                21
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                22
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                23
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                24
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                25
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                26
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                27
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                28
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                29
+              </div>
+              <div
+                style="
+                  padding: 0.75rem;
+                  text-align: center;
+                  border-radius: var(--r-md);
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  font-size: 0.85rem;
+                "
+              >
+                30
+              </div>
+              <div></div>
+              <div></div>
+            </div>
+            <h4
+              style="
+                font-size: 0.9rem;
+                font-weight: 600;
+                margin: 1.5rem 0 0.75rem;
+              "
+            >
+              Available Times — Sat, Sep 10
+            </h4>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.5rem;
+              "
+            >
+              <div
+                style="
+                  padding: 0.6rem;
+                  border: 1.5px solid var(--border);
+                  border-radius: var(--r-md);
+                  text-align: center;
+                  font-size: 0.82rem;
+                  color: var(--text3);
+                  cursor: not-allowed;
+                  text-decoration: line-through;
+                "
+              >
+                10:00
+              </div>
+              <div
+                style="
+                  padding: 0.6rem;
+                  border: 1.5px solid var(--border);
+                  border-radius: var(--r-md);
+                  text-align: center;
+                  font-size: 0.82rem;
+                  color: var(--text3);
+                  cursor: not-allowed;
+                  text-decoration: line-through;
+                "
+              >
+                11:30
+              </div>
+              <div
+                style="
+                  padding: 0.6rem;
+                  border: 1.5px solid var(--border);
+                  border-radius: var(--r-md);
+                  text-align: center;
+                  font-size: 0.82rem;
+                  font-weight: 500;
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  color: var(--text);
+                "
+              >
+                14:00
+              </div>
+              <div
+                style="
+                  padding: 0.6rem;
+                  background: var(--accent);
+                  color: #fff;
+                  border-radius: var(--r-md);
+                  text-align: center;
+                  font-size: 0.82rem;
+                  font-weight: 600;
+                  cursor: pointer;
+                  box-shadow: 0 4px 16px var(--accent-glow);
+                "
+              >
+                18:00
+              </div>
+              <div
+                style="
+                  padding: 0.6rem;
+                  border: 1.5px solid var(--border);
+                  border-radius: var(--r-md);
+                  text-align: center;
+                  font-size: 0.82rem;
+                  font-weight: 500;
+                  cursor: pointer;
+                  transition: all 0.3s;
+                  color: var(--text);
+                "
+              >
+                19:30
+              </div>
+              <div
+                style="
+                  padding: 0.6rem;
+                  border: 1.5px solid var(--border);
+                  border-radius: var(--r-md);
+                  text-align: center;
+                  font-size: 0.82rem;
+                  color: var(--text3);
+                  cursor: not-allowed;
+                  text-decoration: line-through;
+                "
+              >
+                21:00
+              </div>
+            </div>
+            <div
+              style="
+                margin-top: 2rem;
+                padding: 1.5rem;
+                background: var(--card);
+                border-radius: var(--r-lg);
+                border: 1px solid var(--border);
+              "
+            >
+              <h4
+                style="
+                  font-size: 0.9rem;
+                  font-weight: 600;
+                  margin-bottom: 0.75rem;
+                "
+              >
+                Location Options
+              </h4>
+              <div style="display: flex; flex-direction: column; gap: 0.5rem">
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.75rem;
+                    border: 1.5px solid var(--accent);
+                    border-radius: var(--r-md);
+                    cursor: pointer;
+                    background: var(--accent-light);
+                  "
+                  ><input
+                    type="radio"
+                    name="loc"
+                    checked
+                    style="accent-color: var(--accent)"
+                  />
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.88rem">
+                      Pulse Dance Studio
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text2)">
+                      Kentron, Yerevan · Included
+                    </div>
+                  </div></label
+                >
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.75rem;
+                    border: 1.5px solid var(--border);
+                    border-radius: var(--r-md);
+                    cursor: pointer;
+                  "
+                  ><input
+                    type="radio"
+                    name="loc"
+                    style="accent-color: var(--accent)"
+                  />
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.88rem">
+                      My Location
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text2)">
+                      +5,000 AMD travel fee
+                    </div>
+                  </div></label
+                >
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    padding: 0.75rem;
+                    border: 1.5px solid var(--border);
+                    border-radius: var(--r-md);
+                    cursor: pointer;
+                  "
+                  ><input
+                    type="radio"
+                    name="loc"
+                    style="accent-color: var(--accent)"
+                  />
+                  <div>
+                    <div style="font-weight: 600; font-size: 0.88rem">
+                      Online / No Location
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text2)">
+                      Video call session
+                    </div>
+                  </div></label
+                >
+              </div>
+            </div>
+          </div>
+          <div style="position: sticky; top: 5rem; align-self: start">
+            <div
+              style="
+                background: var(--card);
+                border-radius: var(--r-xl);
+                padding: 2rem;
+                box-shadow: var(--sh-lg);
+                border: 1px solid var(--border);
+              "
+            >
+              <h3
+                style="
+                  font-family: var(--ff-display);
+                  font-size: 1.2rem;
+                  margin-bottom: 1rem;
+                "
+              >
+                Booking Summary
+              </h3>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.5rem 0;
+                  font-size: 0.88rem;
+                  color: var(--text2);
+                "
+              >
+                <span>Class</span><span>Latin Fusion</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.5rem 0;
+                  font-size: 0.88rem;
+                  color: var(--text2);
+                "
+              >
+                <span>Instructor</span><span>Anna Mkrtchyan</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.5rem 0;
+                  font-size: 0.88rem;
+                  color: var(--text2);
+                "
+              >
+                <span>Date</span><span>Sat, Sep 10</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.5rem 0;
+                  font-size: 0.88rem;
+                  color: var(--text2);
+                "
+              >
+                <span>Time</span><span>18:00 – 19:30</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.5rem 0;
+                  font-size: 0.88rem;
+                  color: var(--text2);
+                "
+              >
+                <span>Duration</span><span>90 min</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.5rem 0;
+                  font-size: 0.88rem;
+                  color: var(--text2);
+                "
+              >
+                <span>Location</span><span>Pulse Studio</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.5rem 0;
+                  font-size: 0.88rem;
+                  color: var(--text2);
+                "
+              >
+                <span>Class Fee</span><span>12,000 AMD</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  padding: 0.75rem 0;
+                  border-top: 1px solid var(--border);
+                  margin-top: 0.5rem;
+                  font-weight: 700;
+                  font-size: 1rem;
+                "
+              >
+                <span>Total</span><span>12,000 AMD</span>
+              </div>
+              <button
+                class="btn btn-accent btn-lg btn-full"
+                style="margin-top: 1.25rem"
+                onclick="go('checkout')"
+              >
+                Continue to Payment →
+              </button>
+              <div
+                style="
+                  text-align: center;
+                  margin-top: 0.75rem;
+                  font-size: 0.72rem;
+                  color: var(--text3);
+                "
+              >
+                Free cancellation up to 24 hours before
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: CART ═══════════ -->
+    <div class="page" id="p-cart">
+      <div style="padding-top: 5rem"></div>
+      <div class="container" style="padding: 2rem var(--pad) 4rem">
+        <h1
+          style="
+            font-family: var(--ff-display);
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 700;
+            margin-bottom: 2rem;
+          "
+        >
+          Your Bag
+        </h1>
+        <div style="display: grid; grid-template-columns: 1fr 360px; gap: 3rem">
+          <div>
+            <div
+              style="
+                display: flex;
+                gap: 1.25rem;
+                padding: 1.5rem;
+                background: var(--card);
+                border-radius: var(--r-lg);
+                margin-bottom: 1rem;
+                border: 1px solid var(--border);
+                transition: all 0.5s;
+              "
+            >
+              <img
+                src="photos/nano-banana-2_A_sleek_black_premium_dance_duffel_bag_with_subtle_gold_accents_placed_on_polish-0_14b96210-8d53-484b-978b-d66a022dfee8.jpg"
+                style="
+                  width: 100px;
+                  height: 100px;
+                  border-radius: var(--r-md);
+                  object-fit: cover;
+                  flex-shrink: 0;
+                "
+              />
+              <div style="flex: 1">
+                <div
+                  style="
+                    font-size: 0.7rem;
+                    color: var(--text3);
+                    text-transform: uppercase;
+                    letter-spacing: 0.1em;
+                  "
+                >
+                  ArtDance
+                </div>
+                <div style="font-weight: 600">Premium Dance Bag</div>
+                <div
+                  style="
+                    font-size: 0.8rem;
+                    color: var(--text2);
+                    margin-bottom: 0.5rem;
+                  "
+                >
+                  Color: Black · Size: Medium
+                </div>
+                <div style="font-weight: 700; color: var(--accent)">
+                  18,000 AMD
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    margin-top: 0.5rem;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      border: 1px solid var(--border);
+                      border-radius: var(--r-md);
+                      overflow: hidden;
+                    "
+                  >
+                    <button
+                      style="
+                        width: 32px;
+                        height: 32px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.9rem;
+                        color: var(--text);
+                      "
+                    >
+                      −</button
+                    ><span
+                      style="
+                        width: 32px;
+                        text-align: center;
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        line-height: 32px;
+                      "
+                      >1</span
+                    ><button
+                      style="
+                        width: 32px;
+                        height: 32px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.9rem;
+                        color: var(--text);
+                      "
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span
+                    style="
+                      margin-left: auto;
+                      font-size: 0.75rem;
+                      color: var(--error);
+                      cursor: pointer;
+                    "
+                    >Remove</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div
+              style="
+                display: flex;
+                gap: 1.25rem;
+                padding: 1.5rem;
+                background: var(--card);
+                border-radius: var(--r-lg);
+                margin-bottom: 1rem;
+                border: 1px solid var(--border);
+                transition: all 0.5s;
+              "
+            >
+              <img
+                src="photos/nano-banana-2_A_neatly_folded_set_of_premium_dance_training_clothes___black_leggings_fitted_-0_1d9c5b91-b6b5-40f8-b2f6-21e77732d82c.jpg"
+                style="
+                  width: 100px;
+                  height: 100px;
+                  border-radius: var(--r-md);
+                  object-fit: cover;
+                  flex-shrink: 0;
+                "
+              />
+              <div style="flex: 1">
+                <div
+                  style="
+                    font-size: 0.7rem;
+                    color: var(--text3);
+                    text-transform: uppercase;
+                    letter-spacing: 0.1em;
+                  "
+                >
+                  ArtDance
+                </div>
+                <div style="font-weight: 600">Training Apparel Set</div>
+                <div
+                  style="
+                    font-size: 0.8rem;
+                    color: var(--text2);
+                    margin-bottom: 0.5rem;
+                  "
+                >
+                  Color: Burgundy · Size: S
+                </div>
+                <div style="font-weight: 700; color: var(--accent)">
+                  15,000 AMD
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    margin-top: 0.5rem;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      border: 1px solid var(--border);
+                      border-radius: var(--r-md);
+                      overflow: hidden;
+                    "
+                  >
+                    <button
+                      style="
+                        width: 32px;
+                        height: 32px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.9rem;
+                        color: var(--text);
+                      "
+                    >
+                      −</button
+                    ><span
+                      style="
+                        width: 32px;
+                        text-align: center;
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        line-height: 32px;
+                      "
+                      >2</span
+                    ><button
+                      style="
+                        width: 32px;
+                        height: 32px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.9rem;
+                        color: var(--text);
+                      "
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span
+                    style="
+                      margin-left: auto;
+                      font-size: 0.75rem;
+                      color: var(--error);
+                      cursor: pointer;
+                    "
+                    >Remove</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div
+              style="
+                display: flex;
+                gap: 1.25rem;
+                padding: 1.5rem;
+                background: var(--card);
+                border-radius: var(--r-lg);
+                margin-bottom: 1rem;
+                border: 1px solid var(--border);
+                transition: all 0.5s;
+              "
+            >
+              <img
+                src="photos/nano-banana-2_An_artistic_arrangement_of_professional_dance_shoes___Latin_heels_ballet_slipp-0_bfd55e87-c36e-40a1-baae-68c6aab08f63.jpg"
+                style="
+                  width: 100px;
+                  height: 100px;
+                  border-radius: var(--r-md);
+                  object-fit: cover;
+                  flex-shrink: 0;
+                "
+              />
+              <div style="flex: 1">
+                <div
+                  style="
+                    font-size: 0.7rem;
+                    color: var(--text3);
+                    text-transform: uppercase;
+                    letter-spacing: 0.1em;
+                  "
+                >
+                  ArtDance
+                </div>
+                <div style="font-weight: 600">Dance Shoes Collection</div>
+                <div
+                  style="
+                    font-size: 0.8rem;
+                    color: var(--text2);
+                    margin-bottom: 0.5rem;
+                  "
+                >
+                  Style: Salsa Heels · Size: 38
+                </div>
+                <div style="font-weight: 700; color: var(--accent)">
+                  12,500 AMD
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    margin-top: 0.5rem;
+                  "
+                >
+                  <div
+                    style="
+                      display: flex;
+                      border: 1px solid var(--border);
+                      border-radius: var(--r-md);
+                      overflow: hidden;
+                    "
+                  >
+                    <button
+                      style="
+                        width: 32px;
+                        height: 32px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.9rem;
+                        color: var(--text);
+                      "
+                    >
+                      −</button
+                    ><span
+                      style="
+                        width: 32px;
+                        text-align: center;
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        line-height: 32px;
+                      "
+                      >1</span
+                    ><button
+                      style="
+                        width: 32px;
+                        height: 32px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.9rem;
+                        color: var(--text);
+                      "
+                    >
+                      +
+                    </button>
+                  </div>
+                  <span
+                    style="
+                      margin-left: auto;
+                      font-size: 0.75rem;
+                      color: var(--error);
+                      cursor: pointer;
+                    "
+                    >Remove</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            style="
+              position: sticky;
+              top: 5rem;
+              align-self: start;
+              background: var(--card);
+              border-radius: var(--r-xl);
+              padding: 2rem;
+              box-shadow: var(--sh-lg);
+              border: 1px solid var(--border);
+              transition: all 0.5s;
+            "
+          >
+            <h3
+              style="
+                font-family: var(--ff-display);
+                font-size: 1.2rem;
+                margin-bottom: 1.25rem;
+              "
+            >
+              Order Summary
+            </h3>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                padding: 0.4rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              <span>Subtotal (4 items)</span><span>60,500 AMD</span>
+            </div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                padding: 0.4rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              <span>Delivery</span
+              ><span style="color: var(--success)">Free</span>
+            </div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                padding: 0.4rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              <span>Discount (WELCOME10)</span
+              ><span style="color: var(--accent)">-6,050 AMD</span>
+            </div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                padding: 0.75rem 0;
+                border-top: 1px solid var(--border);
+                margin-top: 0.5rem;
+                font-weight: 700;
+                font-size: 1rem;
+              "
+            >
+              <span>Total</span><span>54,450 AMD</span>
+            </div>
+            <button
+              class="btn btn-accent btn-lg btn-full"
+              style="margin-top: 1.25rem"
+              onclick="go('checkout')"
+            >
+              Checkout →
+            </button>
+            <div
+              style="
+                display: flex;
+                justify-content: center;
+                gap: 1rem;
+                margin-top: 1rem;
+                font-size: 0.7rem;
+                color: var(--text3);
+              "
+            >
+              <span>🔒 Secure</span><span>📦 Free Returns</span
+              ><span>💳 ARCA / Idram</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ PAGE: CHECKOUT ═══════════ -->
+    <div class="page" id="p-checkout">
+      <div style="padding-top: 5rem"></div>
+      <div class="container" style="padding: 2rem var(--pad) 4rem">
+        <h1
+          style="
+            font-family: var(--ff-display);
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 700;
+            margin-bottom: 2rem;
+          "
+        >
+          Checkout
+        </h1>
+        <div
+          style="
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2.5rem;
+          "
+        >
+          <div
+            style="
+              flex: 1;
+              text-align: center;
+              padding: 1rem;
+              font-size: 0.78rem;
+              font-weight: 600;
+              color: var(--text3);
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              border-bottom: 2px solid transparent;
+            "
+          >
+            Contact
+          </div>
+          <div
+            style="
+              flex: 1;
+              text-align: center;
+              padding: 1rem;
+              font-size: 0.78rem;
+              font-weight: 600;
+              color: var(--text3);
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              border-bottom: 2px solid transparent;
+            "
+          >
+            Delivery
+          </div>
+          <div
+            style="
+              flex: 1;
+              text-align: center;
+              padding: 1rem;
+              font-size: 0.78rem;
+              font-weight: 600;
+              color: var(--accent);
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              border-bottom: 2px solid var(--accent);
+            "
+          >
+            Payment
+          </div>
+          <div
+            style="
+              flex: 1;
+              text-align: center;
+              padding: 1rem;
+              font-size: 0.78rem;
+              font-weight: 600;
+              color: var(--text3);
+              text-transform: uppercase;
+              letter-spacing: 0.08em;
+              border-bottom: 2px solid transparent;
+            "
+          >
+            Confirm
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 400px; gap: 3rem">
+          <div>
+            <div
+              style="
+                background: var(--card);
+                border-radius: var(--r-xl);
+                padding: 2rem;
+                box-shadow: var(--sh);
+                border: 1px solid var(--border);
+                margin-bottom: 1.5rem;
+                transition: all 0.5s;
+              "
+            >
+              <h3
+                style="
+                  font-family: var(--ff-display);
+                  font-size: 1.15rem;
+                  margin-bottom: 1.25rem;
+                "
+              >
+                Payment Method
+              </h3>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(3, 1fr);
+                  gap: 0.75rem;
+                  margin-bottom: 1.5rem;
+                "
+              >
+                <div
+                  style="
+                    padding: 1rem;
+                    border: 1.5px solid var(--accent);
+                    border-radius: var(--r-md);
+                    text-align: center;
+                    cursor: pointer;
+                    background: var(--accent-light);
+                    font-size: 0.82rem;
+                    font-weight: 600;
+                    color: var(--accent);
+                  "
+                >
+                  💳 ARCA
+                </div>
+                <div
+                  style="
+                    padding: 1rem;
+                    border: 1.5px solid var(--border);
+                    border-radius: var(--r-md);
+                    text-align: center;
+                    cursor: pointer;
+                    font-size: 0.82rem;
+                    font-weight: 500;
+                    color: var(--text2);
+                  "
+                >
+                  📱 Idram
+                </div>
+                <div
+                  style="
+                    padding: 1rem;
+                    border: 1.5px solid var(--border);
+                    border-radius: var(--r-md);
+                    text-align: center;
+                    cursor: pointer;
+                    font-size: 0.82rem;
+                    font-weight: 500;
+                    color: var(--text2);
+                  "
+                >
+                  📱 Telcell
+                </div>
+              </div>
+              <div style="margin-bottom: 1rem">
+                <div
+                  style="
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    color: var(--text2);
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    margin-bottom: 0.35rem;
+                  "
+                >
+                  Card Number
+                </div>
+                <input
+                  type="text"
+                  value="•••• •••• •••• 4242"
+                  style="
+                    width: 100%;
+                    padding: 0.75rem 1rem;
+                    border: 1.5px solid var(--border);
+                    border-radius: var(--r-md);
+                    font-size: 0.88rem;
+                    font-family: var(--ff-body);
+                    outline: none;
+                    background: var(--card);
+                    color: var(--text);
+                    transition: border-color 0.3s;
+                  "
+                />
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 1rem;
+                  margin-bottom: 1rem;
+                "
+              >
+                <div>
+                  <div
+                    style="
+                      font-size: 0.75rem;
+                      font-weight: 600;
+                      color: var(--text2);
+                      text-transform: uppercase;
+                      letter-spacing: 0.05em;
+                      margin-bottom: 0.35rem;
+                    "
+                  >
+                    Expiry
+                  </div>
+                  <input
+                    type="text"
+                    value="12/28"
+                    style="
+                      width: 100%;
+                      padding: 0.75rem 1rem;
+                      border: 1.5px solid var(--border);
+                      border-radius: var(--r-md);
+                      font-size: 0.88rem;
+                      font-family: var(--ff-body);
+                      outline: none;
+                      background: var(--card);
+                      color: var(--text);
+                    "
+                  />
+                </div>
+                <div>
+                  <div
+                    style="
+                      font-size: 0.75rem;
+                      font-weight: 600;
+                      color: var(--text2);
+                      text-transform: uppercase;
+                      letter-spacing: 0.05em;
+                      margin-bottom: 0.35rem;
+                    "
+                  >
+                    CVV
+                  </div>
+                  <input
+                    type="text"
+                    value="•••"
+                    style="
+                      width: 100%;
+                      padding: 0.75rem 1rem;
+                      border: 1.5px solid var(--border);
+                      border-radius: var(--r-md);
+                      font-size: 0.88rem;
+                      font-family: var(--ff-body);
+                      outline: none;
+                      background: var(--card);
+                      color: var(--text);
+                    "
+                  />
+                </div>
+              </div>
+              <div>
+                <div
+                  style="
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    color: var(--text2);
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    margin-bottom: 0.35rem;
+                  "
+                >
+                  Cardholder Name
+                </div>
+                <input
+                  type="text"
+                  value="Anna Mkrtchyan"
+                  style="
+                    width: 100%;
+                    padding: 0.75rem 1rem;
+                    border: 1.5px solid var(--border);
+                    border-radius: var(--r-md);
+                    font-size: 0.88rem;
+                    font-family: var(--ff-body);
+                    outline: none;
+                    background: var(--card);
+                    color: var(--text);
+                  "
+                />
+              </div>
+            </div>
+            <div
+              style="
+                background: var(--card);
+                border-radius: var(--r-xl);
+                padding: 2rem;
+                box-shadow: var(--sh);
+                border: 1px solid var(--border);
+                margin-bottom: 1.5rem;
+                transition: all 0.5s;
+              "
+            >
+              <h3
+                style="
+                  font-family: var(--ff-display);
+                  font-size: 1.15rem;
+                  margin-bottom: 1.25rem;
+                "
+              >
+                Billing Address
+              </h3>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 1rem;
+                  margin-bottom: 1rem;
+                "
+              >
+                <div>
+                  <div
+                    style="
+                      font-size: 0.75rem;
+                      font-weight: 600;
+                      color: var(--text2);
+                      text-transform: uppercase;
+                      letter-spacing: 0.05em;
+                      margin-bottom: 0.35rem;
+                    "
+                  >
+                    First Name
+                  </div>
+                  <input
+                    type="text"
+                    value="Anna"
+                    style="
+                      width: 100%;
+                      padding: 0.75rem 1rem;
+                      border: 1.5px solid var(--border);
+                      border-radius: var(--r-md);
+                      font-size: 0.88rem;
+                      font-family: var(--ff-body);
+                      outline: none;
+                      background: var(--card);
+                      color: var(--text);
+                    "
+                  />
+                </div>
+                <div>
+                  <div
+                    style="
+                      font-size: 0.75rem;
+                      font-weight: 600;
+                      color: var(--text2);
+                      text-transform: uppercase;
+                      letter-spacing: 0.05em;
+                      margin-bottom: 0.35rem;
+                    "
+                  >
+                    Last Name
+                  </div>
+                  <input
+                    type="text"
+                    value="Mkrtchyan"
+                    style="
+                      width: 100%;
+                      padding: 0.75rem 1rem;
+                      border: 1.5px solid var(--border);
+                      border-radius: var(--r-md);
+                      font-size: 0.88rem;
+                      font-family: var(--ff-body);
+                      outline: none;
+                      background: var(--card);
+                      color: var(--text);
+                    "
+                  />
+                </div>
+              </div>
+              <div style="margin-bottom: 1rem">
+                <div
+                  style="
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    color: var(--text2);
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                    margin-bottom: 0.35rem;
+                  "
+                >
+                  Address
+                </div>
+                <input
+                  type="text"
+                  value="12 Amiryan Street"
+                  style="
+                    width: 100%;
+                    padding: 0.75rem 1rem;
+                    border: 1.5px solid var(--border);
+                    border-radius: var(--r-md);
+                    font-size: 0.88rem;
+                    font-family: var(--ff-body);
+                    outline: none;
+                    background: var(--card);
+                    color: var(--text);
+                  "
+                />
+              </div>
+              <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem"
+              >
+                <div>
+                  <div
+                    style="
+                      font-size: 0.75rem;
+                      font-weight: 600;
+                      color: var(--text2);
+                      text-transform: uppercase;
+                      letter-spacing: 0.05em;
+                      margin-bottom: 0.35rem;
+                    "
+                  >
+                    City
+                  </div>
+                  <input
+                    type="text"
+                    value="Yerevan"
+                    style="
+                      width: 100%;
+                      padding: 0.75rem 1rem;
+                      border: 1.5px solid var(--border);
+                      border-radius: var(--r-md);
+                      font-size: 0.88rem;
+                      font-family: var(--ff-body);
+                      outline: none;
+                      background: var(--card);
+                      color: var(--text);
+                    "
+                  />
+                </div>
+                <div>
+                  <div
+                    style="
+                      font-size: 0.75rem;
+                      font-weight: 600;
+                      color: var(--text2);
+                      text-transform: uppercase;
+                      letter-spacing: 0.05em;
+                      margin-bottom: 0.35rem;
+                    "
+                  >
+                    Phone
+                  </div>
+                  <input
+                    type="text"
+                    value="+374 99 123 456"
+                    style="
+                      width: 100%;
+                      padding: 0.75rem 1rem;
+                      border: 1.5px solid var(--border);
+                      border-radius: var(--r-md);
+                      font-size: 0.88rem;
+                      font-family: var(--ff-body);
+                      outline: none;
+                      background: var(--card);
+                      color: var(--text);
+                    "
+                  />
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-accent btn-lg">
+              Complete Payment — 54,450 AMD →
+            </button>
+            <div
+              style="
+                display: flex;
+                justify-content: center;
+                gap: 1.25rem;
+                margin-top: 1.5rem;
+                padding-top: 1.5rem;
+                border-top: 1px solid var(--border);
+                font-size: 0.72rem;
+                color: var(--text3);
+              "
+            >
+              <span>🔒 256-bit SSL</span><span>✓ Verified by ARCA</span
+              ><span>🛡 Buyer Protection</span><span>↩ 14-day Returns</span>
+            </div>
+          </div>
+          <div
+            style="
+              position: sticky;
+              top: 5rem;
+              align-self: start;
+              background: var(--card);
+              border-radius: var(--r-xl);
+              padding: 2rem;
+              box-shadow: var(--sh-lg);
+              border: 1px solid var(--border);
+              transition: all 0.5s;
+            "
+          >
+            <h3
+              style="
+                font-family: var(--ff-display);
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+              "
+            >
+              Order Summary
+            </h3>
+            <div
+              style="
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+                margin-bottom: 1rem;
+              "
+            >
+              <div style="display: flex; gap: 0.75rem; align-items: center">
+                <img
+                  src="photos/nano-banana-2_A_sleek_black_premium_dance_duffel_bag_with_subtle_gold_accents_placed_on_polish-0_14b96210-8d53-484b-978b-d66a022dfee8.jpg"
+                  style="
+                    width: 48px;
+                    height: 48px;
+                    border-radius: var(--r-sm);
+                    object-fit: cover;
+                  "
+                />
+                <div style="flex: 1">
+                  <div style="font-size: 0.82rem; font-weight: 600">
+                    Premium Dance Bag
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--text3)">×</div>
+                </div>
+                <div style="font-size: 0.85rem; font-weight: 600">
+                  18,000 AMD
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.75rem; align-items: center">
+                <img
+                  src="nano-banana-2_An_elegant_burgundy_and_gold_gift_card_with_a_subtle_embossed_dance_figure_motif-0_15649766-2675-4c53-b115-05ab4ce79cb7.jpg"
+                  style="
+                    width: 48px;
+                    height: 48px;
+                    border-radius: var(--r-sm);
+                    object-fit: cover;
+                  "
+                />
+                <div style="flex: 1">
+                  <div style="font-size: 0.82rem; font-weight: 600">
+                    Training Apparel Set
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--text3)">×2</div>
+                </div>
+                <div style="font-size: 0.85rem; font-weight: 600">
+                  30,000 AMD
+                </div>
+              </div>
+              <div style="display: flex; gap: 0.75rem; align-items: center">
+                <img
+                  src="photos/nano-banana-2_An_artistic_arrangement_of_professional_dance_shoes___Latin_heels_ballet_slipp-0_bfd55e87-c36e-40a1-baae-68c6aab08f63.jpg"
+                  style="
+                    width: 48px;
+                    height: 48px;
+                    border-radius: var(--r-sm);
+                    object-fit: cover;
+                  "
+                />
+                <div style="flex: 1">
+                  <div style="font-size: 0.82rem; font-weight: 600">
+                    Dance Shoes
+                  </div>
+                  <div style="font-size: 0.72rem; color: var(--text3)">×</div>
+                </div>
+                <div style="font-size: 0.85rem; font-weight: 600">
+                  12,500 AMD
+                </div>
+              </div>
+            </div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                padding: 0.4rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              <span>Subtotal</span><span>60,500 AMD</span>
+            </div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                padding: 0.4rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              <span>Discount</span
+              ><span style="color: var(--accent)">-6,050 AMD</span>
+            </div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                padding: 0.4rem 0;
+                font-size: 0.88rem;
+                color: var(--text2);
+              "
+            >
+              <span>Delivery</span
+              ><span style="color: var(--success)">Free</span>
+            </div>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                padding: 0.75rem 0;
+                border-top: 1px solid var(--border);
+                margin-top: 0.5rem;
+                font-weight: 700;
+                font-size: 1rem;
+              "
+            >
+              <span>Total</span><span>54,450 AMD</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        // THEME
+        var h = document.documentElement,
+          tb = document.getElementById("themeBtn"),
+          dk = false;
+        try {
+          dk = localStorage.getItem("theme") === "dark";
+        } catch (e) {}
+        if (dk) {
+          h.setAttribute("data-theme", "dark");
+          if (tb) tb.textContent = "\u2600\uFE0F";
+        }
+        if (tb)
+          tb.addEventListener("click", function () {
+            dk = !dk;
+            h.setAttribute("data-theme", dk ? "dark" : "light");
+            tb.textContent = dk ? "\u2600\uFE0F" : "\uD83C\uDF19";
+            try {
+              localStorage.setItem("theme", dk ? "dark" : "light");
+            } catch (e) {}
+          });
+
+        // NAV
+        var nav = document.getElementById("nav");
+        window.addEventListener(
+          "scroll",
+          function () {
+            nav.classList.toggle("scrolled", window.scrollY > 60);
+          },
+          { passive: true },
+        );
+
+        // COUNTER
+        function animC(el, t, dec) {
+          dec = dec || 0;
+          var d = 2200,
+            s = performance.now();
+          function tick(n) {
+            var p = Math.min((n - s) / d, 1),
+              v = (1 - Math.pow(1 - p, 4)) * t;
+            el.textContent = dec
+              ? v.toFixed(dec)
+              : Math.floor(v).toLocaleString();
+            if (p < 1) requestAnimationFrame(tick);
+          }
+          requestAnimationFrame(tick);
+        }
+        var co = new IntersectionObserver(
+          function (e) {
+            e.forEach(function (x) {
+              if (x.isIntersecting) {
+                var el = x.target,
+                  t = parseFloat(el.getAttribute("data-count")),
+                  d = parseInt(el.getAttribute("data-dec")) || 0;
+                if (!isNaN(t)) animC(el, t, d);
+                co.unobserve(el);
+              }
+            });
+          },
+          { threshold: 0.5 },
+        );
+        document.querySelectorAll("[data-count]").forEach(function (el) {
+          co.observe(el);
+        });
+
+        // PARALLAX
+        var tk = false;
+        window.addEventListener(
+          "scroll",
+          function () {
+            if (!tk) {
+              requestAnimationFrame(function () {
+                var sy = window.scrollY;
+                // Hero parallax
+                var hi = document.querySelector(".hero-bg img");
+                if (hi && sy < window.innerHeight)
+                  hi.style.transform =
+                    "scale(" +
+                    (1.04 + sy * 0.0002) +
+                    ") translateY(" +
+                    sy * 0.15 +
+                    "px)";
+                // Editorial parallax — background moves slower than content
+                var ed = document.getElementById("editorial");
+                if (ed) {
+                  var r = ed.getBoundingClientRect();
+                  if (r.top < window.innerHeight && r.bottom > 0) {
+                    var progress =
+                      (window.innerHeight - r.top) /
+                      (window.innerHeight + r.height);
+                    var eb = ed.querySelector(".editorial-bg img");
+                    if (eb)
+                      eb.style.transform =
+                        "translateY(" +
+                        (progress - 0.5) * -200 +
+                        "px) scale(1.2)";
+                    var ec = ed.querySelector(".editorial-c");
+                    if (ec)
+                      ec.style.transform =
+                        "translateY(" + (progress - 0.5) * -60 + "px)";
+                    var h2 = ed.querySelector("h2");
+                    if (h2)
+                      h2.style.transform =
+                        "translateY(" +
+                        (progress - 0.5) * -40 +
+                        "px) scale(" +
+                        (1 + (progress - 0.5) * 0.08) +
+                        ")";
+                  }
+                }
+                tk = false;
+              });
+              tk = true;
+            }
+          },
+          { passive: true },
+        );
+
+        // 3D TILT
+        document.querySelectorAll(".cat,.inst,.card").forEach(function (c) {
+          c.addEventListener("mousemove", function (e) {
+            var r = c.getBoundingClientRect(),
+              x = (e.clientX - r.left) / r.width - 0.5,
+              y = (e.clientY - r.top) / r.height - 0.5;
+            c.style.transform =
+              "perspective(800px) rotateY(" +
+              x * 6 +
+              "deg) rotateX(" +
+              -y * 6 +
+              "deg) translateY(-4px) scale(1.01)";
+          });
+          c.addEventListener("mouseleave", function () {
+            c.style.transform = "";
+          });
+        });
+
+        // SCROLL PROGRESS
+        var bar = document.createElement("div");
+        bar.style.cssText =
+          "position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#8B1A2B,#B89A5E);z-index:10001;transition:width .15s;pointer-events:none;width:0";
+        document.body.appendChild(bar);
+        window.addEventListener(
+          "scroll",
+          function () {
+            var h = document.documentElement.scrollHeight - window.innerHeight;
+            bar.style.width = (window.scrollY / h) * 100 + "%";
+          },
+          { passive: true },
+        );
+
+        // CURSOR GLOW
+        var gl = document.createElement("div");
+        gl.style.cssText =
+          "position:fixed;width:300px;height:300px;border-radius:50%;pointer-events:none;z-index:9998;opacity:0;transition:opacity .4s;background:radial-gradient(circle,rgba(139,26,43,.08) 0%,transparent 70%);transform:translate(-50%,-50%)";
+        document.body.appendChild(gl);
+        document.addEventListener("mousemove", function (e) {
+          gl.style.left = e.clientX + "px";
+          gl.style.top = e.clientY + "px";
+          gl.style.opacity = "1";
+        });
+        document.addEventListener("mouseleave", function () {
+          gl.style.opacity = "0";
+        });
+      })();
+    </script>
+
+    <script>
+      function go(page) {
+        document.querySelectorAll(".page").forEach(function (p) {
+          p.classList.remove("active");
+        });
+        document.querySelectorAll(".nav-links a").forEach(function (a) {
+          a.classList.remove("active");
+        });
+        var el = document.getElementById("p-" + page);
+        if (el) {
+          el.classList.add("active");
+        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    </script>
+  </body>
+</html>

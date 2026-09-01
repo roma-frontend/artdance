@@ -1,0 +1,1529 @@
+// ArtDance — модель данных.
+//
+// Принципы:
+//  • Деньги — Int (целые драмы). Decimal не нужен: у AMD нет разменной единицы,
+//    а Int исключает ошибки округления при сравнении сумм.
+//  • Ставки/проценты — Decimal(5,4): фиксируются В МОМЕНТ операции, а не берутся
+//    из конфига при чтении. Изменение комиссии не должно переписывать историю.
+//  • Все временные поля — TIMESTAMPTZ (Prisma DateTime); бизнес-часовой пояс
+//    применяется на уровне приложения (`site.timeZone`).
+//  • Commission/Payout/Refund заложены сразу, даже если в фазе 1 выплаты идут
+//    вручную: дописать marketplace-логику позже дороже, чем предусмотреть схему.
+//  • Каждый внешний вызов, меняющий деньги, идемпотентен через уникальный ключ.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// Prisma 7: строки подключения вынесены из схемы в `prisma.config.ts`.
+datasource db {
+  provider = "postgresql"
+}
+
+/* ═════════════════════════════ ENUMS ═════════════════════════════ */
+
+enum UserRole {
+  CUSTOMER
+  INSTRUCTOR
+  VENUE_OWNER
+  ADMIN
+  SUPPORT
+}
+
+enum DanceStyle {
+  HIP_HOP
+  BALLET
+  SALSA
+  BACHATA
+  CONTEMPORARY
+  HEELS
+  KPOP
+  LATIN
+  TANGO
+  ARMENIAN_FOLK
+  JAZZ
+  BREAKING
+  FLAMENCO
+  BALLROOM
+  AFRO
+  WEDDING_DANCE
+  KIDS
+  STRETCHING
+}
+
+enum SkillLevel {
+  ALL_LEVELS
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  PROFESSIONAL
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED_BY_CUSTOMER
+  CANCELLED_BY_PROVIDER
+  NO_SHOW
+  RESCHEDULED
+  WAITLISTED
+  EXPIRED
+}
+
+enum BookingSubject {
+  CLASS_SESSION
+  PRIVATE_SESSION
+  STUDIO_RENTAL
+  EVENT_TICKET
+}
+
+enum BookingLocationOption {
+  STUDIO
+  CUSTOMER_LOCATION
+  ONLINE
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  PAID
+  PARTIALLY_REFUNDED
+  REFUNDED
+  FAILED
+  CANCELLED
+  CHARGEBACK
+}
+
+enum PaymentMethod {
+  CARD
+  ARCA
+  IDRAM
+  TELCELL
+  ARCA_QR
+  CASH_ON_DELIVERY
+}
+
+enum OrderStatus {
+  CREATED
+  PAID
+  PACKING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum PayoutStatus {
+  SCHEDULED
+  PROCESSING
+  PAID
+  FAILED
+  ON_HOLD
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum LineItemType {
+  CLASS_BOOKING
+  PRIVATE_SESSION
+  STUDIO_RENTAL
+  COURSE_ENROLLMENT
+  EVENT_TICKET
+  PRODUCT
+  GIFT_CARD
+  SUBSCRIPTION
+  TRAVEL_FEE
+  DELIVERY_FEE
+}
+
+enum EventType {
+  WORKSHOP
+  BATTLE
+  MASTERCLASS
+  SHOWCASE
+  SOCIAL
+  COMPETITION
+}
+
+enum VenueAmenity {
+  MIRRORS
+  SOUND_SYSTEM
+  SPRUNG_FLOOR
+  WOOD_FLOOR
+  BARRE
+  SHOWERS
+  LOCKERS
+  CHANGING_ROOM
+  AIR_CONDITIONING
+  NATURAL_LIGHT
+  PARKING
+  WIFI
+  WATER_DISPENSER
+  WHEELCHAIR_ACCESS
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  SUPPRESSED
+}
+
+enum DeliveryMethod {
+  COURIER
+  PICKUP_POINT
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  DUPLICATE
+}
+
+enum Locale {
+  hy
+  ru
+  en
+}
+
+/* ═════════════════════════ ИДЕНТИЧНОСТЬ ═════════════════════════ */
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  phone         String?   @unique
+  phoneVerified Boolean   @default(false)
+  passwordHash  String?
+  name          String
+  avatarKey     String?
+  role          UserRole  @default(CUSTOMER)
+  locale        Locale    @default(hy)
+  timeZone      String    @default("Asia/Yerevan")
+  isActive      Boolean   @default(true)
+  // Отложенное удаление по требованиям ЗРА «О защите персональных данных».
+  deletionRequestedAt DateTime?
+  anonymizedAt        DateTime?
+  lastSeenAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions           Session[]
+  accounts           OauthAccount[]
+  verificationTokens VerificationToken[]
+  notificationPrefs  NotificationPreference[]
+  addresses          Address[]
+  instructor         InstructorProfile?
+  venueMemberships   VenueMember[]
+  bookings           Booking[]           @relation("BookingCustomer")
+  orders             Order[]
+  reviews            Review[]            @relation("ReviewAuthor")
+  favorites          Favorite[]
+  cart               Cart?
+  enrollments        CourseEnrollment[]
+  subscriptions      Subscription[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]          @relation("AuditActor")
+  waitlistEntries    WaitlistEntry[]
+  issuedGiftCards    GiftCard[]          @relation("GiftCardPurchaser")
+
+  @@index([role, isActive])
+  @@index([createdAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model OauthAccount {
+  id             String   @id @default(cuid())
+  userId         String
+  provider       String
+  providerUserId String
+  accessToken    String?
+  refreshToken   String?
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+}
+
+model VerificationToken {
+  id         String   @id @default(cuid())
+  userId     String?
+  identifier String
+  tokenHash  String   @unique
+  purpose    String
+  attempts   Int      @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([identifier, purpose])
+  @@index([expiresAt])
+}
+
+model NotificationPreference {
+  id      String              @id @default(cuid())
+  userId  String
+  channel NotificationChannel
+  type    String
+  enabled Boolean             @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, channel, type])
+}
+
+model Address {
+  id           String   @id @default(cuid())
+  userId       String
+  label        String?
+  recipient    String
+  phone        String
+  country      String   @default("AM")
+  city         String
+  street       String
+  apartment    String?
+  postalCode   String?
+  latitude     Float?
+  longitude    Float?
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ordersDelivery  Order[] @relation("OrderDeliveryAddress")
+
+  @@index([userId])
+}
+
+/* ═════════════════════════ ИНСТРУКТОРЫ ═════════════════════════ */
+
+model InstructorProfile {
+  id              String     @id @default(cuid())
+  userId          String     @unique
+  slug            String     @unique
+  headline        String
+  bio             String
+  styles          DanceStyle[]
+  yearsExperience Int        @default(0)
+  // Базовая ставка за час — «от» в карточке. Конкретные цены в PriceOption.
+  hourlyRateFrom  Int
+  isVerified      Boolean    @default(false)
+  verifiedAt      DateTime?
+  acceptsTravel   Boolean    @default(false)
+  travelRadiusKm  Int?
+  languages       Locale[]
+  // Денормализованные агрегаты: пересчитываются транзакционно при модерации отзыва.
+  ratingAverage   Decimal?   @db.Decimal(3, 2)
+  ratingCount     Int        @default(0)
+  studentCount    Int        @default(0)
+  moderation      ModerationStatus @default(PENDING)
+  publishedAt     DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  translations     InstructorTranslation[]
+  media            MediaAsset[]
+  experiences      InstructorExperience[]
+  priceOptions     PriceOption[]
+  availabilityRules AvailabilityRule[]
+  availabilityExceptions AvailabilityException[]
+  classes          DanceClass[]
+  courses          Course[]
+  bookings         Booking[]
+  events           Event[]
+  payoutAccounts   PayoutAccount[]
+  commissions      CommissionRecord[]
+  reviews          Review[]
+
+  @@index([moderation, isVerified])
+  @@index([ratingAverage])
+}
+
+// Мультиязычный контент вынесен в отдельные таблицы: перевод — это данные,
+// а не колонка `bio_ru`, которую придётся добавлять при каждом новом языке.
+model InstructorTranslation {
+  id           String     @id @default(cuid())
+  instructorId String
+  locale       Locale
+  headline     String
+  bio          String
+
+  instructor InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@unique([instructorId, locale])
+}
+
+model InstructorExperience {
+  id           String    @id @default(cuid())
+  instructorId String
+  title        String
+  organization String?
+  location     String?
+  startYear    Int
+  endYear      Int?
+  sortOrder    Int       @default(0)
+
+  instructor InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@index([instructorId])
+}
+
+// Тарифная опция: «60 мин индивидуально», «90 мин в паре» и т.п.
+model PriceOption {
+  id              String     @id @default(cuid())
+  instructorId    String?
+  roomId          String?
+  label           String
+  durationMinutes Int
+  price           Int
+  maxParticipants Int        @default(1)
+  isActive        Boolean    @default(true)
+
+  instructor InstructorProfile? @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  room       Room?              @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([instructorId, isActive])
+  @@index([roomId, isActive])
+}
+
+/* ═════════════════════════ ПЛОЩАДКИ ═════════════════════════ */
+
+model Venue {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  name          String
+  description   String
+  district      String
+  city          String   @default("Yerevan")
+  addressLine   String
+  latitude      Float
+  longitude     Float
+  phone         String?
+  amenities     VenueAmenity[]
+  openTime      String   @default("08:00")
+  closeTime     String   @default("23:00")
+  ratingAverage Decimal? @db.Decimal(3, 2)
+  ratingCount   Int      @default(0)
+  moderation    ModerationStatus @default(PENDING)
+  publishedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  translations VenueTranslation[]
+  rooms        Room[]
+  members      VenueMember[]
+  media        MediaAsset[]
+  events       Event[]
+  classes      DanceClass[]
+  bookings     Booking[]
+  payoutAccounts PayoutAccount[]
+  commissions  CommissionRecord[]
+  reviews      Review[]
+
+  @@index([city, district])
+  @@index([moderation])
+}
+
+model VenueTranslation {
+  id          String @id @default(cuid())
+  venueId     String
+  locale      Locale
+  name        String
+  description String
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, locale])
+}
+
+model VenueMember {
+  id      String   @id @default(cuid())
+  venueId String
+  userId  String
+  isOwner Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  venue Venue @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, userId])
+}
+
+model Room {
+  id           String   @id @default(cuid())
+  venueId      String
+  name         String
+  areaSqm      Int?
+  capacity     Int
+  amenities    VenueAmenity[]
+  pricePerHour Int
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  venue        Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  media        MediaAsset[]
+  priceOptions PriceOption[]
+  availabilityRules AvailabilityRule[]
+  availabilityExceptions AvailabilityException[]
+  classSessions ClassSession[]
+  bookings     Booking[]
+
+  @@index([venueId, isActive])
+}
+
+/* ═════════════════════════ ДОСТУПНОСТЬ ═════════════════════════ */
+
+// Регулярное расписание: «инструктор работает вт/чт 18:00–22:00».
+// Ресурс — либо инструктор, либо зал; проверяется CHECK-констрейнтом в миграции.
+model AvailabilityRule {
+  id           String  @id @default(cuid())
+  instructorId String?
+  roomId       String?
+  // 0 = воскресенье … 6 = суббота
+  weekday      Int
+  startTime    String
+  endTime      String
+  validFrom    DateTime?
+  validUntil   DateTime?
+  isActive     Boolean @default(true)
+
+  instructor InstructorProfile? @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  room       Room?              @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([instructorId, weekday, isActive])
+  @@index([roomId, weekday, isActive])
+}
+
+// Исключение: отпуск, разовое окно, блокировка.
+model AvailabilityException {
+  id           String   @id @default(cuid())
+  instructorId String?
+  roomId       String?
+  startsAt     DateTime
+  endsAt       DateTime
+  // true = доступно вопреки правилам, false = заблокировано
+  isAvailable  Boolean  @default(false)
+  reason       String?
+
+  instructor InstructorProfile? @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  room       Room?              @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([instructorId, startsAt, endsAt])
+  @@index([roomId, startsAt, endsAt])
+}
+
+// Кратковременная блокировка слота на время оформления оплаты.
+// Уникальность (ресурс, время) не даёт двум клиентам занять один слот.
+model SlotHold {
+  id           String   @id @default(cuid())
+  instructorId String?
+  roomId       String?
+  sessionId    String?
+  startsAt     DateTime
+  endsAt       DateTime
+  // Кто держит: авторизованный пользователь или анонимная сессия корзины.
+  userId       String?
+  anonymousId  String?
+  expiresAt    DateTime
+  extensions   Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@unique([instructorId, startsAt])
+  @@unique([roomId, startsAt])
+  @@index([expiresAt])
+}
+
+/* ═════════════════════════ ЗАНЯТИЯ И КУРСЫ ═════════════════════════ */
+
+model DanceClass {
+  id              String     @id @default(cuid())
+  slug            String     @unique
+  instructorId    String
+  venueId         String?
+  title           String
+  description     String
+  style           DanceStyle
+  level           SkillLevel
+  durationMinutes Int
+  price           Int
+  capacity        Int
+  learningPoints  String[]
+  isTrending      Boolean    @default(false)
+  isActive        Boolean    @default(true)
+  ratingAverage   Decimal?   @db.Decimal(3, 2)
+  ratingCount     Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  instructor   InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  venue        Venue?            @relation(fields: [venueId], references: [id])
+  translations DanceClassTranslation[]
+  media        MediaAsset[]
+  sessions     ClassSession[]
+  reviews      Review[]
+  favorites    Favorite[]
+
+  @@index([style, level, isActive])
+  @@index([instructorId, isActive])
+  @@index([isTrending, isActive])
+}
+
+model DanceClassTranslation {
+  id             String     @id @default(cuid())
+  classId        String
+  locale         Locale
+  title          String
+  description    String
+  learningPoints String[]
+
+  danceClass DanceClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, locale])
+}
+
+// Конкретное проведение занятия в дату/время.
+model ClassSession {
+  id           String   @id @default(cuid())
+  classId      String
+  roomId       String?
+  startsAt     DateTime
+  endsAt       DateTime
+  capacity     Int
+  bookedCount  Int      @default(0)
+  isCancelled  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  danceClass DanceClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  room       Room?      @relation(fields: [roomId], references: [id])
+  bookings   Booking[]
+  waitlist   WaitlistEntry[]
+
+  @@unique([classId, startsAt])
+  @@index([startsAt, isCancelled])
+  @@index([roomId, startsAt])
+}
+
+model WaitlistEntry {
+  id         String   @id @default(cuid())
+  sessionId  String
+  userId     String
+  position   Int
+  notifiedAt DateTime?
+  claimUntil DateTime?
+  createdAt  DateTime @default(now())
+
+  session ClassSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId, position])
+}
+
+model Course {
+  id             String     @id @default(cuid())
+  slug           String     @unique
+  instructorId   String
+  title          String
+  description    String
+  style          DanceStyle
+  level          SkillLevel
+  price          Int
+  coverKey       String?
+  totalMinutes   Int        @default(0)
+  requirements   String[]
+  isPublished    Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  instructor   InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  translations CourseTranslation[]
+  lessons      CourseLesson[]
+  enrollments  CourseEnrollment[]
+  reviews      Review[]
+
+  @@index([style, level, isPublished])
+}
+
+model CourseTranslation {
+  id          String @id @default(cuid())
+  courseId    String
+  locale      Locale
+  title       String
+  description String
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, locale])
+}
+
+model CourseLesson {
+  id              String  @id @default(cuid())
+  courseId        String
+  slug            String
+  title           String
+  description     String?
+  durationMinutes Int
+  videoAssetId    String?
+  sortOrder       Int     @default(0)
+  isPreview       Boolean @default(false)
+
+  course   Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+
+  @@unique([courseId, slug])
+  @@index([courseId, sortOrder])
+}
+
+model CourseEnrollment {
+  id          String   @id @default(cuid())
+  courseId    String
+  userId      String
+  orderId     String?
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  course   Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  progress LessonProgress[]
+
+  @@unique([courseId, userId])
+  @@index([userId])
+}
+
+model LessonProgress {
+  id            String   @id @default(cuid())
+  enrollmentId  String
+  lessonId      String
+  watchedSeconds Int     @default(0)
+  completedAt   DateTime?
+  updatedAt     DateTime @updatedAt
+
+  enrollment CourseEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson     CourseLesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
+}
+
+/* ═════════════════════════ БРОНИРОВАНИЕ ═════════════════════════ */
+
+model Booking {
+  id             String   @id @default(cuid())
+  reference      String   @unique
+  subject        BookingSubject
+  status         BookingStatus @default(PENDING)
+
+  customerId     String
+  instructorId   String?
+  venueId        String?
+  roomId         String?
+  sessionId      String?
+  eventId        String?
+
+  startsAt       DateTime
+  endsAt         DateTime
+  participants   Int      @default(1)
+  locationOption BookingLocationOption @default(STUDIO)
+  customerAddress String?
+
+  // Цены фиксируются в момент брони: изменение прайса не должно менять историю.
+  basePrice      Int
+  travelFee      Int      @default(0)
+  discountAmount Int      @default(0)
+  totalPrice     Int
+  currencyCode   String   @default("AMD")
+
+  // Условия отмены зафиксированы на момент брони — так спор решается по чекам,
+  // а не по текущему состоянию конфига.
+  cancellationWindowHours Int
+  lateCancellationRate    Decimal @db.Decimal(5, 4)
+
+  rescheduleCount Int      @default(0)
+  rescheduledFromId String?
+  cancelledAt     DateTime?
+  cancellationReason String?
+  completedAt     DateTime?
+  notes           String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer   User               @relation("BookingCustomer", fields: [customerId], references: [id])
+  instructor InstructorProfile? @relation(fields: [instructorId], references: [id])
+  venue      Venue?             @relation(fields: [venueId], references: [id])
+  room       Room?              @relation(fields: [roomId], references: [id])
+  session    ClassSession?      @relation(fields: [sessionId], references: [id])
+  event      Event?             @relation(fields: [eventId], references: [id])
+  orderItem  OrderItem?
+  payments   Payment[]
+  reviews    Review[]
+  commission CommissionRecord?
+
+  @@index([customerId, status])
+  @@index([instructorId, startsAt])
+  @@index([roomId, startsAt])
+  @@index([status, startsAt])
+  @@index([startsAt, endsAt])
+}
+
+/* ═════════════════════════ КАТАЛОГ ТОВАРОВ ═════════════════════════ */
+
+model ProductCategory {
+  id        String  @id @default(cuid())
+  slug      String  @unique
+  name      String
+  parentId  String?
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  parent       ProductCategory?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children     ProductCategory[] @relation("CategoryTree")
+  translations ProductCategoryTranslation[]
+  products     Product[]
+
+  @@index([parentId, isActive])
+}
+
+model ProductCategoryTranslation {
+  id         String @id @default(cuid())
+  categoryId String
+  locale     Locale
+  name       String
+
+  category ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, locale])
+}
+
+model Product {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  categoryId  String
+  brand       String?
+  title       String
+  description String
+  basePrice   Int
+  isActive    Boolean @default(true)
+  ratingAverage Decimal? @db.Decimal(3, 2)
+  ratingCount Int     @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category     ProductCategory @relation(fields: [categoryId], references: [id])
+  translations ProductTranslation[]
+  variants     ProductVariant[]
+  media        MediaAsset[]
+  reviews      Review[]
+  favorites    Favorite[]
+
+  @@index([categoryId, isActive])
+}
+
+model ProductTranslation {
+  id          String @id @default(cuid())
+  productId   String
+  locale      Locale
+  title       String
+  description String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locale])
+}
+
+model ProductVariant {
+  id         String  @id @default(cuid())
+  productId  String
+  sku        String  @unique
+  size       String?
+  color      String?
+  price      Int
+  compareAtPrice Int?
+  stock      Int     @default(0)
+  // Резерв под неоплаченные заказы: доступно = stock - reserved.
+  reserved   Int     @default(0)
+  weightGrams Int?
+  isActive   Boolean @default(true)
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productId, isActive])
+  @@index([stock])
+}
+
+/* ═════════════════════════ КОРЗИНА И ЗАКАЗЫ ═════════════════════════ */
+
+model Cart {
+  id          String   @id @default(cuid())
+  userId      String?  @unique
+  anonymousId String?  @unique
+  currencyCode String  @default("AMD")
+  promoCodeId String?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promoCode PromoCode? @relation(fields: [promoCodeId], references: [id])
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String       @id @default(cuid())
+  cartId    String
+  type      LineItemType
+  variantId String?
+  // Для брони — ссылка на удержанный слот, а не на саму бронь.
+  slotHoldId String?
+  quantity  Int          @default(1)
+  unitPrice Int
+  metadata  Json?
+  createdAt DateTime     @default(now())
+
+  cart    Cart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([cartId])
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  orderNumber  String      @unique
+  userId       String?
+  status       OrderStatus @default(CREATED)
+
+  contactEmail String
+  contactPhone String
+  contactName  String
+
+  deliveryMethod   DeliveryMethod?
+  deliveryAddressId String?
+  deliveryNotes    String?
+  pickupPointCode  String?
+
+  subtotal     Int
+  discountTotal Int   @default(0)
+  deliveryFee  Int    @default(0)
+  vatAmount    Int    @default(0)
+  total        Int
+  currencyCode String @default("AMD")
+  promoCodeId  String?
+
+  // Снимок налоговых правил на момент заказа — для перевыпуска счёта.
+  vatRate           Decimal @db.Decimal(5, 4)
+  pricesIncludeVat  Boolean @default(true)
+
+  placedAt   DateTime @default(now())
+  paidAt     DateTime?
+  shippedAt  DateTime?
+  deliveredAt DateTime?
+  cancelledAt DateTime?
+  updatedAt  DateTime @updatedAt
+
+  user            User?      @relation(fields: [userId], references: [id])
+  deliveryAddress Address?   @relation("OrderDeliveryAddress", fields: [deliveryAddressId], references: [id])
+  promoCode       PromoCode? @relation(fields: [promoCodeId], references: [id])
+  items           OrderItem[]
+  payments        Payment[]
+  refunds         Refund[]
+  giftCards       GiftCard[]
+
+  @@index([userId, status])
+  @@index([status, placedAt])
+  @@index([placedAt])
+}
+
+model OrderItem {
+  id         String       @id @default(cuid())
+  orderId    String
+  type       LineItemType
+  // Название сохраняется текстом: товар могут переименовать или удалить,
+  // но в старом заказе должно остаться то, что купили.
+  titleSnapshot String
+  variantId  String?
+  bookingId  String?      @unique
+  quantity   Int          @default(1)
+  unitPrice  Int
+  discountAmount Int      @default(0)
+  lineTotal  Int
+  metadata   Json?
+
+  order      Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant    ProductVariant? @relation(fields: [variantId], references: [id])
+  booking    Booking?        @relation(fields: [bookingId], references: [id])
+  commission CommissionRecord?
+
+  @@index([orderId])
+}
+
+/* ═════════════════════════ ПЛАТЕЖИ ═════════════════════════ */
+
+model Payment {
+  id        String        @id @default(cuid())
+  orderId   String?
+  bookingId String?
+  subscriptionId String?
+
+  provider  String
+  providerTransactionId String? @unique
+  method    PaymentMethod
+  status    PaymentStatus @default(PENDING)
+
+  amount    Int
+  paidAmount Int          @default(0)
+  currencyCode String     @default("AMD")
+
+  // Идемпотентность создания платежа: повторный клик не создаёт вторую попытку.
+  idempotencyKey String   @unique
+
+  failureCode    String?
+  failureMessage String?
+  // Сырой ответ провайдера — доказательство при споре с эквайрером.
+  providerPayload Json?
+
+  authorizedAt DateTime?
+  paidAt       DateTime?
+  failedAt     DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  order        Order?        @relation(fields: [orderId], references: [id])
+  booking      Booking?      @relation(fields: [bookingId], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  refunds      Refund[]
+  webhookEvents WebhookEvent[]
+
+  @@index([status, createdAt])
+  @@index([orderId])
+  @@index([bookingId])
+}
+
+model Refund {
+  id        String        @id @default(cuid())
+  paymentId String
+  orderId   String?
+  amount    Int
+  reason    String
+  status    PaymentStatus @default(PENDING)
+  providerRefundId String? @unique
+  idempotencyKey String   @unique
+  initiatedBy String?
+  providerPayload Json?
+  createdAt DateTime      @default(now())
+  completedAt DateTime?
+
+  payment Payment @relation(fields: [paymentId], references: [id])
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  @@index([paymentId])
+}
+
+// Журнал webhook'ов. `eventId` уникален → повторная доставка от провайдера
+// не приведёт к двойному подтверждению брони.
+model WebhookEvent {
+  id        String        @id @default(cuid())
+  provider  String
+  eventId   String
+  paymentId String?
+  status    WebhookStatus @default(RECEIVED)
+  signatureValid Boolean  @default(false)
+  payload   Json
+  processingError String?
+  receivedAt DateTime     @default(now())
+  processedAt DateTime?
+
+  payment Payment? @relation(fields: [paymentId], references: [id])
+
+  @@unique([provider, eventId])
+  @@index([status, receivedAt])
+}
+
+/* ═════════════════════════ КОМИССИИ И ВЫПЛАТЫ ═════════════════════════ */
+
+model CommissionRecord {
+  id           String  @id @default(cuid())
+  bookingId    String? @unique
+  orderItemId  String? @unique
+  instructorId String?
+  venueId      String?
+
+  grossAmount  Int
+  // Ставка зафиксирована: пересчёт исторических комиссий недопустим.
+  rate         Decimal @db.Decimal(5, 4)
+  platformFee  Int
+  providerNet  Int
+  payoutId     String?
+  // Дата, с которой сумма может попасть в выплату (окно на спор).
+  releaseAt    DateTime
+  createdAt    DateTime @default(now())
+
+  booking    Booking?           @relation(fields: [bookingId], references: [id])
+  orderItem  OrderItem?         @relation(fields: [orderItemId], references: [id])
+  instructor InstructorProfile? @relation(fields: [instructorId], references: [id])
+  venue      Venue?             @relation(fields: [venueId], references: [id])
+  payout     Payout?            @relation(fields: [payoutId], references: [id])
+
+  @@index([instructorId, payoutId])
+  @@index([venueId, payoutId])
+  @@index([releaseAt])
+}
+
+model PayoutAccount {
+  id           String  @id @default(cuid())
+  instructorId String?
+  venueId      String?
+  method       String
+  accountName  String
+  // Реквизиты хранятся замаскированными; полные — только у платёжного оператора.
+  accountMasked String
+  bankName     String?
+  isDefault    Boolean @default(false)
+  isVerified   Boolean @default(false)
+  createdAt    DateTime @default(now())
+
+  instructor InstructorProfile? @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  venue      Venue?             @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  payouts    Payout[]
+
+  @@index([instructorId])
+  @@index([venueId])
+}
+
+model Payout {
+  id          String       @id @default(cuid())
+  reference   String       @unique
+  accountId   String
+  periodStart DateTime
+  periodEnd   DateTime
+  amount      Int
+  currencyCode String      @default("AMD")
+  status      PayoutStatus @default(SCHEDULED)
+  idempotencyKey String    @unique
+  failureReason String?
+  processedAt DateTime?
+  createdAt   DateTime     @default(now())
+
+  account     PayoutAccount      @relation(fields: [accountId], references: [id])
+  commissions CommissionRecord[]
+
+  @@index([status, periodEnd])
+}
+
+/* ═════════════════════════ ПРОМО И ПОДПИСКИ ═════════════════════════ */
+
+model PromoCode {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  type          DiscountType
+  value         Int
+  minOrderTotal Int?
+  maxDiscount   Int?
+  appliesTo     LineItemType[]
+  usageLimit    Int?
+  usageCount    Int          @default(0)
+  perUserLimit  Int          @default(1)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+
+  carts  Cart[]
+  orders Order[]
+
+  @@index([isActive, endsAt])
+}
+
+model GiftCard {
+  id            String   @id @default(cuid())
+  code          String   @unique
+  purchaserId   String?
+  orderId       String?
+  initialAmount Int
+  balance       Int
+  currencyCode  String   @default("AMD")
+  recipientEmail String?
+  message       String?
+  expiresAt     DateTime
+  redeemedAt    DateTime?
+  createdAt     DateTime @default(now())
+
+  purchaser User?  @relation("GiftCardPurchaser", fields: [purchaserId], references: [id])
+  order     Order? @relation(fields: [orderId], references: [id])
+
+  @@index([balance, expiresAt])
+}
+
+model Subscription {
+  id            String             @id @default(cuid())
+  userId        String
+  // ID плана из `src/config/pricing.ts`, а не отдельная таблица: план — это
+  // коммерческое решение в коде, чтобы квоты были типизированы.
+  planId        String
+  interval      BillingInterval
+  status        SubscriptionStatus @default(TRIALING)
+  priceSnapshot Int
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  trialEndsAt   DateTime?
+  cancelAtPeriodEnd Boolean        @default(false)
+  cancelledAt   DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+  usage    SubscriptionUsage[]
+
+  @@index([userId, status])
+  @@index([status, currentPeriodEnd])
+}
+
+// Расход квоты по периодам — чтобы «4 занятия в месяц» проверялось, а не
+// оставалось декларацией на странице тарифов.
+model SubscriptionUsage {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  periodStart    DateTime
+  metric         String
+  used           Int      @default(0)
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, periodStart, metric])
+}
+
+/* ═════════════════════════ СОБЫТИЯ ═════════════════════════ */
+
+model Event {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  type         EventType
+  title        String
+  description  String
+  style        DanceStyle?
+  level        SkillLevel @default(ALL_LEVELS)
+  instructorId String?
+  venueId      String?
+  locationName String?
+  startsAt     DateTime
+  endsAt       DateTime
+  price        Int       @default(0)
+  capacity     Int
+  bookedCount  Int       @default(0)
+  coverKey     String?
+  isPublished  Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  instructor   InstructorProfile? @relation(fields: [instructorId], references: [id])
+  venue        Venue?             @relation(fields: [venueId], references: [id])
+  translations EventTranslation[]
+  bookings     Booking[]
+  media        MediaAsset[]
+
+  @@index([startsAt, isPublished])
+  @@index([type, startsAt])
+}
+
+model EventTranslation {
+  id          String @id @default(cuid())
+  eventId     String
+  locale      Locale
+  title       String
+  description String
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, locale])
+}
+
+/* ═════════════════════════ ОТЗЫВЫ И ИЗБРАННОЕ ═════════════════════════ */
+
+model Review {
+  id           String           @id @default(cuid())
+  authorId     String
+  bookingId    String?
+  instructorId String?
+  classId      String?
+  courseId     String?
+  productId    String?
+  venueId      String?
+  rating       Int
+  body         String
+  // Отзыв только после подтверждённой брони/полученного заказа.
+  isVerifiedPurchase Boolean    @default(false)
+  moderation   ModerationStatus @default(PENDING)
+  moderatedById String?
+  moderatedAt  DateTime?
+  rejectionReason String?
+  editableUntil DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  author     User               @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  booking    Booking?           @relation(fields: [bookingId], references: [id])
+  instructor InstructorProfile? @relation(fields: [instructorId], references: [id])
+  danceClass DanceClass?        @relation(fields: [classId], references: [id])
+  course     Course?            @relation(fields: [courseId], references: [id])
+  product    Product?           @relation(fields: [productId], references: [id])
+  venue      Venue?             @relation(fields: [venueId], references: [id])
+
+  // Один отзыв на бронь.
+  @@unique([authorId, bookingId])
+  @@index([instructorId, moderation])
+  @@index([classId, moderation])
+  @@index([productId, moderation])
+  @@index([moderation, createdAt])
+}
+
+model Favorite {
+  id           String   @id @default(cuid())
+  userId       String
+  classId      String?
+  productId    String?
+  instructorId String?
+  venueId      String?
+  createdAt    DateTime @default(now())
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  danceClass DanceClass? @relation(fields: [classId], references: [id], onDelete: Cascade)
+  product    Product?    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, classId])
+  @@unique([userId, productId])
+  @@unique([userId, instructorId])
+  @@unique([userId, venueId])
+  @@index([userId])
+}
+
+/* ═════════════════════════ МЕДИА ═════════════════════════ */
+
+model MediaAsset {
+  id           String   @id @default(cuid())
+  // Ключ в объектном хранилище (R2). Публичный URL строится приложением.
+  storageKey   String   @unique
+  mimeType     String
+  bytes        Int
+  width        Int?
+  height       Int?
+  // Alt-текст обязателен для a11y; переводы — в MediaAssetTranslation.
+  altText      String
+  blurDataUrl  String?
+  sortOrder    Int      @default(0)
+
+  instructorId String?
+  venueId      String?
+  roomId       String?
+  classId      String?
+  productId    String?
+  eventId      String?
+
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  instructor InstructorProfile? @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  venue      Venue?             @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  room       Room?              @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  danceClass DanceClass?        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  product    Product?           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  event      Event?             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  translations MediaAssetTranslation[]
+
+  @@index([instructorId, sortOrder])
+  @@index([productId, sortOrder])
+  @@index([classId, sortOrder])
+}
+
+model MediaAssetTranslation {
+  id      String @id @default(cuid())
+  assetId String
+  locale  Locale
+  altText String
+
+  asset MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, locale])
+}
+
+/* ═════════════════════════ УВЕДОМЛЕНИЯ И АУДИТ ═════════════════════════ */
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  channel   NotificationChannel
+  type      String
+  status    NotificationStatus  @default(QUEUED)
+  // Полезная нагрузка для шаблона: ключи ICU-плейсхолдеров, а не готовый текст.
+  payload   Json
+  locale    Locale
+  providerMessageId String?
+  failureReason String?
+  scheduledFor DateTime?
+  sentAt    DateTime?
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([status, scheduledFor])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorRole  UserRole?
+  // Email дублируется строкой, а не только FK: журнал остаётся читаемым
+  // после удаления аккаунта.
+  actorEmail String   @default("system")
+  action     String
+  entityType String
+  entityId   String
+  // Только изменённые поля: before/after. Персональные данные маскируются.
+  // Наличие снапшота делает запись откатываемой без event sourcing.
+  diff       Json?
+  reason     String?
+  ipAddress  String?
+  userAgent  String?
+  // Откат возможен один раз: непустое revertedAt блокирует повторный.
+  revertedAt   DateTime?
+  revertedById String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
+}
+
+// Матрица запретов «роль × capability». Отсутствие записи = разрешено:
+// новая capability не ломает поведение существующих админов.
+model AccessControl {
+  id         String   @id @default(cuid())
+  role       UserRole
+  capability String
+  enabled    Boolean  @default(true)
+  updatedById String?
+  updatedAt  DateTime @updatedAt
+
+  @@unique([role, capability])
+  @@index([role])
+}
+
+// Временный доступ вместо смены роли: выдать на два часа и не забыть откатить.
+model AccessGrant {
+  id          String   @id @default(cuid())
+  role        UserRole
+  capability  String
+  reason      String
+  grantedById String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([role, expiresAt])
+  @@index([expiresAt])
+}
+
+// Счётчик неудачных входов. Rate limit ограничивает частоту, lockout —
+// суммарное число попыток: без него медленный перебор проходит под лимитом.
+model LoginAttempt {
+  id             String   @id @default(cuid())
+  // Ключ: email или пара email:ip — задаётся приложением.
+  identifier     String   @unique
+  failures       Int      @default(0)
+  lockedUntil    DateTime?
+  lastFailureAt  DateTime @default(now())
+
+  @@index([lockedUntil])
+}
+
+// Maker-checker: действия из security.approvalRequiredActions выполняются
+// только после подтверждения вторым администратором.
+model ApprovalRequest {
+  id            String           @id @default(cuid())
+  action        String
+  payload       Json
+  status        ModerationStatus @default(PENDING)
+  requestedById String
+  reviewedById  String?
+  reviewNote    String?
+  expiresAt     DateTime
+  createdAt     DateTime         @default(now())
+  reviewedAt    DateTime?
+
+  @@index([status, createdAt])
+  @@index([requestedById])
+}
+
+// Идемпотентность фоновых задач и cron: одна задача — одно исполнение.
+model JobRun {
+  id         String   @id @default(cuid())
+  jobName    String
+  runKey     String
+  startedAt  DateTime @default(now())
+  finishedAt DateTime?
+  succeeded  Boolean?
+  error      String?
+
+  @@unique([jobName, runKey])
+  @@index([jobName, startedAt])
+}

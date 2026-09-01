@@ -1,0 +1,24 @@
+# Переводы строк — LF во всех рабочих копиях, включая Windows.
+#
+# Это не вкусовщина: в проекте есть генерируемые файлы, которые сверяются с
+# репозиторием побайтово — `src/styles/tokens.css` (npm run tokens:check) и
+# `design/seed-media.generated.ts` (npm run media:check). Если Git подставит
+# CRLF при клонировании на Windows, генератор напишет LF, и проверка упадёт на
+# различии, которого никто не делал.
+* text=auto eol=lf
+
+# Бинарные ассеты: не трогать и не пытаться сливать.
+*.webp binary
+*.avif binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+
+# Артефакты, которые не нужно показывать в диффе ревью.
+package-lock.json -diff linguist-generated
+src/styles/tokens.css linguist-generated
+design/seed-media.generated.ts linguist-generated

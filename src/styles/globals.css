@@ -1,0 +1,170 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+/**
+ * Мост между дизайн-токенами и Tailwind v4.
+ *
+ * `@theme inline` регистрирует наши семантические переменные как утилиты:
+ * `bg-surface-card`, `text-content-secondary`, `rounded-lg`, `ease-brand`.
+ * Значения НЕ дублируются — только ссылки на CSS-переменные из tokens.css,
+ * поэтому смена темы работает без пересборки CSS.
+ */
+@theme inline {
+  --color-surface-canvas: var(--surface-canvas);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-card: var(--surface-card);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-surface-cinema: var(--surface-cinema);
+  --color-surface-cinema-alt: var(--surface-cinema-alt);
+
+  --color-content-primary: var(--content-primary);
+  --color-content-secondary: var(--content-secondary);
+  --color-content-tertiary: var(--content-tertiary);
+  --color-content-disabled: var(--content-disabled);
+  --color-content-inverse: var(--content-inverse);
+  --color-content-on-accent: var(--content-on-accent);
+  --color-content-on-cinema: var(--content-on-cinema);
+  --color-content-on-cinema-muted: var(--content-on-cinema-muted);
+
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-border-focus: var(--border-focus);
+  --color-border-on-cinema: var(--border-on-cinema);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-contrast: var(--accent-contrast);
+
+  --color-signal: var(--signal);
+  --color-signal-soft: var(--signal-soft);
+  --color-metal: var(--metal);
+  --color-metal-soft: var(--metal-soft);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-skeleton: var(--skeleton);
+
+  --font-display: var(--font-family-display);
+  --font-sans: var(--font-family-sans);
+  --font-mono: var(--font-family-mono);
+  --font-armenian: var(--font-family-armenian);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-full: var(--radius-full);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
+  --ease-brand: var(--ease-brand);
+  --ease-standard: var(--ease-standard);
+
+  --container-page: var(--layout-container-max-width);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--surface-canvas);
+    color: var(--content-primary);
+    font-family: var(--font-family-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-normal);
+    -webkit-font-smoothing: antialiased;
+    transition:
+      background-color var(--duration-slow) var(--ease-standard),
+      color var(--duration-slow) var(--ease-standard);
+  }
+
+  /* Армянский текст получает свою гарнитуру автоматически, без обёрток в JSX. */
+  :lang(hy) body,
+  :lang(hy) button,
+  :lang(hy) input,
+  :lang(hy) textarea {
+    font-family: var(--font-family-armenian);
+  }
+
+  img,
+  video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font: inherit;
+  }
+
+  ::selection {
+    background: var(--selection-bg);
+    color: var(--selection-fg);
+  }
+
+  :focus-visible {
+    outline: var(--border-width-thick) solid var(--border-focus);
+    outline-offset: 2px;
+  }
+
+  /* Уважаем системную настройку: анимации — украшение, а не функциональность. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /* Единственный контейнер страницы: ширина и боковые отступы из токенов. */
+  .page-container {
+    width: 100%;
+    max-width: var(--layout-container-max-width);
+    margin-inline: auto;
+    padding-inline: var(--layout-gutter);
+  }
+
+  .section-y {
+    padding-block: var(--layout-section-y);
+  }
+
+  /* Полноэкранная кинематографичная секция — «editorial» из брендгайда. */
+  .cinema-surface {
+    background-color: var(--surface-cinema);
+    color: var(--content-on-cinema);
+  }
+}

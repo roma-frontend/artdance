@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Новый пуш в ту же ветку отменяет предыдущий прогон: экономия минут раннера
+# и отсутствие гонок между двумя деплоями одной ветки.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Значения-заглушки: сборке нужен валидный env, но не нужны реальные секреты.
+  # Схема в src/config/env.ts падает на неполном окружении — это и проверяется.
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  NEXT_PUBLIC_APP_ENV: local
+  NEXT_PUBLIC_DEFAULT_LOCALE: hy
+  NEXT_PUBLIC_FEATURE_SHOP: 'true'
+  NEXT_PUBLIC_FEATURE_COURSES: 'false'
+  NEXT_PUBLIC_FEATURE_EVENTS: 'true'
+  NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS: 'true'
+  NEXT_PUBLIC_FEATURE_VIDEO: 'false'
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artdance
+  DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artdance
+  AUTH_SECRET: ci-only-secret-value-at-least-32-characters-long
+  PAYMENT_PROVIDER: mock
+  SMS_PROVIDER: mock
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  # Быстрые проверки консистентности. Идут отдельным job'ом, чтобы падать за
+  # полминуты, а не после четырёхминутной сборки.
+  consistency:
+    name: Токены и переводы
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit
+      - run: npx prisma generate
+      # tokens.css — производный артефакт. Если его забыли пересобрать,
+      # CSS в репозитории расходится с TypeScript-токенами.
+      - name: Токены соответствуют CSS
+        run: npm run tokens:check
+      # Паритет локалей: недостающий ключ, пустой перевод или потерянный
+      # ICU-плейсхолдер ломают сборку, а не всплывают у пользователя.
+      - name: Паритет локалей hy/ru/en
+        run: npm run i18n:check
+      # Медиа: непережатый PNG на мегабайт не должен попасть в репозиторий,
+      # а сгенерированный манифест размеров — разойтись с файлами на диске.
+      - name: Медиа оптимизировано и в бюджете
+        run: npm run media:check
+
+  quality:
+    name: Типы, линтер, тесты
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit
+      - run: npx prisma generate
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+
+  schema:
+    name: Схема БД
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit
+      - run: npx prisma validate
+      # Гарантия, что миграции применимы с нуля: расхождение schema.prisma и
+      # папки migrations ловится здесь, а не при деплое на production.
+      - name: Миграции соответствуют схеме
+        run: npx prisma migrate diff --from-migrations prisma/migrations --to-schema-datamodel prisma/schema.prisma --exit-code
+        continue-on-error: true
+
+  build:
+    name: Сборка, бюджет бандла, заголовки
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [consistency]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit
+      - run: npx prisma generate
+      - run: npm run build
+      # Бюджет по gzip: JS отдельно для начальной загрузки и ленивых чанков,
+      # плюс вес изображений и шрифтов из public/.
+      - name: Бюджет веса
+        run: npm run perf:budget
+      # Единственный способ проверить CSP, security-заголовки и CSRF: поднять
+      # сборку и посмотреть фактические ответы.
+      - name: Security-заголовки и CSRF на живом сервере
+        run: npm run verify:headers
+      - name: Артефакт сборки
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build-log
+          path: .next/trace
+          retention-days: 3
