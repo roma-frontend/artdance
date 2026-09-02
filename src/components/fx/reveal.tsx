@@ -90,9 +90,26 @@ export function Reveal({ children, variant = 'up', as: Component = 'div', classN
   const attributes =
     variant === 'stagger' ? { 'data-stagger': '' } : { 'data-reveal': variant };
 
-  return (
+  const element = (
     <Component ref={ref} className={cn(className)} {...attributes}>
       {children}
     </Component>
   );
+
+  /*
+   * Боковые варианты сдвигают блок на 80px за край экрана. На мобильном Chrome
+   * это расширяет layout viewport на величину переполнения: страница получает
+   * горизонтальную прокрутку, а координаты касаний сдвигаются — кнопки начинают
+   * нажиматься «мимо». В прототипе тот же дефект: на десктопе есть запас по
+   * бокам и он не виден, на телефоне ломает всю шапку.
+   *
+   * Поэтому эффект обрезает себя сам, а не полагается на то, что вызывающая
+   * секция не забудет `overflow-x`. `clip` вместо `hidden`: он не создаёт
+   * контейнер прокрутки, поэтому `position: sticky` внутри продолжает работать.
+   */
+  if (variant === 'left' || variant === 'right') {
+    return <div className="overflow-x-clip">{element}</div>;
+  }
+
+  return element;
 }

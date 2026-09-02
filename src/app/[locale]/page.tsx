@@ -15,7 +15,12 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { HeroVideo } from '@/components/home/hero-video';
+import { CardTilt } from '@/components/fx/card-tilt';
 import { Reveal } from '@/components/fx/reveal';
+import { ClassCard } from '@/components/catalog/class-card';
+import { ClassCarousel } from '@/components/catalog/class-carousel';
+import { InstructorCard } from '@/components/catalog/instructor-card';
+import { VenueCard } from '@/components/catalog/venue-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Media } from '@/components/ui/media';
@@ -163,6 +168,38 @@ export default async function HomePage({ params }: PageProps) {
         </div>
       </section>
 
+      {/* ── POPULAR: горизонтальная лента занятий ── */}
+      <section className="section-y bg-surface-raised">
+        <div className="page-container">
+          <Reveal variant="left" className="mb-8">
+            <SectionHeading
+              eyebrow={t('popular.eyebrow')}
+              title={t('popular.title')}
+              subtitle={t('popular.subtitle')}
+              className="mb-0"
+            />
+          </Reveal>
+
+          <Reveal variant="right">
+            <ClassCarousel label={t('popular.title')}>
+              {content.popularClasses.map((item) => (
+                /*
+                 * Карточка эластична, как в макете (`min-width: 260px;
+                 * max-width: 300px`): на широком экране четыре карточки
+                 * растягиваются и заполняют строку без обрезанного края, на
+                 * узком — сохраняют минимум и лента начинает прокручиваться.
+                 */
+                <li key={item.slug} className="max-w-75 shrink-0 grow basis-65 snap-start">
+                  <CardTilt>
+                    <ClassCard item={item} locale={locale as Locale} />
+                  </CardTilt>
+                </li>
+              ))}
+            </ClassCarousel>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ── EDITORIAL: цитата брендгайда как полноэкранное заявление ── */}
       <section
         className="cinema-surface text-center"
@@ -178,6 +215,72 @@ export default async function HomePage({ params }: PageProps) {
             <Link href={routes.classes()}>{t('editorial.cta')}</Link>
           </Button>
         </Reveal>
+      </section>
+
+      {/* ── INSTRUCTORS ── */}
+      <section className="section-y">
+        <div className="page-container">
+          <Reveal className="mb-12">
+            <SectionHeading
+              align="center"
+              eyebrow={t('instructors.eyebrow')}
+              title={t('instructors.title')}
+              subtitle={t('instructors.subtitle')}
+              className="mb-0"
+            />
+          </Reveal>
+
+          <Reveal
+            as="ul"
+            variant="stagger"
+            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            {content.instructors.slice(0, 4).map((item) => (
+              <li key={item.slug}>
+                <CardTilt>
+                  <InstructorCard item={item} locale={locale as Locale} />
+                </CardTilt>
+              </li>
+            ))}
+          </Reveal>
+
+          <div className="mt-10 text-center">
+            <Button asChild variant="outline">
+              <Link href={routes.instructors()}>{tCommon('actions.viewAll')}</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* ── STUDIOS ── */}
+      <section className="section-y bg-surface-raised">
+        <div className="page-container">
+          <Reveal className="mb-12">
+            <SectionHeading
+              align="center"
+              eyebrow={t('studios.eyebrow')}
+              title={t('studios.title')}
+              subtitle={t('studios.subtitle')}
+              className="mb-0"
+            />
+          </Reveal>
+
+          <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {content.venues.map((item) => (
+              <li key={item.slug}>
+                <CardTilt>
+                  <VenueCard item={item} locale={locale as Locale} />
+                </CardTilt>
+              </li>
+            ))}
+          </Reveal>
+
+          <div className="mt-10 text-center">
+            <Button asChild variant="outline">
+              <Link href={routes.studios()}>{tCommon('actions.viewAll')}</Link>
+            </Button>
+          </div>
+        </div>
       </section>
 
       {/* ── PRICING: суммы и квоты приходят из config/pricing, не из разметки ── */}

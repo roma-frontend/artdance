@@ -101,6 +101,7 @@ const ru: Messages = {
       students: 'Ученики',
       experience: 'Опыт',
       verified: 'Проверен',
+      andMore: '+{count} ещё',
       optional: 'необязательно',
       required: 'обязательно',
       language: 'Язык',

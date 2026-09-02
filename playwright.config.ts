@@ -16,6 +16,15 @@
  */
 
 import { defineConfig, devices } from '@playwright/test';
+import { config as loadEnv } from 'dotenv';
+
+/*
+ * Переменные окружения нужны самому тест-процессу, а не только серверу: тесты
+ * импортируют слой конфигурации (`business.ts`, `media.ts`), а он валидирует
+ * окружение при импорте — и падает раньше, чем начнётся первый тест. В CI файла
+ * нет, значения приходят из окружения workflow, и отсутствие файла не ошибка.
+ */
+loadEnv({ path: '.env.local' });
 
 const PORT = 3100;
 const BASE_URL = `http://127.0.0.1:${PORT}`;

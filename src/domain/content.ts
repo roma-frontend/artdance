@@ -85,8 +85,71 @@ export interface HomeStyleTile {
   classCount: number;
 }
 
+/**
+ * Занятие в подборке главной.
+ *
+ * Здесь нет `scheduleLabel: 'Saturday, 18:00'`, хотя в прототипе подпись именно
+ * такая: название дня недели зависит от локали, и строка из данных означала бы
+ * английский день на армянской странице. Поэтому расписание приходит числами, а
+ * читаемый вид собирает компонент через форматтер локали.
+ */
+export interface HomeClassCard {
+  slug: string;
+  /** Название занятия — контент, в production с переводами из БД. */
+  title: string;
+  /** Значение `DanceStyle`: подпись берётся из i18n. */
+  style: string;
+  /** Значение `SkillLevel`: подпись берётся из i18n. */
+  level: string;
+  instructorName: string;
+  /** День недели: 0 — воскресенье, как в `Date.getDay()`. */
+  weekday: number;
+  /** Время начала в формате `HH:mm` — 24 часа, без локали. */
+  startTime: string;
+  durationMinutes: number;
+  price: number;
+  spotsLeft: number;
+  /** Открыт ли лист ожидания при заполненной группе. */
+  waitlistOpen: boolean;
+  /** Бейдж «в тренде». Взаимоисключающий с «мест нет». */
+  isTrending: boolean;
+  image: MediaRef;
+}
+
+export interface HomeInstructorCard {
+  slug: string;
+  name: string;
+  /** Направления одной строкой: `Salsa · Latin · Bachata`. */
+  headline: string;
+  /** Значения `DanceStyle` — для ссылок и подписей. */
+  styles: readonly string[];
+  yearsExperience: number;
+  hourlyRateFrom: number;
+  ratingAverage: number;
+  ratingCount: number;
+  isVerified: boolean;
+  image: MediaRef;
+}
+
+export interface HomeVenueCard {
+  slug: string;
+  name: string;
+  description: string;
+  /** Район города. В production — из адреса площадки. */
+  district: string;
+  /** Значения `VenueAmenity`: подписи берутся из i18n. */
+  amenities: readonly string[];
+  pricePerHour: number;
+  ratingAverage: number;
+  ratingCount: number;
+  image: MediaRef;
+}
+
 export interface HomeContent {
   hero: HomeHeroContent;
   styleTiles: readonly HomeStyleTile[];
   editorial: { image: MediaRef };
+  popularClasses: readonly HomeClassCard[];
+  instructors: readonly HomeInstructorCard[];
+  venues: readonly HomeVenueCard[];
 }

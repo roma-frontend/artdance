@@ -104,6 +104,7 @@ const hy: Messages = {
       students: "Սովորողներ",
       experience: "Փորձ",
       verified: "Հաստատված",
+      andMore: "+{count} ևս",
       optional: "ոչ պարտադիր",
       required: "պարտադիր",
       language: "Լեզու",

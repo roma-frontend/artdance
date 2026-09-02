@@ -21,7 +21,15 @@
 
 import 'server-only';
 
-import { demoHeroStats, demoMediaAlt, demoStyleTiles } from '../../../prisma/fixtures/demo';
+import {
+  demoClasses,
+  demoHeroStats,
+  demoInstructors,
+  demoMediaAlt,
+  demoStyleTiles,
+  demoVenues,
+} from '../../../prisma/fixtures/demo';
+import { booking } from '@/config';
 import type { HomeContent, LocalizedText, MediaRef, VideoRef } from '@/domain/content';
 
 /**
@@ -57,6 +65,15 @@ function heroVideo(): VideoRef | null {
 }
 
 export function getHomeContent(): HomeContent {
+  /** Имя инструктора для карточки занятия: в БД это join, здесь — поиск по slug. */
+  const instructorName = (slug: string): string => {
+    const instructor = demoInstructors.find((item) => item.slug === slug);
+    if (!instructor) {
+      throw new Error(`[content] Занятие ссылается на неизвестного инструктора «${slug}».`);
+    }
+    return instructor.name;
+  };
+
   return {
     hero: {
       video: heroVideo(),
@@ -71,5 +88,50 @@ export function getHomeContent(): HomeContent {
     editorial: {
       image: mediaRef('editorial-rhythm'),
     },
+    /**
+     * «Популярное сейчас». Сегодня — порядок фикстуры (сначала трендовые), в
+     * production — сортировка по числу броней за `dataRevalidate` последних дней.
+     */
+    popularClasses: [...demoClasses]
+      .sort((a, b) => Number(b.isTrending) - Number(a.isTrending))
+      .map((item) => ({
+        slug: item.slug,
+        title: item.title,
+        style: item.style,
+        level: item.level,
+        instructorName: instructorName(item.instructorSlug),
+        weekday: item.weekday,
+        startTime: item.startTime,
+        durationMinutes: item.durationMinutes,
+        price: item.price,
+        spotsLeft: item.spotsLeft,
+        /** Лист ожидания включается флагом бизнес-правил, а не полем контента. */
+        waitlistOpen: booking.waitlistEnabled,
+        isTrending: item.isTrending,
+        image: mediaRef(item.coverAsset ?? item.asset),
+      })),
+    instructors: demoInstructors.map((item) => ({
+      slug: item.slug,
+      name: item.name,
+      headline: item.headline,
+      styles: item.styles,
+      yearsExperience: item.yearsExperience,
+      hourlyRateFrom: item.hourlyRateFrom,
+      ratingAverage: item.ratingAverage,
+      ratingCount: item.ratingCount,
+      isVerified: item.isVerified,
+      image: mediaRef(item.asset),
+    })),
+    venues: demoVenues.map((item) => ({
+      slug: item.slug,
+      name: item.name,
+      description: item.description,
+      district: item.district,
+      amenities: item.amenities,
+      pricePerHour: item.pricePerHour,
+      ratingAverage: item.ratingAverage,
+      ratingCount: item.ratingCount,
+      image: mediaRef(item.asset),
+    })),
   };
 }

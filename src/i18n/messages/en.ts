@@ -106,6 +106,7 @@ const en = {
       students: 'Students',
       experience: 'Experience',
       verified: 'Verified',
+      andMore: '+{count} more',
       optional: 'optional',
       required: 'required',
       language: 'Language',
