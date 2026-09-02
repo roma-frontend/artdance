@@ -92,7 +92,8 @@ jobs:
         continue-on-error: true
 
   build:
-    name: Сборка, бюджет бандла, заголовки    runs-on: ubuntu-latest
+    name: Сборка, бюджет бандла, заголовки
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [consistency]
     steps:
@@ -119,7 +120,6 @@ jobs:
           name: next-build-log
           path: .next/trace
           retention-days: 3
-
 
   # Поведение в настоящем браузере: ловушка фокуса, Esc, порядок слоёв,
   # раскладка на трёх ширинах. Unit-тесты на эти свойства ответить не могут,
