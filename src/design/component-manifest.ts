@@ -650,10 +650,15 @@ export const componentManifest: readonly ComponentSpec[] = [
     states: ['hidden', 'visible', 'reduced-motion'],
     notes:
       'Появился в версии 02.09.2026 и применён почти ко всем секциям. Параметры — ' +
-      'motion.reveal и motion.stagger. Критично: при prefers-reduced-motion блок должен ' +
-      'сразу получать конечное состояние, а не оставаться прозрачным — иначе контент ' +
-      'просто не виден. То же при отключённом JS: начальная непрозрачность задаётся ' +
-      'только после подписки observer.',
+      'motion.reveal и motion.stagger, они же попадают в CSS-переменные генератором ' +
+      'токенов: смещение «60px» знают и CSS (переход), и JS (порог наблюдателя). ' +
+      'КРИТИЧНО и исправлено против макета: скрытое состояние объявлено только внутри ' +
+      '@media (scripting: enabled) and (prefers-reduced-motion: no-preference). В прототипе ' +
+      '`.reveal { opacity: 0 }` задано статически — без JavaScript страница остаётся пустой, ' +
+      'это потеря контента, а не потеря анимации. Наблюдатель один на страницу, а не по ' +
+      'одному на секцию; готовность помечается атрибутом data-revealed прямо на узле, без ' +
+      'состояния React — за появлением не следует никакой логики, и рендер секции ради ' +
+      'атрибута не нужен.',
   },
   {
     name: 'ScrollProgress',
@@ -664,9 +669,14 @@ export const componentManifest: readonly ComponentSpec[] = [
     screens: ['all'],
     states: ['hidden', 'visible'],
     notes:
-      'В макете — элемент с inline-стилями, ширина пересчитывается на каждый скролл. ' +
-      'В продукте: высота и порог из motion.scrollProgress, обновление через ' +
-      'requestAnimationFrame, aria-hidden (это декорация, а не индикатор прогресса задачи).',
+      'В макете — элемент, создаваемый скриптом с инлайновыми стилями, ширина ' +
+      'пересчитывается на каждое событие скролла. В продукте: высота, слой и порог из ' +
+      'motion.scrollProgress, обновление через requestAnimationFrame, transform: scaleX ' +
+      'вместо width (width анимируется через layout, transform — через композитор), ' +
+      'aria-hidden (это декорация, а не индикатор выполнения задачи). Начальное состояние ' +
+      'задаётся тем же свойством transform, что и обновление из скрипта: утилита scale-x-0 ' +
+      'в Tailwind v4 пишет в отдельное свойство scale, из-за чего полоса на каждой загрузке ' +
+      'мигала на всю ширину. На короткой странице скрыта.',
   },
   {
     name: 'PointerGlow',
@@ -678,7 +688,25 @@ export const componentManifest: readonly ComponentSpec[] = [
     states: ['idle', 'active', 'disabled'],
     notes:
       'Только при (hover: hover) and (pointer: fine) — на touch эффект бессмысленен и ' +
-      'стоит кадров. Отключается при prefers-reduced-motion. Параметры — motion.pointerGlow.',
+      'стоит кадров. При prefers-reduced-motion не существует в DOM вообще, а не скрыт ' +
+      'стилями. Цвет — accent-soft, тот же акцент под 8%, что и в макете. Позиция ' +
+      'обновляется мимо состояния React: движение мыши даёт десятки событий в секунду. ' +
+      'Слой — z-sticky: над контентом, но под шапкой, иначе пятно размывало бы навигацию.',
+  },
+  {
+    name: 'CardTilt',
+    path: 'components/fx/card-tilt.tsx',
+    role: '3D-наклон карточки под курсором',
+    wave: 'catalog',
+    prototypeClasses: [],
+    screens: ['home', 'discover', 'instructors', 'studios', 'shop'],
+    states: ['idle', 'tilting', 'disabled'],
+    notes:
+      'Эффект есть в прототипе (.cat, .inst, .card), но его не было в этой карте: он живёт ' +
+      'в inline-JS и применяется к трём классам сразу. Параметры вынесены в motion.cardTilt. ' +
+      'Реализуется вместе с карточками волны catalog: обёртка без карточки непроверяема. ' +
+      'Наклон обязан складываться с hover-подъёмом карточки, а не спорить с ним, и ' +
+      'отключаться на touch и при prefers-reduced-motion.',
   },
 ];
 

@@ -13,6 +13,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { schemeTokens, textStyles, tokens } from '../src/design/tokens/index.ts';
+import { motion } from '../src/design/motion.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_FILE = join(HERE, '..', 'src', 'styles', 'tokens.css');
@@ -171,6 +172,105 @@ function renderClassNames(): string {
   ].join('\n');
 }
 
+/**
+ * Параметры сценариев движения, которые нужны и CSS, и JavaScript.
+ *
+ * Появление секций описано в CSS (переход и конечное состояние), а запускается
+ * из JS (IntersectionObserver с порогом и rootMargin). Смещение «60px» знают оба
+ * — значит, оно обязано существовать в одном месте. Источник — `motion.ts`,
+ * здесь только перенос с добавлением единиц.
+ *
+ * Соответствие вручную, а не автоматическим обходом объекта: в TS значения
+ * лежат числами (`durationMs: 900`), а CSS нужны единицы, и `--…-ms: 900`
+ * было бы непригодно для `transition`.
+ */
+function buildMotionBlock(): string {
+  const entries: Flat = [
+    ['reveal-duration', `${motion.reveal.durationMs}ms`],
+    ['reveal-easing', motion.reveal.easing],
+    ['reveal-offset-up', motion.reveal.offset.up],
+    ['reveal-offset-side', motion.reveal.offset.side],
+    ['reveal-scale-from', String(motion.reveal.offset.scale)],
+    ['stagger-duration', `${motion.stagger.durationMs}ms`],
+    ['stagger-base-delay', `${motion.stagger.baseDelayMs}ms`],
+    ['stagger-step', `${motion.stagger.stepMs}ms`],
+    ['stagger-offset', `${motion.stagger.offsetPx}px`],
+    ['scroll-progress-height', `${motion.scrollProgress.heightPx}px`],
+    ['scroll-progress-transition', `${motion.scrollProgress.transitionMs}ms`],
+    ['pointer-glow-size', `${motion.pointerGlow.sizePx}px`],
+    ['pointer-glow-fade', `${motion.pointerGlow.fadeMs}ms`],
+    ['card-tilt-perspective', `${motion.cardTilt.perspectivePx}px`],
+    ['card-tilt-rotate', `${motion.cardTilt.maxRotateDeg}deg`],
+    ['card-tilt-lift', `${motion.cardTilt.liftPx}px`],
+    ['card-tilt-scale', String(motion.cardTilt.scale)],
+  ];
+  return block(':root', entries);
+}
+
+/** Задержки stagger: по одному правилу на позицию ребёнка, до `maxChildren`. */
+function buildStaggerDelays(): string {
+  const rules: string[] = [];
+  for (let index = 1; index <= motion.stagger.maxChildren; index += 1) {
+    rules.push(
+      `  [data-stagger][data-revealed] > *:nth-child(${index}) {\n` +
+        `    transition-delay: calc(var(--stagger-base-delay) + var(--stagger-step) * ${index - 1});\n` +
+        `  }`,
+    );
+  }
+  return rules.join('\n');
+}
+
+/** Правила появления: скрытое состояние, конечное состояние и задержки stagger. */
+function buildRevealRules(): string {
+  return [
+    '@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {',
+    '  [data-reveal] {',
+    '    opacity: 0;',
+    '    transition:',
+    '      opacity var(--reveal-duration) var(--reveal-easing),',
+    '      transform var(--reveal-duration) var(--reveal-easing);',
+    '  }',
+    '',
+    '  [data-reveal="up"] {',
+    '    transform: translateY(var(--reveal-offset-up));',
+    '  }',
+    '',
+    '  [data-reveal="left"] {',
+    '    transform: translateX(calc(var(--reveal-offset-side) * -1));',
+    '  }',
+    '',
+    '  [data-reveal="right"] {',
+    '    transform: translateX(var(--reveal-offset-side));',
+    '  }',
+    '',
+    '  [data-reveal="scale"] {',
+    '    transform: scale(var(--reveal-scale-from));',
+    '  }',
+    '',
+    '  [data-reveal][data-revealed] {',
+    '    opacity: 1;',
+    '    transform: none;',
+    '  }',
+    '',
+    '  /* Контейнер stagger сам не двигается — двигаются его дети. */',
+    '  [data-stagger] > * {',
+    '    opacity: 0;',
+    '    transform: translateY(var(--stagger-offset));',
+    '    transition:',
+    '      opacity var(--stagger-duration) var(--reveal-easing),',
+    '      transform var(--stagger-duration) var(--reveal-easing);',
+    '  }',
+    '',
+    '  [data-stagger][data-revealed] > * {',
+    '    opacity: 1;',
+    '    transform: none;',
+    '  }',
+    '',
+    buildStaggerDelays(),
+    '}',
+  ].join('\n');
+}
+
 function render(): string {
   return [
     BANNER,
@@ -179,6 +279,8 @@ function render(): string {
     '',
     buildScaleBlock(),
     '',
+    buildMotionBlock(),
+    '',
     buildSchemeBlocks(),
     '',
     '/* Semantic text styles — используйте data-text="heading-2" или класс .text-heading-2 */',
@@ -186,6 +288,21 @@ function render(): string {
     '',
     '/* Шкалы без theme-namespace в Tailwind v4 — объявлены утилитами явно. */',
     buildScaleUtilities(),
+    '',
+    '/*',
+    ' * Появление блоков при прокрутке.',
+    ' *',
+    ' * Скрытое состояние объявлено ТОЛЬКО внутри двух условий:',
+    ' *   • `scripting: enabled` — без JavaScript наблюдатель не запустится и',
+    ' *     контент остался бы навсегда прозрачным. В прототипе именно так:',
+    ' *     `.reveal { opacity: 0 }` в статическом CSS. Это не украшение, это',
+    ' *     потеря контента, поэтому условие обязательно;',
+    ' *   • `prefers-reduced-motion: no-preference` — при просьбе убрать движение',
+    ' *     блок обязан сразу быть в конечном состоянии, а не появляться мгновенно.',
+    ' *',
+    ' * Значения смещений и длительностей — из `src/design/motion.ts`.',
+    ' */',
+    buildRevealRules(),
     '',
   ].join('\n');
 }

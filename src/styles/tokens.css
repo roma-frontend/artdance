@@ -99,6 +99,7 @@
   --z-raised: 10;
   --z-sticky: 100;
   --z-header: 1000;
+  --z-scroll-progress: 1050;
   --z-dropdown: 1100;
   --z-drawer: 1200;
   --z-modal: 1300;
@@ -123,6 +124,26 @@
   --scrim-bottom-soft: linear-gradient(to top, rgba(11,10,9,0.70), transparent);
   --scrim-hero-diagonal: linear-gradient(160deg, rgba(11,10,9,0.92) 0%, rgba(11,10,9,0.60) 35%, rgba(139,26,43,0.25) 100%);
   --scrim-editorial-radial: radial-gradient(ellipse at center, rgba(110,15,28,0.30) 0%, rgba(11,10,9,0.90) 70%);
+}
+
+:root {
+  --reveal-duration: 900ms;
+  --reveal-easing: cubic-bezier(0.16, 1, 0.3, 1);
+  --reveal-offset-up: 60px;
+  --reveal-offset-side: 80px;
+  --reveal-scale-from: 0.85;
+  --stagger-duration: 700ms;
+  --stagger-base-delay: 50ms;
+  --stagger-step: 70ms;
+  --stagger-offset: 40px;
+  --scroll-progress-height: 3px;
+  --scroll-progress-transition: 150ms;
+  --pointer-glow-size: 300px;
+  --pointer-glow-fade: 400ms;
+  --card-tilt-perspective: 800px;
+  --card-tilt-rotate: 6deg;
+  --card-tilt-lift: -4px;
+  --card-tilt-scale: 1.01;
 }
 
 :root,
@@ -418,6 +439,10 @@
   z-index: var(--z-header);
 }
 
+@utility z-scroll-progress {
+  z-index: var(--z-scroll-progress);
+}
+
 @utility z-dropdown {
   z-index: var(--z-dropdown);
 }
@@ -444,4 +469,86 @@
 
 @utility z-command-palette {
   z-index: var(--z-command-palette);
+}
+
+/*
+ * Появление блоков при прокрутке.
+ *
+ * Скрытое состояние объявлено ТОЛЬКО внутри двух условий:
+ *   • `scripting: enabled` — без JavaScript наблюдатель не запустится и
+ *     контент остался бы навсегда прозрачным. В прототипе именно так:
+ *     `.reveal { opacity: 0 }` в статическом CSS. Это не украшение, это
+ *     потеря контента, поэтому условие обязательно;
+ *   • `prefers-reduced-motion: no-preference` — при просьбе убрать движение
+ *     блок обязан сразу быть в конечном состоянии, а не появляться мгновенно.
+ *
+ * Значения смещений и длительностей — из `src/design/motion.ts`.
+ */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-reveal] {
+    opacity: 0;
+    transition:
+      opacity var(--reveal-duration) var(--reveal-easing),
+      transform var(--reveal-duration) var(--reveal-easing);
+  }
+
+  [data-reveal="up"] {
+    transform: translateY(var(--reveal-offset-up));
+  }
+
+  [data-reveal="left"] {
+    transform: translateX(calc(var(--reveal-offset-side) * -1));
+  }
+
+  [data-reveal="right"] {
+    transform: translateX(var(--reveal-offset-side));
+  }
+
+  [data-reveal="scale"] {
+    transform: scale(var(--reveal-scale-from));
+  }
+
+  [data-reveal][data-revealed] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* Контейнер stagger сам не двигается — двигаются его дети. */
+  [data-stagger] > * {
+    opacity: 0;
+    transform: translateY(var(--stagger-offset));
+    transition:
+      opacity var(--stagger-duration) var(--reveal-easing),
+      transform var(--stagger-duration) var(--reveal-easing);
+  }
+
+  [data-stagger][data-revealed] > * {
+    opacity: 1;
+    transform: none;
+  }
+
+  [data-stagger][data-revealed] > *:nth-child(1) {
+    transition-delay: calc(var(--stagger-base-delay) + var(--stagger-step) * 0);
+  }
+  [data-stagger][data-revealed] > *:nth-child(2) {
+    transition-delay: calc(var(--stagger-base-delay) + var(--stagger-step) * 1);
+  }
+  [data-stagger][data-revealed] > *:nth-child(3) {
+    transition-delay: calc(var(--stagger-base-delay) + var(--stagger-step) * 2);
+  }
+  [data-stagger][data-revealed] > *:nth-child(4) {
+    transition-delay: calc(var(--stagger-base-delay) + var(--stagger-step) * 3);
+  }
+  [data-stagger][data-revealed] > *:nth-child(5) {
+    transition-delay: calc(var(--stagger-base-delay) + var(--stagger-step) * 4);
+  }
+  [data-stagger][data-revealed] > *:nth-child(6) {
+    transition-delay: calc(var(--stagger-base-delay) + var(--stagger-step) * 5);
+  }
+  [data-stagger][data-revealed] > *:nth-child(7) {
+    transition-delay: calc(var(--stagger-base-delay) + var(--stagger-step) * 6);
+  }
+  [data-stagger][data-revealed] > *:nth-child(8) {
+    transition-delay: calc(var(--stagger-base-delay) + var(--stagger-step) * 7);
+  }
 }

@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { absoluteUrl, seo, site } from '@/config';
+import { PointerGlow } from '@/components/fx/pointer-glow';
+import { ScrollProgress } from '@/components/fx/scroll-progress';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SkipToContent } from '@/components/layout/skip-to-content';
 import { fontVariables } from '@/design/fonts';
@@ -93,6 +95,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       <body>
         <NextIntlClientProvider>
           <SkipToContent />
+          <ScrollProgress />
+          <PointerGlow />
           <SiteHeader />
           {children}
         </NextIntlClientProvider>

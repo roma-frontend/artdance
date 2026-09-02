@@ -270,6 +270,8 @@ export const zIndex = {
   raised: '10',
   sticky: '100',
   header: '1000',
+  /** Полоса прогресса чтения — поверх шапки, но под всем интерактивным. */
+  scrollProgress: '1050',
   dropdown: '1100',
   drawer: '1200',
   modal: '1300',

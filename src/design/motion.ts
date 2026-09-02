@@ -40,6 +40,8 @@ export const revealMotion = {
 
 /** Поочерёдное появление детей контейнера (`.stagger`). */
 export const staggerMotion = {
+  /** Задержка первого ребёнка: в прототипе 0.05s, дальше шаг 0.07s. */
+  baseDelayMs: 50,
   stepMs: 70,
   durationMs: 700,
   offsetPx: 40,
@@ -113,11 +115,34 @@ export const pointerGlow = {
   requiresFinePointer: true,
 } as const;
 
+/**
+ * 3D-наклон карточки под курсором (в прототипе — `.cat`, `.inst`, `.card`).
+ *
+ * Эффект есть в макете, но его не было в карте компонентов: он живёт в inline-JS
+ * и применяется к трём классам сразу. Значения перенесены как есть; `scale` и
+ * `liftPx` дублируют hover-подъём карточки, поэтому применяются вместе с ним, а
+ * не поверх — иначе карточка дёргается на два состояния.
+ */
+export const cardTilt = {
+  perspectivePx: 800,
+  maxRotateDeg: 6,
+  liftPx: -4,
+  scale: 1.01,
+  /** На touch-устройствах наклона нет: без курсора он не воспроизводится. */
+  requiresFinePointer: true,
+} as const;
+
 /** Полоса прогресса чтения страницы. */
 export const scrollProgress = {
-  heightPx: 2,
-  /** Скрывать на коротких страницах: полоса без хода бессмысленна. */
+  /** 3px из прототипа: тоньше — не читается на мониторе с высоким DPI. */
+  heightPx: 3,
+  /**
+   * Скрывать на коротких страницах: полоса без хода бессмысленна.
+   * Множитель к высоте окна — ниже этого страница считается короткой.
+   */
   minPageHeightFactor: 1.5,
+  /** Сглаживание рывков при быстрой прокрутке. */
+  transitionMs: 150,
 } as const;
 
 /**
@@ -167,6 +192,7 @@ export const motion = {
   heroGhostTrail,
   counter: counterMotion,
   pointerGlow,
+  cardTilt,
   scrollProgress,
   headerScroll,
   carousel: carouselScroll,

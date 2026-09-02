@@ -15,6 +15,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { HeroVideo } from '@/components/home/hero-video';
+import { Reveal } from '@/components/fx/reveal';
 import { Button } from '@/components/ui/button';
 import { Media } from '@/components/ui/media';
 import { features, orderedSubscriptionPlans, routes, site } from '@/config';
@@ -117,15 +118,15 @@ export default async function HomePage({ params }: PageProps) {
       {/* ── DISCOVER ── */}
       <section className="section-y">
         <div className="page-container">
-          <header className="mx-auto mb-12 max-w-xl text-center">
+          <Reveal as="header" className="mx-auto mb-12 max-w-xl text-center">
             <p className="text-eyebrow text-accent mb-3">{t('discover.eyebrow')}</p>
             <h2 className="text-heading-2 mb-3">{t('discover.title')}</h2>
             <p className="text-body text-content-secondary">
               {t('discover.subtitle', { styles: danceStyles.length })}
             </p>
-          </header>
+          </Reveal>
 
-          <ul className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <Reveal as="ul" variant="stagger" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
             {content.styleTiles.map((tile) => (
               <li key={tile.style}>
                 <Link
@@ -153,7 +154,7 @@ export default async function HomePage({ params }: PageProps) {
                 </Link>
               </li>
             ))}
-          </ul>
+          </Reveal>
         </div>
       </section>
 
@@ -162,7 +163,7 @@ export default async function HomePage({ params }: PageProps) {
         className="cinema-surface text-center"
         style={{ paddingBlock: 'var(--layout-section-y-wide)' }}
       >
-        <div className="page-container">
+        <Reveal variant="scale" className="page-container">
           <h2 className="text-display-editorial uppercase">
             {t('editorial.titleLine1')} {t('editorial.titleLine2')}{' '}
             <span className="text-accent">{t('editorial.titleAccent')}</span>
@@ -171,20 +172,20 @@ export default async function HomePage({ params }: PageProps) {
           <Button asChild className="mt-8" size="lg" variant="accent">
             <Link href={routes.classes()}>{t('editorial.cta')}</Link>
           </Button>
-        </div>
+        </Reveal>
       </section>
 
       {/* ── PRICING: суммы и квоты приходят из config/pricing, не из разметки ── */}
       {features.subscriptions && (
         <section className="section-y bg-surface-raised">
           <div className="page-container">
-            <header className="mx-auto mb-12 max-w-xl text-center">
+            <Reveal as="header" className="mx-auto mb-12 max-w-xl text-center">
               <p className="text-eyebrow text-accent mb-3">{tPricing('eyebrow')}</p>
               <h2 className="text-heading-2 mb-3">{tPricing('title')}</h2>
               <p className="text-body text-content-secondary">{tPricing('subtitle')}</p>
-            </header>
+            </Reveal>
 
-            <ul className="grid gap-6 lg:grid-cols-3">
+            <Reveal as="ul" variant="stagger" className="grid gap-6 lg:grid-cols-3">
               {orderedSubscriptionPlans.map((plan) => (
                 <li
                   key={plan.id}
@@ -224,7 +225,7 @@ export default async function HomePage({ params }: PageProps) {
                   </Button>
                 </li>
               ))}
-            </ul>
+            </Reveal>
           </div>
         </section>
       )}

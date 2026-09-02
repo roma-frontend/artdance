@@ -39,6 +39,7 @@ export const zIndexClassNames = [
   'z-raised',
   'z-sticky',
   'z-header',
+  'z-scroll-progress',
   'z-dropdown',
   'z-drawer',
   'z-modal',
