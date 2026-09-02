@@ -365,7 +365,12 @@ export const componentManifest: readonly ComponentSpec[] = [
     prototypeClasses: ['sec-h', 'label', 'c'],
     screens: ['all'],
     variants: ['left', 'center'],
-    notes: 'Надзаголовок (label) имеет декоративную золотую черту через ::before.',
+    states: ['with-subtitle', 'without-subtitle', 'on-cinema'],
+    notes:
+      'Надзаголовок имеет декоративную золотую черту через ::before (.eyebrow-rule в ' +
+      'globals.css). Уровень заголовка задаётся пропом level: на главной секции идут ' +
+      'вторым уровнем, внутри страницы — третьим, и скачок h2 → h4 здесь невозможен. ' +
+      'Подзаголовок необязателен и не создаёт пустой <p>.',
   },
 
   /* ───────────────────────── Каталог и детали ───────────────────────── */
@@ -563,7 +568,15 @@ export const componentManifest: readonly ComponentSpec[] = [
     wave: 'foundation',
     prototypeClasses: ['tag', 'cc-badge', 'event-type', 'inst-v'],
     screens: ['all'],
-    variants: ['neutral', 'accent', 'signal', 'metal', 'success', 'warning'],
+    variants: ['neutral', 'accent', 'signal', 'metal', 'success', 'warning', 'onMedia'],
+    notes:
+      'В прототипе это четыре класса с почти одинаковыми стилями. Варианты названы по ' +
+      'смысловой роли, а не по виду. Осознанно НЕ shadcn/ui badge: его модель ' +
+      '(default|secondary|destructive|outline) описывает вид, и в ней негде выразить ' +
+      '«осталось мало мест» (signal) и «проверенный инструктор» (metal); поведения у метки ' +
+      'нет, поэтому чужая разметка дала бы только второй источник правды о цветах. ' +
+      'Вариант onMedia — плотная плашка поверх фотографии (.cc-badge): полупрозрачный фон ' +
+      'на снимке не читается.',
   },
   {
     name: 'Price',
@@ -573,10 +586,13 @@ export const componentManifest: readonly ComponentSpec[] = [
     prototypeClasses: ['cc-price', 'card-price', 'inst-price'],
     screens: ['all'],
     i18n: ['common.labels'],
-    variants: ['perClass', 'perHour', 'perMonth', 'from', 'total'],
+    variants: ['perClass', 'perHour', 'perMonth', 'perYear', 'perSession', 'from', 'total'],
     notes:
-      'Форматирование — только через useFormatter().number(value, "price"). ' +
-      'Символ ֏ и разрядность задаются форматом локали, не строкой.',
+      'Форматирование — только через useFormatter().number(value, "price"). Символ ֏, ' +
+      'разрядность и позиция знака заданы форматом локали: «5,000 ֏» вместо «5 000 ֏» — ' +
+      'признак непереведённого сайта. Единица — отдельный элемент, а не часть строки ' +
+      'перевода с подставленной суммой: иначе цену нельзя выделить визуально и нельзя ' +
+      'прочитать голосом отдельно от единицы.',
   },
   {
     name: 'RatingStars',
@@ -585,21 +601,29 @@ export const componentManifest: readonly ComponentSpec[] = [
     wave: 'foundation',
     prototypeClasses: ['test-stars', 'inst-rating', 'card-rating'],
     screens: ['all'],
-    i18n: ['a11y', 'reviews'],
+    i18n: ['a11y', 'common.counts'],
     states: ['rated', 'not-enough-reviews'],
     notes:
-      'Ниже reviews.minCountToDisplayAverage средний рейтинг не показывается — ' +
-      'два отзыва не дают «4.9».',
+      'Ниже reviews.minCountToDisplayAverage средний рейтинг не показывается — два отзыва ' +
+      'не дают «4.9», это ложное впечатление проверенности; выводится только число отзывов. ' +
+      'Звёзды aria-hidden, скринридер получает строку a11y.ratingStars: пять символов ★ в ' +
+      'дереве доступности читаются как «звезда звезда звезда». Дробная часть — заливка по ' +
+      'ширине, а не округление: 4.6 это не пять звёзд и не четыре.',
   },
   {
     name: 'SpotsLeft',
     path: 'components/ui/spots-left.tsx',
     role: 'Индикатор свободных мест с цветовой градацией',
-    wave: 'catalog',
+    wave: 'foundation',
     prototypeClasses: ['cc-spots', 'spots', 'ok', 'low'],
     screens: ['home', 'discover', 'class', 'events'],
-    i18n: ['common.counts'],
+    i18n: ['common.counts', 'common.actions'],
     states: ['plenty', 'few', 'sold-out', 'waitlist'],
+    notes:
+      'Порог «мало» — commerce.lowStockThreshold: это коммерческий рычаг, им управляет ' +
+      'владелец продукта в одном месте. Цвет не единственный носитель смысла — текст всегда ' +
+      'называет количество словами (WCAG 1.4.1). «Мест нет» и «есть лист ожидания» — разные ' +
+      'состояния: во втором действие ещё возможно, и подпись это сообщает.',
   },
   {
     name: 'FavoriteButton',

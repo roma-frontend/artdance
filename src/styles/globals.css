@@ -242,6 +242,25 @@
     background-color: currentColor;
     transition: transform var(--duration-normal) var(--ease-brand);
   }
+
+  /*
+   * Золотая черта перед надзаголовком секции (`.label::before` в макете).
+   * Псевдоэлемент, потому что из JSX его не выразить, а лишний <span> в разметке
+   * ради декорации попадёт в дерево доступности.
+   */
+  .eyebrow-rule {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .eyebrow-rule::before {
+    content: '';
+    width: var(--space-6);
+    height: var(--border-width-thin);
+    flex: none;
+    background-color: var(--metal);
+  }
 }
 
 /*

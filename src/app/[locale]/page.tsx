@@ -16,8 +16,11 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 
 import { HeroVideo } from '@/components/home/hero-video';
 import { Reveal } from '@/components/fx/reveal';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Media } from '@/components/ui/media';
+import { Price } from '@/components/ui/price';
+import { SectionHeading } from '@/components/ui/section-heading';
 import { features, orderedSubscriptionPlans, routes, site } from '@/config';
 import { danceStyleLabelKey, danceStyles } from '@/domain/enums';
 import { resolveMedia } from '@/domain/content';
@@ -118,12 +121,14 @@ export default async function HomePage({ params }: PageProps) {
       {/* ── DISCOVER ── */}
       <section className="section-y">
         <div className="page-container">
-          <Reveal as="header" className="mx-auto mb-12 max-w-xl text-center">
-            <p className="text-eyebrow text-accent mb-3">{t('discover.eyebrow')}</p>
-            <h2 className="text-heading-2 mb-3">{t('discover.title')}</h2>
-            <p className="text-body text-content-secondary">
-              {t('discover.subtitle', { styles: danceStyles.length })}
-            </p>
+          <Reveal as="div" className="mb-12">
+            <SectionHeading
+              align="center"
+              eyebrow={t('discover.eyebrow')}
+              title={t('discover.title')}
+              subtitle={t('discover.subtitle', { styles: danceStyles.length })}
+              className="mb-0"
+            />
           </Reveal>
 
           <Reveal as="ul" variant="stagger" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
@@ -179,10 +184,14 @@ export default async function HomePage({ params }: PageProps) {
       {features.subscriptions && (
         <section className="section-y bg-surface-raised">
           <div className="page-container">
-            <Reveal as="header" className="mx-auto mb-12 max-w-xl text-center">
-              <p className="text-eyebrow text-accent mb-3">{tPricing('eyebrow')}</p>
-              <h2 className="text-heading-2 mb-3">{tPricing('title')}</h2>
-              <p className="text-body text-content-secondary">{tPricing('subtitle')}</p>
+            <Reveal as="div" className="mb-12">
+              <SectionHeading
+                align="center"
+                eyebrow={tPricing('eyebrow')}
+                title={tPricing('title')}
+                subtitle={tPricing('subtitle')}
+                className="mb-0"
+              />
             </Reveal>
 
             <Reveal as="ul" variant="stagger" className="grid gap-6 lg:grid-cols-3">
@@ -196,7 +205,9 @@ export default async function HomePage({ params }: PageProps) {
                   }
                 >
                   {plan.highlighted && (
-                    <p className="text-eyebrow text-accent mb-4">{tPricing('mostPopular')}</p>
+                    <Badge variant="accent" className="mb-4">
+                      {tPricing('mostPopular')}
+                    </Badge>
                   )}
                   <h3 className="text-card-title mb-2">
                     {tPricing(`plans.${plan.id}.name` as 'plans.pro.name')}
@@ -204,13 +215,7 @@ export default async function HomePage({ params }: PageProps) {
                   <p className="text-body-sm mb-6 text-content-secondary">
                     {tPricing(`plans.${plan.id}.description` as 'plans.pro.description')}
                   </p>
-                  <p className="text-heading-3">
-                    {format.number(plan.price.MONTHLY, 'price')}
-                    <span className="text-body-sm text-content-tertiary">
-                      {' '}
-                      {tPricing('perMonth')}
-                    </span>
-                  </p>
+                  <Price amount={plan.price.MONTHLY} unit="perMonth" emphasis="total" />
                   <Button
                     asChild
                     block
