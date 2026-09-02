@@ -120,6 +120,17 @@ export const scrollProgress = {
   minPageHeightFactor: 1.5,
 } as const;
 
+/**
+ * Переключение шапки между «над hero» и «прокручено».
+ *
+ * В прототипе — `nav.classList.toggle('scrolled', window.scrollY > 60)`.
+ * Порог объявлен здесь, потому что его знают двое: сам компонент шапки и тест,
+ * проверяющий смену состояния. Литерал в компоненте разошёлся бы с тестом.
+ */
+export const headerScroll = {
+  thresholdPx: 60,
+} as const;
+
 /** Горизонтальная прокрутка карусели кнопками (`.scroll-arrow`). */
 export const carouselScroll = {
   stepPx: 340,
@@ -157,6 +168,7 @@ export const motion = {
   counter: counterMotion,
   pointerGlow,
   scrollProgress,
+  headerScroll,
   carousel: carouselScroll,
   reducedMotionDisables,
   /** Базовые шкалы — чтобы не импортировать primitives отдельно. */

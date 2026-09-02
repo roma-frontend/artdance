@@ -109,6 +109,7 @@
         max-width: var(--max-w);
         margin: 0 auto;
         padding: 0 var(--pad);
+        width: 100%;
       }
 
       /*═══════════════════════════════════════════════════════
@@ -265,7 +266,7 @@
       .nav-links a {
         font-size: 0.78rem;
         font-weight: 500;
-        color: rgba(255,255,255,0.7);
+        color: rgba(255, 255, 255, 0.7);
         transition: color 0.3s;
         cursor: pointer;
         position: relative;
@@ -307,7 +308,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        color: rgba(255,255,255,0.7);
+        color: rgba(255, 255, 255, 0.7);
         transition: all 0.3s;
         font-size: 1rem;
         border: 1px solid transparent;
@@ -321,9 +322,9 @@
         border-color: var(--accent);
       }
       .nav:not(.scrolled) .nav-icon:hover {
-        background: rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.1);
         color: #fff;
-        border-color: rgba(255,255,255,0.2);
+        border-color: rgba(255, 255, 255, 0.2);
       }
 
       /*═══════════════════════════════════════════════════════
@@ -339,8 +340,12 @@
         overflow: hidden;
         color: #fff;
       }
-      .hero .hero-sub { color: rgba(255,255,255,0.55); }
-      .hero .hero-badge span { color: var(--gold); }
+      .hero .hero-sub {
+        color: rgba(255, 255, 255, 0.55);
+      }
+      .hero .hero-badge span {
+        color: var(--gold);
+      }
       .hero-bg {
         position: absolute;
         inset: 0;
@@ -404,7 +409,7 @@
         max-width: var(--max-w);
         margin: 0 auto;
         padding: 0 var(--pad);
-        padding-top: 8rem;
+        padding-top: 4rem;
         width: 100%;
         will-change: transform, opacity;
       }
@@ -457,7 +462,6 @@
       .hero-stats {
         display: flex;
         gap: 3rem;
-        margin-top: 4rem;
         padding-top: 1.5rem;
         border-top: 1px solid rgba(255, 255, 255, 0.08);
         animation: fadeUp 0.8s var(--ease) 1s both;
@@ -557,6 +561,7 @@
         position: relative;
         z-index: 3;
         padding: clamp(4rem, 10vw, 8rem) 0;
+        overflow-x: hidden;
         transition:
           background 0.5s,
           color 0.5s;
@@ -602,11 +607,23 @@
       }
 
       /*═══════════════════════════════════════════════════════
+  CONTAINER QUERIES
+═══════════════════════════════════════════════════════*/
+      .cats,
+      .insts,
+      .grid3,
+      .grid4,
+      .classes-wrap {
+        container-type: inline-size;
+        container-name: card-grid;
+      }
+
+      /*═══════════════════════════════════════════════════════
   CATEGORY CARDS
 ═══════════════════════════════════════════════════════*/
       .cats {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 1rem;
       }
       .cat {
@@ -615,6 +632,7 @@
         overflow: hidden;
         aspect-ratio: 3/4;
         cursor: pointer;
+        min-width: 0;
       }
       .cat img {
         width: 100%;
@@ -697,6 +715,7 @@
         gap: 1.25rem;
         overflow-x: auto;
         scroll-snap-type: x mandatory;
+        scroll-behavior: smooth;
         -webkit-overflow-scrolling: touch;
         padding-bottom: 1rem;
         scrollbar-width: none;
@@ -740,8 +759,6 @@
         transform: scale(0.95);
       }
       .cc {
-        min-width: 300px;
-        max-width: 320px;
         border-radius: var(--r-lg);
         overflow: hidden;
         background: var(--card);
@@ -750,6 +767,10 @@
         transition: all 0.5s var(--ease);
         border: 1px solid var(--border);
         cursor: pointer;
+      }
+      .classes .cc {
+        max-width: 300px;
+        min-width: 260px;
       }
       .cc:hover {
         transform: translateY(-6px);
@@ -870,7 +891,7 @@
 ═══════════════════════════════════════════════════════*/
       .insts {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
         gap: 1.25rem;
       }
       .inst {
@@ -880,6 +901,7 @@
         transition: all 0.5s var(--ease);
         border: 1px solid var(--border);
         cursor: pointer;
+        min-width: 0;
       }
       .inst:hover {
         transform: translateY(-6px);
@@ -1017,12 +1039,12 @@
 ═══════════════════════════════════════════════════════*/
       .grid3 {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 1.25rem;
       }
       .grid4 {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 1.25rem;
       }
       .card {
@@ -1032,6 +1054,7 @@
         transition: all 0.5s var(--ease);
         border: 1px solid var(--border);
         cursor: pointer;
+        min-width: 0;
       }
       .card:hover {
         transform: translateY(-4px);
@@ -1229,6 +1252,177 @@
       }
 
       /*═══════════════════════════════════════════════════════
+  CONTAINER QUERIES — CARD ADAPTATION
+═══════════════════════════════════════════════════════*/
+
+      /* --- Class cards (.cc) in narrow containers --- */
+      @container card-grid (max-width: 580px) {
+        .cc-body {
+          padding: 1rem;
+        }
+        .cc-title {
+          font-size: 0.95rem;
+        }
+        .cc-inst {
+          font-size: 0.78rem;
+        }
+        .cc-price {
+          font-size: 0.88rem;
+        }
+        .cc-img {
+          aspect-ratio: 16/10;
+        }
+      }
+      @container card-grid (max-width: 340px) {
+        .cc-body {
+          padding: 0.75rem;
+        }
+        .cc-title {
+          font-size: 0.88rem;
+        }
+        .cc-inst {
+          font-size: 0.72rem;
+          margin-bottom: 0.5rem;
+        }
+        .cc-foot {
+          padding-top: 0.5rem;
+        }
+        .cc-price {
+          font-size: 0.82rem;
+        }
+        .cc-badge {
+          font-size: 0.58rem;
+          padding: 0.2rem 0.5rem;
+        }
+      }
+
+      /* --- Instructor cards (.inst) in narrow containers --- */
+      @container card-grid (max-width: 520px) {
+        .inst-info {
+          padding: 0.85rem;
+        }
+        .inst-name {
+          font-size: 0.92rem;
+        }
+        .inst-style {
+          font-size: 0.65rem;
+        }
+        .inst-meta {
+          font-size: 0.68rem;
+        }
+        .inst-price {
+          font-size: 0.8rem;
+        }
+      }
+      @container card-grid (max-width: 340px) {
+        .inst-info {
+          padding: 0.65rem;
+        }
+        .inst-name {
+          font-size: 0.85rem;
+        }
+        .inst-style {
+          margin-bottom: 0.3rem;
+        }
+        .inst-price {
+          font-size: 0.75rem;
+          margin-top: 0.35rem;
+        }
+      }
+
+      /* --- Generic cards (.card) in narrow containers --- */
+      @container card-grid (max-width: 520px) {
+        .card-body {
+          padding: 1rem;
+        }
+        .card-body h3 {
+          font-size: 1rem;
+        }
+        .card-body p {
+          font-size: 0.78rem;
+        }
+        .card-foot {
+          padding-top: 0.5rem;
+          margin-top: 0.5rem;
+        }
+        .test {
+          padding: 1.25rem;
+        }
+        .test-quote {
+          font-size: 0.92rem;
+        }
+      }
+      @container card-grid (max-width: 340px) {
+        .card-body {
+          padding: 0.75rem;
+        }
+        .card-body h3 {
+          font-size: 0.92rem;
+        }
+        .card-body p {
+          font-size: 0.72rem;
+        }
+        .tags {
+          gap: 0.25rem;
+        }
+        .tag {
+          padding: 0.2rem 0.45rem;
+          font-size: 0.6rem;
+        }
+        .test {
+          padding: 1rem;
+        }
+        .test-quote {
+          font-size: 0.85rem;
+          padding-left: 0.75rem;
+        }
+      }
+
+      /* --- Category cards (.cat) in narrow containers --- */
+      @container card-grid (max-width: 500px) {
+        .cat-n {
+          font-size: 1rem;
+        }
+        .cat-c {
+          font-size: 0.65rem;
+        }
+        .cat-ov {
+          padding: 1rem;
+        }
+      }
+      @container card-grid (max-width: 300px) {
+        .cat-n {
+          font-size: 0.88rem;
+        }
+        .cat-ov {
+          padding: 0.75rem;
+        }
+      }
+
+      /* --- Horizontal scroll cards (.classes .cc) in narrow scroll containers --- */
+      @container card-grid (max-width: 700px) {
+        .classes .cc {
+          min-width: 240px;
+          max-width: 260px;
+        }
+        .classes .cc-body {
+          padding: 1rem;
+        }
+      }
+      @container card-grid (max-width: 400px) {
+        .classes .cc {
+          min-width: 220px;
+          max-width: 240px;
+        }
+        .classes .cc-img {
+          aspect-ratio: 16/10;
+        }
+        .classes .cc-body {
+          padding: 0.75rem;
+        }
+      }
+
+      /*═══════════════════════════════════════════════════════
   NEWSLETTER
 ═══════════════════════════════════════════════════════*/
       .newsletter {
@@ -1272,9 +1466,12 @@
       }
       .footer-g {
         display: grid;
-        grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
         gap: 2.5rem;
         margin-bottom: 3rem;
+      }
+      .footer-g > div:first-child {
+        grid-column: 1 / -1;
       }
       .footer-desc {
         font-size: 0.85rem;
@@ -1341,6 +1538,7 @@
 ═══════════════════════════════════════════════════════*/
       .page {
         display: none;
+        overflow-x: hidden;
       }
       .page.active {
         display: block;
@@ -1362,7 +1560,9 @@
       .reveal {
         opacity: 0;
         transform: translateY(60px);
-        transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1);
+        transition:
+          opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .reveal.visible {
         opacity: 1;
@@ -1371,7 +1571,9 @@
       .reveal-left {
         opacity: 0;
         transform: translateX(-80px);
-        transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1);
+        transition:
+          opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .reveal-left.visible {
         opacity: 1;
@@ -1380,7 +1582,9 @@
       .reveal-right {
         opacity: 0;
         transform: translateX(80px);
-        transition: opacity 0.9s cubic-bezier(.16,1,.3,1), transform 0.9s cubic-bezier(.16,1,.3,1);
+        transition:
+          opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .reveal-right.visible {
         opacity: 1;
@@ -1389,7 +1593,9 @@
       .reveal-scale {
         opacity: 0;
         transform: scale(0.85);
-        transition: opacity 1s cubic-bezier(.16,1,.3,1), transform 1s cubic-bezier(.16,1,.3,1);
+        transition:
+          opacity 1s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 1s cubic-bezier(0.16, 1, 0.3, 1);
       }
       .reveal-scale.visible {
         opacity: 1;
@@ -1399,16 +1605,34 @@
       .stagger > * {
         opacity: 0;
         transform: translateY(40px);
-        transition: opacity 0.7s cubic-bezier(.16,1,.3,1), transform 0.7s cubic-bezier(.16,1,.3,1);
+        transition:
+          opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+          transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
       }
-      .stagger.visible > *:nth-child(1) { transition-delay: 0.05s; }
-      .stagger.visible > *:nth-child(2) { transition-delay: 0.12s; }
-      .stagger.visible > *:nth-child(3) { transition-delay: 0.19s; }
-      .stagger.visible > *:nth-child(4) { transition-delay: 0.26s; }
-      .stagger.visible > *:nth-child(5) { transition-delay: 0.33s; }
-      .stagger.visible > *:nth-child(6) { transition-delay: 0.40s; }
-      .stagger.visible > *:nth-child(7) { transition-delay: 0.47s; }
-      .stagger.visible > *:nth-child(8) { transition-delay: 0.54s; }
+      .stagger.visible > *:nth-child(1) {
+        transition-delay: 0.05s;
+      }
+      .stagger.visible > *:nth-child(2) {
+        transition-delay: 0.12s;
+      }
+      .stagger.visible > *:nth-child(3) {
+        transition-delay: 0.19s;
+      }
+      .stagger.visible > *:nth-child(4) {
+        transition-delay: 0.26s;
+      }
+      .stagger.visible > *:nth-child(5) {
+        transition-delay: 0.33s;
+      }
+      .stagger.visible > *:nth-child(6) {
+        transition-delay: 0.4s;
+      }
+      .stagger.visible > *:nth-child(7) {
+        transition-delay: 0.47s;
+      }
+      .stagger.visible > *:nth-child(8) {
+        transition-delay: 0.54s;
+      }
       .stagger.visible > * {
         opacity: 1;
         transform: translateY(0);
@@ -1421,7 +1645,9 @@
       }
       .px-text {
         will-change: transform, opacity;
-        transition: transform 0.1s linear, opacity 0.1s linear;
+        transition:
+          transform 0.1s linear,
+          opacity 0.1s linear;
       }
 
       /*═══════════════════════════════════════════════════════
@@ -1473,7 +1699,7 @@
         flex-direction: column;
         gap: 0.25rem;
         transition: right 0.4s var(--ease);
-        box-shadow: -8px 0 30px rgba(0,0,0,0.3);
+        box-shadow: -8px 0 30px rgba(0, 0, 0, 0.3);
         border-left: 1px solid var(--border);
       }
       .mobile-menu.open {
@@ -1495,7 +1721,7 @@
         background: #111;
       }
       [data-theme="dark"] .mobile-menu a {
-        color: rgba(255,255,255,0.85);
+        color: rgba(255, 255, 255, 0.85);
       }
       .mobile-close {
         position: absolute;
@@ -1521,7 +1747,7 @@
       .mobile-overlay {
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,0.6);
+        background: rgba(0, 0, 0, 0.6);
         z-index: 9998;
         opacity: 0;
         visibility: hidden;
@@ -1546,18 +1772,6 @@
 
       /* ---- TABLET LANDSCAPE ---- */
       @media (max-width: 1024px) {
-        .cats {
-          grid-template-columns: repeat(3, 1fr);
-        }
-        .insts, .grid4 {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .grid3 {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .footer-g {
-          grid-template-columns: repeat(2, 1fr);
-        }
         .hero-title {
           font-size: clamp(2.5rem, 6vw, 4.5rem);
         }
@@ -1568,29 +1782,12 @@
 
       /* ---- TABLET PORTRAIT ---- */
       @media (max-width: 768px) {
-        .nav-links, .nav-book {
+        .nav-links,
+        .nav-book {
           display: none;
         }
         .nav-hamburger {
           display: flex;
-        }
-        .cats {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .insts, .grid4 {
-          grid-template-columns: repeat(2, 1fr);
-        }
-        .grid3 {
-          grid-template-columns: 1fr;
-        }
-        .cc {
-          min-width: 260px;
-          max-width: 280px;
-        }
-        .grid3 .cc {
-          min-width: 0;
-          max-width: none;
-          width: 100%;
         }
         .hero-c {
           padding-top: 6rem;
@@ -1620,9 +1817,6 @@
         .editorial-c h2 {
           font-size: clamp(2.5rem, 12vw, 4rem);
         }
-        .footer-g {
-          grid-template-columns: repeat(2, 1fr);
-        }
         .footer-bt {
           flex-direction: column;
           gap: 0.75rem;
@@ -1648,21 +1842,11 @@
 
       /* ---- MOBILE ---- */
       @media (max-width: 480px) {
-        .cats {
-          grid-template-columns: 1fr 1fr;
-          gap: 0.6rem;
-        }
         .cat {
           aspect-ratio: 1;
         }
         .cat-n {
           font-size: 0.95rem;
-        }
-        .insts, .grid4 {
-          grid-template-columns: 1fr;
-        }
-        .grid3 {
-          grid-template-columns: 1fr;
         }
         .hero-c {
           padding-top: 5.5rem;
@@ -1700,25 +1884,14 @@
         .sec-h p {
           font-size: 0.88rem;
         }
-        .cc {
-          min-width: 220px;
-          max-width: 240px;
-        }
-        .grid3 .cc,
-        .grid4 .cc {
-          min-width: 0;
-          max-width: none;
-          width: 100%;
-        }
         .editorial-c h2 {
           font-size: clamp(2rem, 14vw, 3rem);
         }
         .editorial-c p {
           font-size: 0.95rem;
         }
-        .footer-g {
-          grid-template-columns: 1fr;
-          gap: 1.5rem;
+        .footer-g > div:first-child {
+          grid-column: 1;
         }
         .footer-l {
           gap: 0.4rem;
@@ -1795,32 +1968,444 @@
       }
 
       /*═══════════════════════════════════════════════════════
+  INNER PAGES — GRID CLASSES
+═══════════════════════════════════════════════════════*/
+
+      /* Main + sidebar (class detail, instructor detail, cart) */
+      .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 3rem;
+        padding: 2rem var(--pad) 4rem;
+      }
+      /* Booking page — slightly wider sidebar */
+      .booking-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 3rem;
+        margin-top: 2rem;
+      }
+      /* Checkout page — widest sidebar */
+      .checkout-grid {
+        display: grid;
+        grid-template-columns: 1fr 400px;
+        gap: 3rem;
+      }
+      /* Calendar week row */
+      .cal-week {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.25rem;
+      }
+      /* 3-col grids (time slots, payment methods) */
+      .cal-3col {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+      }
+      .cal-3col-gap {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+      }
+      /* 2-col form fields */
+      .form-2col {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      /*═══════════════════════════════════════════════════════
+  UTILITY CLASSES — REPLACE INLINE STYLES
+═══════════════════════════════════════════════════════*/
+
+      /* --- Section alt background --- */
+      .section-bg-alt {
+        background: var(--bg2);
+      }
+
+      /* --- Hero spacer (5rem top padding before inner page heroes) --- */
+      .hero-spacer {
+        padding-top: 5rem;
+      }
+
+      /* --- Hero banner (cover image with overlay + content) --- */
+      .hero-banner {
+        position: relative;
+        height: 60vh;
+        min-height: 350px;
+        overflow: hidden;
+      }
+      .hero-banner-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: top;
+        opacity: 0.6;
+      }
+      .hero-banner-ov {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+      }
+      .hero-banner-content {
+        position: absolute;
+        bottom: 2rem;
+        left: var(--pad);
+        right: var(--pad);
+        max-width: var(--max-w);
+        margin: 0 auto;
+      }
+
+      /* --- Badge variants --- */
+      .badge-accent {
+        display: inline-flex;
+        background: var(--accent);
+        color: #fff;
+        padding: 0.3rem 0.7rem;
+        border-radius: var(--r-full);
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        margin-bottom: 0.75rem;
+      }
+
+      /* --- Detail page headings --- */
+      .detail-h {
+        font-family: var(--ff-display);
+        font-size: 1.2rem;
+        margin-bottom: 0.75rem;
+      }
+      .detail-body {
+        color: var(--text2);
+        line-height: 1.75;
+        margin-bottom: 1.5rem;
+      }
+      .detail-mb {
+        margin-bottom: 1.5rem;
+      }
+
+      /* --- Instructor/author row --- */
+      .instructor-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        cursor: pointer;
+      }
+
+      /* --- Avatar sizes --- */
+      .avatar {
+        border-radius: 50%;
+        object-fit: cover;
+      }
+      .avatar-sm {
+        width: 40px;
+        height: 40px;
+      }
+      .avatar-md {
+        width: 52px;
+        height: 52px;
+      }
+      .avatar-lg {
+        width: 90px;
+        height: 90px;
+        border: 3px solid var(--card);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      }
+
+      /* --- Sidebar card (booking/cart/checkout summary) --- */
+      .sidebar-card {
+        background: var(--card);
+        border-radius: var(--r-xl);
+        padding: 2rem;
+        box-shadow: var(--sh-lg);
+        border: 1px solid var(--border);
+      }
+      .sidebar-card-sm {
+        background: var(--card);
+        border-radius: var(--r-xl);
+        padding: 1.5rem;
+        box-shadow: var(--sh);
+        border: 1px solid var(--border);
+        transition: all 0.5s;
+      }
+
+      /* --- Price heading --- */
+      .price-heading {
+        font-family: var(--ff-display);
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--accent);
+      }
+      .price-sub {
+        font-size: 0.8rem;
+        color: var(--text3);
+        margin-bottom: 1.25rem;
+      }
+
+      /* --- Info row (date/time/location in sidebar) --- */
+      .info-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0;
+        font-size: 0.88rem;
+        color: var(--text2);
+      }
+      .info-row-success {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0;
+        font-size: 0.82rem;
+        color: var(--success);
+        font-weight: 600;
+      }
+
+      /* --- Divider --- */
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 0.75rem 0;
+      }
+
+      /* --- Flex row utilities --- */
+      .flex-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+      .flex-row-gap-sm {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .flex-row-between {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .flex-1 {
+        flex: 1;
+      }
+
+      /* --- Text utilities --- */
+      .text-body {
+        font-size: 0.82rem;
+        color: var(--text2);
+      }
+      .text-sm {
+        font-size: 0.72rem;
+        color: var(--text3);
+      }
+      .text-muted {
+        font-size: 0.88rem;
+        color: var(--text2);
+      }
+      .text-accent {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .text-success {
+        color: var(--success);
+      }
+      .text-gold {
+        color: var(--gold);
+      }
+      .text-bold {
+        font-weight: 600;
+      }
+      .text-bold-lg {
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .text-display {
+        font-family: var(--ff-display);
+      }
+
+      /* --- Section heading h2 with display font --- */
+      .sec-title {
+        font-family: var(--ff-display);
+        font-size: clamp(1.5rem, 3vw, 2.2rem);
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+      }
+      .sec-subtitle {
+        color: var(--text2);
+        margin-bottom: 2rem;
+      }
+
+      /* --- Card image aspect ratios --- */
+      .img-landscape {
+        aspect-ratio: 16/10;
+      }
+      .img-product {
+        aspect-ratio: 3/4;
+      }
+
+      /* --- Button spacing --- */
+      .mt-sm { margin-top: 0.5rem; }
+      .mt-md { margin-top: 0.75rem; }
+      .mt-lg { margin-top: 1rem; }
+      .mt-xl { margin-top: 1.25rem; }
+      .mb-sm { margin-bottom: 0.5rem; }
+      .mb-md { margin-bottom: 0.75rem; }
+      .mb-lg { margin-bottom: 1rem; }
+      .mb-xl { margin-bottom: 1.5rem; }
+
+      /* --- Form utilities --- */
+      .form-label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text2);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.4rem;
+      }
+      .form-input {
+        width: 100%;
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 0.85rem 1rem;
+        font-size: 0.88rem;
+        font-family: var(--ff-body);
+        outline: none;
+        background: var(--card);
+        color: var(--text);
+        transition: border-color 0.3s;
+      }
+      .form-input:focus {
+        border-color: var(--accent);
+      }
+      .form-select {
+        width: 100%;
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 0.85rem 1rem;
+        font-size: 0.88rem;
+        font-family: var(--ff-body);
+        outline: none;
+        background: var(--card);
+        color: var(--text);
+        cursor: pointer;
+      }
+      .form-input-sm {
+        width: 100%;
+        border: 1.5px solid var(--border);
+        border-radius: var(--r-md);
+        padding: 0.65rem 0.85rem;
+        font-size: 0.82rem;
+        font-family: var(--ff-body);
+        outline: none;
+        background: var(--card);
+        color: var(--text);
+      }
+      .accent-accent {
+        accent-color: var(--accent);
+      }
+      .sticky-right {
+        position: sticky;
+        top: 5rem;
+        align-self: start;
+      }
+
+      /* --- Text size+weight combos (checkout/booking) --- */
+      .text-semibold {
+        font-weight: 600;
+      }
+      .text-semibold-lg {
+        font-weight: 600;
+        font-size: 0.88rem;
+      }
+      .text-body-semibold {
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .text-body-semibold-sm {
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+
+      /* --- Page padding --- */
+      .page-pad {
+        padding: 2rem var(--pad) 4rem;
+      }
+
+      /* --- Inner page container --- */
+      .inner-container {
+        padding: 2rem var(--pad) 4rem;
+      }
+
+      /* --- Sticky sidebar wrapper --- */
+      .sticky-sidebar {
+        position: sticky;
+        top: 5rem;
+        align-self: start;
+      }
+
+      /*═══════════════════════════════════════════════════════
   INNER PAGES RESPONSIVE
 ═══════════════════════════════════════════════════════*/
 
-      /* All inner pages: 2-col grids → 1-col on mobile */
-      .booking-grid, .cart-grid, .class-grid {
-        display: grid !important;
-      }
       @media (max-width: 768px) {
-        .booking-grid, .cart-grid, .class-grid {
-          display: flex !important;
-          flex-direction: column;
-          gap: 1.5rem !important;
+        /* All 2-col sidebars → 1 col */
+        .detail-grid,
+        .booking-detail-grid,
+        .checkout-grid {
+          grid-template-columns: 1fr;
+          gap: 1.5rem;
+        }
+        /* Cal week → scrollable row on mobile */
+        .cal-week {
+          grid-template-columns: repeat(7, 1fr);
+          font-size: 0.65rem;
+        }
+        /* 3-col → 3-col still works, just tighter */
+        .cal-3col {
+          gap: 0.35rem;
+        }
+        .cal-3col-gap {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.5rem;
+        }
+        /* 2-col form → 2-col still works */
+        .form-2col {
+          gap: 0.75rem;
         }
         /* Cart item images smaller */
         #p-cart img {
           max-width: 75px;
           max-height: 75px;
         }
-      }
-
-      /* Instructor hero — stack avatar + info on mobile */
-      #p-instructor > div:first-child > div:last-child {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        bottom: 1.5rem;
+        /* Spacer before hero — less padding on mobile */
+        .page > div:first-child.hero-spacer {
+          padding-top: 2rem !important;
+        }
+        /* Hero banners — shorter */
+        #p-class > div:nth-child(2) {
+          height: 45vh !important;
+          min-height: 250px !important;
+        }
+        #p-instructor > div:first-child {
+          height: 65vh !important;
+          min-height: 300px !important;
+        }
+        #p-instructor > div:first-child > div:last-child {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          bottom: 1.5rem;
+        }
+        #p-instructor > div:first-child > div:last-child h1 {
+          font-size: 1.4rem !important;
+        }
+        #p-instructor > div:first-child > div:last-child img {
+          width: 60px !important;
+          height: 60px !important;
+        }
       }
       @media (min-width: 769px) {
         #p-instructor > div:first-child > div:last-child {
@@ -1828,17 +2413,15 @@
           text-align: left;
           align-items: flex-end;
         }
-      }
-
-      /* Class page sidebar sticky */
-      @media (min-width: 769px) {
-        #p-class .container[style*="grid-template-columns"] > div:last-child > div:first-child {
+        /* Sidebar sticky on desktop */
+        .detail-grid > div:last-child,
+        .booking-detail-grid > div:last-child,
+        .checkout-grid > div:last-child {
           position: sticky;
           top: 5rem;
+          align-self: start;
         }
       }
-
-      /* Checkout tabs smaller on mobile */
       @media (max-width: 480px) {
         #p-checkout > div:last-child > div > div {
           font-size: 0.6rem !important;
@@ -1852,32 +2435,6 @@
         #p-cart .container > div > div {
           padding: 1rem !important;
         }
-      }
-
-      /* Inner page hero heights — shorter on mobile */
-      @media (max-width: 768px) {
-        /* Spacer before hero — less padding on mobile */
-        .page > div:first-child[style*="padding-top: 5rem"] {
-          padding-top: 2rem !important;
-        }
-        /* Hero banners — second child */
-        #p-class > div:nth-child(2) {
-          height: 45vh !important;
-          min-height: 250px !important;
-        }
-        #p-instructor > div:first-child {
-          height: 65vh !important;
-          min-height: 300px !important;
-        }
-        #p-instructor > div:first-child > div:last-child h1 {
-          font-size: 1.4rem !important;
-        }
-        #p-instructor > div:first-child > div:last-child img {
-          width: 60px !important;
-          height: 60px !important;
-        }
-      }
-      @media (max-width: 480px) {
         #p-class > div:nth-child(2) {
           height: 35vh !important;
           min-height: 200px !important;
@@ -1885,6 +2442,13 @@
         #p-instructor > div:first-child {
           height: 50vh !important;
           min-height: 250px !important;
+        }
+        /* Form 2-col → stack on very small screens */
+        .form-2col {
+          grid-template-columns: 1fr;
+        }
+        .cal-3col {
+          grid-template-columns: repeat(3, 1fr);
         }
       }
     </style>
@@ -2084,7 +2648,17 @@
           <button class="nav-icon">♡</button>
           <button class="nav-icon">👤</button>
           <a class="btn btn-accent btn-sm nav-book">Book Now</a>
-          <button class="nav-hamburger" id="hamburger" onclick="var m=document.getElementById('mobileMenu');var o=document.getElementById('mobileOverlay');m.classList.toggle('open');o.classList.toggle('open');this.classList.toggle('open')">
+          <button
+            class="nav-hamburger"
+            id="hamburger"
+            onclick="
+              var m = document.getElementById('mobileMenu');
+              var o = document.getElementById('mobileOverlay');
+              m.classList.toggle('open');
+              o.classList.toggle('open');
+              this.classList.toggle('open');
+            "
+          >
             <span></span><span></span><span></span>
           </button>
         </div>
@@ -2093,22 +2667,76 @@
     <!-- MOBILE MENU -->
     <div class="mobile-menu" id="mobileMenu">
       <button class="mobile-close" onclick="closeMobileMenu()">✕</button>
-      <a onclick="go('home');closeMobileMenu()">Home</a>
-      <a onclick="go('discover');closeMobileMenu()">Discover</a>
-      <a onclick="go('class');closeMobileMenu()">Classes</a>
-      <a onclick="go('instructor');closeMobileMenu()">Instructors</a>
-      <a onclick="go('shop');closeMobileMenu()">Shop</a>
-      <a onclick="go('booking');closeMobileMenu()">Calendar</a>
-      <a onclick="go('cart');closeMobileMenu()">Cart</a>
-      <a class="btn btn-accent btn-lg" style="margin-top:1rem;text-align:center;justify-content:center" onclick="go('discover');closeMobileMenu()">Book Now</a>
+      <a
+        onclick="
+          go('home');
+          closeMobileMenu();
+        "
+        >Home</a
+      >
+      <a
+        onclick="
+          go('discover');
+          closeMobileMenu();
+        "
+        >Discover</a
+      >
+      <a
+        onclick="
+          go('class');
+          closeMobileMenu();
+        "
+        >Classes</a
+      >
+      <a
+        onclick="
+          go('instructor');
+          closeMobileMenu();
+        "
+        >Instructors</a
+      >
+      <a
+        onclick="
+          go('shop');
+          closeMobileMenu();
+        "
+        >Shop</a
+      >
+      <a
+        onclick="
+          go('booking');
+          closeMobileMenu();
+        "
+        >Calendar</a
+      >
+      <a
+        onclick="
+          go('cart');
+          closeMobileMenu();
+        "
+        >Cart</a
+      >
+      <a
+        class="btn btn-accent btn-lg"
+        style="margin-top: 1rem; text-align: center; justify-content: center"
+        onclick="
+          go('discover');
+          closeMobileMenu();
+        "
+        >Book Now</a
+      >
     </div>
-    <div class="mobile-overlay" id="mobileOverlay" onclick="closeMobileMenu()"></div>
+    <div
+      class="mobile-overlay"
+      id="mobileOverlay"
+      onclick="closeMobileMenu()"
+    ></div>
 
     <script>
       function closeMobileMenu() {
-        document.getElementById('mobileMenu').classList.remove('open');
-        document.getElementById('mobileOverlay').classList.remove('open');
-        document.getElementById('hamburger').classList.remove('open');
+        document.getElementById("mobileMenu").classList.remove("open");
+        document.getElementById("mobileOverlay").classList.remove("open");
+        document.getElementById("hamburger").classList.remove("open");
       }
     </script>
 
@@ -2176,14 +2804,13 @@
         <div class="hero-scroll"><i></i></div>
       </section>
 
-
       <!-- SEARCH BAR -->
       <div
         style="
           position: relative;
           z-index: 5;
           max-width: var(--max-w);
-          margin: -3.7rem auto 0;
+          margin: -3.6rem auto 0;
           padding: 0 var(--pad);
         "
       >
@@ -2223,7 +2850,10 @@
               flex-shrink: 0;
             "
           ></div>
-          <div class="search-pill-filters" style="display: flex; gap: 0.25rem; align-items: center">
+          <div
+            class="search-pill-filters"
+            style="display: flex; gap: 0.25rem; align-items: center"
+          >
             <span
               style="
                 padding: 0.5rem 1rem;
@@ -2365,101 +2995,101 @@
             <h2>Classes Everyone's Talking About</h2>
           </div>
           <div class="classes-wrap reveal-right">
-          <div class="classes" id="classesScroll">
-            <div class="cc" onclick="go('class')">
-              <div class="cc-img">
-                <img
-                  src="photos/5c2a57f4-b8e2-440d-bfb2-09359d2411ab.png"
-                  alt=""
-                  loading="lazy"
-                />
-                <div class="cc-badge">TRENDING</div>
-                <button class="cc-fav">♡</button>
-              </div>
-              <div class="cc-body">
-                <div class="cc-meta">
-                  <span>Salsa</span><b></b><span>Intermediate</span>
+            <div class="classes" id="classesScroll">
+              <div class="cc" onclick="go('class')">
+                <div class="cc-img">
+                  <img
+                    src="photos/5c2a57f4-b8e2-440d-bfb2-09359d2411ab.png"
+                    alt=""
+                    loading="lazy"
+                  />
+                  <div class="cc-badge">TRENDING</div>
+                  <button class="cc-fav">♡</button>
                 </div>
-                <div class="cc-title">Latin Fusion</div>
-                <div class="cc-inst">Anna Mkrtchyan · Saturday, 18:00</div>
-                <div class="cc-foot">
-                  <div class="cc-price">12,000 AMD <small>/class</small></div>
-                  <div class="cc-spots ok">8 spots left</div>
+                <div class="cc-body">
+                  <div class="cc-meta">
+                    <span>Salsa</span><b></b><span>Intermediate</span>
+                  </div>
+                  <div class="cc-title">Latin Fusion</div>
+                  <div class="cc-inst">Anna Mkrtchyan · Saturday, 18:00</div>
+                  <div class="cc-foot">
+                    <div class="cc-price">12,000 AMD <small>/class</small></div>
+                    <div class="cc-spots ok">8 spots left</div>
+                  </div>
+                </div>
+              </div>
+              <div class="cc">
+                <div class="cc-img">
+                  <img
+                    src="photos/23bdec28-c439-479f-ad23-d19debdac9e7.png"
+                    alt=""
+                    loading="lazy"
+                  /><button class="cc-fav">♡</button>
+                </div>
+                <div class="cc-body">
+                  <div class="cc-meta">
+                    <span>Hip-Hop</span><b></b><span>All Levels</span>
+                  </div>
+                  <div class="cc-title">Street Flow</div>
+                  <div class="cc-inst">Arman Harutyunyan · Sunday, 14:00</div>
+                  <div class="cc-foot">
+                    <div class="cc-price">10,000 AMD <small>/class</small></div>
+                    <div class="cc-spots ok">12 spots left</div>
+                  </div>
+                </div>
+              </div>
+              <div class="cc">
+                <div class="cc-img">
+                  <img
+                    src="photos/377aa17c-8217-4aee-8874-831ab6ecb04a.png"
+                    alt=""
+                    loading="lazy"
+                  />
+                  <div class="cc-badge">FULL</div>
+                  <button class="cc-fav">♡</button>
+                </div>
+                <div class="cc-body">
+                  <div class="cc-meta">
+                    <span>Ballet</span><b></b><span>Advanced</span>
+                  </div>
+                  <div class="cc-title">Classical Ballet Intensive</div>
+                  <div class="cc-inst">Sona Hovhannisyan · Mon/Wed/Fri</div>
+                  <div class="cc-foot">
+                    <div class="cc-price">15,000 AMD <small>/class</small></div>
+                    <div class="cc-spots low">Waitlist</div>
+                  </div>
+                </div>
+              </div>
+              <div class="cc">
+                <div class="cc-img">
+                  <img
+                    src="photos/6aeafcb1-3d7c-4e52-8100-ee646104e531.png"
+                    alt=""
+                    loading="lazy"
+                  /><button class="cc-fav">♡</button>
+                </div>
+                <div class="cc-body">
+                  <div class="cc-meta">
+                    <span>Contemporary</span><b></b><span>Intermediate</span>
+                  </div>
+                  <div class="cc-title">Contemporary Flow</div>
+                  <div class="cc-inst">Nare Grigoryan · Thu, 19:00</div>
+                  <div class="cc-foot">
+                    <div class="cc-price">12,000 AMD <small>/class</small></div>
+                    <div class="cc-spots ok">5 spots left</div>
+                  </div>
                 </div>
               </div>
             </div>
-            <div class="cc">
-              <div class="cc-img">
-                <img
-                  src="photos/23bdec28-c439-479f-ad23-d19debdac9e7.png"
-                  alt=""
-                  loading="lazy"
-                /><button class="cc-fav">♡</button>
-              </div>
-              <div class="cc-body">
-                <div class="cc-meta">
-                  <span>Hip-Hop</span><b></b><span>All Levels</span>
-                </div>
-                <div class="cc-title">Street Flow</div>
-                <div class="cc-inst">Arman Harutyunyan · Sunday, 14:00</div>
-                <div class="cc-foot">
-                  <div class="cc-price">10,000 AMD <small>/class</small></div>
-                  <div class="cc-spots ok">12 spots left</div>
-                </div>
-              </div>
+            <div class="scroll-arrows">
+              <button class="scroll-arrow" id="classesPrev">←</button>
+              <button class="scroll-arrow" id="classesNext">→</button>
             </div>
-            <div class="cc">
-              <div class="cc-img">
-                <img
-                  src="photos/377aa17c-8217-4aee-8874-831ab6ecb04a.png"
-                  alt=""
-                  loading="lazy"
-                />
-                <div class="cc-badge">FULL</div>
-                <button class="cc-fav">♡</button>
-              </div>
-              <div class="cc-body">
-                <div class="cc-meta">
-                  <span>Ballet</span><b></b><span>Advanced</span>
-                </div>
-                <div class="cc-title">Classical Ballet Intensive</div>
-                <div class="cc-inst">Sona Hovhannisyan · Mon/Wed/Fri</div>
-                <div class="cc-foot">
-                  <div class="cc-price">15,000 AMD <small>/class</small></div>
-                  <div class="cc-spots low">Waitlist</div>
-                </div>
-              </div>
-            </div>
-            <div class="cc">
-              <div class="cc-img">
-                <img
-                  src="photos/6aeafcb1-3d7c-4e52-8100-ee646104e531.png"
-                  alt=""
-                  loading="lazy"
-                /><button class="cc-fav">♡</button>
-              </div>
-              <div class="cc-body">
-                <div class="cc-meta">
-                  <span>Contemporary</span><b></b><span>Intermediate</span>
-                </div>
-                <div class="cc-title">Contemporary Flow</div>
-                <div class="cc-inst">Nare Grigoryan · Thu, 19:00</div>
-                <div class="cc-foot">
-                  <div class="cc-price">12,000 AMD <small>/class</small></div>
-                  <div class="cc-spots ok">5 spots left</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="scroll-arrows">
-            <button class="scroll-arrow" id="classesPrev">←</button>
-            <button class="scroll-arrow" id="classesNext">→</button>
-          </div>
           </div>
         </div>
       </section>
 
-      <section class="section" style="background: var(--bg2)">
+      <section class="section section-bg-alt">
         <div class="container">
           <div class="sec-h">
             <div class="label">Meet the Masters</div>
@@ -2578,7 +3208,7 @@
           </div>
           <div class="grid3 stagger">
             <div class="card">
-              <div class="card-img" style="aspect-ratio: 16/10">
+              <div class="card-img img-landscape">
                 <img
                   src="photos/nano-banana-2_Group_dance_class_in_a_premium_studio_diverse_dancers_in_synchronized_movement_w-0.jpg"
                   alt=""
@@ -2600,7 +3230,7 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-img" style="aspect-ratio: 16/10">
+              <div class="card-img img-landscape">
                 <img
                   src="photos/ChatGPT Image Aug 31, 2026, 07_11_59 PM.png"
                   alt=""
@@ -2622,7 +3252,7 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-img" style="aspect-ratio: 16/10">
+              <div class="card-img img-landscape">
                 <img
                   src="photos/ee53e9da-8fec-4d03-abd9-01d883646372.png"
                   alt=""
@@ -2647,7 +3277,7 @@
         </div>
       </section>
 
-      <section class="section" style="background: var(--bg2)">
+      <section class="section section-bg-alt">
         <div class="container">
           <div class="sec-h">
             <div class="label">Shop</div>
@@ -2655,7 +3285,7 @@
           </div>
           <div class="grid4 stagger">
             <div class="card">
-              <div class="card-img" style="aspect-ratio: 3/4">
+              <div class="card-img img-product">
                 <img
                   src="photos/nano-banana-2_A_sleek_black_premium_dance_duffel_bag_with_subtle_gold_accents_placed_on_polish-0_14b96210-8d53-484b-978b-d66a022dfee8.jpg"
                   alt=""
@@ -2672,7 +3302,7 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-img" style="aspect-ratio: 3/4">
+              <div class="card-img img-product">
                 <img
                   src="photos/nano-banana-2_An_artistic_arrangement_of_professional_dance_shoes___Latin_heels_ballet_slipp-0_bfd55e87-c36e-40a1-baae-68c6aab08f63.jpg"
                   alt=""
@@ -2689,7 +3319,7 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-img" style="aspect-ratio: 3/4">
+              <div class="card-img img-product">
                 <img
                   src="photos/nano-banana-2_A_neatly_folded_set_of_premium_dance_training_clothes___black_leggings_fitted_-0_1d9c5b91-b6b5-40f8-b2f6-21e77732d82c.jpg"
                   alt=""
@@ -2706,7 +3336,7 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-img" style="aspect-ratio: 3/4">
+              <div class="card-img img-product">
                 <img
                   src="photos/nano-banana-2_An_elegant_burgundy_and_gold_gift_card_with_a_subtle_embossed_dance_figure_motif-0_15649766-2675-4c53-b115-05ab4ce79cb7.jpg"
                   alt=""
@@ -2734,7 +3364,7 @@
           </div>
           <div class="grid3 stagger">
             <div class="card">
-              <div class="card-img" style="aspect-ratio: 16/10">
+              <div class="card-img img-landscape">
                 <img
                   src="photos/5eab5a05-f148-4e4c-91bf-688a65cf53bc.png"
                   alt=""
@@ -2753,7 +3383,7 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-img" style="aspect-ratio: 16/10">
+              <div class="card-img img-landscape">
                 <img
                   src="photos/23bdec28-c439-479f-ad23-d19debdac9e7.png"
                   alt=""
@@ -2772,7 +3402,7 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-img" style="aspect-ratio: 16/10">
+              <div class="card-img img-landscape">
                 <img
                   src="photos/6aeafcb1-3d7c-4e52-8100-ee646104e531.png"
                   alt=""
@@ -2794,7 +3424,7 @@
         </div>
       </section>
 
-      <section class="section" style="background: var(--bg2)">
+      <section class="section section-bg-alt">
         <div class="container">
           <div class="sec-h c reveal-scale">
             <div class="label">Testimonials</div>
@@ -2911,7 +3541,7 @@
                     stroke-width="1.6"
                     stroke-linecap="round"
                   /></svg
-                ><b style="font-family: var(--ff-display); font-size: 1.1rem"
+                ><b class="text-display" style="font-size: 1.1rem"
                   >ArtDance</b
                 ></a
               >
@@ -2968,52 +3598,16 @@
 
     <!-- ═══════════ PAGE: CLASS DETAIL ═══════════ -->
     <div class="page" id="p-class">
-      <div style="padding-top: 5rem"></div>
-      <div
-        style="
-          position: relative;
-          height: 60vh;
-          min-height: 350px;
-          overflow: hidden;
-        "
-      >
+      <div class="hero-spacer"></div>
+      <div class="hero-banner">
         <img
           src="photos/nano-banana-2_A_professional_editorial_photograph_of_a_couple_dancing_bachata_in_an_intimate_d-0_0c5a9b8c-7c03-49be-aa3e-4ce0fae9186b.jpg"
           alt=""
-          style="width: 100%; height: 100%; object-fit: cover; object-position: top; opacity: 0.6"
+          class="hero-banner-img"
         />
-        <div
-          style="
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
-          "
-        ></div>
-        <div
-          style="
-            position: absolute;
-            bottom: 2rem;
-            left: var(--pad);
-            right: var(--pad);
-            max-width: var(--max-w);
-            margin: 0 auto;
-          "
-        >
-          <div
-            style="
-              display: inline-flex;
-              background: var(--accent);
-              color: #fff;
-              padding: 0.3rem 0.7rem;
-              border-radius: var(--r-full);
-              font-size: 0.65rem;
-              font-weight: 700;
-              letter-spacing: 0.08em;
-              margin-bottom: 0.75rem;
-            "
-          >
-            🔥 TRENDING
-          </div>
+        <div class="hero-banner-ov"></div>
+        <div class="hero-banner-content">
+          <div class="badge-accent">🔥 TRENDING</div>
           <h1
             style="
               font-family: var(--ff-display);
@@ -3024,154 +3618,43 @@
           >
             Latin Fusion
           </h1>
-          <div
-            style="
-              display: flex;
-              gap: 0.75rem;
-              font-size: 0.85rem;
-              color: var(--text2);
-              flex-wrap: wrap;
-            "
-          >
+          <div class="flex-row text-muted" style="flex-wrap: wrap; gap: 0.75rem">
             <span>Salsa</span><span>·</span><span>Intermediate</span
             ><span>·</span><span>Saturday, 18:00</span><span>·</span
             ><span>90 min</span>
           </div>
         </div>
       </div>
-      <div
-        class="container class-grid"
-        style="
-          display: grid;
-          grid-template-columns: 1fr 360px;
-          gap: 3rem;
-          padding: 2rem var(--pad) 4rem;
-        "
-      >
+      <div class="container detail-grid">
         <div>
-          <h3
-            style="
-              font-family: var(--ff-display);
-              font-size: 1.2rem;
-              margin-bottom: 0.75rem;
-            "
-          >
-            About This Class
-          </h3>
-          <p
-            style="
-              color: var(--text2);
-              line-height: 1.75;
-              margin-bottom: 1.5rem;
-            "
-          >
+          <h3 class="detail-h">About This Class</h3>
+          <p class="detail-body">
             Dive into the vibrant world of Latin dance! This class blends salsa,
             bachata, and cha-cha into one electrifying session. Perfect for
             intermediate dancers looking to expand their Latin repertoire.
           </p>
-          <h3
-            style="
-              font-family: var(--ff-display);
-              font-size: 1.2rem;
-              margin-bottom: 0.75rem;
-            "
-          >
-            What You'll Learn
-          </h3>
-          <div class="tags" style="margin-bottom: 1.5rem">
+          <h3 class="detail-h">What You'll Learn</h3>
+          <div class="tags detail-mb">
             <span class="tag">Salsa Basics</span
             ><span class="tag">Bachata Footwork</span
             ><span class="tag">Partner Connection</span
             ><span class="tag">Musicality</span>
           </div>
-          <h3
-            style="
-              font-family: var(--ff-display);
-              font-size: 1.2rem;
-              margin-bottom: 0.75rem;
-            "
-          >
-            Instructor
-          </h3>
-          <div
-            style="
-              display: flex;
-              gap: 1rem;
-              align-items: center;
-              cursor: pointer;
-            "
-            onclick="go('instructor')"
-          >
-            <img
-              src="photos/c976391d-3a63-4193-acd5-82872d310bca.png"
-              style="
-                width: 52px;
-                height: 52px;
-                border-radius: 50%;
-                object-fit: cover;
-              "
-            />
+          <h3 class="detail-h">Instructor</h3>
+          <div class="instructor-row" onclick="go('instructor')">
+            <img src="photos/c976391d-3a63-4193-acd5-82872d310bca.png" class="avatar avatar-md" />
             <div>
-              <div style="font-weight: 600">Anna Mkrtchyan</div>
-              <div style="font-size: 0.82rem; color: var(--text2)">
-                Salsa · Latin · Bachata · 8 years
-              </div>
+              <div class="text-bold">Anna Mkrtchyan</div>
+              <div class="text-body">Salsa · Latin · Bachata · 8 years</div>
             </div>
           </div>
         </div>
-        <div style="position: sticky; top: 5rem; align-self: start">
-          <div
-            style="
-              background: var(--card);
-              border-radius: var(--r-xl);
-              padding: 2rem;
-              box-shadow: var(--sh-lg);
-              border: 1px solid var(--border);
-            "
-          >
-            <div
-              style="
-                font-family: var(--ff-display);
-                font-size: 2rem;
-                font-weight: 800;
-                color: var(--accent);
-              "
-            >
-              12,000 AMD
-            </div>
-            <div
-              style="
-                font-size: 0.8rem;
-                color: var(--text3);
-                margin-bottom: 1.25rem;
-              "
-            >
-              per class · 90 minutes
-            </div>
-            <div
-              style="
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-                padding: 0.5rem 0;
-                font-size: 0.88rem;
-                color: var(--text2);
-              "
-            >
-              📅 Saturday, Sep 7
-            </div>
-            <div
-              style="
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-                padding: 0.5rem 0;
-                font-size: 0.88rem;
-                color: var(--text2);
-              "
-            >
-              🕐 18:00 – 19:30
-            </div>
+        <div class="sticky-sidebar">
+          <div class="sidebar-card">
+            <div class="price-heading">12,000 AMD</div>
+            <div class="price-sub">per class · 90 minutes</div>
+            <div class="info-row">📅 Saturday, Sep 7</div>
+            <div class="info-row">🕐 18:00 – 19:30</div>
             <div
               style="
                 display: flex;
@@ -3185,32 +3668,13 @@
               📍 Pulse Dance Studio
             </div>
             <div
-              style="height: 1px; background: var(--border); margin: 0.75rem 0"
+              class="divider"
             ></div>
-            <div
-              style="
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-                padding: 0.5rem 0;
-                font-size: 0.82rem;
-                color: var(--success);
-                font-weight: 600;
-              "
-            >
-              ⚡ 8 spots left
-            </div>
-            <button
-              class="btn btn-accent btn-lg btn-full"
-              style="margin-top: 1rem"
-              onclick="go('booking')"
-            >
+            <div class="info-row-success">⚡ 8 spots left</div>
+            <button class="btn btn-accent btn-lg btn-full mt-lg" onclick="go('booking')">
               Book Class <span class="btn-arrow">→</span>
             </button>
-            <button
-              class="btn btn-outline btn-md btn-full"
-              style="margin-top: 0.75rem"
-            >
+            <button class="btn btn-outline btn-md btn-full mt-md">
               ♡ Save to Favorites
             </button>
           </div>
@@ -3221,25 +3685,14 @@
     <!-- ═══════════ PAGE: INSTRUCTOR ═══════════ -->
     <div class="page" id="p-instructor">
       <div
-        style="
-          position: relative;
-          height: 90vh;
-          min-height: 400px;
-          overflow: hidden;
-          background: var(--bg2);
-        "
+        class="hero-banner"
+        style="height: 90vh; min-height: 400px; background: var(--bg2)"
       >
         <img
           src="photos/c976391d-3a63-4193-acd5-82872d310bca.png"
           alt=""
-          style="
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: top;
-            opacity: 0.55;
-            filter: brightness(0.8);
-          "
+          class="hero-banner-img"
+          style="opacity: 0.55; filter: brightness(0.8)"
         />
         <div
           style="
@@ -3324,15 +3777,7 @@
           </div>
         </div>
       </div>
-      <div
-        class="container class-grid"
-        style="
-          display: grid;
-          grid-template-columns: 1fr 360px;
-          gap: 3rem;
-          padding: 2rem var(--pad) 4rem;
-        "
-      >
+      <div class="container detail-grid">
         <div>
           <h3
             style="
@@ -3362,7 +3807,7 @@
             ><span class="tag">Body Movement</span>
           </div>
         </div>
-        <div style="position: sticky; top: 5rem; align-self: start">
+        <div class="sticky-sidebar">
           <div
             style="
               background: var(--card);
@@ -3419,7 +3864,7 @@
               ⚡ Available this week
             </div>
             <div
-              style="height: 1px; background: var(--border); margin: 0.75rem 0"
+              class="divider"
             ></div>
             <button class="btn btn-accent btn-md btn-full">
               Book a Session →
@@ -3437,21 +3882,10 @@
 
     <!-- ═══════════ PAGE: DISCOVER ═══════════ -->
     <div class="page" id="p-discover">
-      <div style="padding-top: 5rem"></div>
-      <div class="container" style="padding: 2rem var(--pad) 4rem">
-        <h1
-          style="
-            font-family: var(--ff-display);
-            font-size: clamp(1.5rem, 3vw, 2.2rem);
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-          "
-        >
-          Discover Classes
-        </h1>
-        <p style="color: var(--text2); margin-bottom: 2rem">
-          Find the perfect class for your level, style and schedule.
-        </p>
+      <div class="hero-spacer"></div>
+      <div class="container inner-container">
+        <h1 class="sec-title">Discover Classes</h1>
+        <p class="sec-subtitle">Find the perfect class for your level, style and schedule.</p>
         <div
           style="
             display: flex;
@@ -3537,8 +3971,8 @@
 
     <!-- ═══════════ PAGE: SHOP ═══════════ -->
     <div class="page" id="p-shop">
-      <div style="padding-top: 5rem"></div>
-      <div class="container" style="padding: 2rem var(--pad) 4rem">
+      <div class="hero-spacer"></div>
+      <div class="container inner-container">
         <h1
           style="
             font-family: var(--ff-display);
@@ -3554,7 +3988,7 @@
         </p>
         <div class="grid4">
           <div class="card">
-            <div class="card-img" style="aspect-ratio: 3/4">
+            <div class="card-img img-product">
               <img
                 src="photos/nano-banana-2_A_sleek_black_premium_dance_duffel_bag_with_subtle_gold_accents_placed_on_polish-0_14b96210-8d53-484b-978b-d66a022dfee8.jpg"
                 alt=""
@@ -3571,7 +4005,7 @@
             </div>
           </div>
           <div class="card">
-            <div class="card-img" style="aspect-ratio: 3/4">
+            <div class="card-img img-product">
               <img
                 src="photos/nano-banana-2_An_artistic_arrangement_of_professional_dance_shoes___Latin_heels_ballet_slipp-0_bfd55e87-c36e-40a1-baae-68c6aab08f63.jpg"
                 alt=""
@@ -3588,7 +4022,7 @@
             </div>
           </div>
           <div class="card">
-            <div class="card-img" style="aspect-ratio: 3/4">
+            <div class="card-img img-product">
               <img
                 src="photos/nano-banana-2_A_neatly_folded_set_of_premium_dance_training_clothes___black_leggings_fitted_-0_1d9c5b91-b6b5-40f8-b2f6-21e77732d82c.jpg"
                 alt=""
@@ -3605,7 +4039,7 @@
             </div>
           </div>
           <div class="card">
-            <div class="card-img" style="aspect-ratio: 3/4">
+            <div class="card-img img-product">
               <img
                 src="photos/nano-banana-2_An_elegant_burgundy_and_gold_gift_card_with_a_subtle_embossed_dance_figure_motif-0_15649766-2675-4c53-b115-05ab4ce79cb7.jpg"
                 alt=""
@@ -3627,8 +4061,8 @@
 
     <!-- ═══════════ PAGE: BOOKING CALENDAR ═══════════ -->
     <div class="page" id="p-booking">
-      <div style="padding-top: 5rem"></div>
-      <div class="container" style="padding: 2rem var(--pad) 4rem">
+      <div class="hero-spacer"></div>
+      <div class="container inner-container">
         <a
           style="
             font-size: 0.82rem;
@@ -3655,14 +4089,7 @@
         <p style="color: var(--text2); font-size: 0.95rem">
           Latin Fusion with Anna Mkrtchyan · Pulse Dance Studio
         </p>
-        <div class="booking-grid"
-          style="
-            display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 3rem;
-            margin-top: 2rem;
-          "
-        >
+        <div class="booking-detail-grid">
           <div>
             <div
               style="
@@ -3672,7 +4099,7 @@
                 margin-bottom: 1.5rem;
               "
             >
-              <h3 style="font-family: var(--ff-display); font-size: 1.2rem">
+              <h3 class="detail-h">
                 September 2026
               </h3>
               <div style="display: flex; gap: 0.5rem">
@@ -3707,13 +4134,7 @@
                 </button>
               </div>
             </div>
-            <div
-              style="
-                display: grid;
-                grid-template-columns: repeat(7, 1fr);
-                gap: 0.25rem;
-              "
-            >
+            <div class="cal-week">
               <div
                 style="
                   font-size: 0.7rem;
@@ -4183,13 +4604,7 @@
             >
               Available Times — Sat, Sep 10
             </h4>
-            <div
-              style="
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 0.5rem;
-              "
-            >
+            <div class="cal-3col">
               <div
                 style="
                   padding: 0.6rem;
@@ -4312,13 +4727,13 @@
                     type="radio"
                     name="loc"
                     checked
-                    style="accent-color: var(--accent)"
+                    class="accent-accent"
                   />
                   <div>
-                    <div style="font-weight: 600; font-size: 0.88rem">
+                    <div class="text-semibold-lg">
                       Pulse Dance Studio
                     </div>
-                    <div style="font-size: 0.75rem; color: var(--text2)">
+                    <div class="text-sm">
                       Kentron, Yerevan · Included
                     </div>
                   </div></label
@@ -4336,13 +4751,13 @@
                   ><input
                     type="radio"
                     name="loc"
-                    style="accent-color: var(--accent)"
+                    class="accent-accent"
                   />
                   <div>
-                    <div style="font-weight: 600; font-size: 0.88rem">
+                    <div class="text-semibold-lg">
                       My Location
                     </div>
-                    <div style="font-size: 0.75rem; color: var(--text2)">
+                    <div class="text-sm">
                       +5,000 AMD travel fee
                     </div>
                   </div></label
@@ -4360,13 +4775,13 @@
                   ><input
                     type="radio"
                     name="loc"
-                    style="accent-color: var(--accent)"
+                    class="accent-accent"
                   />
                   <div>
-                    <div style="font-weight: 600; font-size: 0.88rem">
+                    <div class="text-semibold-lg">
                       Online / No Location
                     </div>
-                    <div style="font-size: 0.75rem; color: var(--text2)">
+                    <div class="text-sm">
                       Video call session
                     </div>
                   </div></label
@@ -4374,7 +4789,7 @@
               </div>
             </div>
           </div>
-          <div style="position: sticky; top: 5rem; align-self: start">
+          <div class="sticky-sidebar">
             <div
               style="
                 background: var(--card);
@@ -4508,8 +4923,8 @@
 
     <!-- ═══════════ PAGE: CART ═══════════ -->
     <div class="page" id="p-cart">
-      <div style="padding-top: 5rem"></div>
-      <div class="container" style="padding: 2rem var(--pad) 4rem">
+      <div class="hero-spacer"></div>
+      <div class="container inner-container">
         <h1
           style="
             font-family: var(--ff-display);
@@ -4520,7 +4935,7 @@
         >
           Your Bag
         </h1>
-        <div class="cart-grid" style="display: grid; grid-template-columns: 1fr 360px; gap: 3rem">
+        <div class="cart-grid detail-grid">
           <div>
             <div
               style="
@@ -4544,7 +4959,7 @@
                   flex-shrink: 0;
                 "
               />
-              <div style="flex: 1">
+              <div class="flex-1">
                 <div
                   style="
                     font-size: 0.7rem;
@@ -4555,7 +4970,7 @@
                 >
                   ArtDance
                 </div>
-                <div style="font-weight: 600">Premium Dance Bag</div>
+                <div class="text-bold">Premium Dance Bag</div>
                 <div
                   style="
                     font-size: 0.8rem;
@@ -4565,7 +4980,7 @@
                 >
                   Color: Black · Size: Medium
                 </div>
-                <div style="font-weight: 700; color: var(--accent)">
+                <div class="text-bold-lg">
                   18,000 AMD
                 </div>
                 <div
@@ -4653,7 +5068,7 @@
                   flex-shrink: 0;
                 "
               />
-              <div style="flex: 1">
+              <div class="flex-1">
                 <div
                   style="
                     font-size: 0.7rem;
@@ -4664,7 +5079,7 @@
                 >
                   ArtDance
                 </div>
-                <div style="font-weight: 600">Training Apparel Set</div>
+                <div class="text-bold">Training Apparel Set</div>
                 <div
                   style="
                     font-size: 0.8rem;
@@ -4674,7 +5089,7 @@
                 >
                   Color: Burgundy · Size: S
                 </div>
-                <div style="font-weight: 700; color: var(--accent)">
+                <div class="text-bold-lg">
                   15,000 AMD
                 </div>
                 <div
@@ -4762,7 +5177,7 @@
                   flex-shrink: 0;
                 "
               />
-              <div style="flex: 1">
+              <div class="flex-1">
                 <div
                   style="
                     font-size: 0.7rem;
@@ -4773,7 +5188,7 @@
                 >
                   ArtDance
                 </div>
-                <div style="font-weight: 600">Dance Shoes Collection</div>
+                <div class="text-bold">Dance Shoes Collection</div>
                 <div
                   style="
                     font-size: 0.8rem;
@@ -4783,7 +5198,7 @@
                 >
                   Style: Salsa Heels · Size: 38
                 </div>
-                <div style="font-weight: 700; color: var(--accent)">
+                <div class="text-bold-lg">
                   12,500 AMD
                 </div>
                 <div
@@ -4947,8 +5362,8 @@
 
     <!-- ═══════════ PAGE: CHECKOUT ═══════════ -->
     <div class="page" id="p-checkout">
-      <div style="padding-top: 5rem"></div>
-      <div class="container" style="padding: 2rem var(--pad) 4rem">
+      <div class="hero-spacer"></div>
+      <div class="container inner-container">
         <h1
           style="
             font-family: var(--ff-display);
@@ -5028,7 +5443,7 @@
             Confirm
           </div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 400px; gap: 3rem">
+        <div class="checkout-grid">
           <div>
             <div
               style="
@@ -5050,14 +5465,7 @@
               >
                 Payment Method
               </h3>
-              <div
-                style="
-                  display: grid;
-                  grid-template-columns: repeat(3, 1fr);
-                  gap: 0.75rem;
-                  margin-bottom: 1.5rem;
-                "
-              >
+              <div class="cal-3col-gap">
                 <div
                   style="
                     padding: 1rem;
@@ -5102,131 +5510,27 @@
                   📱 Telcell
                 </div>
               </div>
-              <div style="margin-bottom: 1rem">
-                <div
-                  style="
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    color: var(--text2);
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    margin-bottom: 0.35rem;
-                  "
-                >
-                  Card Number
-                </div>
-                <input
-                  type="text"
-                  value="•••• •••• •••• 4242"
-                  style="
-                    width: 100%;
-                    padding: 0.75rem 1rem;
-                    border: 1.5px solid var(--border);
-                    border-radius: var(--r-md);
-                    font-size: 0.88rem;
-                    font-family: var(--ff-body);
-                    outline: none;
-                    background: var(--card);
-                    color: var(--text);
-                    transition: border-color 0.3s;
-                  "
-                />
+              <div class="mb-lg">
+                <div class="form-label">Card Number</div>
+                <input type="text" value="•••• •••• •••• 4242" class="form-input" />
               </div>
-              <div
-                style="
-                  display: grid;
-                  grid-template-columns: 1fr 1fr;
-                  gap: 1rem;
-                  margin-bottom: 1rem;
-                "
-              >
+              <div class="form-2col">
                 <div>
-                  <div
-                    style="
-                      font-size: 0.75rem;
-                      font-weight: 600;
-                      color: var(--text2);
-                      text-transform: uppercase;
-                      letter-spacing: 0.05em;
-                      margin-bottom: 0.35rem;
-                    "
-                  >
-                    Expiry
+                  <div>
+                    <div class="form-label">Expiry</div>
+                    <input type="text" value="12/28" class="form-input" />
                   </div>
-                  <input
-                    type="text"
-                    value="12/28"
-                    style="
-                      width: 100%;
-                      padding: 0.75rem 1rem;
-                      border: 1.5px solid var(--border);
-                      border-radius: var(--r-md);
-                      font-size: 0.88rem;
-                      font-family: var(--ff-body);
-                      outline: none;
-                      background: var(--card);
-                      color: var(--text);
-                    "
-                  />
                 </div>
                 <div>
-                  <div
-                    style="
-                      font-size: 0.75rem;
-                      font-weight: 600;
-                      color: var(--text2);
-                      text-transform: uppercase;
-                      letter-spacing: 0.05em;
-                      margin-bottom: 0.35rem;
-                    "
-                  >
-                    CVV
+                  <div>
+                    <div class="form-label">CVV</div>
+                    <input type="text" value="•••" class="form-input" />
                   </div>
-                  <input
-                    type="text"
-                    value="•••"
-                    style="
-                      width: 100%;
-                      padding: 0.75rem 1rem;
-                      border: 1.5px solid var(--border);
-                      border-radius: var(--r-md);
-                      font-size: 0.88rem;
-                      font-family: var(--ff-body);
-                      outline: none;
-                      background: var(--card);
-                      color: var(--text);
-                    "
-                  />
                 </div>
               </div>
               <div>
-                <div
-                  style="
-                    font-size: 0.75rem;
-                    font-weight: 600;
-                    color: var(--text2);
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    margin-bottom: 0.35rem;
-                  "
-                >
-                  Cardholder Name
-                </div>
-                <input
-                  type="text"
-                  value="Anna Mkrtchyan"
-                  style="
-                    width: 100%;
-                    padding: 0.75rem 1rem;
-                    border: 1.5px solid var(--border);
-                    border-radius: var(--r-md);
-                    font-size: 0.88rem;
-                    font-family: var(--ff-body);
-                    outline: none;
-                    background: var(--card);
-                    color: var(--text);
-                  "
-                />
+                <div class="form-label">Cardholder Name</div>
+                <input type="text" value="Anna Mkrtchyan" class="form-input" />
               </div>
             </div>
             <div
@@ -5249,14 +5553,7 @@
               >
                 Billing Address
               </h3>
-              <div
-                style="
-                  display: grid;
-                  grid-template-columns: 1fr 1fr;
-                  gap: 1rem;
-                  margin-bottom: 1rem;
-                "
-              >
+              <div class="form-2col">
                 <div>
                   <div
                     style="
@@ -5345,9 +5642,7 @@
                   "
                 />
               </div>
-              <div
-                style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem"
-              >
+              <div class="form-2col">
                 <div>
                   <div
                     style="
@@ -5457,7 +5752,7 @@
                 margin-bottom: 1rem;
               "
             >
-              <div style="display: flex; gap: 0.75rem; align-items: center">
+              <div class="flex-row">
                 <img
                   src="photos/nano-banana-2_A_sleek_black_premium_dance_duffel_bag_with_subtle_gold_accents_placed_on_polish-0_14b96210-8d53-484b-978b-d66a022dfee8.jpg"
                   style="
@@ -5467,17 +5762,17 @@
                     object-fit: cover;
                   "
                 />
-                <div style="flex: 1">
-                  <div style="font-size: 0.82rem; font-weight: 600">
+                <div class="flex-1">
+                  <div class="text-body-semibold-sm">
                     Premium Dance Bag
                   </div>
-                  <div style="font-size: 0.72rem; color: var(--text3)">×</div>
+                  <div class="text-sm">×</div>
                 </div>
-                <div style="font-size: 0.85rem; font-weight: 600">
+                <div class="text-body-semibold">
                   18,000 AMD
                 </div>
               </div>
-              <div style="display: flex; gap: 0.75rem; align-items: center">
+              <div class="flex-row">
                 <img
                   src="nano-banana-2_An_elegant_burgundy_and_gold_gift_card_with_a_subtle_embossed_dance_figure_motif-0_15649766-2675-4c53-b115-05ab4ce79cb7.jpg"
                   style="
@@ -5487,17 +5782,17 @@
                     object-fit: cover;
                   "
                 />
-                <div style="flex: 1">
-                  <div style="font-size: 0.82rem; font-weight: 600">
+                <div class="flex-1">
+                  <div class="text-body-semibold-sm">
                     Training Apparel Set
                   </div>
-                  <div style="font-size: 0.72rem; color: var(--text3)">×2</div>
+                  <div class="text-sm">×2</div>
                 </div>
-                <div style="font-size: 0.85rem; font-weight: 600">
+                <div class="text-body-semibold">
                   30,000 AMD
                 </div>
               </div>
-              <div style="display: flex; gap: 0.75rem; align-items: center">
+              <div class="flex-row">
                 <img
                   src="photos/nano-banana-2_An_artistic_arrangement_of_professional_dance_shoes___Latin_heels_ballet_slipp-0_bfd55e87-c36e-40a1-baae-68c6aab08f63.jpg"
                   style="
@@ -5507,13 +5802,13 @@
                     object-fit: cover;
                   "
                 />
-                <div style="flex: 1">
-                  <div style="font-size: 0.82rem; font-weight: 600">
+                <div class="flex-1">
+                  <div class="text-body-semibold-sm">
                     Dance Shoes
                   </div>
-                  <div style="font-size: 0.72rem; color: var(--text3)">×</div>
+                  <div class="text-sm">×</div>
                 </div>
-                <div style="font-size: 0.85rem; font-weight: 600">
+                <div class="text-body-semibold">
                   12,500 AMD
                 </div>
               </div>
@@ -5643,9 +5938,9 @@
         var tk = false;
         var heroContent = document.querySelector(".hero-c");
         var heroOverlay = document.querySelector(".hero-ov");
-        var heroScroll  = document.querySelector(".hero-scroll");
-        var heroVideo   = document.querySelector(".hero-video-main");
-        var heroGhosts  = document.getElementById("heroGhosts");
+        var heroScroll = document.querySelector(".hero-scroll");
+        var heroVideo = document.querySelector(".hero-video-main");
+        var heroGhosts = document.getElementById("heroGhosts");
         window.addEventListener(
           "scroll",
           function () {
@@ -5663,12 +5958,14 @@
                   if (heroVideo) {
                     var vScale = 1.04 + sy * 0.0003;
                     var vY = sy * 0.3;
-                    heroVideo.style.transform = "scale(" + vScale + ") translateY(" + vY + "px)";
+                    heroVideo.style.transform =
+                      "scale(" + vScale + ") translateY(" + vY + "px)";
                   }
 
                   // Ghosts container same speed as video
                   if (heroGhosts) {
-                    heroGhosts.style.transform = "translateY(" + (sy * 0.3) + "px)";
+                    heroGhosts.style.transform =
+                      "translateY(" + sy * 0.3 + "px)";
                   }
 
                   // Content: moves UP faster + fades out
@@ -5686,7 +5983,8 @@
                   // Scroll indicator: disappear fast
                   if (heroScroll) {
                     heroScroll.style.opacity = Math.max(0, 1 - p * 5);
-                    heroScroll.style.transform = "translateX(-50%) translateY(" + (sy * -0.8) + "px)";
+                    heroScroll.style.transform =
+                      "translateX(-50%) translateY(" + sy * -0.8 + "px)";
                   }
                 }
 
@@ -5698,13 +5996,22 @@
                     var progress = (vh - r.top) / (vh + r.height);
                     var eb = ed.querySelector(".editorial-bg img");
                     if (eb)
-                      eb.style.transform = "translateY(" + (progress - 0.5) * -200 + "px) scale(1.2)";
+                      eb.style.transform =
+                        "translateY(" +
+                        (progress - 0.5) * -200 +
+                        "px) scale(1.2)";
                     var ec = ed.querySelector(".editorial-c");
                     if (ec)
-                      ec.style.transform = "translateY(" + (progress - 0.5) * -60 + "px)";
+                      ec.style.transform =
+                        "translateY(" + (progress - 0.5) * -60 + "px)";
                     var h2 = ed.querySelector("h2");
                     if (h2)
-                      h2.style.transform = "translateY(" + (progress - 0.5) * -40 + "px) scale(" + (1 + (progress - 0.5) * 0.08) + ")";
+                      h2.style.transform =
+                        "translateY(" +
+                        (progress - 0.5) * -40 +
+                        "px) scale(" +
+                        (1 + (progress - 0.5) * 0.08) +
+                        ")";
                   }
                 }
 
@@ -5759,12 +6066,18 @@
           },
           { threshold: 0.15, rootMargin: "0px 0px -60px 0px" },
         );
-        document.querySelectorAll(".reveal,.reveal-left,.reveal-right,.reveal-scale,.stagger").forEach(function (el) {
-          revealObs.observe(el);
-        });
+        document
+          .querySelectorAll(
+            ".reveal,.reveal-left,.reveal-right,.reveal-scale,.stagger",
+          )
+          .forEach(function (el) {
+            revealObs.observe(el);
+          });
 
         // PARALLAX SCROLL — sections move at different speeds
-        var pxSections = document.querySelectorAll(".section .sec-h, .section .card-img img, .section .inst-img img, .section .cat img, .section .editorial-bg img");
+        var pxSections = document.querySelectorAll(
+          ".section .sec-h, .section .card-img img, .section .inst-img img, .section .cat img, .section .editorial-bg img",
+        );
         window.addEventListener(
           "scroll",
           function () {
@@ -5787,10 +6100,23 @@
           { passive: true },
         );
 
-        // DRAG TO SCROLL — classes horizontal
+        // DRAG TO SCROLL — classes horizontal (smooth snap)
         document.querySelectorAll(".classes").forEach(function (el) {
           var isDragging = false;
-          var startX, scrollLeft, velocity = 0, lastX = 0, lastT = 0, rafId = null;
+          var startX, scrollLeft;
+          var velocity = 0, lastX = 0, lastT = 0, rafId = null;
+
+          function getCardWidth() {
+            var first = el.querySelector(".cc");
+            if (!first) return 300;
+            return first.offsetWidth + parseFloat(getComputedStyle(el).gap || 20);
+          }
+
+          function snapToNearest() {
+            var cw = getCardWidth();
+            var idx = Math.round(el.scrollLeft / cw);
+            el.scrollTo({ left: idx * cw, behavior: "smooth" });
+          }
 
           el.addEventListener("mousedown", function (e) {
             isDragging = true;
@@ -5831,12 +6157,46 @@
             lastT = now;
           });
 
+          // Touch support for mobile swipe
+          var touchStartX = 0, touchScrollLeft = 0;
+          var touchVel = 0, touchLastX = 0, touchLastT = 0;
+
+          el.addEventListener("touchstart", function (e) {
+            touchStartX = e.touches[0].pageX - el.offsetLeft;
+            touchScrollLeft = el.scrollLeft;
+            touchLastX = e.touches[0].pageX;
+            touchLastT = Date.now();
+            touchVel = 0;
+          }, { passive: true });
+
+          el.addEventListener("touchmove", function (e) {
+            var x = e.touches[0].pageX - el.offsetLeft;
+            var walk = (x - touchStartX) * 1.2;
+            el.scrollLeft = touchScrollLeft - walk;
+            var now = Date.now();
+            var dt = now - touchLastT;
+            if (dt > 0) touchVel = (e.touches[0].pageX - touchLastX) / dt;
+            touchLastX = e.touches[0].pageX;
+            touchLastT = now;
+          }, { passive: true });
+
+          el.addEventListener("touchend", function () {
+            var v = touchVel * 12;
+            function step() {
+              if (Math.abs(v) < 0.3) { snapToNearest(); return; }
+              el.scrollLeft -= v;
+              v *= 0.93;
+              rafId = requestAnimationFrame(step);
+            }
+            step();
+          }, { passive: true });
+
           function startMomentum() {
             var v = velocity * 18;
             function step() {
-              if (Math.abs(v) < 0.5) return;
+              if (Math.abs(v) < 0.3) { snapToNearest(); return; }
               el.scrollLeft -= v;
-              v *= 0.95;
+              v *= 0.93;
               rafId = requestAnimationFrame(step);
             }
             step();
@@ -5848,16 +6208,25 @@
         var prevBtn = document.getElementById("classesPrev");
         var nextBtn = document.getElementById("classesNext");
         if (classesEl && prevBtn && nextBtn) {
+          function getCardWidth() {
+            var first = classesEl.querySelector(".cc");
+            if (!first) return 300;
+            return first.offsetWidth + parseFloat(getComputedStyle(classesEl).gap || 20);
+          }
+          function updateArrowState() {
+            prevBtn.disabled = classesEl.scrollLeft < 10;
+            nextBtn.disabled =
+              classesEl.scrollLeft + classesEl.clientWidth >=
+              classesEl.scrollWidth - 10;
+          }
           prevBtn.addEventListener("click", function () {
-            classesEl.scrollBy({ left: -340, behavior: "smooth" });
+            classesEl.scrollBy({ left: -getCardWidth(), behavior: "smooth" });
           });
           nextBtn.addEventListener("click", function () {
-            classesEl.scrollBy({ left: 340, behavior: "smooth" });
+            classesEl.scrollBy({ left: getCardWidth(), behavior: "smooth" });
           });
-          classesEl.addEventListener("scroll", function () {
-            prevBtn.disabled = classesEl.scrollLeft < 10;
-            nextBtn.disabled = classesEl.scrollLeft + classesEl.clientWidth >= classesEl.scrollWidth - 10;
-          });
+          classesEl.addEventListener("scroll", updateArrowState);
+          updateArrowState();
         }
 
         // CURSOR GLOW
@@ -5875,20 +6244,20 @@
         });
 
         // HERO GHOST TRAIL — wide video, no curtain edge, seamless loop
-        ;(function () {
+        (function () {
           var mainVideo = document.querySelector(".hero-video-main");
           var videoWrap = document.getElementById("heroVideoWrap");
-          var ghostsC   = document.getElementById("heroGhosts");
+          var ghostsC = document.getElementById("heroGhosts");
           if (!mainVideo || !videoWrap || !ghostsC) return;
 
-          var SLIDE_PX    = 25;
-          var SLIDE_MS    = 14000;
+          var SLIDE_PX = 25;
+          var SLIDE_MS = 14000;
           var GHOST_EVERY = 900;
-          var GHOST_LIFE  = 5000;
-          var MAX_GHOST   = 6;
-          var RETURN_MS   = 2500;
-          var FADE_ALL    = 3000;
-          var PAUSE_MS    = 600;
+          var GHOST_LIFE = 5000;
+          var MAX_GHOST = 6;
+          var RETURN_MS = 2500;
+          var FADE_ALL = 3000;
+          var PAUSE_MS = 600;
 
           var ghosts = [];
           var gTimer = null;
@@ -5898,10 +6267,17 @@
             clearTimeout(g.ft);
             clearTimeout(g.fo);
             clearTimeout(g.rm);
-            if (g.v) { g.v.pause(); g.v.src = ''; g.v.load(); }
+            if (g.v) {
+              g.v.pause();
+              g.v.src = "";
+              g.v.load();
+            }
             if (g.el && g.el.parentNode) g.el.parentNode.removeChild(g.el);
           }
-          function clearAll() { ghosts.forEach(removeGhost); ghosts = []; }
+          function clearAll() {
+            ghosts.forEach(removeGhost);
+            ghosts = [];
+          }
 
           function spawn() {
             if (!active || ghosts.length >= MAX_GHOST) return;
@@ -5943,15 +6319,20 @@
             spawn();
             gTimer = setInterval(spawn, GHOST_EVERY);
           }
-          function stopGhosts() { active = false; clearInterval(gTimer); }
+          function stopGhosts() {
+            active = false;
+            clearInterval(gTimer);
+          }
 
           function slideLeft() {
-            videoWrap.style.transition = "transform " + SLIDE_MS + "ms cubic-bezier(.25,.1,.25,1)";
-            videoWrap.style.transform  = "translateX(-" + SLIDE_PX + "% )";
+            videoWrap.style.transition =
+              "transform " + SLIDE_MS + "ms cubic-bezier(.25,.1,.25,1)";
+            videoWrap.style.transform = "translateX(-" + SLIDE_PX + "% )";
           }
           function slideBack() {
-            videoWrap.style.transition = "transform " + RETURN_MS + "ms cubic-bezier(.16,1,.3,1)";
-            videoWrap.style.transform  = "translateX(0)";
+            videoWrap.style.transition =
+              "transform " + RETURN_MS + "ms cubic-bezier(.16,1,.3,1)";
+            videoWrap.style.transform = "translateX(0)";
           }
 
           function runCycle() {
@@ -5968,10 +6349,15 @@
                 slideBack();
               }, FADE_ALL);
             }, SLIDE_MS + PAUSE_MS);
-            setTimeout(runCycle, SLIDE_MS + PAUSE_MS + FADE_ALL + RETURN_MS + 500);
+            setTimeout(
+              runCycle,
+              SLIDE_MS + PAUSE_MS + FADE_ALL + RETURN_MS + 500,
+            );
           }
 
-          function init() { setTimeout(runCycle, 800); }
+          function init() {
+            setTimeout(runCycle, 800);
+          }
           if (mainVideo.readyState >= 2) init();
           else mainVideo.addEventListener("loadeddata", init);
         })();

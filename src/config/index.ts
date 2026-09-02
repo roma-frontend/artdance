@@ -58,6 +58,18 @@ export {
 } from './pricing';
 export { features, isEnabled, deliveryPhases, type DeliveryPhaseId, type FeatureKey } from './features';
 export {
+  headerCta,
+  headerIconItems,
+  hasCinemaHero,
+  isActiveNavPath,
+  mobileNavItems,
+  navIconNames,
+  primaryNavItems,
+  type NavIconItem,
+  type NavIconName,
+  type NavItem,
+} from './navigation';
+export {
   capabilities,
   defaultRoleCapabilities,
   grantLimits,

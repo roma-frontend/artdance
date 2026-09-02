@@ -41,7 +41,7 @@ export default async function HomePage({ params }: PageProps) {
   const format = await getFormatter();
 
   return (
-    <main id="content">
+    <main id={site.mainContentId}>
       {/* ── HERO: всегда кинематографичная тёмная плоскость, независимо от темы ── */}
       <section className="cinema-surface relative flex min-h-dvh items-center overflow-hidden">
         <HeroVideo

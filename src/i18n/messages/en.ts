@@ -154,6 +154,8 @@ const en = {
     account: 'Account',
     openMenu: 'Open menu',
     closeMenu: 'Close menu',
+    menuTitle: 'Menu',
+    menuDescription: 'Site sections and quick links',
     openSearch: 'Open search',
     skipToContent: 'Skip to content',
   },
@@ -934,6 +936,7 @@ const en = {
 
   a11y: {
     ratingStars: 'Rated {rating} out of {max}',
+    mainNav: 'Main navigation',
     loading: 'Content is loading',
     imageOf: 'Photo of {subject}',
     closeDialog: 'Close dialog',

@@ -65,9 +65,17 @@ export const componentManifest: readonly ComponentSpec[] = [
     states: ['top', 'scrolled', 'mobile-menu-open', 'authenticated', 'anonymous'],
     notes:
       'В макете при скролле добавляется класс .scrolled: фон, blur и уменьшение высоты. ' +
-      'Порог — 40px. Логотип — inline SVG, не изображение. Версия 02.09.2026: добавлены ' +
-      'CTA «Book Now» (.nav-book) и бургер (.nav-hamburger); оба скрываются/показываются ' +
-      'на 768px. Бургер — это <button> с тремя span, превращающимися в крестик.',
+      'Порог — 60px (motion.headerScroll.thresholdPx). Логотип — inline SVG, не изображение ' +
+      '(BrandMark). Версия 02.09.2026: добавлены CTA «Book Now» (.nav-book) и бургер ' +
+      '(.nav-hamburger). ОТЛИЧИЯ ОТ МАКЕТА, сделанные осознанно: (1) ссылки и CTA скрываются ' +
+      'на 1024px, а не на 768px — семь разделов, четыре иконки и кнопка в строку между этими ' +
+      'ширинами не помещаются, в прототипе они наезжают друг на друга; (2) «Cart» вынесена из ' +
+      'строки ссылок в иконку, освободившееся место занял раздел «Studios»; (3) активный ' +
+      'раздел помечается aria-current="page", а не служебным классом .active; (4) состояние ' +
+      'шапки зависит не только от скролла: на страницах без кинематографичного первого экрана ' +
+      'она сплошная сразу (config/navigation.ts: hasCinemaHero) — иначе тёмный текст лёг бы ' +
+      'на светлый фон. Состояние authenticated придёт с волной auth отдельным клиентским ' +
+      'островком: чтение сессии в шапке отключило бы SSG у всех страниц сайта.',
   },
   {
     name: 'MobileNavDrawer',
@@ -79,10 +87,39 @@ export const componentManifest: readonly ComponentSpec[] = [
     i18n: ['nav', 'common.actions', 'a11y'],
     states: ['closed', 'open', 'closing'],
     notes:
-      'Появился в версии 02.09.2026. Ширина 280px, выезд справа 400ms, затемнение с ' +
-      'backdrop-filter. В макете это toggle класса .open через inline-onclick — в продукте ' +
-      'нужны ловушка фокуса, закрытие по Esc и по клику на оверлей, возврат фокуса на ' +
-      'бургер и блокировка скролла body. z-index — из zIndex.drawer, а не 9999.',
+      'Появился в версии 02.09.2026. Ширина 280px (layout.drawerWidth), выезд справа, ' +
+      'затемнение с backdrop-filter. В макете это toggle класса .open через inline-onclick — ' +
+      'в продукте построен на Sheet (Radix Dialog), который даёт ловушку фокуса, Esc, клик по ' +
+      'оверлею, возврат фокуса на бургер, блокировку скролла body и aria-modal. z-index — из ' +
+      'zIndex.drawer, а не 9999 (правило для [data-slot=sheet-*] в globals.css). Бургер НЕ ' +
+      'превращается в крестик, как в макете: при открытом меню он лежит под затемнением, и ' +
+      'анимации никто не увидит — закрытие круглой кнопкой .mobile-close внутри панели.',
+  },
+  {
+    name: 'BrandMark',
+    path: 'components/brand/brand-mark.tsx',
+    role: 'Знак бренда — фигура танцовщицы, inline SVG',
+    wave: 'foundation',
+    prototypeClasses: [],
+    screens: ['all'],
+    notes:
+      'currentColor вместо зашитого цвета: один компонент работает и на светлой шапке, и над ' +
+      'тёмным hero. aria-hidden — рядом всегда стоит словесная марка, иначе скринридер ' +
+      'прочитает бренд дважды.',
+  },
+  {
+    name: 'SkipToContent',
+    path: 'components/layout/skip-to-content.tsx',
+    role: 'Ссылка «к содержимому» для клавиатуры и скринридеров',
+    wave: 'foundation',
+    prototypeClasses: [],
+    screens: ['all'],
+    i18n: ['nav'],
+    states: ['hidden', 'focused'],
+    notes:
+      'В прототипе отсутствует — типичный пробел макета, который находит первый же аудит ' +
+      'доступности (WCAG 2.4.1). Цель — site.mainContentId, тот же id на <main> каждого ' +
+      'шаблона.',
   },
   {
     name: 'SiteFooter',

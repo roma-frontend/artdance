@@ -198,6 +198,8 @@ export const layout = {
   navHeight: '4.5rem',
   navHeightScrolled: '3.5rem',
   bottomNavHeight: '4rem',
+  /** Мобильное меню: 280px из прототипа. Уже, чем `sm`, — контент не растягивается. */
+  drawerWidth: '17.5rem',
 } as const;
 
 export const radius = {

@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { absoluteUrl, seo, site } from '@/config';
+import { SiteHeader } from '@/components/layout/site-header';
+import { SkipToContent } from '@/components/layout/skip-to-content';
 import { fontVariables } from '@/design/fonts';
 import { localeMeta, locales, isLocale, type Locale } from '@/i18n/config';
 import { routing } from '@/i18n/routing';
@@ -89,7 +91,11 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       className={fontVariables}
     >
       <body>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <SkipToContent />
+          <SiteHeader />
+          {children}
+        </NextIntlClientProvider>
       </body>
     </html>
   );

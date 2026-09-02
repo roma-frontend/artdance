@@ -158,6 +158,8 @@ const ru: Messages = {
     account: 'Кабинет',
     openMenu: 'Открыть меню',
     closeMenu: 'Закрыть меню',
+    menuTitle: 'Меню',
+    menuDescription: 'Разделы сайта и быстрые ссылки',
     openSearch: 'Открыть поиск',
     skipToContent: 'Перейти к содержимому',
   },
@@ -945,6 +947,7 @@ const ru: Messages = {
 
   a11y: {
     ratingStars: 'Оценка {rating} из {max}',
+    mainNav: 'Основная навигация',
     loading: 'Контент загружается',
     imageOf: 'Фото: {subject}',
     closeDialog: 'Закрыть окно',

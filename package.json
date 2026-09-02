@@ -29,6 +29,8 @@
     "test": "vitest --run",
     "test:watch": "vitest",
     "e2e": "playwright test",
+    "e2e:install": "playwright install --with-deps chromium",
+    "e2e:report": "playwright show-report",
     "verify": "npm run tokens:check && npm run i18n:check && npm run media:check && npm run typecheck && npm run lint && npm run test",
     "verify:quick": "npm run typecheck && npm run lint",
     "verify:headers": "node scripts/verify-headers.mjs",

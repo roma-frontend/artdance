@@ -92,8 +92,7 @@ jobs:
         continue-on-error: true
 
   build:
-    name: Сборка, бюджет бандла, заголовки
-    runs-on: ubuntu-latest
+    name: Сборка, бюджет бандла, заголовки    runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [consistency]
     steps:
@@ -120,3 +119,35 @@ jobs:
           name: next-build-log
           path: .next/trace
           retention-days: 3
+
+
+  # Поведение в настоящем браузере: ловушка фокуса, Esc, порядок слоёв,
+  # раскладка на трёх ширинах. Unit-тесты на эти свойства ответить не могут,
+  # а проверять их глазами на каждом изменении — значит однажды не проверить.
+  e2e:
+    name: Поведение в браузере
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [consistency]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit
+      - run: npx prisma generate
+      # Только chromium: все три профиля в playwright.config.ts на нём и работают.
+      - run: npx playwright install --with-deps chromium
+      # Проверки идут против production-сборки: у dev-сервера другой CSS-конвейер.
+      - run: npm run build
+      - run: npm run e2e
+      - name: Отчёт при падении
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 5

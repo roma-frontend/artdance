@@ -158,6 +158,8 @@ const hy: Messages = {
     account: "Իմ էջը",
     openMenu: "Բացել մենյուն",
     closeMenu: "Փակել մենյուն",
+    menuTitle: "Մենյու",
+    menuDescription: "Կայքի բաժինները և արագ հղումները",
     openSearch: "Բացել որոնումը",
     skipToContent: "Անցնել բովանդակությանը",
   },
@@ -954,6 +956,7 @@ const hy: Messages = {
 
   a11y: {
     ratingStars: "Գնահատականը {rating} {max}-ից",
+    mainNav: "Հիմնական նավիգացիա",
     loading: "Բովանդակությունը բեռնվում է",
     imageOf: "Լուսանկար՝ {subject}",
     closeDialog: "Փակել պատուհանը",

@@ -120,6 +120,8 @@
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /* Фиксированная шапка не должна накрывать цель якорной ссылки. */
+    scroll-padding-top: var(--layout-nav-height);
   }
 
   body {
@@ -200,4 +202,84 @@
     background-color: var(--surface-cinema);
     color: var(--content-on-cinema);
   }
+
+  /*
+   * Ссылка основной навигации: подчёркивание, растущее от левого края.
+   *
+   * В компоненте остаётся только цвет (он зависит от состояния шапки), а
+   * геометрия и псевдоэлемент — здесь: ::after из JSX не выразить, а
+   * группа утилит на каждую ссылку читалась бы хуже одной строки CSS.
+   * Активный раздел помечается `aria-current="page"`, а не служебным классом:
+   * подсветка и озвучивание скринридером получают один источник истины.
+   */
+  .nav-link {
+    position: relative;
+    display: inline-block;
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: calc(var(--space-1) * -1);
+    left: 0;
+    width: 0;
+    height: var(--border-width-thin);
+    background-color: var(--accent);
+    transition: width var(--duration-slow) var(--ease-brand);
+  }
+
+  .nav-link:hover::after,
+  .nav-link[aria-current='page']::after {
+    width: 100%;
+  }
+
+  /* Полоска бургера. Цвет наследуется от кнопки — он зависит от фона шапки. */
+  .hamburger-bar {
+    display: block;
+    width: var(--space-5);
+    height: var(--border-width-thick);
+    border-radius: var(--radius-full);
+    background-color: currentColor;
+    transition: transform var(--duration-normal) var(--ease-brand);
+  }
+}
+
+/*
+ * Слои портальных компонентов shadcn/ui.
+ *
+ * У всех них зашит `z-50`, а шапка сайта живёт на `--z-header` (1000) из карты
+ * слоёв. Без этого правила КАЖДЫЙ dropdown, select, tooltip и диалог в проекте
+ * уходил бы под шапку — и обнаружилось бы это на демо, а не здесь.
+ *
+ * Правило объявлено ВНЕ `@layer` умышленно: нелейерный CSS имеет приоритет над
+ * любым `@layer`, включая `utilities`, поэтому `z-50` внутри вендорного
+ * компонента больше ни на что не влияет и патчить обновляемые файлы не нужно.
+ */
+[data-slot='sheet-overlay'],
+[data-slot='sheet-content'],
+[data-slot='drawer-overlay'],
+[data-slot='drawer-content'] {
+  z-index: var(--z-drawer);
+}
+
+[data-slot='dialog-overlay'],
+[data-slot='dialog-content'],
+[data-slot='alert-dialog-overlay'],
+[data-slot='alert-dialog-content'] {
+  z-index: var(--z-modal);
+}
+
+[data-slot='dropdown-menu-content'],
+[data-slot='dropdown-menu-sub-content'],
+[data-slot='select-content'] {
+  z-index: var(--z-dropdown);
+}
+
+[data-slot='popover-content'],
+[data-slot='hover-card-content'] {
+  z-index: var(--z-popover);
+}
+
+[data-slot='tooltip-content'] {
+  z-index: var(--z-tooltip);
 }
