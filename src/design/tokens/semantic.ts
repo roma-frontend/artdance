@@ -75,6 +75,15 @@ export interface SemanticColors {
   'selection-bg': string;
   'selection-fg': string;
   scrollbar: string;
+  /**
+   * Фон интерактивного элемента под курсором и под клавиатурным выбором:
+   * пункт меню, опция списка, ячейка календаря.
+   *
+   * Роль нужна отдельно от `accent`, потому что у shadcn/ui «accent» означает
+   * именно это — подсветку наведения, а не брендовое действие. Если оставить
+   * их одним токеном, наведение на пункт меню станет бургунди.
+   */
+  'interactive-hover': string;
 }
 
 const cinema = {
@@ -137,6 +146,7 @@ export const lightColors: SemanticColors = {
   'selection-bg': crimson[600],
   'selection-fg': absolute.white,
   scrollbar: ink[200],
+  'interactive-hover': ivory[300],
 };
 
 export const darkColors: SemanticColors = {
@@ -184,6 +194,7 @@ export const darkColors: SemanticColors = {
   'selection-bg': crimson[500],
   'selection-fg': absolute.white,
   scrollbar: ink[600],
+  'interactive-hover': ink[700],
 };
 
 /** Тени тоже семантические: в темной теме нужна другая плотность. */

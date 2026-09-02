@@ -170,6 +170,7 @@
   --selection-bg: #8B1A2B;
   --selection-fg: #FFFFFF;
   --scrollbar: #CFC8BF;
+  --interactive-hover: #F1ECE4;
   --shadow-sm: 0 1px 2px rgba(20, 20, 20, 0.04);
   --shadow-md: 0 4px 20px rgba(20, 20, 20, 0.06);
   --shadow-lg: 0 12px 40px rgba(20, 20, 20, 0.10);
@@ -222,6 +223,7 @@
   --selection-bg: #B31228;
   --selection-fg: #FFFFFF;
   --scrollbar: #57514A;
+  --interactive-hover: #37332F;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
   --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.30);
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.40);

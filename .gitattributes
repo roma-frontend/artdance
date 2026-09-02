@@ -21,4 +21,4 @@
 # Артефакты, которые не нужно показывать в диффе ревью.
 package-lock.json -diff linguist-generated
 src/styles/tokens.css linguist-generated
-design/seed-media.generated.ts linguist-generated
+src/design/seed-media.generated.ts linguist-generated

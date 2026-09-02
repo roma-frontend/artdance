@@ -7,8 +7,8 @@
  *  • ни одного `href="/..."` — ссылки строятся через `routes`.
  */
 
-import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Slot } from 'radix-ui';
 import type { ComponentProps } from 'react';
 
 import { cn } from '@/lib/utils';
@@ -31,11 +31,28 @@ const buttonVariants = cva(
         contrast: 'bg-surface-card text-content-primary hover:-translate-y-px shadow-md',
         onCinema:
           'border-border-on-cinema text-content-on-cinema hover:bg-content-on-cinema hover:text-content-inverse',
+        /**
+         * Псевдоним `accent` для компонентов shadcn/ui: их `alert-dialog` и
+         * `calendar` передают `variant="default"`. Отдельного вида кнопки в
+         * дизайн-системе нет — брендовое действие одно.
+         */
+        default:
+          'bg-accent text-content-on-accent hover:bg-accent-hover hover:-translate-y-px shadow-md',
+        /** Разрушающее действие: удаление, отмена брони, возврат. */
+        destructive: 'bg-danger text-content-on-accent hover:opacity-90 shadow-md',
       },
       size: {
         sm: 'px-4 py-2 text-2xs',
         md: 'px-7 py-3 text-xs',
         lg: 'px-10 py-4 text-sm',
+        /**
+         * `default` и `icon` существуют ради компонентов shadcn/ui: их
+         * `calendar`, `pagination` и `dialog` вызывают `buttonVariants({ size })`
+         * с этими именами. Держим их здесь, чтобы не патчить чужие файлы,
+         * которые обновляются командой `shadcn add --overwrite`.
+         */
+        default: 'px-7 py-3 text-xs',
+        icon: 'size-11 p-0',
       },
       block: {
         true: 'w-full',
@@ -65,7 +82,7 @@ export function Button({
   asChild = false,
   ...props
 }: ButtonProps) {
-  const Component = asChild ? Slot : 'button';
+  const Component = asChild ? Slot.Root : 'button';
   return (
     <Component className={cn(buttonVariants({ variant, size, block }), className)} {...props} />
   );

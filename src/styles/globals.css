@@ -54,6 +54,39 @@
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
   --color-skeleton: var(--skeleton);
+  --color-interactive-hover: var(--interactive-hover);
+
+  /*
+   * Слой соответствия для shadcn/ui.
+   *
+   * Компоненты shadcn копируются в проект как есть и обращаются к своим именам
+   * ролей: `bg-background`, `text-muted-foreground`, `border-input`, `ring-ring`.
+   * Здесь эти имена объявлены ссылками на наши семантические токены — значения
+   * не дублируются, источник истины один (`src/design/tokens/semantic.ts`),
+   * а обновление компонента через `shadcn add --overwrite` ничего не ломает.
+   *
+   * Единственное переименование: у shadcn роль «accent» означает подсветку
+   * наведения, а у нас — брендовое действие. Поэтому в скопированных файлах
+   * `bg-accent` заменён на `bg-interactive-hover`, иначе наведение на пункт
+   * меню становилось бы бургунди.
+   */
+  --color-background: var(--surface-canvas);
+  --color-foreground: var(--content-primary);
+  --color-card: var(--surface-card);
+  --color-card-foreground: var(--content-primary);
+  --color-popover: var(--surface-card);
+  --color-popover-foreground: var(--content-primary);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--content-on-accent);
+  --color-secondary: var(--surface-sunken);
+  --color-secondary-foreground: var(--content-primary);
+  --color-muted: var(--surface-sunken);
+  --color-muted-foreground: var(--content-secondary);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--content-on-accent);
+  --color-border: var(--border-default);
+  --color-input: var(--border-default);
+  --color-ring: var(--border-focus);
 
   --font-display: var(--font-family-display);
   --font-sans: var(--font-family-sans);

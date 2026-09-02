@@ -39,7 +39,19 @@ const config = [
           paths: [
             {
               name: 'next/link',
-              message: 'Импортируйте Link из @/i18n/routing.',
+              message: 'Импортируйте Link из @/i18n/routing — иначе теряется префикс локали.',
+            },
+            {
+              name: 'next/image',
+              message:
+                'Прямой next/image запрещён. Используйте <Media preset="…"> из @/components/ui/media: ' +
+                'рассинхрон sizes и сетки — главная причина проваленного LCP.',
+            },
+            {
+              name: 'next/navigation',
+              importNames: ['redirect', 'permanentRedirect', 'useRouter', 'usePathname'],
+              message:
+                'Эти API теряют локаль. Импортируйте их из @/i18n/routing.',
             },
             {
               name: '@/design/tokens/primitives',
@@ -64,6 +76,19 @@ const config = [
         {
           selector: "JSXAttribute[name.name='href'] > Literal[value=/^\\//]",
           message: 'Путь-литерал. Используйте routes.* из @/config.',
+        },
+        {
+          selector: "JSXOpeningElement[name.name='video']",
+          message:
+            'Тег <video> напрямую запрещён: нужны постер, подавление автозапуска при ' +
+            'reduced-motion/Save-Data и кнопка паузы (WCAG 2.2.2). Используйте компоненты ' +
+            'из components/home/hero-video.tsx или components/media/video-player.tsx.',
+        },
+        {
+          selector: "JSXAttribute[name.name='className'] > Literal[value=/\\[(?:[0-9.]+(?:px|rem)|#)/]",
+          message:
+            'Произвольное значение в Tailwind-классе (arbitrary value). Добавьте токен ' +
+            'в src/design/tokens вместо literal-значения в разметке.',
         },
       ],
 
@@ -93,6 +118,41 @@ const config = [
       'no-restricted-properties': 'off',
       'no-restricted-syntax': 'off',
       'no-restricted-imports': 'off',
+    },
+  },
+
+  /**
+   * `Media` — единственный компонент, которому разрешён `next/image`, и
+   * `HeroVideo` / `VideoPlayer` — единственные, кому разрешён `<video>`.
+   * Исключение объявлено здесь, а не комментарием-отключением в файле: так его
+   * видно в одном месте и нельзя размножить копипастой.
+   */
+  {
+    files: [
+      'src/components/ui/media.tsx',
+      'src/components/home/hero-video.tsx',
+      'src/components/media/video-player.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': 'off',
+      'no-restricted-syntax': 'off',
+      '@next/next/no-img-element': 'off',
+    },
+  },
+
+  /**
+   * Компоненты shadcn/ui копируются в проект как есть и обновляются командой
+   * `npx shadcn add --overwrite`. Держать в них наши правки — значит терять их
+   * при каждом обновлении, поэтому здесь отключены стилевые ограничения.
+   * Брендовые компоненты (Badge, Price, RatingStars) писались отдельно и под
+   * общие правила попадают.
+   */
+  {
+    files: ['src/components/ui/{accordion,alert,alert-dialog,aspect-ratio,avatar,breadcrumb,calendar,card,carousel,checkbox,collapsible,command,dialog,drawer,dropdown-menu,form,hover-card,input,input-otp,label,pagination,popover,progress,radio-group,scroll-area,select,separator,sheet,skeleton,slider,sonner,switch,table,tabs,textarea,toggle,toggle-group,tooltip}.tsx'],
+    rules: {
+      'no-restricted-syntax': 'off',
+      'no-restricted-imports': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 

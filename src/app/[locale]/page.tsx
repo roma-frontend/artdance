@@ -15,6 +15,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { Button } from '@/components/ui/button';
+import { Media } from '@/components/ui/media';
 import { features, orderedSubscriptionPlans, routes, site } from '@/config';
 import { danceStyleLabelKey, danceStyles } from '@/domain/enums';
 import { Link } from '@/i18n/routing';
@@ -46,10 +47,19 @@ export default async function HomePage({ params }: PageProps) {
   return (
     <main id="content">
       {/* ── HERO: всегда кинематографичная тёмная плоскость, независимо от темы ── */}
-      <section className="cinema-surface relative flex min-h-screen items-center overflow-hidden">
+      <section className="cinema-surface relative flex min-h-dvh items-center overflow-hidden">
+        <Media
+          src="hero-dancer"
+          alt={t('hero.imageAlt')}
+          preset="heroFullBleed"
+          className="absolute inset-0 z-0 size-full"
+          imageClassName="opacity-75"
+          fill
+          priority
+        />
         <div
           aria-hidden
-          className="absolute inset-0 z-0"
+          className="absolute inset-0 z-[1]"
           style={{ background: 'var(--scrim-hero-diagonal)' }}
         />
         <div className="page-container relative z-10 pt-32 pb-20">

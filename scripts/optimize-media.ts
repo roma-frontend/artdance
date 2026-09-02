@@ -30,7 +30,7 @@ import { budgetFor, describeImage, processImage, withinBudget } from '../src/lib
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 const SEED_DIR = join(ROOT, 'public', 'media', 'seed');
-const GENERATED = join(ROOT, 'design', 'seed-media.generated.ts');
+const GENERATED = join(ROOT, 'src', 'design', 'seed-media.generated.ts');
 
 const checkOnly = process.argv.includes('--check');
 
@@ -207,7 +207,7 @@ async function main(): Promise<void> {
       current = '';
     }
     if (current !== generated) {
-      problems.push('design/seed-media.generated.ts устарел. Выполните npm run media:optimize');
+      problems.push('src/design/seed-media.generated.ts устарел. Выполните npm run media:optimize');
     }
   } else {
     writeFileSync(GENERATED, generated);

@@ -17,7 +17,6 @@
  */
 
 import type { ImagePresetKey } from '../src/config/media';
-import { seedMedia as generatedSeedMedia, type SeedMediaEntry } from './seed-media.generated';
 
 export interface DesignAsset {
   /** Семантическое имя в `public/media/seed`. Без расширения. */
@@ -272,22 +271,9 @@ export const unusedSourceFiles: ReadonlyArray<{ file: string; reason: string }> 
 /** Быстрый доступ по семантическому имени. */
 export const assetByName = new Map(designAssets.map((asset) => [asset.name, asset]));
 
-/**
- * Параметры файла после оптимизации: путь, реальные размеры и blur-плейсхолдер.
- *
- * Расширение не передаётся параметром намеренно: после `npm run media:optimize`
- * все ассеты лежат в WebP, и знание расширения не должно расползаться по коду.
- * Источник — сгенерированный манифест, поэтому размеры всегда соответствуют
- * файлу на диске: `next/image` получает точные `width`/`height` и не даёт
- * скачка вёрстки.
+/*
+ * Путь и размеры оптимизированного файла — в `src/design/seed-media.ts`.
+ * Реэкспорта здесь нет намеренно: этот манифест читает скрипт оптимизации,
+ * который сам и генерирует `seed-media.generated.ts`. Импорт сгенерированного
+ * файла отсюда означал бы, что скрипт нельзя запустить, пока он не выполнен.
  */
-export function seedMedia(name: string): (SeedMediaEntry & { src: string }) | undefined {
-  const entry = generatedSeedMedia[name as keyof typeof generatedSeedMedia];
-  if (!entry) return undefined;
-  return { ...entry, src: `/media/seed/${entry.file}` };
-}
-
-/** Путь к оптимизированному файлу ассета. Пустая строка, если ассета нет. */
-export function seedMediaPath(name: string): string {
-  return seedMedia(name)?.src ?? '';
-}

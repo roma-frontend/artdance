@@ -192,6 +192,7 @@ const hy: Messages = {
       statStyles: "Ուղղություն",
       statRating: "Միջին վարկանիշ",
       scrollHint: "Ոլորեք ներքև",
+      imageAlt: "Պարուհին շարժման մեջ մուգ դահլիճում, հակադիր լուսավորությամբ",
     },
     discover: {
       eyebrow: "Կատալոգ",
