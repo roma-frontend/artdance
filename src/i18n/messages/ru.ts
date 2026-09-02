@@ -192,7 +192,8 @@ const ru: Messages = {
       statStyles: 'Направлений',
       statRating: 'Средний рейтинг',
       scrollHint: 'Листайте вниз',
-      imageAlt: 'Танцовщица в движении в тёмном зале, контровой свет',
+      videoPlay: 'Включить фоновое видео',
+      videoPause: 'Остановить фоновое видео',
     },
     discover: {
       eyebrow: 'Каталог',

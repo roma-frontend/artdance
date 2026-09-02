@@ -192,7 +192,8 @@ const hy: Messages = {
       statStyles: "Ուղղություն",
       statRating: "Միջին վարկանիշ",
       scrollHint: "Ոլորեք ներքև",
-      imageAlt: "Պարուհին շարժման մեջ մուգ դահլիճում, հակադիր լուսավորությամբ",
+      videoPlay: "Միացնել ֆոնային տեսանյութը",
+      videoPause: "Դադարեցնել ֆոնային տեսանյութը",
     },
     discover: {
       eyebrow: "Կատալոգ",

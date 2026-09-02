@@ -544,19 +544,6 @@ export const demoReviews: readonly DemoReview[] = [
   },
 ];
 
-/* ─────────────────────────── Показатели главной ─────────────────────────── */
-
-/**
- * Цифры из hero-блока прототипа. В продукте считаются из БД; здесь нужны, чтобы
- * демо-страница совпадала с макетом до появления реальных данных.
- */
-export const demoHeroStats = {
-  activeDancers: 2_500,
-  expertInstructors: 150,
-  danceStyles: 50,
-  averageRating: 4.9,
-} as const;
-
 /**
  * Контрольный расчёт корзины из макета. Используется тестом:
  * если формула итогов изменится, расхождение с утверждённым дизайном
@@ -574,3 +561,123 @@ export const demoCartTotals = {
   discount: 6_050,
   total: 54_450,
 } as const;
+
+
+/* ─────────────────────── Альтернативные тексты медиа ───────────────────────
+ *
+ * Описания изображений на трёх языках. Живут здесь, а не в каталоге переводов,
+ * потому что относятся к конкретному файлу: при замене фото в админке меняется и
+ * описание. В production это `MediaAsset.altText` + `MediaAssetTranslation`,
+ * здесь — та же структура для сида и для разработки без базы.
+ *
+ * Пустая строка означает декоративное изображение, которое диктору читать не нужно.
+ */
+export const demoMediaAlt: Record<string, { hy: string; ru: string; en: string }> = {
+  'hero-dancer': {
+    hy: 'Պարուհին շարժման մեջ մուգ դահլիճում, հակադիր լուսավորությամբ',
+    ru: 'Танцовщица в движении в тёмном зале, контровой свет',
+    en: 'A dancer mid-movement in a dark studio, lit from behind',
+  },
+  'editorial-rhythm': {
+    hy: 'Պարային շարժման կինեմատոգրաֆիկ կադր',
+    ru: 'Кинематографичный кадр танцевального движения',
+    en: 'A cinematic frame of dance movement',
+  },
+  'style-hip-hop': {
+    hy: 'Հիփ-հոփ պարող փողոցային ոճով',
+    ru: 'Танцор хип-хопа в уличном стиле',
+    en: 'A hip-hop dancer in street style',
+  },
+  'style-ballet': {
+    hy: 'Բալետի պարուհի դասական դիրքում',
+    ru: 'Балерина в классической позиции',
+    en: 'A ballet dancer in a classical position',
+  },
+  'style-salsa': {
+    hy: 'Սալսայի զույգ պարի ընթացքում',
+    ru: 'Пара танцует сальсу',
+    en: 'A couple dancing salsa',
+  },
+  'style-contemporary': {
+    hy: 'Ժամանակակից պարի պլաստիկ շարժում',
+    ru: 'Пластичное движение в контемпорари',
+    en: 'A fluid contemporary dance movement',
+  },
+  'style-heels': {
+    hy: 'Heels ոճի պարուհի բարձրակոշիկներով',
+    ru: 'Танцовщица в стиле heels на каблуках',
+    en: 'A heels-style dancer in high heels',
+  },
+  'instructor-anna-mkrtchyan': {
+    hy: 'Աննա Մկրտչյան, պարուսույց',
+    ru: 'Анна Мкртчян, инструктор',
+    en: 'Anna Mkrtchyan, instructor',
+  },
+  'instructor-arman-harutyunyan': {
+    hy: 'Արման Հարությունյան, պարուսույց',
+    ru: 'Арман Арутюнян, инструктор',
+    en: 'Arman Harutyunyan, instructor',
+  },
+  'instructor-nare-grigoryan': {
+    hy: 'Նարե Գրիգորյան, պարուսույց',
+    ru: 'Наре Григорян, инструктор',
+    en: 'Nare Grigoryan, instructor',
+  },
+  'studio-pulse-dance-studio': {
+    hy: 'Pulse Dance Studio — խմբակային պարապմունք հայելիներով դահլիճում',
+    ru: 'Pulse Dance Studio — групповое занятие в зале с зеркалами',
+    en: 'Pulse Dance Studio — a group class in a mirrored hall',
+  },
+  'studio-rhythm-space': {
+    hy: 'Rhythm Space — սարքավորված պարային դահլիճ',
+    ru: 'Rhythm Space — оборудованный танцевальный зал',
+    en: 'Rhythm Space — an equipped dance hall',
+  },
+  'studio-flow-studio': {
+    hy: 'Flow Studio — փայտե հատակով դահլիճ և հենակ',
+    ru: 'Flow Studio — зал с деревянным полом и станком',
+    en: 'Flow Studio — a hall with a wooden floor and a barre',
+  },
+  'class-latin-fusion-cover': {
+    hy: 'Զույգը բաչատա է պարում ինտիմ լուսավորությամբ դահլիճում',
+    ru: 'Пара танцует бачату в зале с приглушённым светом',
+    en: 'A couple dancing bachata in a dimly lit hall',
+  },
+  'product-dance-bag': {
+    hy: 'Սև պարային պայուսակ ոսկեգույն շեշտադրումներով',
+    ru: 'Чёрная танцевальная сумка с золотыми акцентами',
+    en: 'A black dance bag with gold accents',
+  },
+  'product-dance-shoes': {
+    hy: 'Մասնագիտական պարային կոշիկների հավաքածու',
+    ru: 'Набор профессиональной танцевальной обуви',
+    en: 'A set of professional dance shoes',
+  },
+  'product-training-apparel': {
+    hy: 'Մարզական պարային հանդերձանքի հավաքածու',
+    ru: 'Комплект тренировочной танцевальной одежды',
+    en: 'A set of dance training clothes',
+  },
+  'product-gift-card': {
+    hy: 'Նվեր-քարտ բորդո և ոսկեգույն ձևավորմամբ',
+    ru: 'Подарочная карта в бургунди с золотом',
+    en: 'A gift card in burgundy and gold',
+  },
+};
+
+/**
+ * Показатели первого экрана. Набор и порядок — контент: заказчик решает, какими
+ * цифрами открывать сайт. Значения из прототипа; в production приходят из
+ * аналитики, а не из этого файла.
+ */
+export const demoHeroStats: ReadonlyArray<{
+  id: string;
+  value: number;
+  suffix: string;
+  decimals: number;
+}> = [
+  { id: 'activeDancers', value: 2_500, suffix: '+', decimals: 0 },
+  { id: 'instructors', value: 150, suffix: '+', decimals: 0 },
+  { id: 'styles', value: 50, suffix: '+', decimals: 0 },
+  { id: 'rating', value: 4.9, suffix: '', decimals: 1 },
+];

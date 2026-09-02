@@ -14,20 +14,15 @@
 
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 
+import { HeroVideo } from '@/components/home/hero-video';
 import { Button } from '@/components/ui/button';
 import { Media } from '@/components/ui/media';
 import { features, orderedSubscriptionPlans, routes, site } from '@/config';
 import { danceStyleLabelKey, danceStyles } from '@/domain/enums';
+import { resolveMedia } from '@/domain/content';
 import { Link } from '@/i18n/routing';
+import { getHomeContent } from '@/server/content/home';
 import type { Locale } from '@/i18n/config';
-
-/** Показатели главной. Значения придут из аналитики; структура фиксирована здесь. */
-const heroStats = [
-  { id: 'activeDancers', labelKey: 'statActiveDancers', value: 2500, suffix: '+' },
-  { id: 'instructors', labelKey: 'statInstructors', value: 150, suffix: '+' },
-  { id: 'styles', labelKey: 'statStyles', value: danceStyles.length, suffix: '+' },
-  { id: 'rating', labelKey: 'statRating', value: 4.9, suffix: '' },
-] as const;
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -37,6 +32,7 @@ export default async function HomePage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 
+  const content = getHomeContent();
   const t = await getTranslations('home');
   const tCommon = await getTranslations('common');
   const tStyles = await getTranslations();
@@ -48,14 +44,11 @@ export default async function HomePage({ params }: PageProps) {
     <main id="content">
       {/* ── HERO: всегда кинематографичная тёмная плоскость, независимо от темы ── */}
       <section className="cinema-surface relative flex min-h-dvh items-center overflow-hidden">
-        <Media
-          src="hero-dancer"
-          alt={t('hero.imageAlt')}
-          preset="heroFullBleed"
-          className="absolute inset-0 z-0 size-full"
-          imageClassName="opacity-75"
-          fill
-          priority
+        <HeroVideo
+          video={content.hero.video}
+          poster={content.hero.image}
+          locale={locale as Locale}
+          labels={{ play: t('hero.videoPlay'), pause: t('hero.videoPause') }}
         />
         <div
           aria-hidden
@@ -87,18 +80,18 @@ export default async function HomePage({ params }: PageProps) {
           </div>
 
           <dl className="mt-16 flex flex-wrap gap-12 border-t border-border-on-cinema pt-6">
-            {heroStats.map((stat) => (
+            {content.hero.stats.map((stat) => (
               <div key={stat.id}>
                 <dd className="text-heading-3 text-content-on-cinema">
                   <span className="text-metal">
-                    {stat.id === 'rating'
+                    {stat.decimals > 0
                       ? format.number(stat.value, 'rating')
                       : format.number(stat.value, 'plain')}
                   </span>
                   {stat.suffix}
                 </dd>
                 <dt className="text-eyebrow mt-1 text-content-on-cinema-muted">
-                  {t(`hero.${stat.labelKey}` as 'hero.statActiveDancers')}
+                  {t(`hero.stat${stat.id.charAt(0).toUpperCase()}${stat.id.slice(1)}` as 'hero.statActiveDancers')}
                 </dt>
               </div>
             ))}
@@ -133,14 +126,29 @@ export default async function HomePage({ params }: PageProps) {
           </header>
 
           <ul className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-            {danceStyles.slice(0, 5).map((style) => (
-              <li key={style}>
+            {content.styleTiles.map((tile) => (
+              <li key={tile.style}>
                 <Link
-                  href={routes.discover({ style })}
-                  className="flex aspect-[3/4] items-end rounded-lg border border-border-default bg-surface-sunken p-5 transition-colors duration-300 ease-brand hover:border-accent"
+                  href={routes.discover({ style: tile.style })}
+                  className="group relative flex aspect-[3/4] items-end overflow-hidden rounded-lg border border-border-default transition-colors duration-300 ease-brand hover:border-accent"
                 >
-                  <span className="text-card-title">
-                    {tStyles(danceStyleLabelKey(style) as 'danceStyles.hipHop')}
+                  <Media
+                    {...resolveMedia(tile.image, locale as Locale)}
+                    preset="categoryCard"
+                    fill
+                    className="absolute inset-0 size-full"
+                    imageClassName="transition-transform duration-slow ease-brand group-hover:scale-105"
+                  />
+                  <span
+                    aria-hidden
+                    className="absolute inset-0"
+                    style={{ background: 'var(--scrim-card-bottom)' }}
+                  />
+                  <span className="relative z-10 p-5 text-card-title text-content-on-cinema">
+                    {tStyles(danceStyleLabelKey(tile.style as never) as 'danceStyles.hipHop')}
+                    <span className="text-caption mt-1 block text-content-on-cinema-muted">
+                      {tCommon('counts.classes', { count: tile.classCount })}
+                    </span>
                   </span>
                 </Link>
               </li>

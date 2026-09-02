@@ -188,7 +188,8 @@ const en = {
       statStyles: 'Dance styles',
       statRating: 'Average rating',
       scrollHint: 'Scroll to explore',
-      imageAlt: 'A dancer mid-movement in a dark studio, lit from behind',
+      videoPlay: 'Play the background video',
+      videoPause: 'Pause the background video',
     },
     discover: {
       eyebrow: 'Discover',
