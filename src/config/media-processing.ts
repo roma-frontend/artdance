@@ -121,3 +121,78 @@ export const presetBudget: Record<ImagePresetKey, MediaBudgetGroup> = {
 export function variantKey(baseKey: string, width: number, format: MediaOutputFormat): string {
   return `${baseKey}/${width}.${format}`;
 }
+
+/* ────────────────────────────────────────────────────────────────────────────
+   ВИДЕО
+   ────────────────────────────────────────────────────────────────────────────
+   С версии прототипа от 02.09.2026 первый экран — фоновая петля видео. Исходник
+   из макета весит 21,6 МБ, и в таком виде он неприемлем:
+
+   • это первый экран, то есть трафик тратится до того, как пользователь увидел
+     хоть одно слово. На мобильном тарифе в Армении это ощутимые деньги;
+   • `autoplay` без `poster` даёт пустой кадр до первого байта;
+   • трейл из копий (`hero-ghosts`) декодирует до семи потоков 1080p
+     одновременно — на среднем Android это просадка кадров и нагрев.
+
+   Поэтому политика: короткая петля, жёсткий бюджет, обязательный постер и отказ
+   от автозапуска там, где пользователь об этом просил (reduced-motion, Save-Data).
+   ──────────────────────────────────────────────────────────────────────────── */
+
+export const videoProcessing = {
+  /**
+   * Фоновая петля первого экрана. Бюджет выведен из цели «первый экран целиком
+   * до 1,5 МБ»: постер ~60 KB + петля ~1,2 МБ + шрифты и JS.
+   */
+  heroLoop: {
+    maxBytes: 1_200 * 1024,
+    /** Дольше 8 секунд петля не читается как петля, а вес растёт линейно. */
+    maxDurationSeconds: 8,
+    /** 1280 достаточно: кадр перекрыт затемняющим слоем и размыт по краям. */
+    maxWidth: 1280,
+    targetFps: 25,
+    /** kbit/s. AV1 даёт тот же результат вдвое дешевле, но кодируется долго. */
+    bitrateKbps: { av1: 500, vp9: 700, h264: 1_100 },
+    /** Порядок = приоритет источников в `<video>`. */
+    formats: ['av1', 'vp9', 'h264'] as const,
+    /** Дорожка звука удаляется: петля всегда без звука, а трек — это лишние байты. */
+    stripAudio: true,
+    /** Число копий в трейле (`hero-ghosts`). 0 = трейл выключен. */
+    ghostTrailMax: 3,
+    /** Трейл включается только на широких экранах: на мобильном он не виден и вреден. */
+    ghostTrailMinViewportWidth: 1024,
+  },
+  /**
+   * Условия, при которых видео **не** проигрывается и остаётся постер.
+   * Это не деградация, а уважение к настройке пользователя.
+   */
+  autoplaySuppressedWhen: [
+    'prefers-reduced-motion: reduce',
+    'prefers-reduced-data: reduce',
+    'Save-Data: on',
+    'connection.effectiveType is 2g or slow-2g',
+    'connection.saveData is true',
+  ] as const,
+  /** Постер обязателен всегда: без него первый кадр — белый прямоугольник. */
+  posterRequired: true,
+  /** Хранилище: петля отдаётся с CDN, а не из репозитория. */
+  storage: 'bucket',
+} as const;
+
+/**
+ * Команды кодирования. Держатся в конфиге, а не в README, потому что параметры
+ * должны меняться вместе с бюджетом выше, а не отдельно от него.
+ *
+ * Требуется `ffmpeg` (в системе разработчика его может не быть — тогда шаг
+ * выполняется на машине с ним или в CI).
+ */
+export const videoEncodeCommands = {
+  h264: (input: string, output: string) =>
+    `ffmpeg -i "${input}" -t ${videoProcessing.heroLoop.maxDurationSeconds} -vf "scale=${videoProcessing.heroLoop.maxWidth}:-2,fps=${videoProcessing.heroLoop.targetFps}" -an -c:v libx264 -b:v ${videoProcessing.heroLoop.bitrateKbps.h264}k -preset slow -profile:v high -movflags +faststart "${output}.mp4"`,
+  vp9: (input: string, output: string) =>
+    `ffmpeg -i "${input}" -t ${videoProcessing.heroLoop.maxDurationSeconds} -vf "scale=${videoProcessing.heroLoop.maxWidth}:-2,fps=${videoProcessing.heroLoop.targetFps}" -an -c:v libvpx-vp9 -b:v ${videoProcessing.heroLoop.bitrateKbps.vp9}k -row-mt 1 "${output}.webm"`,
+  av1: (input: string, output: string) =>
+    `ffmpeg -i "${input}" -t ${videoProcessing.heroLoop.maxDurationSeconds} -vf "scale=${videoProcessing.heroLoop.maxWidth}:-2,fps=${videoProcessing.heroLoop.targetFps}" -an -c:v libsvtav1 -b:v ${videoProcessing.heroLoop.bitrateKbps.av1}k -preset 6 "${output}.av1.mp4"`,
+  /** Постер берётся из кадра петли, а не из отдельного фото: иначе виден стык. */
+  poster: (input: string, output: string) =>
+    `ffmpeg -i "${input}" -ss 0.5 -frames:v 1 "${output}.png"`,
+} as const;

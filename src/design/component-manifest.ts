@@ -59,13 +59,30 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'components/layout/site-header.tsx',
     role: 'Фиксированная навигация, меняющая фон при скролле',
     wave: 'foundation',
-    prototypeClasses: ['nav', 'nav-in', 'nav-logo', 'nav-links', 'nav-right', 'nav-icon'],
+    prototypeClasses: ['nav', 'nav-in', 'nav-logo', 'nav-links', 'nav-right', 'nav-icon', 'nav-book', 'nav-hamburger'],
     screens: ['all'],
     i18n: ['nav', 'common.actions'],
     states: ['top', 'scrolled', 'mobile-menu-open', 'authenticated', 'anonymous'],
     notes:
       'В макете при скролле добавляется класс .scrolled: фон, blur и уменьшение высоты. ' +
-      'Порог — 40px. Логотип — inline SVG, не изображение.',
+      'Порог — 40px. Логотип — inline SVG, не изображение. Версия 02.09.2026: добавлены ' +
+      'CTA «Book Now» (.nav-book) и бургер (.nav-hamburger); оба скрываются/показываются ' +
+      'на 768px. Бургер — это <button> с тремя span, превращающимися в крестик.',
+  },
+  {
+    name: 'MobileNavDrawer',
+    path: 'components/layout/mobile-nav-drawer.tsx',
+    role: 'Выезжающее справа мобильное меню с затемнением',
+    wave: 'foundation',
+    prototypeClasses: ['mobile-menu', 'mobile-overlay', 'mobile-close'],
+    screens: ['all'],
+    i18n: ['nav', 'common.actions', 'a11y'],
+    states: ['closed', 'open', 'closing'],
+    notes:
+      'Появился в версии 02.09.2026. Ширина 280px, выезд справа 400ms, затемнение с ' +
+      'backdrop-filter. В макете это toggle класса .open через inline-onclick — в продукте ' +
+      'нужны ловушка фокуса, закрытие по Esc и по клику на оверлей, возврат фокуса на ' +
+      'бургер и блокировка скролла body. z-index — из zIndex.drawer, а не 9999.',
   },
   {
     name: 'SiteFooter',
@@ -108,28 +125,57 @@ export const componentManifest: readonly ComponentSpec[] = [
   {
     name: 'HeroSection',
     path: 'components/home/hero-section.tsx',
-    role: 'Первый экран: полноэкранное фото, заголовок, две CTA, четыре показателя',
+    role: 'Первый экран: фоновое видео, заголовок, две CTA, четыре показателя',
     wave: 'foundation',
     prototypeClasses: ['hero', 'hero-bg', 'hero-ov', 'hero-c', 'hero-badge', 'hero-title', 'hero-sub', 'hero-btns', 'hero-stats', 'hero-sv', 'hero-sl', 'hero-scroll'],
     screens: ['home'],
     i18n: ['home.hero'],
     image: 'heroFullBleed',
-    states: ['default', 'reduced-motion'],
+    states: ['default', 'reduced-motion', 'video-unavailable'],
     notes:
-      'Показатели анимируются счётчиком от нуля (функция animC в прототипе) — только при ' +
-      'появлении в viewport и только если не задан prefers-reduced-motion. Фон медленно ' +
-      'зумится 12s. Градиент — scrim.heroDiagonal.',
+      'Версия 02.09.2026: статичное фото заменено видео (см. HeroVideo). Показатели ' +
+      'анимируются счётчиком от нуля при появлении в viewport — параметры в ' +
+      'motion.counter. При уходе вверх работает параллакс: фон уезжает медленнее, ' +
+      'контент быстрее и гаснет (motion.heroParallax). Заголовок содержит <em> с ' +
+      'акцентным курсивом — в i18n это отдельный ключ, а не HTML в строке. ' +
+      'ДЕФЕКТ макета: min-height 100vh → использовать 100dvh, иначе первый экран ' +
+      'дёргается при появлении адресной строки на iOS.',
+  },
+  {
+    name: 'HeroVideo',
+    path: 'components/home/hero-video.tsx',
+    role: 'Фоновая петля первого экрана с постером и трейлом копий',
+    wave: 'foundation',
+    prototypeClasses: ['hero-video-wrap', 'hero-video-main', 'hero-ghosts', 'hero-ghost'],
+    screens: ['home'],
+    i18n: ['a11y'],
+    image: 'heroFullBleed',
+    states: ['poster-only', 'loading', 'playing', 'paused-by-user', 'reduced-motion', 'save-data', 'error'],
+    notes:
+      'Самый рискованный компонент макета. Исходник петли — 21,6 МБ, автозапуск без ' +
+      'poster и без preload, а трейл создаёт до шести копий <video> (до семи потоков ' +
+      '1080p одновременно). Требования: постер обязателен (videoProcessing.posterRequired), ' +
+      'петля ≤ 1,2 МБ и ≤ 8 с, источники av1/vp9/h264, автозапуск подавляется при ' +
+      'prefers-reduced-motion, Save-Data и медленном соединении, трейл ограничен ' +
+      'ghostTrailMax и включается от 1024px. Петля отдаётся с CDN, а не из репозитория. ' +
+      'Кнопка паузы обязательна: автовоспроизводимое движение дольше 5 секунд требует ' +
+      'управления (WCAG 2.2.2).',
   },
   {
     name: 'HeroSearchBar',
     path: 'components/home/hero-search-bar.tsx',
     role: 'Поисковая строка, наезжающая на hero снизу',
     wave: 'catalog',
-    prototypeClasses: ['heroSearch'],
+    prototypeClasses: ['heroSearch', 'search-pill', 'search-pill-filters'],
     screens: ['home'],
     i18n: ['search'],
-    states: ['idle', 'focused', 'with-filters'],
-    notes: 'Отрицательный margin-top −2.5rem поверх hero. Три чипа: город, дата, направление.',
+    states: ['idle', 'focused', 'with-filters', 'compact'],
+    notes:
+      'Отрицательный margin-top −2.5rem поверх hero. Три чипа: город, дата, направление. ' +
+      'Версия 02.09.2026: чипы вынесены в .search-pill-filters и сворачиваются по ширине — ' +
+      'на 768px остаётся первый, на 360px строка становится вертикальной. ДЕФЕКТ: на 360px ' +
+      'фильтры скрыты через display:none !important без альтернативы — в продукте они ' +
+      'должны уходить в Sheet, а не исчезать.',
   },
   {
     name: 'StyleMarquee',
@@ -175,13 +221,17 @@ export const componentManifest: readonly ComponentSpec[] = [
   {
     name: 'ClassCarousel',
     path: 'components/catalog/class-carousel.tsx',
-    role: 'Горизонтальная прокрутка карточек со snap',
+    role: 'Горизонтальная прокрутка карточек со snap и кнопками',
     wave: 'catalog',
-    prototypeClasses: ['classes'],
+    prototypeClasses: ['classes', 'classes-wrap', 'scroll-arrows', 'scroll-arrow'],
     screens: ['home'],
     i18n: ['home.popular', 'a11y'],
-    states: ['default', 'empty', 'loading'],
-    notes: 'scroll-snap-type: x mandatory, скроллбар скрыт. Нужны кнопки со стрелками для клавиатуры.',
+    states: ['default', 'empty', 'loading', 'at-start', 'at-end'],
+    notes:
+      'scroll-snap-type: x mandatory, скроллбар скрыт. Версия 02.09.2026: появились ' +
+      'кнопки-стрелки (.scroll-arrow), они гасятся на краях списка — шаг и допуск в ' +
+      'motion.carousel. Кнопкам нужны aria-label и aria-controls: в макете это ' +
+      'безымянные круги с символом.',
   },
   {
     name: 'InstructorCard',
@@ -300,14 +350,17 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'app/[locale]/classes/[slug]/page.tsx',
     role: 'Страница занятия: обложка, описание, чему научитесь, инструктор, панель брони',
     wave: 'booking',
-    prototypeClasses: ['tag', 'tags'],
+    prototypeClasses: ['tag', 'tags', 'class-grid'],
     screens: ['class'],
     i18n: ['classDetail', 'booking', 'reviews'],
     image: 'editorialFullBleed',
     states: ['available', 'few-spots', 'full-waitlist', 'cancelled'],
     notes:
       'Панель брони — sticky на десктопе, фиксированная снизу на мобильном. ' +
-      'Условия отмены берутся из booking.freeCancellationHours, не из текста.',
+      'Условия отмены берутся из booking.freeCancellationHours, не из текста. ' +
+      'Версия 02.09.2026: двухколоночная сетка получила класс .class-grid и на 768px ' +
+      'схлопывается в колонку. В макете это сделано через display:flex !important ' +
+      'поверх inline-стилей — в продукте таких перебиваний быть не должно.',
   },
   {
     name: 'InstructorProfileScreen',
@@ -323,6 +376,20 @@ export const componentManifest: readonly ComponentSpec[] = [
   },
 
   /* ───────────────────────── Бронирование ───────────────────────── */
+  {
+    name: 'BookingScreen',
+    path: 'app/[locale]/instructors/[slug]/book/page.tsx',
+    role: 'Экран бронирования: календарь, слоты, место, сводка',
+    wave: 'booking',
+    prototypeClasses: ['booking-grid'],
+    screens: ['booking'],
+    i18n: ['booking'],
+    states: ['loading', 'ready', 'no-availability', 'hold-active', 'hold-expired'],
+    notes:
+      'Версия 02.09.2026: сетка «календарь + сводка» получила класс .booking-grid и на ' +
+      '768px становится колонкой, сводка уезжает под календарь. На мобильном сводка с ' +
+      'итогом и CTA должна оставаться доступной — StickyActionBar, а не длинная прокрутка.',
+  },
   {
     name: 'BookingCalendar',
     path: 'components/booking/booking-calendar.tsx',
@@ -382,14 +449,16 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'app/[locale]/cart/page.tsx',
     role: 'Корзина: позиции с количеством, сводка, промокод, трест-бейджи',
     wave: 'commerce',
-    prototypeClasses: [],
+    prototypeClasses: ['cart-grid'],
     screens: ['cart'],
     i18n: ['cart', 'common.counts', 'a11y'],
     image: 'thumbnail',
     states: ['empty', 'items', 'promo-applied', 'promo-invalid', 'item-unavailable', 'price-changed'],
     notes:
       'Контрольный расчёт из макета зафиксирован в prisma/fixtures/demo.ts (demoCartTotals) ' +
-      'и покрыт тестом. Перед оформлением корзина перепроверяется на сервере с diff-ответом.',
+      'и покрыт тестом. Перед оформлением корзина перепроверяется на сервере с diff-ответом. ' +
+      'Версия 02.09.2026: .cart-grid схлопывается в колонку на 768px, миниатюры товаров ' +
+      'уменьшаются на 480px.',
   },
   {
     name: 'CheckoutStepper',
@@ -530,6 +599,49 @@ export const componentManifest: readonly ComponentSpec[] = [
     notes:
       'В прототипе пустых состояний нет вообще — это самый частый пробел при переносе ' +
       'макета в продукт. Компонент обязателен для каждого списка.',
+  },
+
+  /* ───────────────────── Эффекты (версия 02.09.2026) ───────────────────── */
+  {
+    name: 'Reveal',
+    path: 'components/fx/reveal.tsx',
+    role: 'Появление блока при попадании в viewport',
+    wave: 'foundation',
+    prototypeClasses: ['reveal', 'reveal-left', 'reveal-right', 'reveal-scale', 'stagger'],
+    screens: ['all'],
+    variants: ['up', 'left', 'right', 'scale', 'stagger'],
+    states: ['hidden', 'visible', 'reduced-motion'],
+    notes:
+      'Появился в версии 02.09.2026 и применён почти ко всем секциям. Параметры — ' +
+      'motion.reveal и motion.stagger. Критично: при prefers-reduced-motion блок должен ' +
+      'сразу получать конечное состояние, а не оставаться прозрачным — иначе контент ' +
+      'просто не виден. То же при отключённом JS: начальная непрозрачность задаётся ' +
+      'только после подписки observer.',
+  },
+  {
+    name: 'ScrollProgress',
+    path: 'components/fx/scroll-progress.tsx',
+    role: 'Полоса прогресса чтения страницы',
+    wave: 'foundation',
+    prototypeClasses: [],
+    screens: ['all'],
+    states: ['hidden', 'visible'],
+    notes:
+      'В макете — элемент с inline-стилями, ширина пересчитывается на каждый скролл. ' +
+      'В продукте: высота и порог из motion.scrollProgress, обновление через ' +
+      'requestAnimationFrame, aria-hidden (это декорация, а не индикатор прогресса задачи).',
+  },
+  {
+    name: 'PointerGlow',
+    path: 'components/fx/pointer-glow.tsx',
+    role: 'Мягкое акцентное свечение под курсором',
+    wave: 'foundation',
+    prototypeClasses: [],
+    screens: ['all'],
+    states: ['idle', 'active', 'disabled'],
+    notes:
+      'Только при (hover: hover) and (pointer: fine) — на touch эффект бессмысленен и ' +
+      'стоит кадров. Отключается при prefers-reduced-motion. Параметры — motion.pointerGlow.',
   },
 ];
 

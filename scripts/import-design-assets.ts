@@ -21,12 +21,13 @@ import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync } from 'node
 import { basename, dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { designAssets, unusedSourceFiles } from '../design/asset-manifest.ts';
+import { designAssets, designVideos, unusedSourceFiles } from '../design/asset-manifest.ts';
+import { videoProcessing } from '../src/config/media-processing.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 
-const DEFAULT_SOURCE = 'C:\\Users\\namel\\Downloads\\T3\\T3\\artdance-deploy';
+const DEFAULT_SOURCE = 'C:\\Users\\namel\\Desktop\\artdance-deploy';
 const REFERENCE_DIR = join(ROOT, 'design', 'reference');
 const SEED_MEDIA_DIR = join(ROOT, 'public', 'media', 'seed');
 
@@ -96,6 +97,39 @@ for (const asset of designAssets) {
 
 for (const entry of unusedSourceFiles) accountedSources.add(entry.file);
 
+/* ── 2b. Видео: учитывается, но НЕ копируется в репозиторий ── */
+const videoReports: string[] = [];
+
+for (const video of designVideos) {
+  accountedSources.add(video.source);
+  const from = join(sourcePhotos, video.source);
+
+  if (!existsSync(from)) {
+    problems.push(`${video.name}: исходное видео отсутствует — ${video.source}`);
+    continue;
+  }
+
+  const bytes = statSync(from).size;
+  if (bytes !== video.sourceBytes) {
+    videoReports.push(
+      `${video.source}: размер изменился (${Math.round(video.sourceBytes / 1024)} KB → ` +
+        `${Math.round(bytes / 1024)} KB) — обновите sourceBytes в манифесте`,
+    );
+  }
+
+  const budget = videoProcessing.heroLoop.maxBytes;
+  videoReports.push(
+    `${video.source}: ${(bytes / (1024 * 1024)).toFixed(1)} MB в макете, ` +
+      `бюджет петли ${Math.round(budget / 1024)} KB → нужно кодирование ` +
+      `(превышение ×${Math.round(bytes / budget)})`,
+  );
+
+  /** Постер обязателен: без него первый кадр — пустой прямоугольник. */
+  if (!designAssets.some((asset) => asset.name === video.poster)) {
+    problems.push(`${video.name}: постер «${video.poster}» не найден в designAssets`);
+  }
+}
+
 /* ── 3. Сверка: файлы на диске, которых нет в манифесте ── */
 if (existsSync(sourcePhotos)) {
   for (const file of readdirSync(sourcePhotos)) {
@@ -128,6 +162,16 @@ if (unusedSourceFiles.length > 0) {
   for (const entry of unusedSourceFiles) {
     console.log(`  ${basename(entry.file)} — ${entry.reason}`);
   }
+}
+
+if (videoReports.length > 0) {
+  console.log('\nВидео (в репозиторий не копируется — см. designVideos):');
+  for (const report of videoReports) console.log(`  • ${report}`);
+  console.log(
+    '  Команды кодирования — videoEncodeCommands в src/config/media-processing.ts.\n' +
+      '  Готовая петля и постер уходят в бакет, а не в git: 21 МБ в истории остаются\n' +
+      '  в каждом клоне навсегда.',
+  );
 }
 
 if (problems.length > 0) {

@@ -156,11 +156,13 @@ export {
   mediaProcessing,
   presetBudget,
   variantKey,
+  videoEncodeCommands,
+  videoProcessing,
   type MediaBudgetGroup,
   type MediaOutputFormat,
 } from './media-processing';
 
-/** Видео (Phase 3). Держим здесь, чтобы плеер не знал про провайдера. */
+/** Видео-курсы (Phase 3). Держим здесь, чтобы плеер не знал про провайдера. */
 export const videoConfig = {
   provider: 'cloudflare-stream',
   defaultPlaybackQuality: 'auto',

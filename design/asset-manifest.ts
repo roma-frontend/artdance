@@ -12,7 +12,8 @@
  *   • ревью — видно, какие изображения в прототипе переиспользованы как заглушки.
  *
  * Источник: `design/reference/artdance-final.html` (версия из `artdance-deploy`,
- * 1 сентября 2026).
+ * 2 сентября 2026 — hero переведён на видео, добавлено мобильное меню и
+ * пять точек перелома вместо трёх).
  */
 
 import type { ImagePresetKey } from '../src/config/media';
@@ -37,14 +38,50 @@ export interface DesignAsset {
   needsOptimization?: true;
 }
 
+/**
+ * Видео прототипа.
+ *
+ * Держится отдельным списком и **не копируется в репозиторий**: исходник
+ * `dancer-fhd.mp4` весит 21,6 МБ. Git хранит историю бинарников навсегда — один
+ * такой коммит утяжеляет каждый клон и каждый CI-прогон до конца жизни проекта.
+ * Место такого файла — объектное хранилище, а в репозитории остаётся постер и
+ * запись в этом манифесте.
+ *
+ * Требования к кодированию — `videoProcessing` в `src/config/media-processing.ts`.
+ */
+export interface DesignVideo {
+  name: string;
+  source: string;
+  subject: string;
+  usedFor: ReadonlyArray<{ entity: string; id: string }>;
+  /** Постер: имя ассета из `designAssets`. Обязателен — без него видно белый кадр. */
+  poster: string;
+  /** Байт в исходнике прототипа. Для отчёта об экономии после кодирования. */
+  sourceBytes: number;
+}
+
+export const designVideos: readonly DesignVideo[] = [
+  {
+    name: 'hero-loop',
+    source: 'dancer-fhd.mp4',
+    subject: 'Танцовщица в движении, FHD — фоновая петля первого экрана',
+    usedFor: [{ entity: 'page', id: 'home.hero' }],
+    poster: 'hero-dancer',
+    sourceBytes: 21_600_140,
+  },
+];
+
 export const designAssets: readonly DesignAsset[] = [
   {
     name: 'hero-dancer',
     source: '01a8724c-2a8f-4949-b140-afd241b012b8.png',
     preset: 'heroFullBleed',
-    subject: 'Танцовщица в движении, контровой свет — главный кадр первого экрана',
+    subject: 'Танцовщица в движении, контровой свет — постер фоновой петли первого экрана',
     usedFor: [{ entity: 'page', id: 'home.hero' }],
-    // 1,9 MB PNG на LCP-элементе. Обязательно AVIF/WebP до запуска.
+    // 1,9 MB PNG. С версии от 02.09.2026 hero — видео, и этот кадр стал его
+    // постером: он показывается до начала воспроизведения, при
+    // prefers-reduced-motion и при экономии данных. То есть остаётся
+    // LCP-элементом и обязан быть лёгким.
     needsOptimization: true,
   },
   {
