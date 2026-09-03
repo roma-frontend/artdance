@@ -75,7 +75,7 @@ export function ThemeToggle() {
       data-slot="theme-toggle"
       data-theme-choice={current}
       className={cn(
-        'fixed right-6 bottom-6 z-sticky grid size-13 place-items-center rounded-full',
+        'above-mobile-dock fixed right-6 z-sticky grid size-13 place-items-center rounded-full',
         'border-3 border-surface-card bg-accent text-content-on-accent shadow-lg',
         'transition-transform duration-slow ease-brand',
         'hover:scale-110 hover:rotate-30',

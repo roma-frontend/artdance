@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { absoluteUrl, seo, site } from '@/config';
 import { PointerGlow } from '@/components/fx/pointer-glow';
 import { ScrollProgress } from '@/components/fx/scroll-progress';
+import { MobileDock } from '@/components/layout/mobile-dock';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SkipToContent } from '@/components/layout/skip-to-content';
 import { ThemeColorSync } from '@/components/layout/theme-color-sync';
@@ -127,7 +128,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       suppressHydrationWarning
       className={fontVariables}
     >
-      <body>
+      <body className="has-mobile-dock">
         <ThemeProvider>
           <ThemeColorSync />
           <NextIntlClientProvider>
@@ -136,6 +137,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             <PointerGlow />
             <SiteHeader />
             {children}
+            <MobileDock />
             <ThemeToggle />
           </NextIntlClientProvider>
         </ThemeProvider>

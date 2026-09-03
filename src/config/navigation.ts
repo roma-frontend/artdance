@@ -21,7 +21,21 @@ import { routes } from './routes';
  * Имя иконки. Сопоставление «имя → компонент» живёт в UI-слое: конфигурация
  * не должна импортировать React, иначе она перестанет быть данными.
  */
-export const navIconNames = ['search', 'cart', 'favorites', 'account'] as const;
+export const navIconNames = [
+  'home',
+  'discover',
+  'classes',
+  'instructors',
+  'studios',
+  'calendar',
+  'events',
+  'pricing',
+  'search',
+  'cart',
+  'favorites',
+  'account',
+  'shop',
+] as const;
 export type NavIconName = (typeof navIconNames)[number];
 
 export interface NavItem {
@@ -31,6 +45,8 @@ export interface NavItem {
   href: string;
   /** Раздел показывается только при включённом флаге поставки. */
   feature?: FeatureKey;
+  /** Иконка для мест, где раздел показывается плиткой или вкладкой. */
+  icon?: NavIconName;
 }
 
 export interface NavIconItem extends NavItem {
@@ -48,13 +64,13 @@ export interface NavIconItem extends NavItem {
  * «Studios» — аренда залов такой же самостоятельный продукт, как занятия.
  */
 const primaryNav: readonly NavItem[] = [
-  { id: 'home', labelKey: 'nav.home', href: routes.home() },
-  { id: 'discover', labelKey: 'nav.discover', href: routes.discover() },
-  { id: 'classes', labelKey: 'nav.classes', href: routes.classes() },
-  { id: 'instructors', labelKey: 'nav.instructors', href: routes.instructors() },
-  { id: 'studios', labelKey: 'nav.studios', href: routes.studios() },
-  { id: 'shop', labelKey: 'nav.shop', href: routes.shop(), feature: 'shop' },
-  { id: 'calendar', labelKey: 'nav.calendar', href: routes.booking() },
+  { id: 'home', labelKey: 'nav.home', href: routes.home(), icon: 'home' },
+  { id: 'discover', labelKey: 'nav.discover', href: routes.discover(), icon: 'discover' },
+  { id: 'classes', labelKey: 'nav.classes', href: routes.classes(), icon: 'classes' },
+  { id: 'instructors', labelKey: 'nav.instructors', href: routes.instructors(), icon: 'instructors' },
+  { id: 'studios', labelKey: 'nav.studios', href: routes.studios(), icon: 'studios' },
+  { id: 'shop', labelKey: 'nav.shop', href: routes.shop(), feature: 'shop', icon: 'shop' },
+  { id: 'calendar', labelKey: 'nav.calendar', href: routes.booking(), icon: 'calendar' },
 ];
 
 /**
@@ -109,13 +125,56 @@ export const primaryNavItems = enabled(primaryNav);
 export const headerIconItems = enabled(iconActions);
 
 /**
- * Мобильное меню: основные разделы плюс то, что не поместилось в иконки.
- * Собирается из тех же данных — списки не могут разойтись.
+ * Мобильная навигация: нижний док и сетка разделов.
+ *
+ * Список ссылок в выезжающей панели заменён на то, что ожидается от приложения:
+ * четыре постоянных назначения в доке у большого пальца и центральная кнопка,
+ * открывающая сетку остальных разделов. Причина не в моде: панель со списком
+ * из девяти строк требует прицельного попадания в текст у верхнего края
+ * экрана, а до верхнего края телефона в 6,7 дюйма одной рукой не достать.
+ *
+ * Слоты 0 и 1 — слева от центральной кнопки, 3 и 4 — справа; слот 2 занимает
+ * сама кнопка. Номер слота объявлен здесь, а не выводится из порядка: он
+ * определяет положение подчёркивания активной вкладки, и «сдвинуть Discover
+ * правее» должно быть правкой одной цифры.
  */
-export const mobileNavItems: readonly NavItem[] = [
-  ...primaryNavItems,
-  ...headerIconItems.filter((item) => !item.compact),
+export const mobileDockSlots = [0, 1, 3, 4] as const;
+export type MobileDockSlot = (typeof mobileDockSlots)[number];
+
+export interface MobileDockItem extends NavItem {
+  icon: NavIconName;
+  slot: MobileDockSlot;
+}
+
+/**
+ * В доке только разделы БЕЗ флага поставки.
+ *
+ * Выключенный модуль убрал бы вкладку, и остальные разъехались бы по сетке из
+ * пяти колонок — центральная кнопка перестала бы быть центральной. Всё, что
+ * зависит от флагов, живёт в сетке разделов, где число плиток произвольно.
+ * Инвариант закреплён `navigation.test.ts`.
+ */
+const mobileDock: readonly MobileDockItem[] = [
+  { id: 'home', labelKey: 'nav.home', href: routes.home(), icon: 'home', slot: 0 },
+  { id: 'discover', labelKey: 'nav.discover', href: routes.discover(), icon: 'discover', slot: 1 },
+  { id: 'classes', labelKey: 'nav.classes', href: routes.classes(), icon: 'classes', slot: 3 },
+  { id: 'account', labelKey: 'nav.account', href: routes.account(), icon: 'account', slot: 4 },
 ];
+
+export const mobileDockItems: readonly MobileDockItem[] = enabled(mobileDock);
+
+/** Идентификаторы, которые уже видны в доке: в сетке они не повторяются. */
+const dockIds: ReadonlySet<string> = new Set(mobileDockItems.map((item) => item.id));
+
+/**
+ * Сетка разделов в шторке: всё, чего нет в доке.
+ *
+ * Собирается из тех же данных, что шапка и подвал, поэтому списки не могут
+ * разойтись, а раздел выключенного модуля не попадёт ни в один из них.
+ */
+export const mobileMenuItems: readonly NavItem[] = [...primaryNavItems, ...headerIconItems].filter(
+  (item) => !dockIds.has(item.id),
+);
 
 /**
  * Страницы, первый экран которых — кинематографичная тёмная плоскость

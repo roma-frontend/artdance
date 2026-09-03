@@ -22,11 +22,10 @@
 
 'use client';
 
-import { HeartIcon, SearchIcon, ShoppingBagIcon, UserIcon, type LucideIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { BrandMark } from '@/components/brand/brand-mark';
-import { MobileNavDrawer } from '@/components/layout/mobile-nav-drawer';
+import { navIcons } from '@/components/layout/nav-icons';
 import { Button } from '@/components/ui/button';
 import {
   hasCinemaHero,
@@ -35,20 +34,11 @@ import {
   isActiveNavPath,
   primaryNavItems,
   routes,
-  type NavIconName,
 } from '@/config';
 import { motion } from '@/design/motion';
 import { Link, usePathname } from '@/i18n/routing';
 import { useScrolledPast } from '@/lib/hooks/use-scrolled-past';
 import { cn } from '@/lib/utils';
-
-/** Реестр иконок: конфигурация хранит имя, компонент подставляется здесь. */
-const navIcons: Record<NavIconName, LucideIcon> = {
-  search: SearchIcon,
-  cart: ShoppingBagIcon,
-  favorites: HeartIcon,
-  account: UserIcon,
-};
 
 export function SiteHeader() {
   const t = useTranslations();
@@ -153,8 +143,6 @@ export function SiteHeader() {
           <Button asChild size="sm" className="max-lg:hidden text-sm">
             <Link href={headerCta.href}>{t(headerCta.labelKey)}</Link>
           </Button>
-
-          <MobileNavDrawer solid={solid} className="lg:hidden" />
         </div>
       </div>
     </header>

@@ -15,6 +15,7 @@ import { raw } from '../src/design/tokens';
 const HOME = '/en';
 
 const header = (page: Page): Locator => page.getByRole('banner');
+const dock = (page: Page): Locator => page.locator('.mobile-dock');
 const menuButton = (page: Page): Locator =>
   page.getByRole('button', { name: en.nav.openMenu, exact: true });
 
@@ -83,35 +84,88 @@ test.describe('SiteHeader', () => {
   });
 });
 
-test.describe('MobileNavDrawer', () => {
+
+
+/**
+ * Нижний док и шторка с сеткой разделов.
+ *
+ * Заменили бургер с выезжающим списком. Проверяется то, что при переносе
+ * навигации вниз теряется чаще всего:
+ *   • геометрия дока — центральная кнопка обязана остаться по центру, а вкладки
+ *     стоять на одной линии независимо от длины подписи;
+ *   • док не накрывает подвал: фиксированный элемент исключён из потока, и без
+ *     компенсации последние ссылки сайта становятся недостижимы;
+ *   • шторка остаётся полноценным диалогом — фокус, `Esc`, возврат фокуса.
+ */
+test.describe('MobileDock', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(HOME);
-    test.skip(!(await isMobileLayout(page)), 'Бургер показывается только на узких экранах');
+    test.skip(!(await isMobileLayout(page)), 'Док показывается только на узких экранах');
   });
 
-  test('открывается, имеет ширину из токена и запирает фокус', async ({ page }) => {
+  test('вкладки стоят на одной линии, а кнопка — по центру', async ({ page }) => {
+    const tabs = dock(page).getByRole('link');
+    await expect(tabs).toHaveCount(4);
+
+    /*
+     * Одна линия — не про красоту: разъехавшиеся по вертикали цели попадаются
+     * мимо. Сравниваем верхние кромки блоков подписи, а не иконок: именно
+     * подпись переносится на вторую строку в армянской локали.
+     */
+    const tops = await tabs.evaluateAll((nodes) =>
+      nodes.map((node) => Math.round(node.getBoundingClientRect().top)),
+    );
+    expect(new Set(tops).size).toBe(1);
+
+    const bar = await dock(page).evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      return { center: rect.left + rect.width / 2 };
+    });
+    const button = await menuButton(page).evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      return { center: rect.left + rect.width / 2 };
+    });
+    expect(button.center).toBeCloseTo(bar.center, 0);
+  });
+
+  test('док не накрывает подвал', async ({ page }) => {
+    /*
+     * `behavior: 'instant'` перебивает `scroll-behavior: smooth` документа.
+     * Иначе замер попадает в середину плавной прокрутки: подвал ещё за нижней
+     * кромкой, и тест «находит» дефект, которого нет. Ожидание остановки здесь
+     * не годится — под нагрузкой два одинаковых замера подряд означают «кадры не
+     * шли», а не «прокрутка доехала».
+     */
+    await page.evaluate(() =>
+      window.scrollTo({ top: Number.MAX_SAFE_INTEGER, behavior: 'instant' }),
+    );
+
+    const footerBottom = await page
+      .locator('body footer')
+      .last()
+      .evaluate((node) => node.getBoundingClientRect().bottom);
+    const dockTop = await dock(page).evaluate((node) => node.getBoundingClientRect().top);
+
+    /* Последняя строка подвала обязана оказаться выше панели. */
+    expect(footerBottom).toBeLessThanOrEqual(dockTop + 1);
+  });
+
+  test('шторка открывается, запирает фокус и блокирует прокрутку', async ({ page }) => {
     await menuButton(page).click();
 
-    const drawer = page.getByRole('dialog');
-    await expect(drawer).toBeVisible();
-    await expect(drawer).toHaveAccessibleName(en.nav.menuTitle);
-
-    const width = await drawer.evaluate((node) => node.getBoundingClientRect().width);
-    const expectedWidth = Number.parseFloat(raw.layout.drawerWidth) * 16;
-    expect(width).toBeCloseTo(expectedWidth, 0);
-
-    /* Прокрутка страницы под открытым меню должна быть заблокирована. */
+    const sheet = page.getByRole('dialog');
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toHaveAccessibleName(en.nav.menuTitle);
     await expect(page.locator('body')).toHaveCSS('overflow', 'hidden');
 
-    /* Фокус не должен уходить из панели: пять Tab по кругу остаются внутри. */
     for (let i = 0; i < 5; i += 1) {
       await page.keyboard.press('Tab');
-      const inside = await drawer.evaluate((node) => node.contains(document.activeElement));
+      const inside = await sheet.evaluate((node) => node.contains(document.activeElement));
       expect(inside).toBe(true);
     }
   });
 
-  test('закрывается по Esc и возвращает фокус на бургер', async ({ page }) => {
+  test('закрывается по Esc и возвращает фокус на кнопку', async ({ page }) => {
     await menuButton(page).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
@@ -120,7 +174,7 @@ test.describe('MobileNavDrawer', () => {
     await expect(menuButton(page)).toBeFocused();
   });
 
-  test('закрывается кнопкой внутри панели', async ({ page }) => {
+  test('закрывается нажатием на полоску-ручку', async ({ page }) => {
     await menuButton(page).click();
     await page.getByRole('button', { name: en.nav.closeMenu }).click();
     await expect(page.getByRole('dialog')).toBeHidden();
@@ -130,10 +184,9 @@ test.describe('MobileNavDrawer', () => {
     await menuButton(page).click();
 
     /*
-     * Здесь шапка ищется структурно (прямой ребёнок body), а не ролью: Radix
-     * помечает остальную страницу `aria-hidden`, и роли `banner` для скринридера
-     * больше не существует — именно так и должен вести себя модальный диалог.
-     * Внутри секций страницы есть свои <header>, поэтому селектор строгий.
+     * Шапка ищется структурно (прямой ребёнок body), а не ролью: Radix помечает
+     * остальную страницу `aria-hidden`, и роли `banner` для скринридера больше
+     * не существует — именно так и должен вести себя модальный диалог.
      */
     const headerElement = page.locator('body > header');
 
@@ -148,25 +201,74 @@ test.describe('MobileNavDrawer', () => {
     expect(headerZ).toBe(Number.parseInt(raw.zIndex.header, 10));
   });
 
-  test('остальная страница скрыта от скринридера и недоступна с клавиатуры', async ({ page }) => {
+  test('остальная страница скрыта от скринридера', async ({ page }) => {
     await menuButton(page).click();
-
-    /* `banner` пропадает из дерева доступности — страница под меню изолирована. */
     await expect(page.getByRole('banner')).toHaveCount(0);
     await expect(page.getByRole('dialog')).toBeVisible();
 
     await page.keyboard.press('Escape');
-    /* После закрытия шапка обязана вернуться в дерево доступности. */
     await expect(page.getByRole('banner')).toHaveCount(1);
   });
 
-  test('переход по ссылке уводит на раздел и закрывает меню', async ({ page }) => {
+  test('шторка выезжает и уходит с анимацией, а не щелчком', async ({ page }) => {
+    /*
+     * Проверка появилась после дефекта, который иначе не заметить статически.
+     * Вендорный `Sheet` рассчитывает на утилиты `animate-in` и
+     * `slide-in-from-bottom` из отдельного пакета; пакета в проекте нет, классы
+     * в разметке остались, CSS они не генерировали — и шторка появлялась
+     * мгновенно. Tailwind на несуществующую утилиту не жалуется, сборка зелёная,
+     * а разметка выглядит правильной.
+     *
+     * Поэтому сверяется не класс, а факт: у элемента есть анимация с ненулевой
+     * длительностью в обоих состояниях.
+     */
     await menuButton(page).click();
 
-    const dialog = page.getByRole('dialog');
-    await dialog.getByRole('link', { name: en.nav.instructors }).click();
+    const sheet = page.locator('[data-slot="sheet-content"]');
+    const overlay = page.locator('[data-slot="sheet-overlay"]');
+    await expect(sheet).toBeVisible();
 
-    await expect(dialog).toBeHidden();
-    await expect(page).toHaveURL(/\/en\/instructors$/);
+    const opening = await sheet.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { name: style.animationName, duration: Number.parseFloat(style.animationDuration) };
+    });
+    expect(opening.name).not.toBe('none');
+    expect(opening.duration).toBeGreaterThan(0.2);
+
+    /* Затемнение проявляется, а не возникает: иначе выезд читается как рывок. */
+    const overlayAnimation = await overlay.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { name: style.animationName, duration: Number.parseFloat(style.animationDuration) };
+    });
+    expect(overlayAnimation.name).not.toBe('none');
+    expect(overlayAnimation.duration).toBeGreaterThan(0);
+
+    /*
+     * Уход: состояние `closed` появляется до размонтирования, и именно на нём
+     * держится анимация закрытия. Ловим его, пока Radix ждёт `animationend`.
+     */
+    await page.keyboard.press('Escape');
+    const closing = await sheet.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { state: node.getAttribute('data-state'), duration: Number.parseFloat(style.animationDuration) };
+    });
+    expect(closing.state).toBe('closed');
+    expect(closing.duration).toBeGreaterThan(0.1);
+  });
+
+  test('переход по плитке уводит на раздел и закрывает шторку', async ({ page }) => {
+    await menuButton(page).click();
+
+    const sheet = page.getByRole('dialog');
+    await sheet.getByRole('link', { name: en.nav.instructors }).click();
+
+    await expect(sheet).toBeHidden();
+    await expect(page).toHaveURL(/\/en\/instructors$/, { timeout: 15_000 });
+  });
+
+  test('активная вкладка помечена для скринридера', async ({ page }) => {
+    const current = dock(page).locator('[aria-current="page"]');
+    await expect(current).toHaveCount(1);
+    await expect(current).toHaveAttribute('href', HOME);
   });
 });

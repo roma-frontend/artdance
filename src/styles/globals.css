@@ -322,16 +322,6 @@
     width: 100%;
   }
 
-  /* Полоска бургера. Цвет наследуется от кнопки — он зависит от фона шапки. */
-  .hamburger-bar {
-    display: block;
-    width: var(--space-5);
-    height: var(--border-width-thick);
-    border-radius: var(--radius-full);
-    background-color: currentColor;
-    transition: transform var(--duration-normal) var(--ease-brand);
-  }
-
   /*
    * Золотая черта перед надзаголовком секции (`.label::before` в макете).
    * Псевдоэлемент, потому что из JSX его не выразить, а лишний <span> в разметке
@@ -537,6 +527,73 @@
   }
 
   /*
+   * Подчёркивание активной вкладки дока.
+   *
+   * Оно объявлено здесь, а не утилитами: 3px — это толщина, которой в шкале
+   * границ нет и не должно быть, а заводить токен ради одной полоски значит
+   * расширять шкалу под частный случай. Правило `.nav-link::after` выше живёт
+   * здесь по той же причине.
+   */
+  .mobile-dock-indicator {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: var(--space-8);
+    height: 3px;
+    translate: -50% 0;
+    border-radius: var(--radius-full);
+    background-color: var(--accent);
+  }
+
+  /*
+   * Нижний док мобильной навигации.
+   *
+   * Обёртка занимает всю ширину и НЕ перехватывает нажатия: её прозрачные поля
+   * по бокам иначе съедали бы клики по содержимому страницы под ними.
+   *
+   * Отступ снизу — вырез устройства плюс воздух, иначе на iPhone панель
+   * упирается в индикатор «домой», и системный жест смахивания начинает
+   * конфликтовать с нажатием на вкладку.
+   */
+  .mobile-dock-shell {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: var(--z-sticky);
+    padding-inline: var(--space-3);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-3));
+    pointer-events: none;
+  }
+
+  /*
+   * Место под док в потоке страницы.
+   *
+   * Без него подвал уезжает под панель: фиксированный элемент из потока
+   * исключён, и последние ссылки сайта оказываются недостижимы. Класс висит на
+   * `<body>`, а не на `<main>`, потому что подвал лежит рядом с `main`.
+   */
+  .has-mobile-dock {
+    padding-bottom: calc(
+      var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-6)
+    );
+  }
+
+  /* Плавающая кнопка темы поднимается над доком, а не прячется под ним. */
+  .above-mobile-dock {
+    bottom: calc(var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-6));
+  }
+
+  @media (width >= theme(--breakpoint-lg)) {
+    .has-mobile-dock {
+      padding-bottom: 0;
+    }
+
+    .above-mobile-dock {
+      bottom: var(--space-6);
+    }
+  }
+
+  /*
    * Стартовое состояние счётчика (`components/fx/counter.tsx`).
    *
    * В разметке стоит ИТОГОВОЕ число, а не нуль, как в прототипе: страница без
@@ -712,4 +769,126 @@
 
 [data-slot='tooltip-content'] {
   z-index: var(--z-tooltip);
+}
+
+/*
+ * Появление и уход панелей `Sheet`.
+ *
+ * Вендорный компонент рассчитывает на утилиты `animate-in`, `animate-out`,
+ * `fade-in-0` и `slide-in-from-bottom`. Их даёт отдельный пакет
+ * (`tw-animate-css`), которого в проекте нет: классы в разметке есть, CSS они не
+ * генерируют, и шторка появлялась и исчезала мгновенным щелчком. Классический
+ * случай «Tailwind не ругается на несуществующую утилиту» — как `duration-slow`
+ * без своего `@utility` (см. `docs/03-conventions.md` §2d).
+ *
+ * Заводить пакет ради четырёх кадров незачем, а патчить вендорный файл нельзя —
+ * его перезаписывает `shadcn add --overwrite`. Поэтому анимация объявлена здесь,
+ * по `data-slot` и `data-state`, теми же токенами длительности и кривой, что и
+ * остальное движение проекта.
+ *
+ * Направление берётся из `data-side`, который наши компоненты передают сами:
+ * проп `side` вендорного `SheetContent` в разметку не попадает.
+ *
+ * Radix держит элемент в DOM до конца анимации закрытия сам — ему достаточно
+ * того, что на элементе есть `animation`.
+ */
+@keyframes sheet-overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-overlay-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in-bottom {
+  from {
+    translate: 0 100%;
+  }
+}
+
+@keyframes sheet-out-bottom {
+  to {
+    translate: 0 100%;
+  }
+}
+
+@keyframes sheet-in-right {
+  from {
+    translate: 100% 0;
+  }
+}
+
+@keyframes sheet-out-right {
+  to {
+    translate: 100% 0;
+  }
+}
+
+[data-slot='sheet-overlay'][data-state='open'] {
+  animation: sheet-overlay-in var(--duration-normal) var(--ease-standard);
+}
+
+[data-slot='sheet-overlay'][data-state='closed'] {
+  animation: sheet-overlay-out var(--duration-normal) var(--ease-standard);
+}
+
+/*
+ * Открытие медленнее закрытия, и это не произвол: панель, выезжающая на 500ms,
+ * читается как «пришла», а уходящая за те же 500ms — как «подвисла». Уход
+ * короче, потому что пользователь его уже не рассматривает.
+ */
+[data-slot='sheet-content'][data-side='bottom'][data-state='open'] {
+  animation: sheet-in-bottom var(--duration-slow) var(--ease-brand);
+}
+
+[data-slot='sheet-content'][data-side='bottom'][data-state='closed'] {
+  animation: sheet-out-bottom var(--duration-normal) var(--ease-brand);
+}
+
+[data-slot='sheet-content'][data-side='right'][data-state='open'] {
+  animation: sheet-in-right var(--duration-slow) var(--ease-brand);
+}
+
+[data-slot='sheet-content'][data-side='right'][data-state='closed'] {
+  animation: sheet-out-right var(--duration-normal) var(--ease-brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /*
+   * Движение уходит, отклик остаётся: панель проявляется, а не выезжает.
+   * Полностью снимать анимацию нельзя — Radix ждёт её окончания, чтобы
+   * размонтировать содержимое, и без неё закрытие происходит рывком.
+   */
+  [data-slot='sheet-content'][data-state='open'] {
+    animation: sheet-overlay-in var(--duration-normal) var(--ease-standard);
+  }
+
+  [data-slot='sheet-content'][data-state='closed'] {
+    animation: sheet-overlay-out var(--duration-normal) var(--ease-standard);
+  }
+}
+
+/*
+ * Геометрия шторки с сеткой разделов.
+ *
+ * Объявлена здесь, а не в `@layer components`, по той же причине, что и слои
+ * выше: у вендорного `SheetContent` для нижней стороны стоит `h-auto`, а
+ * утилиты Tailwind живут в `@layer utilities` и перебивают любой `@layer
+ * components`. Нелейерное правило выигрывает у обоих.
+ *
+ * `dvh`, а не `vh`: на iOS адресная строка меняет `vh` на ходу, и шторка
+ * дёргалась бы при её появлении.
+ */
+.mobile-menu-sheet {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  padding-inline: var(--space-4);
+  padding-top: var(--space-2);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-5));
 }
