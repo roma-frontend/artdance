@@ -36,6 +36,7 @@ import { useFormatter } from 'next-intl';
 
 import { motion } from '@/design/motion';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
+import { cn } from '@/lib/utils';
 
 interface CounterProps {
   value: number;
@@ -122,7 +123,12 @@ export function Counter({ value, decimals = 0, suffix, className }: CounterProps
 
   return (
     <span ref={groupRef} data-counter>
-      <span ref={numberRef} className={className}>
+      {/*
+        Табличные цифры обязательны именно здесь: у пропорциональной «1» ширина
+        меньше, чем у «8», и во время отсчёта строка дёргалась бы на каждом
+        кадре, растягивая соседей по строке показателей.
+      */}
+      <span ref={numberRef} className={cn('tabular-nums', className)}>
         {render(value)}
       </span>
       {suffix}

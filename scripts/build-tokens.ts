@@ -137,15 +137,44 @@ function buildSystemDarkBlock(): string {
 function buildTextStyleUtilities(): string {
   return Object.entries(textStyles)
     .map(([name, s]) => {
-      return [
+      const style = s as {
+        family: string;
+        size: string;
+        weight: string;
+        lineHeight: string;
+        tracking: string;
+        wrap?: string;
+        numeric?: string;
+      };
+      const lines = [
         `[data-text="${name}"], .text-${name} {`,
-        `  font-family: var(--font-family-${s.family});`,
-        `  font-size: var(--text-${s.size});`,
-        `  font-weight: var(--font-weight-${s.weight});`,
-        `  line-height: var(--leading-${s.lineHeight});`,
-        `  letter-spacing: var(--tracking-${s.tracking});`,
-        `}`,
-      ].join('\n');
+        `  font-family: var(--font-family-${style.family});`,
+        `  font-size: var(--text-${style.size});`,
+        `  font-weight: var(--font-weight-${style.weight});`,
+        `  line-height: var(--leading-${style.lineHeight});`,
+        `  letter-spacing: var(--tracking-${style.tracking});`,
+      ];
+
+      /*
+       * Перенос строк — часть стиля, а не украшение у места вызова.
+       *
+       * `balance` для заголовков: без него в display-кегле последняя строка
+       * регулярно остаётся одним словом, и это видно в макете. `pretty` для
+       * основного текста: та же задача, но дешевле — `balance` на длинном
+       * абзаце заставляет браузер перебирать варианты и стоит кадров.
+       */
+      if (style.wrap) lines.push(`  text-wrap: ${style.wrap};`);
+
+      /*
+       * Табличные цифры там, где числа сравнивают или где они меняются на
+       * месте. Без них счётчик показателей дёргает раскладку на каждом кадре
+       * (у пропорциональной «1» ширина меньше, чем у «8»), а колонка цен не
+       * выравнивается по разрядам.
+       */
+      if (style.numeric) lines.push(`  font-variant-numeric: ${style.numeric};`);
+
+      lines.push('}');
+      return lines.join('\n');
     })
     .join('\n\n');
 }

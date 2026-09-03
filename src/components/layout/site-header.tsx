@@ -88,6 +88,11 @@ export function SiteHeader() {
             )}
           />
           <span
+            /*
+             * Марка бренда не переводится: авто-переводчик Chrome на армянской и
+             * русской версиях иначе выдаёт «ArtDance» транслитерацией.
+             */
+            translate="no"
             className={cn(
               'text-card-title transition-colors duration-slow ease-standard',
               solid ? 'text-content-primary' : 'text-content-on-cinema',

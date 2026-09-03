@@ -310,24 +310,24 @@ export const schemeTokens: Record<
  * Компонент пишет `text-style="heading-2"`, а не набор из шести классов.
  */
 export const textStyles = {
-  'display-hero': { size: '5xl', weight: 'black', lineHeight: 'display', tracking: 'tighter', family: 'display' },
-  'display-editorial': { size: '6xl', weight: 'black', lineHeight: 'display', tracking: 'tighter', family: 'display' },
-  'heading-1': { size: '4xl', weight: 'bold', lineHeight: 'tight', tracking: 'tight', family: 'display' },
-  'heading-2': { size: '3xl', weight: 'bold', lineHeight: 'heading', tracking: 'tight', family: 'display' },
-  'heading-3': { size: '2xl', weight: 'semibold', lineHeight: 'heading', tracking: 'normal', family: 'display' },
-  'heading-4': { size: 'xl', weight: 'semibold', lineHeight: 'snug', tracking: 'normal', family: 'display' },
-  'card-title': { size: 'lg', weight: 'semibold', lineHeight: 'snug', tracking: 'normal', family: 'display' },
-  quote: { size: 'md', weight: 'regular', lineHeight: 'snug', tracking: 'normal', family: 'display' },
-  'body-lg': { size: 'md', weight: 'regular', lineHeight: 'relaxed', tracking: 'normal', family: 'sans' },
-  body: { size: 'base', weight: 'regular', lineHeight: 'normal', tracking: 'normal', family: 'sans' },
-  'body-sm': { size: 'sm', weight: 'regular', lineHeight: 'normal', tracking: 'normal', family: 'sans' },
+  'display-hero': { size: '5xl', weight: 'black', lineHeight: 'display', tracking: 'tighter', family: 'display', wrap: 'balance' },
+  'display-editorial': { size: '6xl', weight: 'black', lineHeight: 'display', tracking: 'tighter', family: 'display', wrap: 'balance' },
+  'heading-1': { size: '4xl', weight: 'bold', lineHeight: 'tight', tracking: 'tight', family: 'display', wrap: 'balance' },
+  'heading-2': { size: '3xl', weight: 'bold', lineHeight: 'heading', tracking: 'tight', family: 'display', wrap: 'balance' },
+  'heading-3': { size: '2xl', weight: 'semibold', lineHeight: 'heading', tracking: 'normal', family: 'display', wrap: 'balance' },
+  'heading-4': { size: 'xl', weight: 'semibold', lineHeight: 'snug', tracking: 'normal', family: 'display', wrap: 'balance' },
+  'card-title': { size: 'lg', weight: 'semibold', lineHeight: 'snug', tracking: 'normal', family: 'display', wrap: 'balance' },
+  quote: { size: 'md', weight: 'regular', lineHeight: 'snug', tracking: 'normal', family: 'display', wrap: 'pretty' },
+  'body-lg': { size: 'md', weight: 'regular', lineHeight: 'relaxed', tracking: 'normal', family: 'sans', wrap: 'pretty' },
+  body: { size: 'base', weight: 'regular', lineHeight: 'normal', tracking: 'normal', family: 'sans', wrap: 'pretty' },
+  'body-sm': { size: 'sm', weight: 'regular', lineHeight: 'normal', tracking: 'normal', family: 'sans', wrap: 'pretty' },
   caption: { size: 'xs', weight: 'medium', lineHeight: 'snug', tracking: 'normal', family: 'sans' },
   /** «Eyebrow» — надзаголовок секции: `Discover`, `Meet the Masters`. */
   eyebrow: { size: '2xs', weight: 'bold', lineHeight: 'none', tracking: 'widest', family: 'sans' },
   label: { size: 'xs', weight: 'semibold', lineHeight: 'none', tracking: 'wide', family: 'sans' },
   button: { size: 'xs', weight: 'semibold', lineHeight: 'none', tracking: 'wide', family: 'sans' },
-  price: { size: 'md', weight: 'bold', lineHeight: 'none', tracking: 'tight', family: 'sans' },
-  numeric: { size: 'base', weight: 'medium', lineHeight: 'none', tracking: 'normal', family: 'mono' },
+  price: { size: 'md', weight: 'bold', lineHeight: 'none', tracking: 'tight', family: 'sans', numeric: 'tabular-nums' },
+  numeric: { size: 'base', weight: 'medium', lineHeight: 'none', tracking: 'normal', family: 'mono', numeric: 'tabular-nums' },
 } as const;
 
 export type TextStyle = keyof typeof textStyles;

@@ -127,7 +127,7 @@ export function ClassCarousel({ children, label, className }: ClassCarouselProps
         aria-label={label}
         tabIndex={0}
         className={cn(
-          'scrollbar-none flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4',
+          'scrollbar-none flex snap-x snap-mandatory gap-5 overflow-x-auto overscroll-x-contain pb-4',
           'focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-border-focus',
         )}
       >

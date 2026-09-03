@@ -66,7 +66,7 @@ export function MobileNavDrawer({ solid, className }: MobileNavDrawerProps) {
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-(--layout-drawer-width) gap-0 px-8 pt-20 pb-8 sm:max-w-none"
+        className="overscroll-contain w-(--layout-drawer-width) gap-0 px-8 pt-20 pb-8 sm:max-w-none"
       >
         {/*
           Заголовок и описание обязательны для `aria-labelledby`/`aria-describedby`

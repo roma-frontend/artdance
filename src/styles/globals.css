@@ -154,6 +154,31 @@
     overflow-x: clip;
   }
 
+  /*
+   * Отклик на касание.
+   *
+   * `touch-action: manipulation` снимает у мобильных браузеров ожидание второго
+   * тапа: без него каждое нажатие отвечает с задержкой около 300ms, и интерфейс
+   * читается как подвисающий. Правило применяется ТОЛЬКО к интерактивным
+   * элементам — на `html` оно отключило бы двойным тапом масштабирование всей
+   * страницы, а это потеря доступности. Жест сведения пальцами не затронут.
+   *
+   * `-webkit-tap-highlight-color: transparent` убирает синюю вспышку iOS: у нас
+   * есть собственные состояния `:active` и `:focus-visible`, и вспышка поверх
+   * них выглядит чужой. Убирать её допустимо ровно потому, что замена есть.
+   */
+  a,
+  button,
+  summary,
+  label,
+  select,
+  [role='button'],
+  [role='tab'],
+  [role='switch'] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     margin: 0;
     background-color: var(--surface-canvas);
@@ -238,7 +263,14 @@
     width: 100%;
     max-width: var(--layout-container-max-width);
     margin-inline: auto;
-    padding-inline: var(--layout-gutter);
+    /*
+     * Отступ не меньше «выреза» устройства. На iPhone в горизонтальной
+     * ориентации `env(safe-area-inset-*)` — это область под скруглением и
+     * камерой, и текст, прижатый к краю по обычному gutter, уезжает под неё.
+     * `max()` оставляет обычный отступ там, где выреза нет.
+     */
+    padding-inline-start: max(var(--layout-gutter), env(safe-area-inset-left));
+    padding-inline-end: max(var(--layout-gutter), env(safe-area-inset-right));
   }
 
   .section-y {

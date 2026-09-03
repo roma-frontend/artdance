@@ -133,3 +133,41 @@ test('кинематографичные секции не зависят от �
   expect(await canvasColor(page)).not.toBe(lightCanvas);
   await expect(hero).toHaveCSS('background-color', 'rgb(11, 10, 9)');
 });
+
+
+/**
+ * Цвет интерфейса браузера следует за выбранной темой.
+ *
+ * `<meta name="theme-color">` с медиа-запросом умеет следить только за
+ * СИСТЕМНОЙ настройкой. У нас тема может быть выбрана вручную и переживает
+ * перезагрузку — и тогда над тёмной страницей остаётся светлая адресная строка,
+ * что на телефоне читается как незагруженный экран.
+ */
+test('цвет адресной строки соответствует выбранной теме, а не системной', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto(HOME);
+
+  const canvas = () =>
+    page.evaluate(() =>
+      window.getComputedStyle(document.documentElement).getPropertyValue('--surface-canvas').trim(),
+    );
+
+  /** Значение меты без медиа-запроса: ею управляет выбор пользователя. */
+  const themeColor = () =>
+    page.evaluate(
+      () =>
+        document.querySelector<HTMLMetaElement>('meta[name="theme-color"]:not([media])')?.content ??
+        null,
+    );
+
+  await expect.poll(themeColor).toBe(await canvas());
+
+  /* Светлая → тёмная: мета обязана догнать канву. */
+  await toggle(page).click();
+  await toggle(page).click();
+  await expect.poll(() => themeAttribute(page)).toBe('dark');
+
+  const dark = await canvas();
+  await expect.poll(themeColor).toBe(dark);
+  expect(dark).not.toBe('');
+});

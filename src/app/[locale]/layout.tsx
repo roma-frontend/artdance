@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -9,9 +9,11 @@ import { PointerGlow } from '@/components/fx/pointer-glow';
 import { ScrollProgress } from '@/components/fx/scroll-progress';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SkipToContent } from '@/components/layout/skip-to-content';
+import { ThemeColorSync } from '@/components/layout/theme-color-sync';
 import { ThemeProvider } from '@/components/layout/theme-provider';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { fontVariables } from '@/design/fonts';
+import { schemeTokens } from '@/design/tokens';
 import { localeMeta, locales, isLocale, type Locale } from '@/i18n/config';
 import { routing } from '@/i18n/routing';
 
@@ -31,6 +33,31 @@ interface LocaleLayoutProps {
 function resolveLocale(value: string): Locale {
   return isLocale(value) ? value : routing.defaultLocale;
 }
+
+/**
+ * Цвет интерфейса браузера.
+ *
+ * На мобильных Safari и Chrome в этот цвет окрашиваются адресная строка и
+ * область под ней. Без него светлая полоса остаётся над тёмным первым экраном и
+ * читается как незагруженная часть страницы.
+ *
+ * Значения берутся из токенов, а не пишутся литералами, и их два: медиа-запрос
+ * покрывает случай, когда пользователь ещё не выбирал тему вручную. После
+ * явного выбора мету обновляет `ThemeColorSync` — медиа-запрос про наш
+ * `data-theme` ничего не знает.
+ */
+export const viewport: Viewport = {
+  themeColor: [
+    {
+      media: '(prefers-color-scheme: light)',
+      color: schemeTokens.light.colors['surface-canvas'],
+    },
+    {
+      media: '(prefers-color-scheme: dark)',
+      color: schemeTokens.dark.colors['surface-canvas'],
+    },
+  ],
+};
 
 export async function generateMetadata({ params }: LocaleLayoutProps): Promise<Metadata> {
   const locale = resolveLocale((await params).locale);
@@ -102,6 +129,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     >
       <body>
         <ThemeProvider>
+          <ThemeColorSync />
           <NextIntlClientProvider>
             <SkipToContent />
             <ScrollProgress />
