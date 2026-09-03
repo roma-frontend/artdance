@@ -23,14 +23,21 @@ import 'server-only';
 
 import {
   demoClasses,
+  demoEvents,
   demoHeroStats,
   demoInstructors,
   demoMediaAlt,
+  demoProducts,
+  demoReviews,
   demoStyleTiles,
   demoVenues,
 } from '../../../prisma/fixtures/demo';
 import { booking } from '@/config';
 import type { HomeContent, LocalizedText, MediaRef, VideoRef } from '@/domain/content';
+import {
+  heroVideoDurationSeconds,
+  heroVideoSources,
+} from '@/design/hero-video.generated';
 
 /**
  * Описание изображения на трёх языках. Отсутствие описания — не повод показать
@@ -54,14 +61,33 @@ function mediaRef(key: string, focalPoint?: string): MediaRef {
 /**
  * Фоновая петля первого экрана.
  *
- * `null` до тех пор, пока исходник из макета (21,6 МБ) не закодирован по
- * `videoProcessing.heroLoop` и не загружен в бакет — задача 1.2b плана. Пока
- * источников нет, hero показывает постер, и это законное состояние, а не
- * заглушка: ровно так же экран выглядит при `prefers-reduced-motion` и при
- * включённой экономии данных.
+ * Файлы собраны `npm run video:encode` из исходника макета (20,6 МБ, 1920×1080,
+ * 8 с) по политике `videoProcessing.heroLoop`: 1280px, 24 fps, без звука, три
+ * формата — 591 KB (AV1), 664 KB (VP9), 1075 KB (H.264). Браузер скачивает
+ * ровно один из них, поэтому пользователь платит за самый лёгкий, который
+ * поддерживает.
+ *
+ * Вес и длительность берутся из генерируемого манифеста, а не пишутся руками:
+ * иначе отчёт о бюджете и админка рассказывали бы о файле то, чего в нём нет.
+ *
+ * Здесь же — единственное место, которое изменится при появлении бакета: путь
+ * `/media/video/…` станет ключом объекта в R2, а компоненты не заметят разницы.
  */
 function heroVideo(): VideoRef | null {
-  return null;
+  if (heroVideoSources.length === 0) return null;
+
+  const lightest = heroVideoSources.reduce((min, item) => (item.bytes < min.bytes ? item : min));
+
+  return {
+    sources: heroVideoSources.map((item) => ({
+      format: item.format,
+      url: `/media/video/${item.file}`,
+    })),
+    /** Постер — первый кадр этой же петли (`designVideos[].poster` в манифесте). */
+    poster: mediaRef('hero-dancer'),
+    durationSeconds: heroVideoDurationSeconds,
+    bytes: lightest.bytes,
+  };
 }
 
 export function getHomeContent(): HomeContent {
@@ -72,6 +98,33 @@ export function getHomeContent(): HomeContent {
       throw new Error(`[content] Занятие ссылается на неизвестного инструктора «${slug}».`);
     }
     return instructor.name;
+  };
+
+  /** Название площадки для события. Та же связь, что в БД будет join'ом. */
+  const venueName = (slug: string): string => {
+    const venue = demoVenues.find((item) => item.slug === slug);
+    if (!venue) {
+      throw new Error(`[content] Событие ссылается на неизвестную площадку «${slug}».`);
+    }
+    return venue.name;
+  };
+
+  /**
+   * Дата события из `MM-DD`.
+   *
+   * В фикстурах год не указан намеренно: демо-данные не должны «истекать» — с
+   * годом из макета события через год стали бы прошедшими. Год берётся текущий,
+   * а если дата уже прошла — следующий, чтобы подборка «предстоящих» оставалась
+   * предстоящей. В production дата приходит из БД целиком.
+   */
+  const eventDate = (monthDay: string): Date => {
+    const [month, day] = monthDay.split('-').map(Number);
+    const now = new Date();
+    const candidate = new Date(Date.UTC(now.getUTCFullYear(), (month ?? 1) - 1, day ?? 1));
+    if (candidate.getTime() < now.getTime()) {
+      candidate.setUTCFullYear(candidate.getUTCFullYear() + 1);
+    }
+    return candidate;
   };
 
   return {
@@ -131,6 +184,50 @@ export function getHomeContent(): HomeContent {
       pricePerHour: item.pricePerHour,
       ratingAverage: item.ratingAverage,
       ratingCount: item.ratingCount,
+      image: mediaRef(item.asset),
+    })),
+    /**
+     * Отзывы. В production — только прошедшие модерацию
+     * (`reviews.requireModeration`) и подтверждённые покупкой.
+     */
+    testimonials: demoReviews.map((item) => ({
+      id: `${item.targetType}-${item.targetSlug}-${item.authorName}`,
+      authorName: item.authorName,
+      authorRole: item.authorRole,
+      rating: item.rating,
+      body: item.body,
+      image: mediaRef(item.asset),
+    })),
+    products: demoProducts.map((item) => {
+      /** Цена карточки — минимальная из вариантов: покупатель видит «от чего». */
+      const prices = item.variants.map((variant) => variant.price);
+      const minPrice = prices.length > 0 ? Math.min(...prices) : item.price;
+      const hasRange = prices.some((price) => price !== minPrice);
+
+      return {
+        slug: item.slug,
+        title: item.title,
+        brand: item.brand,
+        price: minPrice,
+        priceFrom: hasRange || item.isGiftCard === true,
+        stock: item.variants.reduce((sum, variant) => sum + variant.stock, 0),
+        image: mediaRef(item.asset),
+      };
+    }),
+    events: demoEvents.map((item) => ({
+      slug: item.slug,
+      title: item.title,
+      type: item.type,
+      startsAt: eventDate(item.monthDay),
+      startTime: item.startTime,
+      endTime: item.endTime,
+      /**
+       * Площадка платформы или внешнее место. В БД это связь с `Venue` либо
+       * свободный адрес: у батла на площади нет площадки в каталоге.
+       */
+      locationName: item.venueSlug ? venueName(item.venueSlug) : (item.locationName ?? ''),
+      price: item.price,
+      spotsLeft: item.spotsLeft,
       image: mediaRef(item.asset),
     })),
   };

@@ -23,17 +23,23 @@ const badgeVariants = cva(
   [
     'inline-flex items-center gap-1.5 whitespace-nowrap',
     'rounded-full border border-transparent',
-    'text-caption font-semibold uppercase tracking-wide',
+    /*
+     * Кегль и насыщенность — как в макете (`.tag`: 0.65rem / 600). Капса и
+     * разрядки в базе НЕТ: они делают метку вдвое заметнее, и список оснащения
+     * площадки начинает перекрикивать название студии. Капс остаётся только у
+     * вариантов-бейджей поверх фото и у сигнальных — там это одно-два слова.
+     */
+    'text-2xs font-semibold',
   ],
   {
     variants: {
       variant: {
-        /** Нейтральная метка на карточке: направление, уровень. */
+        /** Нейтральная метка на карточке: направление, уровень, оснащение. */
         neutral: 'bg-surface-sunken text-content-secondary',
         /** Брендовая: акцентная роль элемента. */
         accent: 'bg-accent-soft text-accent',
         /** Живое и срочное: «осталось 2 места», «идёт трансляция». */
-        signal: 'bg-signal-soft text-signal',
+        signal: 'bg-signal-soft text-signal uppercase tracking-wide',
         /** Премиальное отличие: верификация, рейтинг, «выбор редакции». */
         metal: 'bg-metal-soft text-metal',
         success: 'bg-success-soft text-success',
@@ -42,16 +48,16 @@ const badgeVariants = cva(
          * Плотная метка поверх фотографии (`.cc-badge` в макете): на снимке
          * полупрозрачный фон не читается, нужна сплошная плашка.
          */
-        onMedia: 'bg-surface-card text-accent shadow-sm',
+        onMedia: 'bg-surface-card text-accent uppercase tracking-wide shadow-sm',
       },
       size: {
-        sm: 'px-2 py-0.5 text-2xs',
-        md: 'px-2.5 py-1',
+        sm: 'px-2.5 py-1',
+        md: 'px-3 py-1.5 text-xs',
       },
     },
     defaultVariants: {
       variant: 'neutral',
-      size: 'md',
+      size: 'sm',
     },
   },
 );

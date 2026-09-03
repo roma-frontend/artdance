@@ -129,7 +129,31 @@ export const componentManifest: readonly ComponentSpec[] = [
     prototypeClasses: ['footer', 'footer-g', 'footer-desc', 'footer-social', 'footer-h', 'footer-l', 'footer-bt'],
     screens: ['all'],
     i18n: ['footer', 'brand'],
-    notes: 'Сетка 2fr 1fr 1fr 1fr 1fr → 2 колонки на планшете → 1 на телефоне.',
+    notes:
+      'Сетка 2fr 1fr 1fr 1fr 1fr → 2 колонки на планшете → 1 на телефоне. Состав колонок — ' +
+      'данные (footerNavGroups в config/navigation.ts), а не разметка: раздел выключенного ' +
+      'модуля не попадает в подвал так же, как не попадает в шапку, а пустая колонка не ' +
+      'рендерится вовсе. Год в копирайте — из системного времени, а не литерал: подвал не ' +
+      'должен устаревать первого января. Соцсети подписаны названием платформы, а не значком: ' +
+      'брендовых иконок в lucide нет, а нарисованный по памяти чужой логотип — юридический ' +
+      'риск и заметная небрежность.',
+  },
+  {
+    name: 'PageHero',
+    path: 'components/layout/page-hero.tsx',
+    role: 'Баннер внутренней страницы: кадр, затемнение, заголовок',
+    wave: 'catalog',
+    prototypeClasses: ['hero-spacer', 'hero-banner', 'hero-banner-img', 'hero-banner-ov', 'hero-banner-content'],
+    screens: ['discover', 'instructors', 'studios', 'shop', 'events'],
+    i18n: ['nav'],
+    image: 'heroFullBleed',
+    states: ['with-image', 'without-image', 'with-breadcrumbs'],
+    notes:
+      'Отдельный компонент, а не копия hero главной: у баннера внутренней страницы нет ни ' +
+      'видео, ни показателей, ни параллакса — только кадр и заголовок первого уровня. ' +
+      '.hero-spacer из макета в продукте не нужен: высота шапки объявлена токеном ' +
+      '(layout.navHeight / --layout-nav-height), а распорка пустым div — обходной путь, ' +
+      'который молча ломается при смене высоты шапки.',
   },
   {
     name: 'SearchOverlay',
@@ -146,7 +170,7 @@ export const componentManifest: readonly ComponentSpec[] = [
   },
   {
     name: 'ThemeToggle',
-      path: 'components/layout/theme-toggle.tsx',
+    path: 'components/layout/theme-toggle.tsx',
     role: 'Плавающая кнопка переключения светлой и тёмной темы',
     wave: 'foundation',
     prototypeClasses: ['theme-btn'],
@@ -154,8 +178,17 @@ export const componentManifest: readonly ComponentSpec[] = [
     i18n: ['common.theme'],
     states: ['light', 'dark', 'system'],
     notes:
-      'Значение пишется в data-theme на <html> и в cookie. Hero и editorial остаются ' +
-      'тёмными в обеих темах — это surface-cinema, а не тема.',
+      'Три состояния по кругу, а не два: без «системной» пользователь, один раз нажавший ' +
+      'кнопку, навсегда отвязан от системной настройки и вернуться не может — в прототипе ' +
+      'именно так. Значение пишется в data-theme на <html> блокирующим скриптом next-themes ' +
+      'ДО первой отрисовки: в прототипе localStorage читается в конце страницы, и пользователь ' +
+      'с тёмной темой видит вспышку светлого экрана на каждой загрузке. Cookie не используем — ' +
+      'чтение cookie в layout сделало бы каждую страницу динамической и лишило каталог отдачи ' +
+      'с CDN. До первого выбора тему определяет @media (prefers-color-scheme) в tokens.css, ' +
+      'поэтому она работает и без JavaScript. Подпись называет следующее действие и задана ' +
+      'отдельным ключом на каждый вариант: собирать «Переключить на {тема}» из частей — ' +
+      'верный способ получить неверный падеж в одном из трёх языков. Hero и editorial ' +
+      'остаются тёмными в обеих темах — это surface-cinema, роль, а не тема.',
   },
 
   /* ───────────────────────── Главная ───────────────────────── */
@@ -170,13 +203,14 @@ export const componentManifest: readonly ComponentSpec[] = [
     image: 'heroFullBleed',
     states: ['default', 'reduced-motion', 'video-unavailable'],
     notes:
-      'Версия 02.09.2026: статичное фото заменено видео (см. HeroVideo). Показатели ' +
-      'анимируются счётчиком от нуля при появлении в viewport — параметры в ' +
-      'motion.counter. При уходе вверх работает параллакс: фон уезжает медленнее, ' +
-      'контент быстрее и гаснет (motion.heroParallax). Заголовок содержит <em> с ' +
-      'акцентным курсивом — в i18n это отдельный ключ, а не HTML в строке. ' +
-      'ДЕФЕКТ макета: min-height 100vh → использовать 100dvh, иначе первый экран ' +
-      'дёргается при появлении адресной строки на iOS.',
+      'Версия 02.09.2026: статичное фото заменено видео (см. HeroVideo). При уходе вверх ' +
+      'работает параллакс: фон уезжает медленнее, контент быстрее и гаснет, затемнение ' +
+      'растворяется (HeroParallax, motion.heroParallax). Показатели пока выводятся сразу; ' +
+      'счётчик от нуля при появлении в viewport (motion.counter) — оставшаяся часть блока. ' +
+      'Заголовок содержит <em> с акцентным курсивом — в i18n это отдельный ключ, а не HTML ' +
+      'в строке. Показатели размечены как <dl>: «12K+» без подписи не значит ничего, и пару ' +
+      '«число — подпись» скринридер должен читать парой. ДЕФЕКТ макета: min-height 100vh → ' +
+      'используем 100dvh, иначе первый экран дёргается при появлении адресной строки на iOS.',
   },
   {
     name: 'HeroVideo',
@@ -187,16 +221,23 @@ export const componentManifest: readonly ComponentSpec[] = [
     screens: ['home'],
     i18n: ['a11y'],
     image: 'heroFullBleed',
-    states: ['poster-only', 'loading', 'playing', 'paused-by-user', 'reduced-motion', 'save-data', 'error'],
+    states: ['poster-only', 'loading', 'playing', 'reduced-motion', 'save-data', 'error'],
     notes:
-      'Самый рискованный компонент макета. Исходник петли — 21,6 МБ, автозапуск без ' +
+      'Самый рискованный компонент макета. Исходник петли — 20,6 МБ, автозапуск без ' +
       'poster и без preload, а трейл создаёт до шести копий <video> (до семи потоков ' +
-      '1080p одновременно). Требования: постер обязателен (videoProcessing.posterRequired), ' +
-      'петля ≤ 1,2 МБ и ≤ 8 с, источники av1/vp9/h264, автозапуск подавляется при ' +
-      'prefers-reduced-motion, Save-Data и медленном соединении, трейл ограничен ' +
-      'ghostTrailMax и включается от 1024px. Петля отдаётся с CDN, а не из репозитория. ' +
-      'Кнопка паузы обязательна: автовоспроизводимое движение дольше 5 секунд требует ' +
-      'управления (WCAG 2.2.2).',
+      '1080p одновременно). Реализовано: постер обязателен (videoProcessing.posterRequired), ' +
+      'петля пережата npm run video:encode до 591 KB (AV1) / 664 KB (VP9) / 1075 KB (H.264) ' +
+      'при 8 с и 1280px, автозапуск подавляется при prefers-reduced-motion, Save-Data и ' +
+      'медленном соединении, трейл ограничен ghostTrailMax и включается от 1024px. ' +
+      'Геометрия шлейфа — связка двух чисел из макета: обёртка шире контейнера на 35%, ' +
+      'сдвиг 25% от её ширины; при любом другом соотношении у правой кромки открывается ' +
+      'полоса (проверяется e2e/hero-video.spec.ts). ' +
+      'КНОПКИ ПАУЗЫ НЕТ — решение заказчика от 02.09.2026. WCAG 2.2.2 закрывается системной ' +
+      'настройкой: при prefers-reduced-motion и экономии данных петля не запускается вовсе. ' +
+      'Это принятая практика для декоративного фона, но не полная замена видимой кнопке; ' +
+      'риск и способ вернуть её описаны в шапке компонента. ' +
+      'ОСТАЛОСЬ: петля отдаётся из public/ — с появлением бакета R2 путь /media/video/… ' +
+      'станет ключом объекта, меняется только heroVideo() в server/content/home.ts.',
   },
   {
     name: 'HeroSearchBar',
@@ -385,7 +426,7 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'components/ui/section-heading.tsx',
     role: 'Надзаголовок + заголовок + подзаголовок секции',
     wave: 'foundation',
-    prototypeClasses: ['sec-h', 'label', 'c'],
+    prototypeClasses: ['sec-h', 'label', 'c', 'sec-title', 'sec-subtitle', 'detail-h'],
     screens: ['all'],
     variants: ['left', 'center'],
     states: ['with-subtitle', 'without-subtitle', 'on-cinema'],
@@ -415,7 +456,7 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'app/[locale]/classes/[slug]/page.tsx',
     role: 'Страница занятия: обложка, описание, чему научитесь, инструктор, панель брони',
     wave: 'booking',
-    prototypeClasses: ['tag', 'tags', 'class-grid'],
+    prototypeClasses: ['tag', 'tags', 'class-grid', 'detail-grid', 'detail-body', 'detail-mb', 'instructor-row', 'sticky-sidebar', 'sidebar-card'],
     screens: ['class'],
     i18n: ['classDetail', 'booking', 'reviews'],
     image: 'editorialFullBleed',
@@ -446,7 +487,7 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'app/[locale]/instructors/[slug]/book/page.tsx',
     role: 'Экран бронирования: календарь, слоты, место, сводка',
     wave: 'booking',
-    prototypeClasses: ['booking-grid'],
+    prototypeClasses: ['booking-grid', 'booking-detail-grid'],
     screens: ['booking'],
     i18n: ['booking'],
     states: ['loading', 'ready', 'no-availability', 'hold-active', 'hold-expired'],
@@ -460,7 +501,7 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'components/booking/booking-calendar.tsx',
     role: 'Месячный календарь выбора даты',
     wave: 'booking',
-    prototypeClasses: [],
+    prototypeClasses: ['cal-week', 'cal-3col', 'cal-3col-gap'],
     screens: ['booking'],
     i18n: ['booking', 'a11y'],
     states: ['loading', 'available', 'no-availability', 'past-date', 'selected', 'beyond-horizon'],
@@ -499,7 +540,7 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'components/booking/booking-summary.tsx',
     role: 'Сводка брони с итогом и таймером удержания слота',
     wave: 'booking',
-    prototypeClasses: [],
+    prototypeClasses: ['info-row', 'info-row-success'],
     screens: ['booking'],
     i18n: ['booking'],
     states: ['incomplete', 'ready', 'hold-active', 'hold-expiring', 'hold-expired'],
@@ -524,6 +565,21 @@ export const componentManifest: readonly ComponentSpec[] = [
       'и покрыт тестом. Перед оформлением корзина перепроверяется на сервере с diff-ответом. ' +
       'Версия 02.09.2026: .cart-grid схлопывается в колонку на 768px, миниатюры товаров ' +
       'уменьшаются на 480px.',
+  },
+  {
+    name: 'CheckoutScreen',
+    path: 'app/[locale]/checkout/[step]/page.tsx',
+    role: 'Оформление заказа: шаги, формы, сводка справа',
+    wave: 'commerce',
+    prototypeClasses: ['checkout-grid'],
+    screens: ['checkout'],
+    i18n: ['checkout', 'validation'],
+    states: ['contact', 'delivery', 'payment', 'confirm', 'cart-changed', 'payment-failed'],
+    notes:
+      'Каждый шаг — свой URL (checkoutSteps в routes.ts), поэтому «назад» браузера работает ' +
+      'как ожидается, а брошенное оформление можно возобновить ссылкой. Сетка .checkout-grid ' +
+      'схлопывается в колонку на 768px, сводка уезжает под формы, но итог и CTA обязаны ' +
+      'остаться доступны — StickyActionBar.',
   },
   {
     name: 'CheckoutStepper',
@@ -589,7 +645,7 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'components/ui/badge.tsx',
     role: 'Метка: направление, уровень, статус, тренд',
     wave: 'foundation',
-    prototypeClasses: ['tag', 'cc-badge', 'event-type', 'inst-v'],
+    prototypeClasses: ['tag', 'cc-badge', 'event-type', 'inst-v', 'badge-accent'],
     screens: ['all'],
     variants: ['neutral', 'accent', 'signal', 'metal', 'success', 'warning', 'onMedia'],
     notes:
@@ -606,7 +662,7 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'components/ui/price.tsx',
     role: 'Цена с единицей: за занятие, за час, за месяц, «от»',
     wave: 'foundation',
-    prototypeClasses: ['cc-price', 'card-price', 'inst-price'],
+    prototypeClasses: ['cc-price', 'card-price', 'inst-price', 'price-heading', 'price-sub'],
     screens: ['all'],
     i18n: ['common.labels'],
     variants: ['perClass', 'perHour', 'perMonth', 'perYear', 'perSession', 'from', 'total'],
@@ -664,13 +720,16 @@ export const componentManifest: readonly ComponentSpec[] = [
     path: 'components/ui/media.tsx',
     role: 'Обёртка next/image с presets и fallback',
     wave: 'foundation',
-    prototypeClasses: [],
+    prototypeClasses: ['avatar', 'avatar-md', 'img-landscape', 'img-product'],
     screens: ['all'],
     i18n: ['a11y'],
     states: ['loading', 'loaded', 'error-fallback'],
     notes:
       'Единственный компонент, которому разрешено вызывать next/image. Принимает ' +
-      'ImagePresetKey, а не sizes/quality: рассинхрон sizes и сетки — главная причина плохого LCP.',
+      'ImagePresetKey, а не sizes/quality: рассинхрон sizes и сетки — главная причина плохого LCP. ' +
+      'Классы прототипа img-landscape, img-product, avatar, avatar-md — это фиксированные ' +
+      'пропорции кадра; в продукте им соответствуют presets, поэтому пропорция задаётся ' +
+      'выбором preset, а не классом в разметке.',
   },
   {
     name: 'EmptyState',
@@ -683,6 +742,23 @@ export const componentManifest: readonly ComponentSpec[] = [
     notes:
       'В прототипе пустых состояний нет вообще — это самый частый пробел при переносе ' +
       'макета в продукт. Компонент обязателен для каждого списка.',
+  },
+  {
+    name: 'FormField',
+    path: 'components/ui/form-field.tsx',
+    role: 'Поле формы: подпись, ввод, подсказка, ошибка',
+    wave: 'catalog',
+    prototypeClasses: ['form-label', 'form-input', 'form-2col'],
+    screens: ['booking', 'checkout', 'auth', 'account'],
+    i18n: ['validation', 'common.labels'],
+    states: ['idle', 'focused', 'filled', 'invalid', 'disabled', 'readonly'],
+    notes:
+      'В прототипе поля — просто <input class="form-input"> без подписей: в четырёх формах ' +
+      'из пяти подпись заменена placeholder, что исчезает при вводе и не читается ' +
+      'скринридером (WCAG 3.3.2). Здесь подпись обязательна и связана с полем через id, ' +
+      'сообщение об ошибке — через aria-describedby, а сам факт ошибки — aria-invalid. ' +
+      'Текст ошибки берётся из namespace validation, а не пишется у места вызова: одна и та ' +
+      'же ошибка обязана звучать одинаково во всех формах.',
   },
 
   /* ───────────────────── Эффекты (версия 02.09.2026) ───────────────────── */
@@ -755,6 +831,42 @@ export const componentManifest: readonly ComponentSpec[] = [
       'transform, и два источника одного свойства означают, что одно состояние затирает ' +
       'другое. Обёртка отвечает за поворот, карточка — за подъём, они складываются. ' +
       'Отключён на touch и при prefers-reduced-motion.',
+  },
+  {
+    name: 'HeroParallax',
+    path: 'components/fx/hero-parallax.tsx',
+    role: 'Расслоение первого экрана при уходе вверх',
+    wave: 'foundation',
+    prototypeClasses: [],
+    screens: ['home'],
+    states: ['at-top', 'scrolling', 'past', 'disabled'],
+    notes:
+      'В прототипе — inline-обработчик scroll, который на каждое событие пишет три ' +
+      'transform подряд. Здесь роли назначаются атрибутом data-parallax (background, ' +
+      'content, overlay), а сдвиги считаются в одном requestAnimationFrame: фон уезжает ' +
+      'медленнее экрана, контент быстрее и гаснет, затемнение растворяется. Коэффициенты — ' +
+      'motion.heroParallax. Считается только пока первый экран пересекает viewport: ' +
+      'обработчик, работающий на всей длине страницы, тратит кадры на невидимое. ' +
+      'При prefers-reduced-motion эффекта нет вовсе, слушатель не подписывается.',
+  },
+  {
+    name: 'SectionParallax',
+    path: 'components/fx/section-parallax.tsx',
+    role: 'Медленный проезд фона секции относительно её содержимого',
+    wave: 'foundation',
+    prototypeClasses: [],
+    screens: ['home'],
+    states: ['before', 'in-view', 'after', 'disabled'],
+    notes:
+      'Тот же приём, что в hero, но привязка иная: ход считается от положения самой ' +
+      'секции в окне, а не от прокрутки страницы, поэтому эффект не зависит от того, ' +
+      'сколько секций стоит выше, и вставка блока выше по странице его не сдвигает. ' +
+      'Используется в editorial («EVERY BODY HAS A RHYTHM»). Слоёв ТРИ, и это суть эффекта: ' +
+      'кадр проходит 200px, блок содержимого 60px, заголовок 40px и попутно меняет масштаб ' +
+      'на 0.08 — числа из макета как есть (motion.sectionParallax). Глубину создаёт разница ' +
+      'скоростей: «параллакс», в котором двигается только фон, читается как съехавшая ' +
+      'картинка. Кадр увеличен на 20% — без запаса ход открывает полосу у кромки. ' +
+      'Отключён до 768px и при prefers-reduced-motion.',
   },
 ];
 

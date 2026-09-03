@@ -60,11 +60,13 @@ export { features, isEnabled, deliveryPhases, type DeliveryPhaseId, type Feature
 export {
   headerCta,
   headerIconItems,
+  footerNavGroups,
   hasCinemaHero,
   isActiveNavPath,
   mobileNavItems,
   navIconNames,
   primaryNavItems,
+  type NavGroup,
   type NavIconItem,
   type NavIconName,
   type NavItem,

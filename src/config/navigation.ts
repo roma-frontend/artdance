@@ -125,6 +125,83 @@ export const mobileNavItems: readonly NavItem[] = [
  */
 const cinemaHeroPaths: readonly string[] = [routes.home()];
 
+/**
+ * Подвал: пять колонок ссылок.
+ *
+ * Тот же принцип, что у шапки — состав объявлен данными, а не разметкой.
+ * Правовые ссылки выделены в отдельную группу: их набор диктуется офертой и
+ * законом, а не продуктовыми решениями, и меняется по другому поводу.
+ */
+export interface NavGroup {
+  id: string;
+  titleKey: MessageKey;
+  items: readonly NavItem[];
+}
+
+const footerGroups: readonly NavGroup[] = [
+  {
+    id: 'explore',
+    titleKey: 'footer.exploreTitle',
+    items: [
+      { id: 'discover', labelKey: 'nav.discover', href: routes.discover() },
+      { id: 'classes', labelKey: 'nav.classes', href: routes.classes() },
+      { id: 'instructors', labelKey: 'nav.instructors', href: routes.instructors() },
+      { id: 'studios', labelKey: 'nav.studios', href: routes.studios() },
+      { id: 'events', labelKey: 'nav.events', href: routes.events(), feature: 'events' },
+      { id: 'shop', labelKey: 'nav.shop', href: routes.shop(), feature: 'shop' },
+    ],
+  },
+  {
+    id: 'company',
+    titleKey: 'footer.companyTitle',
+    items: [
+      { id: 'about', labelKey: 'footer.about', href: routes.about() },
+      { id: 'blog', labelKey: 'footer.blog', href: routes.blog() },
+      { id: 'contact', labelKey: 'footer.contact', href: routes.contact() },
+    ],
+  },
+  {
+    id: 'support',
+    titleKey: 'footer.supportTitle',
+    items: [
+      { id: 'help', labelKey: 'footer.help', href: routes.help() },
+      { id: 'faq', labelKey: 'footer.faq', href: routes.faq() },
+      {
+        id: 'giftCards',
+        labelKey: 'footer.giftCards',
+        href: routes.giftCards(),
+        feature: 'shop',
+      },
+    ],
+  },
+  {
+    id: 'business',
+    titleKey: 'footer.businessTitle',
+    items: [
+      { id: 'becomeInstructor', labelKey: 'footer.becomeInstructor', href: routes.becomeInstructor() },
+      { id: 'listStudio', labelKey: 'footer.listStudio', href: routes.listYourStudio() },
+      { id: 'pricing', labelKey: 'nav.pricing', href: routes.pricing(), feature: 'subscriptions' },
+    ],
+  },
+  {
+    id: 'legal',
+    titleKey: 'footer.legalTitle',
+    items: [
+      { id: 'terms', labelKey: 'footer.terms', href: routes.terms() },
+      { id: 'privacy', labelKey: 'footer.privacy', href: routes.privacy() },
+      { id: 'cookies', labelKey: 'footer.cookies', href: routes.cookiePolicy() },
+      { id: 'refund', labelKey: 'footer.refundPolicy', href: routes.refundPolicy() },
+      { id: 'cancellation', labelKey: 'footer.cancellationPolicy', href: routes.cancellationPolicy() },
+      { id: 'community', labelKey: 'footer.communityGuidelines', href: routes.communityGuidelines() },
+    ],
+  },
+];
+
+/** Колонки подвала без выключенных разделов. Пустая колонка не рендерится. */
+export const footerNavGroups: readonly NavGroup[] = footerGroups
+  .map((group) => ({ ...group, items: enabled(group.items) }))
+  .filter((group) => group.items.length > 0);
+
 export function hasCinemaHero(pathname: string): boolean {
   return cinemaHeroPaths.includes(pathname);
 }

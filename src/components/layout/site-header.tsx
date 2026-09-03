@@ -135,7 +135,7 @@ export function SiteHeader() {
             );
           })}
 
-          <Button asChild size="sm" className="max-lg:hidden">
+          <Button asChild size="sm" className="max-lg:hidden text-sm">
             <Link href={headerCta.href}>{t(headerCta.labelKey)}</Link>
           </Button>
 

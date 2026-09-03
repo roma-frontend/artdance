@@ -1,26 +1,37 @@
 /**
- * Лендинг — вертикальный срез архитектуры.
+ * Лендинг — сборка секций, и только она.
  *
- * Задача этой страницы на этапе подготовки: доказать, что вся цепочка работает
- * от конца до конца и что в разметке НЕТ ни текста, ни цветов, ни путей:
+ * В этом файле нет ни текста, ни цветов, ни путей, ни размеров. Он решает
+ * ровно одну задачу: в каком порядке идут секции и какие данные каждая получает.
  *   • текст  → i18n (`useTranslations`)
  *   • цифры  → `businessRules` / `pricing` + `useFormatter`
  *   • цвета  → семантические токен-утилиты Tailwind
  *   • ссылки → `routes`
  *   • фичи   → `features`
+ *   • медиа  → `getHomeContent()` (единственный шов с будущей базой и админкой)
  *
- * Полная вёрстка секций из прототипа делается на этапе реализации.
+ * Разметка секции живёт в компоненте секции. Здесь остаются только те блоки,
+ * которые сводятся к «заголовок + сетка карточек»: у них нет собственного
+ * поведения, и отдельный файл на каждый добавил бы уровень косвенности, ничего
+ * не спрятав.
  */
 
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-import { HeroVideo } from '@/components/home/hero-video';
+import { HeroSection } from '@/components/home/hero-section';
+import { HeroSearchBar } from '@/components/home/hero-search-bar';
+import { EditorialStatement } from '@/components/home/editorial-statement';
+import { StyleMarquee } from '@/components/home/style-marquee';
+import { TestimonialCard } from '@/components/home/testimonial-card';
 import { CardTilt } from '@/components/fx/card-tilt';
 import { Reveal } from '@/components/fx/reveal';
 import { ClassCard } from '@/components/catalog/class-card';
 import { ClassCarousel } from '@/components/catalog/class-carousel';
+import { EventCard } from '@/components/catalog/event-card';
 import { InstructorCard } from '@/components/catalog/instructor-card';
 import { VenueCard } from '@/components/catalog/venue-card';
+import { ProductCard } from '@/components/shop/product-card';
+import { SiteFooter } from '@/components/layout/site-footer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Media } from '@/components/ui/media';
@@ -45,83 +56,18 @@ export default async function HomePage({ params }: PageProps) {
   const t = await getTranslations('home');
   const tCommon = await getTranslations('common');
   const tStyles = await getTranslations();
-  const tBrand = await getTranslations('brand');
   const tPricing = await getTranslations('pricing');
-  const format = await getFormatter();
 
   return (
     <main id={site.mainContentId}>
       {/* ── HERO: всегда кинематографичная тёмная плоскость, независимо от темы ── */}
-      <section className="cinema-surface relative flex min-h-dvh items-center overflow-hidden">
-        <HeroVideo
-          video={content.hero.video}
-          poster={content.hero.image}
-          locale={locale as Locale}
-          labels={{ play: t('hero.videoPlay'), pause: t('hero.videoPause') }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-0 z-[1]"
-          style={{ background: 'var(--scrim-hero-diagonal)' }}
-        />
-        <div className="page-container relative z-10 pt-32 pb-20">
-          <p className="text-eyebrow text-metal mb-8 inline-flex items-center gap-2 rounded-full border border-metal-soft px-4 py-1.5">
-            {t('hero.badge')}
-          </p>
+      <HeroSection hero={content.hero} locale={locale as Locale} />
 
-          <h1 className="text-display-hero mb-6 max-w-3xl text-content-on-cinema">
-            {t('hero.titleLine1')}
-            <br />
-            <em className="text-accent not-italic italic">{t('hero.titleAccent')}</em>
-          </h1>
+      {/* ── ПОИСК: наезжает на первый экран, отсюда же вырастет ассистент ── */}
+      <HeroSearchBar />
 
-          <p className="text-body-lg mb-10 max-w-lg text-content-on-cinema-muted">
-            {t('hero.subtitle')}
-          </p>
-
-          <div className="flex flex-wrap gap-4">
-            <Button asChild size="lg" variant="accent">
-              <Link href={routes.discover()}>{t('hero.primaryCta')}</Link>
-            </Button>
-            <Button asChild size="lg" variant="onCinema">
-              <Link href={routes.instructors()}>{t('hero.secondaryCta')}</Link>
-            </Button>
-          </div>
-
-          <dl className="mt-16 flex flex-wrap gap-12 border-t border-border-on-cinema pt-6">
-            {content.hero.stats.map((stat) => (
-              <div key={stat.id}>
-                <dd className="text-heading-3 text-content-on-cinema">
-                  <span className="text-metal">
-                    {stat.decimals > 0
-                      ? format.number(stat.value, 'rating')
-                      : format.number(stat.value, 'plain')}
-                  </span>
-                  {stat.suffix}
-                </dd>
-                <dt className="text-eyebrow mt-1 text-content-on-cinema-muted">
-                  {t(`hero.stat${stat.id.charAt(0).toUpperCase()}${stat.id.slice(1)}` as 'hero.statActiveDancers')}
-                </dt>
-              </div>
-            ))}
-          </dl>
-        </div>
-      </section>
-
-      {/* ── MARQUEE: направления танца берутся из домена, не из вёрстки ── */}
-      <div className="overflow-hidden bg-accent py-3" aria-hidden>
-        <div className="flex gap-8 whitespace-nowrap px-6">
-          {danceStyles.slice(0, 10).map((style) => (
-            <span
-              key={style}
-              className="text-eyebrow text-content-on-accent/85 flex items-center gap-3"
-            >
-              {tStyles(danceStyleLabelKey(style) as 'danceStyles.hipHop')}
-              <i className="size-1 shrink-0 rounded-full bg-metal" />
-            </span>
-          ))}
-        </div>
-      </div>
+      {/* ── MARQUEE: направления берутся из домена, не из вёрстки ── */}
+      <StyleMarquee />
 
       {/* ── DISCOVER ── */}
       <section className="section-y">
@@ -141,19 +87,19 @@ export default async function HomePage({ params }: PageProps) {
               <li key={tile.style}>
                 <Link
                   href={routes.discover({ style: tile.style })}
-                  className="group relative flex aspect-[3/4] items-end overflow-hidden rounded-lg border border-border-default transition-colors duration-300 ease-brand hover:border-accent"
+                  className="card-surface group relative flex aspect-[3/4] items-end overflow-hidden rounded-lg border border-border-default hover:border-accent"
                 >
                   <Media
                     {...resolveMedia(tile.image, locale as Locale)}
                     preset="categoryCard"
                     fill
                     className="absolute inset-0 size-full"
-                    imageClassName="transition-transform duration-slow ease-brand group-hover:scale-105"
+                    imageClassName="media-zoom group-hover:scale-105"
                   />
                   <span
                     aria-hidden
                     className="absolute inset-0"
-                    style={{ background: 'var(--scrim-card-bottom)' }}
+                    style={{ background: 'var(--scrim-bottom-strong)' }}
                   />
                   <span className="relative z-10 p-5 text-card-title text-content-on-cinema">
                     {tStyles(danceStyleLabelKey(tile.style as never) as 'danceStyles.hipHop')}
@@ -201,21 +147,7 @@ export default async function HomePage({ params }: PageProps) {
       </section>
 
       {/* ── EDITORIAL: цитата брендгайда как полноэкранное заявление ── */}
-      <section
-        className="cinema-surface text-center"
-        style={{ paddingBlock: 'var(--layout-section-y-wide)' }}
-      >
-        <Reveal variant="scale" className="page-container">
-          <h2 className="text-display-editorial uppercase">
-            {t('editorial.titleLine1')} {t('editorial.titleLine2')}{' '}
-            <span className="text-accent">{t('editorial.titleAccent')}</span>
-          </h2>
-          <p className="text-body-lg mt-4 text-content-on-cinema-muted">{t('editorial.subtitle')}</p>
-          <Button asChild className="mt-8" size="lg" variant="accent">
-            <Link href={routes.classes()}>{t('editorial.cta')}</Link>
-          </Button>
-        </Reveal>
-      </section>
+      <EditorialStatement image={content.editorial.image} locale={locale as Locale} />
 
       {/* ── INSTRUCTORS ── */}
       <section className="section-y">
@@ -283,6 +215,109 @@ export default async function HomePage({ params }: PageProps) {
         </div>
       </section>
 
+      {/* ── SHOP: раздел появляется только при включённом модуле ── */}
+      {features.shop && (
+        <section className="section-y">
+          <div className="page-container">
+            <Reveal className="mb-12">
+              <SectionHeading
+                eyebrow={t('shop.eyebrow')}
+                title={t('shop.title')}
+                subtitle={t('shop.subtitle')}
+                className="mb-0"
+              />
+            </Reveal>
+
+            <Reveal as="ul" variant="stagger" className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {content.products.slice(0, 4).map((item) => (
+                <li key={item.slug}>
+                  <CardTilt>
+                    <ProductCard item={item} locale={locale as Locale} />
+                  </CardTilt>
+                </li>
+              ))}
+            </Reveal>
+
+            <div className="mt-10 text-center">
+              <Button asChild variant="outline">
+                <Link href={routes.shop()}>{tCommon('actions.viewAll')}</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── EVENTS ── */}
+      {features.events && (
+        <section className="section-y bg-surface-raised">
+          <div className="page-container">
+            <Reveal className="mb-12">
+              <SectionHeading
+                eyebrow={t('events.eyebrow')}
+                title={t('events.title')}
+                subtitle={t('events.subtitle')}
+                className="mb-0"
+              />
+            </Reveal>
+
+            <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-3">
+              {content.events.map((item) => (
+                <li key={item.slug}>
+                  <CardTilt>
+                    <EventCard item={item} locale={locale as Locale} />
+                  </CardTilt>
+                </li>
+              ))}
+            </Reveal>
+
+            <div className="mt-10 text-center">
+              <Button asChild variant="outline">
+                <Link href={routes.events()}>{tCommon('actions.viewAll')}</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── TESTIMONIALS ── */}
+      <section className="section-y">
+        <div className="page-container">
+          <Reveal className="mb-12">
+            <SectionHeading
+              align="center"
+              eyebrow={t('testimonials.eyebrow')}
+              title={t('testimonials.title')}
+              subtitle={t('testimonials.subtitle')}
+              className="mb-0"
+            />
+          </Reveal>
+
+          <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-3">
+            {content.testimonials.map((item) => (
+              <li key={item.id}>
+                <TestimonialCard item={item} locale={locale as Locale} />
+              </li>
+            ))}
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── FINAL CTA: последнее предложение перед подвалом ── */}
+      <section className="cinema-surface section-y text-center">
+        <Reveal variant="scale" className="page-container">
+          <h2 className="text-heading-1 text-content-on-cinema">{t('finalCta.title')}</h2>
+          <p className="text-body-lg mt-3 text-content-on-cinema-muted">{t('finalCta.subtitle')}</p>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <Button asChild size="lg" variant="accent">
+              <Link href={routes.discover()}>{t('finalCta.primaryCta')}</Link>
+            </Button>
+            <Button asChild size="lg" variant="onCinema">
+              <Link href={routes.booking()}>{t('finalCta.secondaryCta')}</Link>
+            </Button>
+          </div>
+        </Reveal>
+      </section>
+
       {/* ── PRICING: суммы и квоты приходят из config/pricing, не из разметки ── */}
       {features.subscriptions && (
         <section className="section-y bg-surface-raised">
@@ -338,16 +373,8 @@ export default async function HomePage({ params }: PageProps) {
         </section>
       )}
 
-      {/* ── FOOTER (сокращённый): бренд и год не хардкодятся ── */}
-      <footer className="border-t border-border-default bg-surface-raised py-12">
-        <div className="page-container">
-          <p className="text-card-title">{tBrand('name')}</p>
-          <p className="text-body-sm mt-2 max-w-sm text-content-tertiary">{tBrand('tagline')}</p>
-          <p className="text-caption mt-8 text-content-tertiary">
-            {tCommon('labels.language')}: {locale.toUpperCase()} · {site.domains.primary}
-          </p>
-        </div>
-      </footer>
+      {/* ── FOOTER: колонки из слоя навигации, год из системного времени ── */}
+      <SiteFooter />
     </main>
   );
 }

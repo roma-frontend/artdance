@@ -141,6 +141,9 @@ const hy: Messages = {
       dark: "Մուգ",
       system: "Համակարգային",
       toggle: "Փոխել թեման",
+      switchToLight: "Միացնել լուսավոր թեման",
+      switchToDark: "Միացնել մուգ թեման",
+      switchToSystem: "Հետևել համակարգային թեմային",
     },
   },
 

@@ -42,9 +42,8 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
   return (
     <article
       className={cn(
-        'group relative flex h-full flex-col overflow-hidden rounded-lg',
+        'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
-        'transition-[transform,box-shadow] duration-slow ease-brand',
         'hover:-translate-y-1 hover:shadow-lg',
         'focus-within:-translate-y-1 focus-within:shadow-lg',
         className,
@@ -54,7 +53,7 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
         {...resolveMedia(item.image, locale)}
         preset="studioCard"
         fallback="studio"
-        imageClassName="transition-transform duration-slower ease-brand group-hover:scale-105"
+        imageClassName="media-zoom group-hover:scale-105"
       />
 
       <div className="flex flex-1 flex-col p-5">

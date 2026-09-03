@@ -9,6 +9,8 @@ import { PointerGlow } from '@/components/fx/pointer-glow';
 import { ScrollProgress } from '@/components/fx/scroll-progress';
 import { SiteHeader } from '@/components/layout/site-header';
 import { SkipToContent } from '@/components/layout/skip-to-content';
+import { ThemeProvider } from '@/components/layout/theme-provider';
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { fontVariables } from '@/design/fonts';
 import { localeMeta, locales, isLocale, type Locale } from '@/i18n/config';
 import { routing } from '@/i18n/routing';
@@ -88,18 +90,27 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     <html
       lang={meta.bcp47}
       dir={meta.direction}
-      data-theme="light"
+      /*
+       * `data-theme` здесь НЕ выставляется: значение зависит от выбора
+       * пользователя (localStorage) или системной настройки, и сервер их не
+       * знает. Атрибут ставит blocking-скрипт `next-themes` до первой отрисовки,
+       * а до первого выбора тему определяет медиа-запрос в `tokens.css`.
+       * `suppressHydrationWarning` нужен именно из-за этого атрибута.
+       */
       suppressHydrationWarning
       className={fontVariables}
     >
       <body>
-        <NextIntlClientProvider>
-          <SkipToContent />
-          <ScrollProgress />
-          <PointerGlow />
-          <SiteHeader />
-          {children}
-        </NextIntlClientProvider>
+        <ThemeProvider>
+          <NextIntlClientProvider>
+            <SkipToContent />
+            <ScrollProgress />
+            <PointerGlow />
+            <SiteHeader />
+            {children}
+            <ThemeToggle />
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

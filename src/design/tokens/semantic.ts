@@ -36,6 +36,16 @@ export interface SemanticColors {
   'content-on-accent': string;
   'content-on-cinema': string;
   'content-on-cinema-muted': string;
+  /**
+   * Акцент для текста поверх кинематографичных плоскостей.
+   *
+   * Бренд-бургунди `#8B1A2B` на почти чёрном даёт около 2.3:1 — текст
+   * технически есть, прочитать его нельзя. В макете акцентное слово в editorial
+   * и hero окрашено именно им, и это дефект, а не стиль. Роль берёт тот же тон
+   * на несколько шагов светлее: цвет остаётся из бургундовой гаммы, контраст
+   * проходит порог. Для фона и кнопок по-прежнему используется `accent`.
+   */
+  'accent-on-cinema': string;
 
   /* Границы */
   'border-subtle': string;
@@ -92,6 +102,8 @@ const cinema = {
   'content-on-cinema': ivory[200],
   'content-on-cinema-muted': 'rgba(247, 244, 239, 0.55)',
   'border-on-cinema': 'rgba(247, 244, 239, 0.10)',
+  /** Одно значение на обе темы: кинематографичная плоскость от темы не зависит. */
+  'accent-on-cinema': crimson[300],
 } as const;
 
 const statuses = {
@@ -137,7 +149,7 @@ export const lightColors: SemanticColors = {
   signal: crimson[400],
   'signal-soft': 'rgba(214, 22, 43, 0.10)',
 
-  metal: gold[600],
+  metal: gold[500],
   'metal-soft': 'rgba(184, 154, 94, 0.12)',
 
   ...statuses,
@@ -170,18 +182,28 @@ export const darkColors: SemanticColors = {
   'border-strong': 'rgba(247, 244, 239, 0.18)',
   'border-focus': crimson[300],
 
-  /** На тёмном фоне burgundy теряет читаемость — поднимаем на один шаг светлее. */
-  accent: crimson[500],
-  'accent-hover': crimson[400],
-  'accent-active': crimson[300],
-  'accent-soft': 'rgba(214, 22, 43, 0.14)',
-  'accent-glow': 'rgba(214, 22, 43, 0.30)',
+  /**
+   * Акцент в тёмной теме — ТОТ ЖЕ бургунди, что и в светлой.
+   *
+   * В макете `--accent` объявлен в `:root` и в `[data-theme="dark"]` не
+   * переопределяется, то есть бренд-цвет один на обе темы. Осветление до
+   * `crimson[500]` делало кнопки и бегущую строку заметно краснее макета —
+   * бренд превращался из бордо в красный.
+   *
+   * Осветляется только наведение: на почти чёрном фоне затемнение прочитывается
+   * как «кнопка гаснет», а не как отклик.
+   */
+  accent: crimson[600],
+  'accent-hover': crimson[500],
+  'accent-active': crimson[700],
+  'accent-soft': 'rgba(139, 26, 43, 0.20)',
+  'accent-glow': 'rgba(139, 26, 43, 0.35)',
   'accent-contrast': absolute.white,
 
   signal: crimson[400],
   'signal-soft': 'rgba(214, 22, 43, 0.16)',
 
-  metal: gold[400],
+  metal: gold[500],
   'metal-soft': 'rgba(184, 154, 94, 0.16)',
 
   ...statuses,
@@ -191,7 +213,7 @@ export const darkColors: SemanticColors = {
   'info-soft': 'rgba(47, 95, 160, 0.18)',
 
   skeleton: ink[700],
-  'selection-bg': crimson[500],
+  'selection-bg': crimson[600],
   'selection-fg': absolute.white,
   scrollbar: ink[600],
   'interactive-hover': ink[700],

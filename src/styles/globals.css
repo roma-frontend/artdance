@@ -27,6 +27,7 @@
   --color-content-on-accent: var(--content-on-accent);
   --color-content-on-cinema: var(--content-on-cinema);
   --color-content-on-cinema-muted: var(--content-on-cinema-muted);
+  --color-accent-on-cinema: var(--accent-on-cinema);
 
   --color-border-subtle: var(--border-subtle);
   --color-border-default: var(--border-default);
@@ -196,15 +197,26 @@
     outline-offset: 2px;
   }
 
-  /* Уважаем системную настройку: анимации — украшение, а не функциональность. */
+  /*
+   * Системная настройка «уменьшить движение».
+   *
+   * Раньше здесь стояло `transition-duration: 0.01ms !important` для `*` — и это
+   * было переусердствование, которое портило интерфейс. Требование WCAG 2.3.3
+   * касается ДВИЖЕНИЯ: параллакса, наездов, сдвигов, бегущих строк. Плавная
+   * смена цвета при наведении движением не является, и убирать её незачем: без
+   * неё каждый отклик становится мгновенным щелчком, и интерфейс читается как
+   * неисправный. Именно так выглядели карточки на машине с выключенной анимацией
+   * в системе.
+   *
+   * Поэтому здесь остаётся только то, что действительно движение: мгновенная
+   * прокрутка вместо плавной и отмена подъёма карточки. Всё остальное движение
+   * выключено там, где объявлено: `marquee-track`, `editorial-backdrop`,
+   * `[data-reveal]`, а параллакс, наклон и свечение под курсором не запускаются
+   * вовсе (см. `motion.reducedMotionDisables` и хуки в `lib/hooks`).
+   */
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
+    html {
+      scroll-behavior: auto;
     }
   }
 }
@@ -220,6 +232,15 @@
 
   .section-y {
     padding-block: var(--layout-section-y);
+  }
+
+  /* Тесный и просторный ритм секций — те же токены, что и у `.section-y`. */
+  .section-y-tight {
+    padding-block: var(--layout-section-y-tight);
+  }
+
+  .section-y-wide {
+    padding-block: var(--layout-section-y-wide);
   }
 
   /* Полноэкранная кинематографичная секция — «editorial» из брендгайда. */
@@ -301,6 +322,239 @@
 
   .scrollbar-none::-webkit-scrollbar {
     display: none;
+  }
+
+  /*
+   * Бегущая строка.
+   *
+   * Дорожка состоит из двух одинаковых списков и сдвигается ровно на половину
+   * своей ширины: в момент перезапуска кадр совпадает с начальным, поэтому шва
+   * не видно. Анимация останавливается при наведении и не запускается при
+   * просьбе убрать движение — бегущий текст без возможности остановки нарушает
+   * WCAG 2.2.2.
+   */
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee-scroll var(--duration-marquee) var(--ease-linear) infinite;
+  }
+
+  .marquee:hover .marquee-track,
+  .marquee:focus-within .marquee-track {
+    animation-play-state: paused;
+  }
+
+  .marquee-row {
+    display: flex;
+    flex: none;
+    gap: var(--space-8);
+    padding-inline: var(--space-4);
+    white-space: nowrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+  }
+
+  /*
+   * Фон editorial-секции: приглушённый кадр с медленным приближением.
+   *
+   * Значения (30% прозрачности, размытие в 1px) живут здесь, а не в разметке:
+   * это единственный слой, где абсолютные величины легальны, а в классе
+   * Tailwind они были бы произвольным значением и нарушением правила линтера.
+   */
+  .editorial-backdrop {
+    opacity: var(--opacity-muted);
+    filter: blur(1px);
+    animation: ken-burns var(--duration-ken-burns) var(--ease-standard) infinite alternate;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .editorial-backdrop {
+      animation: none;
+    }
+  }
+
+  /*
+   * Кавычка-водяной знак в карточке отзыва.
+   *
+   * Псевдоэлемент, потому что это декорация: символ в разметке скринридер
+   * прочитал бы как часть цитаты. Очень низкая прозрачность — чтобы глиф не
+   * мешал читать сам текст.
+   */
+  .quote-watermark::before {
+    content: '\201C';
+    position: absolute;
+    top: calc(var(--space-4) * -1);
+    right: var(--space-4);
+    font-family: var(--font-family-display);
+    font-size: var(--text-6xl);
+    line-height: 1;
+    color: var(--content-primary);
+    opacity: var(--opacity-subtle);
+    pointer-events: none;
+  }
+
+  /*
+   * Карточка каталога: подъём и тень при наведении.
+   *
+   * В списке свойств обязательно `translate`, а не только `transform`, и это
+   * главное. Tailwind v4 пишет сдвиги, масштаб и поворот в ОТДЕЛЬНЫЕ CSS-свойства
+   * (`translate`, `scale`, `rotate`), а не в общий `transform`: утилита
+   * `-translate-y-1.5` задаёт `translate`. Переход, перечисляющий только
+   * `transform`, к этому свойству не относится — подъём происходил мгновенным
+   * скачком при формально настроенной плавности. Собственная утилита
+   * `transition-transform` у Tailwind по той же причине перечисляет все четыре.
+   *
+   * Переход объявлен здесь, а не утилитами, потому что утилиты `transition-*`
+   * берут длительность из `--tw-duration`, и любая из них, добавленная рядом,
+   * вернула бы её к дефолтным 150ms.
+   */
+  .card-surface {
+    transition:
+      translate var(--duration-slow) var(--ease-brand),
+      scale var(--duration-slow) var(--ease-brand),
+      rotate var(--duration-slow) var(--ease-brand),
+      transform var(--duration-slow) var(--ease-brand),
+      box-shadow var(--duration-slow) var(--ease-brand),
+      border-color var(--duration-slow) var(--ease-brand);
+  }
+
+  /*
+   * Приближение фотографии при наведении на карточку.
+   *
+   * Свойства перечислены полностью по той же причине, что и у `.card-surface`:
+   * `scale-105` в Tailwind v4 пишет в отдельное свойство `scale`, поэтому
+   * переход со списком `transform` к зуму не относится — фото увеличивалось
+   * скачком. `filter` нужен для затемнения портрета инструктора.
+   *
+   * Один класс на все карточки: раньше у каждой был свой набор утилит перехода,
+   * и ошибка воспроизвелась ровно в той, где список писался руками.
+   */
+  .media-zoom {
+    transition:
+      translate var(--duration-slower) var(--ease-brand),
+      scale var(--duration-slower) var(--ease-brand),
+      rotate var(--duration-slower) var(--ease-brand),
+      filter var(--duration-slower) var(--ease-brand);
+  }
+
+  /*
+   * Фоновая петля первого экрана и шлейф её копий — геометрия из прототипа.
+   *
+   * Обёртка шире контейнера (`--hero-wrap-width`), видео заполняет её целиком, и
+   * сдвигается ИМЕННО ОБЁРТКА — на процент от своей ширины. Два числа подобраны
+   * друг под друга: 135% ширины при сдвиге 25% оставляют правый край за границей
+   * контейнера. Если сдвинуть само видео шириной 100%, у правой кромки
+   * открывается вертикальная полоса.
+   */
+  .hero-video-wrap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--hero-wrap-width);
+    height: 100%;
+    will-change: transform;
+  }
+
+  .hero-video-wrap > video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: var(--opacity-strong);
+  }
+
+  .hero-ghosts {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .hero-ghost {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--hero-wrap-width);
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .hero-ghost > video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: var(--hero-ghost-opacity);
+    filter: var(--hero-ghost-filter);
+  }
+
+  /*
+   * Обёртка наклона под курсором.
+   *
+   * Две разные длительности, и это не косметика.
+   *
+   * При движении курсора наклон пересчитывается каждый кадр. С длинным переходом
+   * карточка тянется за курсором с запаздыванием — «резиновое» движение. С
+   * полностью отключённым переходом она смещается ровно синхронно с курсором, и
+   * цель клика начинает убегать: наведение сдвигает карточку, сдвиг меняет точку
+   * под курсором, и так по кругу (это поймали браузерные проверки — клик по
+   * названию занятия перестал попадать). Короткое сглаживание в 80ms не читается
+   * как задержка и разрывает эту петлю.
+   *
+   * Возврат после уходa курсора — один шаг, его можно вести медленно и мягко.
+   */
+  [data-slot='card-tilt'] {
+    transition: transform var(--duration-slow) var(--ease-brand);
+  }
+
+  [data-slot='card-tilt'][data-tilting] {
+    transition: transform var(--duration-instant) var(--ease-standard);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /*
+     * Отклик остаётся, движение уходит: цвет границы и тень меняются плавно,
+     * а подъёма карточки и приближения фото нет. Полностью снимать переход
+     * нельзя — тогда наведение превращается в мгновенный щелчок.
+     *
+     * Сбрасывать нужно `translate` и `scale`, а не `transform`: Tailwind v4
+     * пишет сдвиг и масштаб в отдельные свойства, и `transform: none` их не
+     * отменяет — карточка продолжала подниматься при просьбе убрать движение.
+     */
+    .card-surface:hover,
+    .card-surface:focus-within,
+    .group:hover .media-zoom {
+      translate: none;
+      scale: none;
+      rotate: none;
+    }
+
+    [data-slot='card-tilt'] {
+      transition: none;
+    }
+  }
+}
+
+@keyframes ken-burns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
   }
 }
 

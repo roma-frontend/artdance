@@ -131,6 +131,14 @@ export const checkoutSteps = ['contact', 'delivery', 'payment', 'confirm'] as co
 export type CheckoutStep = (typeof checkoutSteps)[number];
 
 export interface DiscoverParams {
+  /**
+   * Свободный запрос из поисковой строки первого экрана.
+   *
+   * В URL, а не в состоянии: ссылка на результаты обязана открываться у другого
+   * человека и индексироваться. Отсюда же вырастет ассистент — он будет писать
+   * в тот же параметр.
+   */
+  q?: string;
   style?: string;
   level?: string;
   city?: string;

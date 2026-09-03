@@ -31,7 +31,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
-import { mediaProcessing } from '../src/config/media-processing.ts';
+import { mediaProcessing, videoProcessing } from '../src/config/media-processing.ts';
 
 const ROOT = process.cwd();
 const NEXT_DIR = join(ROOT, '.next');
@@ -55,12 +55,27 @@ const BUDGET = {
 const RASTER_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.avif', '.gif']);
 const VECTOR_EXTENSIONS = new Set(['.svg']);
 const FONT_EXTENSIONS = new Set(['.woff2', '.woff', '.ttf', '.otf']);
+/**
+ * Видео считается отдельно и по своему бюджету.
+ *
+ * Иначе фоновая петля первого экрана вообще не попадала в отчёт: расширения
+ * `.mp4`/`.webm` не входили ни в одну группу, и файл мог вырасти с 600 KB до
+ * нескольких мегабайт, не потревожив ни одну проверку. При этом сравнивать его с
+ * порогом для картинок бессмысленно — у него свой предел в `videoProcessing`.
+ *
+ * В сумму `public/` видео тоже не идёт: браузер скачивает РОВНО ОДИН источник из
+ * трёх, поэтому складывать все форматы и сравнивать с общим порогом означало бы
+ * считать трафик, которого не будет.
+ */
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm']);
 
 const ASSET_BUDGET = {
   rasterFile: mediaProcessing.budgetBytes.fullBleed,
   publicTotal: mediaProcessing.budgetBytes.seedTotal + 1024 * 1024,
   /** SVG сжимается по пути: считаем gzip. Иконка на 50 KB — это векторная каша. */
   vectorFileGzip: 20 * 1024,
+  /** На один источник петли, а не на все три вместе. */
+  videoFile: videoProcessing.heroLoop.maxBytes,
 } as const;
 
 interface FileEntry {
@@ -204,6 +219,30 @@ for (const file of vector) {
 }
 if (publicTotal > ASSET_BUDGET.publicTotal) {
   violations.push(`public/ суммарно: ${kb(publicTotal)} > ${kb(ASSET_BUDGET.publicTotal)}`);
+}
+
+/*
+ * Видео: каждый источник петли проверяется отдельно своим бюджетом.
+ * Браузер скачивает один из них, поэтому важен вес файла, а не их сумма.
+ */
+const videos = walk(PUBLIC_DIR, (file) => VIDEO_EXTENSIONS.has(extname(file).toLowerCase()));
+
+if (videos.length > 0) {
+  console.log(
+    `\nВидео: ${videos.length} источника, ` +
+      `самый лёгкий ${kb(Math.min(...videos.map((file) => file.raw)))} ` +
+      `(браузер скачивает один)`,
+  );
+  report('Источники петли', videos, false);
+
+  for (const file of videos) {
+    if (file.raw > ASSET_BUDGET.videoFile) {
+      violations.push(
+        `видео ${file.name}: ${kb(file.raw)} > ${kb(ASSET_BUDGET.videoFile)}. ` +
+          'Выполните npm run video:encode',
+      );
+    }
+  }
 }
 
 /* ──────────────────────────── 3. Итог ──────────────────────────── */

@@ -50,9 +50,8 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
   return (
     <article
       className={cn(
-        'group relative flex h-full flex-col overflow-hidden rounded-lg',
+        'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
-        'transition-[transform,box-shadow] duration-slow ease-brand',
         'hover:-translate-y-1.5 hover:shadow-lg',
         'focus-within:-translate-y-1.5 focus-within:shadow-lg',
         className,
@@ -63,7 +62,7 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
           {...resolveMedia(item.image, locale)}
           preset="classCard"
           fallback="classCard"
-          imageClassName="transition-transform duration-slower ease-brand group-hover:scale-105"
+          imageClassName="media-zoom group-hover:scale-105"
         />
 
         {/* Приоритет у ограничения: заполненную группу не рекламируют. */}

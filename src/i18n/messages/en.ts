@@ -137,6 +137,9 @@ const en = {
       dark: 'Dark',
       system: 'System',
       toggle: 'Switch theme',
+      switchToLight: 'Switch to light theme',
+      switchToDark: 'Switch to dark theme',
+      switchToSystem: 'Follow system theme',
     },
   },
 

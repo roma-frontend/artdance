@@ -157,7 +157,7 @@ export const videoProcessing = {
     /** Дорожка звука удаляется: петля всегда без звука, а трек — это лишние байты. */
     stripAudio: true,
     /** Число копий в трейле (`hero-ghosts`). 0 = трейл выключен. */
-    ghostTrailMax: 3,
+    ghostTrailMax: 6,
     /** Трейл включается только на широких экранах: на мобильном он не виден и вреден. */
     ghostTrailMinViewportWidth: 1024,
   },

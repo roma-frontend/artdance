@@ -131,8 +131,7 @@ export interface HomeInstructorCard {
   image: MediaRef;
 }
 
-export interface HomeVenueCard {
-  slug: string;
+export interface HomeVenueCard {  slug: string;
   name: string;
   description: string;
   /** Район города. В production — из адреса площадки. */
@@ -145,6 +144,63 @@ export interface HomeVenueCard {
   image: MediaRef;
 }
 
+/**
+ * Отзыв на главной. Текст — контент: в production приходит из `Review` с
+ * модерацией, а не из фикстуры.
+ */
+export interface HomeTestimonial {
+  id: string;
+  authorName: string;
+  /** «Salsa · 6 месяцев на ArtDance» — роль, а не должность. */
+  authorRole: string;
+  rating: number;
+  body: string;
+  image: MediaRef;
+}
+
+/**
+ * Товар в подборке главной.
+ *
+ * `priceFrom` вместо `price` у подарочной карты: она продаётся от суммы, и
+ * «5 000 ֏» без «от» было бы неверным обещанием.
+ */
+export interface HomeProductCard {
+  slug: string;
+  title: string;
+  /** Бренд над названием. В макете у всех ARTDANCE, в БД — своё поле. */
+  brand: string;
+  price: number;
+  /** Цена — минимальная из вариантов, а не фиксированная. */
+  priceFrom: boolean;
+  /** Минимальный остаток по вариантам: определяет метку «осталось мало». */
+  stock: number;
+  image: MediaRef;
+}
+
+/**
+ * Событие: воркшоп, батл, мастер-класс.
+ *
+ * Дата приходит числом и месяцем, а не готовой строкой «15 SEP»: месяц зависит
+ * от локали, и подпись собирает форматтер.
+ */
+export interface HomeEventCard {
+  slug: string;
+  title: string;
+  /** Значение `EventType`: подпись берётся из i18n. */
+  type: string;
+  /** Дата начала. В фикстурах год подставляется от текущего. */
+  startsAt: Date;
+  /** `HH:mm`—`HH:mm` как в макете: событие идёт часы, а не минуты. */
+  startTime: string;
+  endTime: string;
+  /** Название площадки или места. Площадка может быть внешней. */
+  locationName: string;
+  /** Ноль означает бесплатный вход и выводится словом, а не нулём. */
+  price: number;
+  spotsLeft: number;
+  image: MediaRef;
+}
+
 export interface HomeContent {
   hero: HomeHeroContent;
   styleTiles: readonly HomeStyleTile[];
@@ -152,4 +208,7 @@ export interface HomeContent {
   popularClasses: readonly HomeClassCard[];
   instructors: readonly HomeInstructorCard[];
   venues: readonly HomeVenueCard[];
+  testimonials: readonly HomeTestimonial[];
+  products: readonly HomeProductCard[];
+  events: readonly HomeEventCard[];
 }

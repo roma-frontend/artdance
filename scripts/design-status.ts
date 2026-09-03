@@ -65,7 +65,13 @@ for (const match of html.matchAll(/class="([^"]+)"/g)) {
   }
 }
 
-/** Утилитарные и служебные классы прототипа, которые не становятся компонентами. */
+/**
+ * Утилитарные и служебные классы прототипа, которые не становятся компонентами.
+ *
+ * Это классы-однострочники: отступ, направление флекса, размер шрифта, чередование
+ * фона секций. В продукте им соответствуют токен-утилиты Tailwind, а не файлы, и
+ * держать их в карте компонентов означало бы обещать компонент на каждый `mt-md`.
+ */
 const IGNORED = new Set([
   'container',
   'section',
@@ -76,8 +82,26 @@ const IGNORED = new Set([
   'g',
   'c',
   'accent',
+  'accent-accent',
   'ok',
   'low',
+  'divider',
+  'flex-1',
+  'flex-row',
+  'inner-container',
+  'mb-lg',
+  'mt-lg',
+  'mt-md',
+  'section-bg-alt',
+  'text-body',
+  'text-body-semibold',
+  'text-body-semibold-sm',
+  'text-bold',
+  'text-bold-lg',
+  'text-display',
+  'text-muted',
+  'text-semibold-lg',
+  'text-sm',
 ]);
 
 const covered = coveredPrototypeClasses();

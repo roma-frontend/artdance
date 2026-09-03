@@ -41,14 +41,23 @@ export function CardTilt({ children, className }: CardTiltProps) {
     const node = ref.current;
     if (!node || !enabled) return;
 
-    const { perspectivePx, maxRotateDeg } = motion.cardTilt;
+    const { perspectivePx, maxRotateDeg, scale } = motion.cardTilt;
     let frame = 0;
     let rotateX = 0;
     let rotateY = 0;
 
     const paint = () => {
       frame = 0;
-      node.style.transform = `perspective(${perspectivePx}px) rotateY(${rotateY}deg) rotateX(${rotateX}deg)`;
+      /*
+       * `scale` в конце — не украшение, а необходимость. Поворот вокруг центра
+       * отодвигает дальний край назад, и если курсор стоит у самого края, край
+       * уходит из-под него: срабатывает `pointerleave`, наклон снимается, курсор
+       * снова попадает на карточку — эффект мерцает. Едва заметное увеличение
+       * компенсирует этот сдвиг. В макете это значение тоже есть, и, судя по
+       * всему, по той же причине.
+       */
+      node.style.transform =
+        `perspective(${perspectivePx}px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) scale(${scale})`;
     };
 
     const onMove = (event: PointerEvent) => {
@@ -61,6 +70,12 @@ export function CardTilt({ children, className }: CardTiltProps) {
       /** Знак обратный: курсор ниже центра наклоняет карточку от зрителя. */
       rotateX = -offsetY * maxRotateDeg;
 
+      /*
+       * Пока курсор ведёт наклон, переход короткий (см. `[data-tilting]` в
+       * globals.css): длинный превращает слежение в запаздывание, а его полное
+       * отсутствие заставляет цель клика убегать от курсора.
+       */
+      node.setAttribute('data-tilting', '');
       if (frame === 0) frame = window.requestAnimationFrame(paint);
     };
 
@@ -69,6 +84,8 @@ export function CardTilt({ children, className }: CardTiltProps) {
         window.cancelAnimationFrame(frame);
         frame = 0;
       }
+      /* Возврат — единственный шаг, который анимируется. */
+      node.removeAttribute('data-tilting');
       /** Пустая строка, а не `none`: возвращаем управление CSS-переходу. */
       node.style.transform = '';
     };
@@ -87,11 +104,7 @@ export function CardTilt({ children, className }: CardTiltProps) {
     <div
       ref={ref}
       data-slot="card-tilt"
-      className={cn(
-        'h-full transition-transform duration-normal ease-brand',
-        enabled && 'will-change-transform',
-        className,
-      )}
+      className={cn('h-full', enabled && 'will-change-transform', className)}
     >
       {children}
     </div>

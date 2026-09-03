@@ -2,7 +2,7 @@ import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
 import { buildCacheHeaderRules } from './src/config/cache';
-import { imageWidths } from './src/config/media';
+import { imageQuality, imageWidths } from './src/config/media';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
@@ -31,6 +31,16 @@ const nextConfig: NextConfig = {
      */
     deviceSizes: [...imageWidths],
     imageSizes: [48, 96, 120, 160, 240],
+    /**
+     * Разрешённые значения `quality` — из тех же presets, что использует `Media`.
+     *
+     * Next 16 обслуживает только перечисленные здесь значения: любое другое
+     * молча заменяется на 75 с предупреждением в консоли. Список по умолчанию —
+     * `[75]`, а наши presets просят 70, 78, 82 и 88, то есть без этой строки
+     * editorial-кадры отдавались хуже, чем задумано, а thumbnail — тяжелее.
+     * Перечислять руками нельзя: разойдётся с `imageQuality` при первой правке.
+     */
+    qualities: [...new Set(Object.values(imageQuality))].sort((a, b) => a - b),
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30,
     /**

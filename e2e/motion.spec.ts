@@ -108,6 +108,129 @@ test.describe('Reveal — контент не зависит от эффекта
   });
 });
 
+test.describe('плавность отклика карточек', () => {
+  /** `0.5s` из токена `duration.slow`: сравниваем с фактическим значением в CSS. */
+  const expectedSeconds = Number.parseFloat(motion.duration.slow) / 1000;
+
+  test('переход охватывает именно те свойства, которыми карточка двигается', async ({ page }) => {
+    await page.goto(HOME);
+
+    const card = page.locator('.card-surface').first();
+    await card.scrollIntoViewIfNeeded();
+
+    const { properties, durations } = await card.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        properties: style.transitionProperty.split(',').map((value) => value.trim()),
+        durations: style.transitionDuration.split(',').map((value) => Number.parseFloat(value)),
+      };
+    });
+
+    /*
+     * `translate` — ключевая проверка. Tailwind v4 поднимает карточку отдельным
+     * свойством `translate`, а не общим `transform`, и переход, перечисляющий
+     * только `transform`, к подъёму не относится: он происходил мгновенным
+     * скачком при формально верной длительности. Проверять только длительность
+     * недостаточно — она относилась к свойствам, которые не меняются.
+     */
+    expect(properties).toContain('translate');
+    expect(properties).toContain('box-shadow');
+    expect(properties).toContain('border-color');
+
+    expect(durations.length).toBe(properties.length);
+    for (const duration of durations) {
+      expect(duration).toBeCloseTo(expectedSeconds, 2);
+    }
+  });
+
+  test('приближение фотографии анимируется во всех карточках', async ({ page }) => {
+    await page.goto(HOME);
+
+    const zooms = page.locator('.media-zoom');
+    const count = await zooms.count();
+    expect(count).toBeGreaterThan(0);
+
+    /*
+     * Проверяем КАЖДУЮ карточку, а не первую: раньше у разных карточек были свои
+     * наборы утилит перехода, и приближение фото рвалось ровно в одной секции —
+     * там, где список свойств писался руками и в нём не было `scale`.
+     *
+     * Через `poll`, потому что часть карточек лежит в секциях с ленивой
+     * гидратацией: под полной параллельной нагрузкой первый замер иногда
+     * приходит раньше, чем к узлу применён класс.
+     */
+    await expect
+      .poll(async () => {
+        const properties = await zooms.evaluateAll((nodes) =>
+          nodes.map((node) => getComputedStyle(node).transitionProperty),
+        );
+        return properties.every((value) => value.includes('scale') && value.includes('filter'));
+      })
+      .toBe(true);
+  });
+
+  test('подъём при наведении действительно анимируется', async ({ page }) => {
+    await page.goto(HOME);
+
+    /*
+     * Только там, где наведение существует. На телефоне у `:hover` нет
+     * состояния, которое можно было бы проверить: браузер сообщает
+     * `hover: none`, и подъём карточки — не тот эффект, который там задуман.
+     */
+    const finePointer = await page.evaluate(() => window.matchMedia('(hover: hover)').matches);
+    test.skip(!finePointer, 'На touch-устройстве наведения нет');
+
+    /*
+     * Именно карточка каталога, а не любой `.card-surface`: плитка направления в
+     * секции discover тоже носит этот класс, но в макете она НЕ поднимается —
+     * у `.cat` при наведении меняется только фотография (`scale` + `filter`).
+     * Класс на ней нужен ради плавной смены цвета границы.
+     */
+    const cards = page.locator('article.card-surface');
+    expect(await cards.count()).toBeGreaterThan(0);
+
+    const card = cards.first();
+    await card.scrollIntoViewIfNeeded();
+
+    const translateBefore = await card.evaluate((node) => getComputedStyle(node).translate);
+    await card.hover();
+
+    /*
+     * Значение `translate` меняется — значит, подъём вообще происходит. Плавность
+     * обеспечена предыдущей проверкой: свойство перечислено в переходе с нужной
+     * длительностью.
+     */
+    await expect
+      .poll(() => card.evaluate((node) => getComputedStyle(node).translate))
+      .not.toBe(translateBefore);
+  });
+
+  test('при просьбе убрать движение отклик остаётся, а подъём уходит', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(HOME);
+
+    const card = page.locator('article.card-surface').first();
+    await card.scrollIntoViewIfNeeded();
+
+    /*
+     * Переход не обнуляется: мгновенная смена цвета читается как неисправность.
+     * Убирается именно движение — подъём карточки.
+     */
+    const durations = await card.evaluate((node) =>
+      getComputedStyle(node)
+        .transitionDuration.split(',')
+        .map((value) => Number.parseFloat(value)),
+    );
+    for (const duration of durations) {
+      expect(duration).toBeGreaterThan(0);
+    }
+
+    await card.hover();
+    const transform = await card.evaluate((node) => getComputedStyle(node).transform);
+    expect(['none', 'matrix(1, 0, 0, 1, 0, 0)']).toContain(transform);
+  });
+});
+
 test.describe('ScrollProgress', () => {
   const scaleX = (page: Page) =>
     page

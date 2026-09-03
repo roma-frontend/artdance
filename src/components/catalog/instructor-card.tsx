@@ -36,9 +36,8 @@ export function InstructorCard({ item, locale, className }: InstructorCardProps)
   return (
     <article
       className={cn(
-        'group relative flex h-full flex-col overflow-hidden rounded-lg',
+        'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
-        'transition-[transform,box-shadow] duration-slow ease-brand',
         'hover:-translate-y-1.5 hover:shadow-lg',
         'focus-within:-translate-y-1.5 focus-within:shadow-lg',
         className,
@@ -49,7 +48,7 @@ export function InstructorCard({ item, locale, className }: InstructorCardProps)
           {...resolveMedia(item.image, locale)}
           preset="instructorCard"
           fallback="instructor"
-          imageClassName="transition-[transform,filter] duration-slower ease-brand group-hover:scale-105 group-hover:brightness-90"
+          imageClassName="media-zoom group-hover:scale-105 group-hover:brightness-90"
         />
 
         {item.isVerified && (

@@ -67,8 +67,8 @@
   --layout-prose-max-width: 38rem;
   --layout-gutter: clamp(1.25rem, 4vw, 3rem);
   --layout-section-y: clamp(4rem, 10vw, 8rem);
-  --layout-section-ytight: clamp(3rem, 8vw, 6rem);
-  --layout-section-ywide: clamp(6rem, 15vw, 12rem);
+  --layout-section-y-tight: clamp(3rem, 8vw, 6rem);
+  --layout-section-y-wide: clamp(6rem, 15vw, 12rem);
   --layout-nav-height: 4.5rem;
   --layout-nav-height-scrolled: 3.5rem;
   --layout-bottom-nav-height: 4rem;
@@ -144,6 +144,9 @@
   --card-tilt-rotate: 6deg;
   --card-tilt-lift: -4px;
   --card-tilt-scale: 1.01;
+  --hero-wrap-width: 135%;
+  --hero-ghost-opacity: 0.35;
+  --hero-ghost-filter: saturate(0.1) brightness(0.45);
 }
 
 :root,
@@ -156,10 +159,11 @@
   --surface-overlay: rgba(11, 10, 9, 0.55);
   --surface-inverse: #141414;
   --surface-cinema: #0B0A09;
-  --surface-cinema-alt: #6E0F1C;
+  --surface-cinema-alt: #6E1422;
   --content-on-cinema: #F7F4EF;
   --content-on-cinema-muted: rgba(247, 244, 239, 0.55);
   --border-on-cinema: rgba(247, 244, 239, 0.10);
+  --accent-on-cinema: #6e1422;
   --content-primary: #141414;
   --content-secondary: #6B645C;
   --content-tertiary: #8F877D;
@@ -171,20 +175,20 @@
   --border-strong: #CFC8BF;
   --border-focus: #8B1A2B;
   --accent: #8B1A2B;
-  --accent-hover: #6E0F1C;
+  --accent-hover: #6E1422;
   --accent-active: #520B15;
   --accent-soft: rgba(139, 26, 43, 0.08);
   --accent-glow: rgba(139, 26, 43, 0.25);
   --accent-contrast: #FFFFFF;
-  --signal: #D6162B;
+  --signal: #6e1422;
   --signal-soft: rgba(214, 22, 43, 0.10);
-  --metal: #9A7F49;
+  --metal: #B89A5E;
   --metal-soft: rgba(184, 154, 94, 0.12);
   --success: #2D7A4F;
   --success-soft: #DFF0E6;
   --warning: #C4841D;
   --warning-soft: #FBEEDA;
-  --danger: #D6162B;
+  --danger: #6e1422;
   --danger-soft: #FAE1E4;
   --info: #2F5FA0;
   --info-soft: #DFE8F5;
@@ -209,10 +213,11 @@
   --surface-overlay: rgba(0, 0, 0, 0.70);
   --surface-inverse: #F7F4EF;
   --surface-cinema: #0B0A09;
-  --surface-cinema-alt: #6E0F1C;
+  --surface-cinema-alt: #6E1422;
   --content-on-cinema: #F7F4EF;
   --content-on-cinema-muted: rgba(247, 244, 239, 0.55);
   --border-on-cinema: rgba(247, 244, 239, 0.10);
+  --accent-on-cinema: #6e1422;
   --content-primary: #F7F4EF;
   --content-secondary: rgba(247, 244, 239, 0.62);
   --content-tertiary: rgba(247, 244, 239, 0.38);
@@ -223,26 +228,26 @@
   --border-default: rgba(247, 244, 239, 0.10);
   --border-strong: rgba(247, 244, 239, 0.18);
   --border-focus: #E58C99;
-  --accent: #B31228;
-  --accent-hover: #D6162B;
-  --accent-active: #E58C99;
-  --accent-soft: rgba(214, 22, 43, 0.14);
-  --accent-glow: rgba(214, 22, 43, 0.30);
+  --accent: #8B1A2B;
+  --accent-hover: #6e1422;
+  --accent-active: #6E1422;
+  --accent-soft: rgba(139, 26, 43, 0.20);
+  --accent-glow: rgba(139, 26, 43, 0.35);
   --accent-contrast: #FFFFFF;
-  --signal: #D6162B;
+  --signal: #6e1422;
   --signal-soft: rgba(214, 22, 43, 0.16);
-  --metal: #C9AE74;
+  --metal: #B89A5E;
   --metal-soft: rgba(184, 154, 94, 0.16);
   --success: #2D7A4F;
   --success-soft: rgba(45, 122, 79, 0.18);
   --warning: #C4841D;
   --warning-soft: rgba(196, 132, 29, 0.18);
-  --danger: #D6162B;
+  --danger: #6e1422;
   --danger-soft: rgba(214, 22, 43, 0.18);
   --info: #2F5FA0;
   --info-soft: rgba(47, 95, 160, 0.18);
   --skeleton: #37332F;
-  --selection-bg: #B31228;
+  --selection-bg: #8B1A2B;
   --selection-fg: #FFFFFF;
   --scrollbar: #57514A;
   --interactive-hover: #37332F;
@@ -251,6 +256,62 @@
   --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.40);
   --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.50);
   --color-scheme-name: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --surface-canvas: #0B0A09;
+    --surface-raised: #1F1D1B;
+    --surface-sunken: #000000;
+    --surface-card: #1F1D1B;
+    --surface-overlay: rgba(0, 0, 0, 0.70);
+    --surface-inverse: #F7F4EF;
+    --surface-cinema: #0B0A09;
+    --surface-cinema-alt: #6E1422;
+    --content-on-cinema: #F7F4EF;
+    --content-on-cinema-muted: rgba(247, 244, 239, 0.55);
+    --border-on-cinema: rgba(247, 244, 239, 0.10);
+    --accent-on-cinema: #6e1422;
+    --content-primary: #F7F4EF;
+    --content-secondary: rgba(247, 244, 239, 0.62);
+    --content-tertiary: rgba(247, 244, 239, 0.38);
+    --content-disabled: rgba(247, 244, 239, 0.22);
+    --content-inverse: #141414;
+    --content-on-accent: #FFFFFF;
+    --border-subtle: rgba(247, 244, 239, 0.05);
+    --border-default: rgba(247, 244, 239, 0.10);
+    --border-strong: rgba(247, 244, 239, 0.18);
+    --border-focus: #6e1422;
+    --accent: #8B1A2B;
+    --accent-hover: #6e1422;
+    --accent-active: #6E1422;
+    --accent-soft: rgba(139, 26, 43, 0.20);
+    --accent-glow: rgba(139, 26, 43, 0.35);
+    --accent-contrast: #FFFFFF;
+    --signal: #6e1422;
+    --signal-soft: rgba(214, 22, 43, 0.16);
+    --metal: #B89A5E;
+    --metal-soft: rgba(184, 154, 94, 0.16);
+    --success: #2D7A4F;
+    --success-soft: rgba(45, 122, 79, 0.18);
+    --warning: #C4841D;
+    --warning-soft: rgba(196, 132, 29, 0.18);
+    --danger: #6e1422;
+    --danger-soft: rgba(214, 22, 43, 0.18);
+    --info: #2F5FA0;
+    --info-soft: rgba(47, 95, 160, 0.18);
+    --skeleton: #37332F;
+    --selection-bg: #8B1A2B;
+    --selection-fg: #FFFFFF;
+    --scrollbar: #57514A;
+    --interactive-hover: #37332F;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.30);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.40);
+    --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.50);
+    --color-scheme-name: dark;
+  }
 }
 
 /* Semantic text styles — используйте data-text="heading-2" или класс .text-heading-2 */
@@ -392,34 +453,42 @@
 
 /* Шкалы без theme-namespace в Tailwind v4 — объявлены утилитами явно. */
 @utility duration-instant {
+  --tw-duration: var(--duration-instant);
   transition-duration: var(--duration-instant);
 }
 
 @utility duration-fast {
+  --tw-duration: var(--duration-fast);
   transition-duration: var(--duration-fast);
 }
 
 @utility duration-normal {
+  --tw-duration: var(--duration-normal);
   transition-duration: var(--duration-normal);
 }
 
 @utility duration-slow {
+  --tw-duration: var(--duration-slow);
   transition-duration: var(--duration-slow);
 }
 
 @utility duration-slower {
+  --tw-duration: var(--duration-slower);
   transition-duration: var(--duration-slower);
 }
 
 @utility duration-cinematic {
+  --tw-duration: var(--duration-cinematic);
   transition-duration: var(--duration-cinematic);
 }
 
 @utility duration-marquee {
+  --tw-duration: var(--duration-marquee);
   transition-duration: var(--duration-marquee);
 }
 
 @utility duration-ken-burns {
+  --tw-duration: var(--duration-ken-burns);
   transition-duration: var(--duration-ken-burns);
 }
 

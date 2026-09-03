@@ -141,6 +141,9 @@ const ru: Messages = {
       dark: 'Тёмная',
       system: 'Системная',
       toggle: 'Сменить тему',
+      switchToLight: 'Включить светлую тему',
+      switchToDark: 'Включить тёмную тему',
+      switchToSystem: 'Следовать системной теме',
     },
   },
 

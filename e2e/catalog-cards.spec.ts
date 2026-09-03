@@ -20,6 +20,28 @@ const HOME = '/en';
 const carousel = (page: Page): Locator => page.getByRole('group', { name: en.home.popular.title });
 const firstClass = demoClasses.find((item) => item.isTrending) ?? demoClasses[0]!;
 
+/**
+ * Ждёт, пока блок перестанет двигаться.
+ *
+ * Секции въезжают в экран переходом (`Reveal`), и координаты элемента внутри
+ * меняются десятки кадров после прокрутки. Синтетическое наведение — это ОДНО
+ * событие `pointermove` в одну точку: если между замером рамки и движением
+ * курсора блок сдвинулся, событие приходит мимо карточки. У живого курсора
+ * события идут потоком, поэтому дефект существует только в тесте — но делает
+ * его случайным, а это хуже красного.
+ */
+async function waitUntilStill(locator: Locator): Promise<void> {
+  let previous = '';
+  await expect
+    .poll(async () => {
+      const current = JSON.stringify(await locator.boundingBox());
+      const stable = current === previous;
+      previous = current;
+      return stable;
+    })
+    .toBe(true);
+}
+
 test.describe('ClassCard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(HOME);
@@ -31,11 +53,21 @@ test.describe('ClassCard', () => {
     await expect(link).toHaveAttribute('href', `/en/classes/${firstClass.slug}`);
   });
 
+  /*
+   * Запас по времени на переход. Раздел занятий появится волной booking, поэтому
+   * сейчас ссылка ведёт на страницу, которой нет: Next отдаёт её через путь 404,
+   * и под полной параллельной нагрузкой это не укладывается в дефолтные 5 секунд.
+   * Проверяется при этом ровно то, что нужно — карточка ведёт куда обещала.
+   */
+  const NAVIGATION_TIMEOUT = 15_000;
+
   test('карточка открывается кликом по любому месту', async ({ page }) => {
     const card = carousel(page).locator('li').first();
     /* Клик по подписи, а не по ссылке: за это отвечает растянутый псевдоэлемент. */
     await card.getByText(firstClass.title).click();
-    await expect(page).toHaveURL(new RegExp(`/en/classes/${firstClass.slug}$`));
+    await expect(page).toHaveURL(new RegExp(`/en/classes/${firstClass.slug}$`), {
+      timeout: NAVIGATION_TIMEOUT,
+    });
   });
 
   test('карточка достижима с клавиатуры', async ({ page }) => {
@@ -43,7 +75,9 @@ test.describe('ClassCard', () => {
     await link.focus();
     await expect(link).toBeFocused();
     await link.press('Enter');
-    await expect(page).toHaveURL(new RegExp(`/en/classes/${firstClass.slug}$`));
+    await expect(page).toHaveURL(new RegExp(`/en/classes/${firstClass.slug}$`), {
+      timeout: NAVIGATION_TIMEOUT,
+    });
   });
 
   test('бейджи «в тренде» и «мест нет» не показываются вместе', async ({ page }) => {
@@ -208,10 +242,20 @@ test.describe('CardTilt', () => {
     const tilt = page.locator('[data-slot="card-tilt"]').first();
 
     /*
+     * Ждём гидратацию: слушатель наклона появляется только после неё, а свечение
+     * под курсором — надёжный признак того, что она прошла (оба эффекта включены
+     * одним и тем же условием «есть точный указатель»). Без ожидания наведение
+     * иногда происходит раньше подписки, и тест падает без дефекта в коде.
+     */
+    await expect(page.locator('[data-slot="pointer-glow"]')).toHaveCount(1);
+
+    /*
      * `hover` с позицией, а не `mouse.move` по координатам: Playwright сам
      * доводит элемент до видимой области и проверяет, что его не перекрывает
      * фиксированная шапка. Точка смещена от центра — в центре наклон нулевой.
      */
+    await tilt.scrollIntoViewIfNeeded();
+    await waitUntilStill(tilt);
     const box = (await tilt.boundingBox())!;
     await tilt.hover({ position: { x: box.width * 0.85, y: box.height * 0.7 } });
 
