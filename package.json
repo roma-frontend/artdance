@@ -43,6 +43,23 @@
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   },
+  "//overrides": [
+    "Транзитивные уязвимости, которые нельзя закрыть обновлением прямых зависимостей:",
+    "стабильного prisma новее 7.10.0 нет (8.0.0 пока release candidate), а better-auth",
+    "тянет mysql2 как один из опциональных драйверов.",
+    "mysql2 — GHSA-3f6p-5ww8-9rcr (утечка пароля в открытом виде при откате плагина",
+    "аутентификации) и GHSA-rgwj-5xj2-c3m3 (decompression-бомба). Мы работаем через",
+    "@prisma/adapter-pg, и mysql2 не загружается ни на одном пути, но держать в дереве",
+    "пакет с известной утечкой credentials незачем.",
+    "deepmerge-ts — GHSA-ggr8-5vv4-36mx (исчерпание стека на рекурсивных объектах).",
+    "Используется CLI призмы при чтении prisma.config.ts, то есть на данных, которые",
+    "пишем мы сами; тем не менее исправленная версия совместима.",
+    "Проверено после перекрытия: prisma validate, prisma generate, build, verify."
+  ],
+  "overrides": {
+    "mysql2": "3.24.3",
+    "deepmerge-ts": "8.0.2"
+  },
   "dependencies": {
     "@date-fns/tz": "1.5.0",
     "@hookform/resolvers": "5.9.1",

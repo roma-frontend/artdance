@@ -196,12 +196,25 @@ test.describe('плавность отклика карточек', () => {
     await settleAndHover(card);
 
     /*
+     * Курсор шевелится между попытками — по той же причине, что и в проверке
+     * наклона: у живого пользователя `pointermove` идёт потоком, а
+     * синтетическое наведение это одно событие, и если блок в этот момент ещё
+     * доезжал, второго не будет.
+     */
+    const box = (await card.boundingBox())!;
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+
+    /*
      * Значение `translate` меняется — значит, подъём вообще происходит. Плавность
      * обеспечена предыдущей проверкой: свойство перечислено в переходе с нужной
      * длительностью.
      */
     await expect
-      .poll(() => card.evaluate((node) => getComputedStyle(node).translate))
+      .poll(async () => {
+        await page.mouse.move(point.x, point.y + 1);
+        await page.mouse.move(point.x, point.y);
+        return card.evaluate((node) => getComputedStyle(node).translate);
+      })
       .not.toBe(translateBefore);
   });
 
@@ -405,7 +418,15 @@ test.describe('StyleTileGrid', () => {
     const tile = page.locator('a.card-surface').first();
     await settleAndHover(tile);
 
-    /* Подъём есть у карточек каталога, но не у плитки — иначе сетка дрожит. */
-    await expect(tile).toHaveCSS('translate', 'none');
+    /*
+     * Подъём есть у карточек каталога, но не у плитки — иначе сетка дрожит.
+     * Через `poll`, а не мгновенный замер: секция въезжает в экран переходом, и
+     * попасть замером в его середину значит прочитать чужое смещение. Реальный
+     * подъём этой проверкой всё равно будет пойман — он устойчив и `none` не
+     * станет.
+     */
+    await expect
+      .poll(() => tile.evaluate((node) => getComputedStyle(node).translate))
+      .toBe('none');
   });
 });
