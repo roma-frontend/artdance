@@ -876,19 +876,34 @@
  * Геометрия шторки с сеткой разделов.
  *
  * Объявлена здесь, а не в `@layer components`, по той же причине, что и слои
- * выше: у вендорного `SheetContent` для нижней стороны стоит `h-auto`, а
- * утилиты Tailwind живут в `@layer utilities` и перебивают любой `@layer
- * components`. Нелейерное правило выигрывает у обоих.
+ * выше: у вендорного `DrawerContent` для нижнего направления стоят `h-auto` и
+ * `max-h-[80vh]`, а утилиты Tailwind живут в `@layer utilities` и перебивают
+ * любой `@layer components`. Нелейерное правило выигрывает у обоих.
  *
- * `dvh`, а не `vh`: на iOS адресная строка меняет `vh` на ходу, и шторка
- * дёргалась бы при её появлении.
+ * Высота по содержимому с ограничением сверху, а не во весь экран: шторку,
+ * занявшую экран целиком, нельзя ни потянуть вниз, ни увидеть, что под ней —
+ * она перестаёт читаться как шторка. `dvh`, а не `vh`: на iOS адресная строка
+ * меняет `vh` на ходу.
  */
 .mobile-menu-sheet {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  max-height: 100dvh;
+  max-height: 85dvh;
   padding-inline: var(--space-4);
   padding-top: var(--space-2);
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--space-5));
+  background-color: var(--surface-canvas);
+  border-top: var(--border-width-thin) solid var(--border-default);
+}
+
+/*
+ * Декоративная полоска-«ручка» вендорной обёртки.
+ *
+ * `DrawerContent` рисует её первым дочерним `div` без `data-slot`. У нас ручка —
+ * кнопка с доступным именем (перетаскивание недоступно с клавиатуры, и закрытие
+ * обязано иметь обычную цель), поэтому декоративный дубль скрыт. Патчить
+ * вендорный файл нельзя: его перезаписывает `shadcn add --overwrite`.
+ */
+[data-slot='drawer-content'] > div:not([data-slot]):first-child {
+  display: none;
 }

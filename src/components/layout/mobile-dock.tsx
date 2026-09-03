@@ -30,7 +30,7 @@ import { useTranslations } from 'next-intl';
 
 import { MobileMenuSheetContent } from '@/components/layout/mobile-menu-sheet';
 import { navIcons } from '@/components/layout/nav-icons';
-import { Sheet, SheetTrigger } from '@/components/ui/sheet';
+import { Drawer, DrawerTrigger } from '@/components/ui/drawer';
 import { isActiveNavPath, mobileDockItems, mobileDockSlots, type MobileDockItem } from '@/config';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
@@ -46,14 +46,24 @@ export function MobileDock() {
 
   return (
     /*
-     * `Sheet` охватывает и док, и шторку, и своей разметки не создаёт (Radix
-     * Root — это контекст). Так кнопка становится настоящим `SheetTrigger`:
-     * состояние держит Radix, `aria-expanded` он ставит сам, а фокус после
-     * закрытия возвращается на кнопку. Со своим `useState` последнего не
-     * происходило — на телефоне касание кнопку не фокусирует, и Radix возвращал
-     * фокус на `body`.
+     * `Drawer` охватывает и док, и шторку, и своей разметки не создаёт. Так
+     * кнопка становится настоящим `DrawerTrigger`: состояние держит библиотека,
+     * `aria-expanded` она ставит сама, а фокус после закрытия возвращается на
+     * кнопку. Со своим `useState` последнего не происходило — на телефоне
+     * касание кнопку не фокусирует, и фокус возвращался на `body`.
      */
-    <Sheet>
+    <Drawer
+      /*
+       * Фокус переносится внутрь шторки при открытии.
+       *
+       * У vaul это выключено по умолчанию — на телефоне автофокус в поле ввода
+       * поднимает клавиатуру поверх панели. Но у нашей шторки полей нет, а
+       * модальный диалог обязан забирать фокус: без этого ловушка фокуса держать
+       * нечего, `Tab` уводит на страницу под затемнением, и клавиатурой шторка
+       * становится непроходимой. Проверяется `e2e/site-header.spec.ts`.
+       */
+      autoFocus
+    >
       {/*
         Внешняя обёртка не перехватывает нажатия (`pointer-events-none` в
         `globals.css`): она занимает всю ширину, и без этого её прозрачные поля
@@ -94,7 +104,7 @@ export function MobileDock() {
 
           {/* Центральное действие: открывает всё, что не поместилось в док. */}
           <div className="relative z-raised flex items-start justify-center">
-            <SheetTrigger
+            <DrawerTrigger
               aria-label={t('nav.openMenu')}
               className={cn(
                 'grid size-14 -translate-y-5 place-items-center rounded-full',
@@ -105,7 +115,7 @@ export function MobileDock() {
               )}
             >
               <LayoutGridIcon className="size-6" aria-hidden />
-            </SheetTrigger>
+            </DrawerTrigger>
           </div>
 
           <DockTab item={dockItem(3)} activeSlot={active?.slot} />
@@ -114,7 +124,7 @@ export function MobileDock() {
       </div>
 
       <MobileMenuSheetContent />
-    </Sheet>
+    </Drawer>
   );
 }
 

@@ -7,22 +7,29 @@
  * Плитки в три колонки собирают те же разделы в зону, где палец уже находится,
  * и дают цель размером с плитку вместо строки текста.
  *
- * Здесь только СОДЕРЖИМОЕ шторки: сам `Sheet` и кнопка-триггер живут в доке.
- * Так сделано ради возврата фокуса. `Sheet` возвращает фокус на элемент,
- * который его открыл, и определяет этот элемент по `SheetTrigger`. Пока шторка
- * управлялась своим `useState`, а кнопка была обычной, Radix не знал, куда
- * возвращать фокус: на телефоне касание кнопку не фокусирует, и после `Esc`
- * фокус оставался на `body` — клавиатурная навигация начиналась заново с начала
- * страницы. Проверяется `e2e/site-header.spec.ts`.
+ * Построена на `Drawer` (vaul), а не на `Sheet` (Radix Dialog), и это ответ на
+ * замечание «открывается и закрывается очень резко». Дело было не только в
+ * отсутствующих утилитах анимации: даже с ними CSS-выезд по нашей брендовой
+ * кривой `cubic-bezier(.16, 1, .3, 1)` проходит 96% пути за первые 230ms из 500
+ * и последние четыре пиксела ползёт — движение читается как щелчок с
+ * послесвечением. Кривая хороша для короткого сдвига на несколько пикселей, а
+ * не для панели во весь экран.
  *
- * Что осталось от `Sheet` (Radix Dialog) и почему он: ловушка фокуса, закрытие
- * по `Esc` и по клику на затемнение, блокировка прокрутки страницы, `aria-modal`
- * и скрытие остального содержимого от скринридера. Всё это при ручной
- * реализации забывают — и потом находит аудит.
+ * vaul для этого и написан: у него своя кривая для панелей, а главное —
+ * ЗАКРЫТИЕ ПЕРЕТАСКИВАНИЕМ. Именно оно отличает шторку приложения от
+ * веб-модалки: скорость пальца переходит в скорость панели, и жест можно
+ * отменить на полпути. Библиотека уже была в зависимостях проекта, а обёртка
+ * `ui/drawer.tsx` лежала неиспользованной.
  *
- * Полоска-«ручка» сверху — не украшение, а основная цель для закрытия: жест
- * «смахнуть вниз» Radix не поддерживает, а тянуться к крестику в углу на
- * широком телефоне так же неудобно, как к списку у верхнего края.
+ * Здесь только СОДЕРЖИМОЕ шторки: сам `Drawer` и кнопка-триггер живут в доке.
+ * Так сделано ради возврата фокуса — vaul, как и Radix, возвращает фокус на
+ * элемент-триггер. Пока шторка управлялась своим `useState`, а кнопка была
+ * обычной, возвращать было некуда: на телефоне касание кнопку не фокусирует, и
+ * после `Esc` фокус оставался на `body`.
+ *
+ * Полоска-«ручка» сверху — кнопка с доступным именем, а не декорация: жест
+ * перетаскивания мышью и клавиатурой недоступен, и закрытие обязано иметь
+ * обычную цель. Декоративный дубль от вендорной обёртки скрыт (`globals.css`).
  */
 
 'use client';
@@ -32,12 +39,12 @@ import { useTranslations } from 'next-intl';
 import { navIcons } from '@/components/layout/nav-icons';
 import { Button } from '@/components/ui/button';
 import {
-  SheetClose,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
 import { headerCta, isActiveNavPath, mobileMenuItems } from '@/config';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
@@ -47,28 +54,18 @@ export function MobileMenuSheetContent() {
   const pathname = usePathname();
 
   return (
-    <SheetContent
-      side="bottom"
-      /*
-       * `data-side` для CSS: проп `side` вендорного компонента в разметку не
-       * попадает, а анимации выезда объявлены в `globals.css` по этому атрибуту
-       * (вендорные файлы не патчим — их перезаписывает shadcn).
-       */
-      data-side="bottom"
-      showCloseButton={false}
-      className="mobile-menu-sheet overscroll-contain gap-0"
-    >
+    <DrawerContent className="mobile-menu-sheet overscroll-contain">
       {/*
         Заголовок и описание обязательны для `aria-labelledby` и
         `aria-describedby` диалога, но визуально шторка в них не нуждается:
         сетка разделов говорит сама за себя.
       */}
-      <SheetHeader className="sr-only">
-        <SheetTitle>{t('nav.menuTitle')}</SheetTitle>
-        <SheetDescription>{t('nav.menuDescription')}</SheetDescription>
-      </SheetHeader>
+      <DrawerHeader className="sr-only">
+        <DrawerTitle>{t('nav.menuTitle')}</DrawerTitle>
+        <DrawerDescription>{t('nav.menuDescription')}</DrawerDescription>
+      </DrawerHeader>
 
-      <SheetClose
+      <DrawerClose
         aria-label={t('nav.closeMenu')}
         className={cn(
           'mx-auto mt-1 mb-4 block h-1.5 w-10 shrink-0 rounded-full',
@@ -86,7 +83,7 @@ export function MobileMenuSheetContent() {
             return (
               <li key={item.id}>
                 {/* `asChild` закрывает шторку тем же нажатием, которым уходит переход. */}
-                <SheetClose asChild>
+                <DrawerClose asChild>
                   <Link
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
@@ -105,18 +102,18 @@ export function MobileMenuSheetContent() {
                     )}
                     <span className="text-caption leading-tight">{t(item.labelKey)}</span>
                   </Link>
-                </SheetClose>
+                </DrawerClose>
               </li>
             );
           })}
         </ul>
       </nav>
 
-      <SheetClose asChild>
+      <DrawerClose asChild>
         <Button asChild block size="lg" variant="accent" className="mt-4 shrink-0">
           <Link href={headerCta.href}>{t(headerCta.labelKey)}</Link>
         </Button>
-      </SheetClose>
-    </SheetContent>
+      </DrawerClose>
+    </DrawerContent>
   );
 }

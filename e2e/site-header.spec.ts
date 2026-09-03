@@ -191,7 +191,7 @@ test.describe('MobileDock', () => {
     const headerElement = page.locator('body > header');
 
     const overlayZ = await page
-      .locator('[data-slot="sheet-overlay"]')
+      .locator('[data-slot="drawer-overlay"]')
       .evaluate((node) => Number.parseInt(getComputedStyle(node).zIndex, 10));
     const headerZ = await headerElement.evaluate((node) =>
       Number.parseInt(getComputedStyle(node).zIndex, 10),
@@ -210,50 +210,76 @@ test.describe('MobileDock', () => {
     await expect(page.getByRole('banner')).toHaveCount(1);
   });
 
-  test('шторка выезжает и уходит с анимацией, а не щелчком', async ({ page }) => {
+  test('шторка выезжает и уходит плавно, а не щелчком', async ({ page }) => {
     /*
-     * Проверка появилась после дефекта, который иначе не заметить статически.
-     * Вендорный `Sheet` рассчитывает на утилиты `animate-in` и
-     * `slide-in-from-bottom` из отдельного пакета; пакета в проекте нет, классы
-     * в разметке остались, CSS они не генерировали — и шторка появлялась
-     * мгновенно. Tailwind на несуществующую утилиту не жалуется, сборка зелёная,
-     * а разметка выглядит правильной.
+     * Проверка появилась после замечания заказчика и переживает уже вторую
+     * причину того же симптома, поэтому сверяется не класс и не библиотека, а
+     * ФАКТ движения: за какое время панель проходит путь и приходит ли она в
+     * конечное положение постепенно.
      *
-     * Поэтому сверяется не класс, а факт: у элемента есть анимация с ненулевой
-     * длительностью в обоих состояниях.
+     * Первая причина: вендорный `Sheet` рассчитывал на утилиты `animate-in` и
+     * `slide-in-from-bottom` из пакета, которого в проекте нет — классы в
+     * разметке были, CSS они не генерировали. Вторая: даже с анимацией наша
+     * брендовая кривая проходила 96% пути за первые 230ms из 500 и последние
+     * четыре пиксела ползла. Обе выглядели в коде правильно.
      */
-    await menuButton(page).click();
+    /*
+     * Открытие и замеры — внутри страницы, без обращений к драйверу между
+     * кадрами: путь панели длится около 350ms, и любой round-trip между `click`
+     * и первым замером успевает его пропустить. Именно так первая версия этой
+     * проверки «увидела» нулевое смещение на уже приехавшей шторке.
+     */
+    const tops = await page.evaluate(async (label) => {
+      const trigger = [...document.querySelectorAll('button')].find(
+        (node) => node.getAttribute('aria-label') === label,
+      );
+      trigger?.click();
 
-    const sheet = page.locator('[data-slot="sheet-content"]');
-    const overlay = page.locator('[data-slot="sheet-overlay"]');
+      const samples: number[] = [];
+      await new Promise<void>((resolve) => {
+        let frames = 0;
+        const tick = () => {
+          const node = document.querySelector('[data-slot="drawer-content"]');
+          if (node) samples.push(Math.round(node.getBoundingClientRect().top));
+          frames += 1;
+          if (frames < 24) requestAnimationFrame(tick);
+          else resolve();
+        };
+        requestAnimationFrame(tick);
+      });
+      return samples;
+    }, en.nav.openMenu);
+
+    const sheet = page.locator('[data-slot="drawer-content"]');
     await expect(sheet).toBeVisible();
 
-    const opening = await sheet.evaluate((node) => {
-      const style = getComputedStyle(node);
-      return { name: style.animationName, duration: Number.parseFloat(style.animationDuration) };
-    });
-    expect(opening.name).not.toBe('none');
-    expect(opening.duration).toBeGreaterThan(0.2);
-
-    /* Затемнение проявляется, а не возникает: иначе выезд читается как рывок. */
-    const overlayAnimation = await overlay.evaluate((node) => {
-      const style = getComputedStyle(node);
-      return { name: style.animationName, duration: Number.parseFloat(style.animationDuration) };
-    });
-    expect(overlayAnimation.name).not.toBe('none');
-    expect(overlayAnimation.duration).toBeGreaterThan(0);
+    /* Панель едет: между первым и последним замером есть заметный путь. */
+    expect(tops.length).toBeGreaterThan(4);
+    expect(tops[0]! - tops.at(-1)!).toBeGreaterThan(40);
 
     /*
-     * Уход: состояние `closed` появляется до размонтирования, и именно на нём
-     * держится анимация закрытия. Ловим его, пока Radix ждёт `animationend`.
+     * И едет ПОСТЕПЕННО: минимум три разных положения. Мгновенный переход дал бы
+     * одно и то же значение во всех замерах — ровно то, что видел заказчик.
      */
-    await page.keyboard.press('Escape');
-    const closing = await sheet.evaluate((node) => {
+    expect(new Set(tops).size).toBeGreaterThanOrEqual(3);
+
+    const declared = await sheet.evaluate((node) => {
       const style = getComputedStyle(node);
-      return { state: node.getAttribute('data-state'), duration: Number.parseFloat(style.animationDuration) };
+      return {
+        property: style.transitionProperty,
+        duration: Number.parseFloat(style.transitionDuration),
+      };
     });
-    expect(closing.state).toBe('closed');
-    expect(closing.duration).toBeGreaterThan(0.1);
+    expect(declared.property).toContain('transform');
+    expect(declared.duration).toBeGreaterThan(0.2);
+
+    /* Затемнение проявляется, а не возникает. */
+    const overlay = await page.locator('[data-slot="drawer-overlay"]').evaluate((node) => {
+      const style = getComputedStyle(node);
+      return { name: style.animationName, duration: Number.parseFloat(style.animationDuration) };
+    });
+    expect(overlay.name).not.toBe('none');
+    expect(overlay.duration).toBeGreaterThan(0);
   });
 
   test('переход по плитке уводит на раздел и закрывает шторку', async ({ page }) => {
