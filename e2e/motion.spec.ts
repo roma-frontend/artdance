@@ -18,7 +18,9 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import en from '../src/i18n/messages/en';
+import { demoHeroStats } from '../prisma/fixtures/demo';
 import { motion } from '../src/design/motion';
+import { settleAndHover } from './support/settle';
 
 const HOME = '/en';
 
@@ -190,10 +192,8 @@ test.describe('плавность отклика карточек', () => {
     expect(await cards.count()).toBeGreaterThan(0);
 
     const card = cards.first();
-    await card.scrollIntoViewIfNeeded();
-
     const translateBefore = await card.evaluate((node) => getComputedStyle(node).translate);
-    await card.hover();
+    await settleAndHover(card);
 
     /*
      * Значение `translate` меняется — значит, подъём вообще происходит. Плавность
@@ -281,5 +281,131 @@ test.describe('PointerGlow', () => {
     await page.mouse.move(400, 400);
     await expect(glow).toHaveCSS('opacity', '1');
     await expect(glow).toHaveCSS('pointer-events', 'none');
+  });
+});
+
+
+/**
+ * Счётчики показателей первого экрана.
+ *
+ * Проверяется не «число красиво набегает», а то, что информация не теряется ни
+ * в одном из состояний: анимация заканчивается точным значением, при просьбе
+ * убрать движение значение видно сразу, а до старта скрытое число продолжает
+ * занимать своё место — иначе раскладка hero дёргалась бы на каждой загрузке.
+ */
+test.describe('Counter — показатели hero', () => {
+  /** Итоговая строка ровно та, что рисует локаль: разделитель разрядов из Intl. */
+  const expected = (value: number, decimals: number) =>
+    new Intl.NumberFormat('en', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
+
+  test('анимация заканчивается точным значением, а не «почти»', async ({ page }) => {
+    await page.goto(HOME);
+
+    const counters = page.locator('[data-counter]');
+    await expect(counters).toHaveCount(demoHeroStats.length);
+
+    for (const [index, stat] of demoHeroStats.entries()) {
+      const counter = counters.nth(index);
+      /* Отсчёт закончен — только тогда сверяем: до этого значение промежуточное. */
+      await expect
+        .poll(() => counter.locator('span').first().textContent(), { timeout: 15_000 })
+        .toBe(expected(stat.value, stat.decimals));
+      await expect(counter).toHaveText(`${expected(stat.value, stat.decimals)}${stat.suffix}`);
+    }
+  });
+
+  test('скрытое стартовое состояние занимает то же место, что готовое', async ({ page }) => {
+    await page.goto(HOME);
+
+    const counter = page.locator('[data-counter]').first();
+    await expect(counter).toHaveAttribute('data-counted', '');
+
+    /*
+     * Замер через `getBoundingClientRect`, а не `boundingBox()`: у скрытого
+     * `visibility: hidden` элемента рамка есть, но Playwright считает его
+     * невидимым, и его собственный замер здесь не подходит.
+     *
+     * Воспроизводим состояние «скрипт ещё не начал считать», снимая атрибут:
+     * именно так элемент выглядит между первой отрисовкой и гидратацией. Рамка
+     * обязана остаться той же — иначе hero подпрыгивал бы на каждой загрузке.
+     * Это следствие `visibility: hidden`; `display: none` или нулевая высота
+     * дали бы сдвиг раскладки.
+     */
+    const measure = () =>
+      counter.evaluate((node) => {
+        const rect = node.getBoundingClientRect();
+        return { width: rect.width, height: rect.height };
+      });
+
+    const shown = await measure();
+    await counter.evaluate((node) => node.removeAttribute('data-counted'));
+    const hidden = await measure();
+
+    expect(hidden.width).toBeCloseTo(shown.width, 0);
+    expect(hidden.height).toBeCloseTo(shown.height, 0);
+    expect(shown.width).toBeGreaterThan(0);
+  });
+
+  test('при просьбе убрать движение значение видно сразу', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(HOME);
+
+    const counter = page.locator('[data-counter]').first();
+    const stat = demoHeroStats[0]!;
+    /* Ни одного промежуточного значения: сразу итог. */
+    await expect(counter).toHaveText(`${expected(stat.value, stat.decimals)}${stat.suffix}`);
+    await expect(counter).toBeVisible();
+  });
+});
+
+/**
+ * Плитка направления: подписи, живущие в состоянии наведения.
+ *
+ * Главное здесь — не анимация, а доступность информации. В прототипе счётчик
+ * занятий и стрелка появляются только на hover, то есть на телефоне их не
+ * существует вовсе, и узнать число занятий в направлении нельзя. Скрытое
+ * состояние объявлено внутри `@media (hover: hover)`, и тест проверяет обе
+ * стороны этого решения.
+ */
+test.describe('StyleTileGrid', () => {
+  test('счётчик занятий скрыт до наведения там, где наведение есть, и виден там, где его нет', async ({
+    page,
+  }) => {
+    await page.goto(HOME);
+
+    const tile = page.locator('a.card-surface').first();
+    const count = tile.locator('.tile-count');
+    await tile.scrollIntoViewIfNeeded();
+    await expect(count).toHaveCount(1);
+
+    const finePointer = await page.evaluate(
+      () => window.matchMedia('(hover: hover) and (pointer: fine)').matches,
+    );
+
+    if (!finePointer) {
+      /* Наведения нет — информация обязана быть видна без него. */
+      await expect(count).toHaveCSS('opacity', '1');
+      return;
+    }
+
+    await expect(count).toHaveCSS('opacity', '0');
+    await settleAndHover(tile);
+    await expect(count).toHaveCSS('opacity', '1');
+  });
+
+  test('плитка не поднимается при наведении: в макете двигается только кадр', async ({ page }) => {
+    await page.goto(HOME);
+
+    const finePointer = await page.evaluate(() => window.matchMedia('(hover: hover)').matches);
+    test.skip(!finePointer, 'На touch-устройстве наведения нет');
+
+    const tile = page.locator('a.card-surface').first();
+    await settleAndHover(tile);
+
+    /* Подъём есть у карточек каталога, но не у плитки — иначе сетка дрожит. */
+    await expect(tile).toHaveCSS('translate', 'none');
   });
 });

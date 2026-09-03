@@ -36,6 +36,8 @@ export interface SemanticColors {
   'content-on-accent': string;
   'content-on-cinema': string;
   'content-on-cinema-muted': string;
+  /** Матовое стекло поверх кадра: круглые кнопки и метки на фотографии. */
+  'surface-glass-on-cinema': string;
   /**
    * Акцент для текста поверх кинематографичных плоскостей.
    *
@@ -99,6 +101,13 @@ export interface SemanticColors {
 const cinema = {
   'surface-cinema': ink[950],
   'surface-cinema-alt': crimson[700],
+  /**
+   * Матовое стекло поверх кадра: круглые кнопки и метки на фотографии
+   * (`.nav-icon`, `.cat-a`, `.mobile-close` в прототипе — везде одно и то же
+   * `rgba(255,255,255,.1)` с `backdrop-filter`). Значение то же, что у границы:
+   * это одна и та же плёнка, просто в одном случае она заливка, в другом рамка.
+   */
+  'surface-glass-on-cinema': 'rgba(247, 244, 239, 0.10)',
   'content-on-cinema': ivory[200],
   'content-on-cinema-muted': 'rgba(247, 244, 239, 0.55)',
   'border-on-cinema': 'rgba(247, 244, 239, 0.10)',

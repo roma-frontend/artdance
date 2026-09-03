@@ -442,6 +442,79 @@
   }
 
   /*
+   * Плитка направления (`.cat` в прототипе): подписи живут в hover-состоянии.
+   *
+   * В макете счётчик занятий и стрелка появляются только при наведении. На
+   * touch-устройстве наведения нет вовсе, поэтому там эта информация была бы
+   * недостижима — сколько занятий в направлении, узнать нельзя. Скрытое
+   * состояние объявлено ВНУТРИ `@media (hover: hover)`: где наведения нет, обе
+   * подписи видны сразу, и плитка остаётся полной.
+   *
+   * `translate` и `rotate` перечислены в переходе отдельными свойствами — по той
+   * же причине, что у `.card-surface` (см. выше).
+   */
+  @media (hover: hover) and (pointer: fine) {
+    .tile-count,
+    .tile-arrow {
+      opacity: 0;
+      transition:
+        opacity var(--duration-normal) var(--ease-brand),
+        translate var(--duration-normal) var(--ease-brand),
+        rotate var(--duration-normal) var(--ease-brand);
+    }
+
+    .tile-count {
+      translate: 0 var(--space-2);
+      /* Счётчик догоняет название, а не выезжает вместе с ним — как в макете. */
+      transition-delay: var(--duration-instant);
+    }
+
+    .tile-arrow {
+      translate: 0 var(--space-2);
+      rotate: -45deg;
+    }
+
+    .tile-title {
+      transition: translate var(--duration-normal) var(--ease-brand);
+    }
+
+    .group:hover .tile-count,
+    .group:focus-visible .tile-count,
+    .group:hover .tile-arrow,
+    .group:focus-visible .tile-arrow {
+      opacity: 1;
+      translate: 0 0;
+      rotate: 0deg;
+    }
+
+    .group:hover .tile-title,
+    .group:focus-visible .tile-title {
+      translate: 0 calc(var(--space-1) * -1);
+    }
+  }
+
+  /*
+   * Стартовое состояние счётчика (`components/fx/counter.tsx`).
+   *
+   * В разметке стоит ИТОГОВОЕ число, а не нуль, как в прототипе: страница без
+   * JavaScript не должна утверждать «0+ активных танцоров». Но тогда в момент
+   * гидратации пользователь увидел бы «2 500 → 0 → 2 500», поэтому до первого
+   * кадра анимации число невидимо.
+   *
+   * `visibility`, а не `display` или `opacity` на родителе: элемент продолжает
+   * занимать своё место, и раскладка не дёргается — итоговая строка самая
+   * длинная из всех промежуточных.
+   *
+   * Условия те же, что у появления секций: без скрипта и при просьбе убрать
+   * движение правило не действует вовсе, и число видно сразу.
+   */
+  @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+    [data-counter]:not([data-counted]) {
+      visibility: hidden;
+    }
+  }
+
+  /*
    * Фоновая петля первого экрана и шлейф её копий — геометрия из прототипа.
    *
    * Обёртка шире контейнера (`--hero-wrap-width`), видео заполняет её целиком, и

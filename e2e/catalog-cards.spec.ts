@@ -12,6 +12,7 @@ import en from '../src/i18n/messages/en';
 import { demoClasses, demoInstructors, demoVenues } from '../prisma/fixtures/demo';
 import { commerce } from '../src/config/business';
 import { carouselScroll } from '../src/design/motion';
+import { settleAndHover } from './support/settle';
 
 const { edgeTolerancePx, minHiddenStepRatio } = carouselScroll;
 
@@ -19,28 +20,6 @@ const HOME = '/en';
 
 const carousel = (page: Page): Locator => page.getByRole('group', { name: en.home.popular.title });
 const firstClass = demoClasses.find((item) => item.isTrending) ?? demoClasses[0]!;
-
-/**
- * Ждёт, пока блок перестанет двигаться.
- *
- * Секции въезжают в экран переходом (`Reveal`), и координаты элемента внутри
- * меняются десятки кадров после прокрутки. Синтетическое наведение — это ОДНО
- * событие `pointermove` в одну точку: если между замером рамки и движением
- * курсора блок сдвинулся, событие приходит мимо карточки. У живого курсора
- * события идут потоком, поэтому дефект существует только в тесте — но делает
- * его случайным, а это хуже красного.
- */
-async function waitUntilStill(locator: Locator): Promise<void> {
-  let previous = '';
-  await expect
-    .poll(async () => {
-      const current = JSON.stringify(await locator.boundingBox());
-      const stable = current === previous;
-      previous = current;
-      return stable;
-    })
-    .toBe(true);
-}
 
 test.describe('ClassCard', () => {
   test.beforeEach(async ({ page }) => {
@@ -254,13 +233,23 @@ test.describe('CardTilt', () => {
      * доводит элемент до видимой области и проверяет, что его не перекрывает
      * фиксированная шапка. Точка смещена от центра — в центре наклон нулевой.
      */
-    await tilt.scrollIntoViewIfNeeded();
-    await waitUntilStill(tilt);
+    await settleAndHover(tilt, { xRatio: 0.85, yRatio: 0.7 });
+
+    /*
+     * Курсор шевелится между попытками. У живого пользователя `pointermove`
+     * идёт потоком, и наклон подхватывается на любом из событий; синтетическое
+     * наведение — это ОДНО событие, и если оно пришло в момент, когда блок ещё
+     * доезжал, второго не будет. Здесь каждая попытка сама создаёт событие.
+     */
     const box = (await tilt.boundingBox())!;
-    await tilt.hover({ position: { x: box.width * 0.85, y: box.height * 0.7 } });
+    const point = { x: box.x + box.width * 0.85, y: box.y + box.height * 0.7 };
 
     await expect
-      .poll(() => tilt.evaluate((node) => (node as HTMLElement).style.transform))
+      .poll(async () => {
+        await page.mouse.move(point.x, point.y + 1);
+        await page.mouse.move(point.x, point.y);
+        return tilt.evaluate((node) => (node as HTMLElement).style.transform);
+      })
       .toContain('rotate');
 
     /* Курсор ушёл с карточки — наклон снимается, управление возвращается CSS. */

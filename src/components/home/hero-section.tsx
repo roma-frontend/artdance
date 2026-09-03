@@ -16,9 +16,10 @@
  * ходу, и первый экран дёргается при первой же прокрутке.
  */
 
-import { getFormatter, getTranslations } from 'next-intl/server';
+import { getTranslations } from 'next-intl/server';
 
 import { HeroVideo } from '@/components/home/hero-video';
+import { Counter } from '@/components/fx/counter';
 import { HeroParallax } from '@/components/fx/hero-parallax';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/config';
@@ -33,7 +34,6 @@ interface HeroSectionProps {
 
 export async function HeroSection({ hero, locale }: HeroSectionProps) {
   const t = await getTranslations('home.hero');
-  const format = await getFormatter();
 
   return (
     <HeroParallax>
@@ -87,12 +87,12 @@ export async function HeroSection({ hero, locale }: HeroSectionProps) {
             {hero.stats.map((stat) => (
               <div key={stat.id}>
                 <dd className="text-heading-3 text-content-on-cinema">
-                  <span className="text-metal">
-                    {stat.decimals > 0
-                      ? format.number(stat.value, 'rating')
-                      : format.number(stat.value, 'plain')}
-                  </span>
-                  {stat.suffix}
+                  <Counter
+                    value={stat.value}
+                    decimals={stat.decimals}
+                    suffix={stat.suffix}
+                    className="text-metal"
+                  />
                 </dd>
                 <dt className="text-eyebrow mt-1 text-content-on-cinema-muted">
                   {t(

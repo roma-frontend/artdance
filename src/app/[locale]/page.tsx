@@ -29,17 +29,16 @@ import { ClassCard } from '@/components/catalog/class-card';
 import { ClassCarousel } from '@/components/catalog/class-carousel';
 import { EventCard } from '@/components/catalog/event-card';
 import { InstructorCard } from '@/components/catalog/instructor-card';
+import { StyleTileGrid } from '@/components/catalog/style-tile-grid';
 import { VenueCard } from '@/components/catalog/venue-card';
 import { ProductCard } from '@/components/shop/product-card';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
 import { SectionHeading } from '@/components/ui/section-heading';
 import { features, orderedSubscriptionPlans, routes, site } from '@/config';
-import { danceStyleLabelKey, danceStyles } from '@/domain/enums';
-import { resolveMedia } from '@/domain/content';
+import { danceStyles } from '@/domain/enums';
 import { Link } from '@/i18n/routing';
 import { getHomeContent } from '@/server/content/home';
 import type { Locale } from '@/i18n/config';
@@ -55,7 +54,6 @@ export default async function HomePage({ params }: PageProps) {
   const content = getHomeContent();
   const t = await getTranslations('home');
   const tCommon = await getTranslations('common');
-  const tStyles = await getTranslations();
   const tPricing = await getTranslations('pricing');
 
   return (
@@ -82,35 +80,7 @@ export default async function HomePage({ params }: PageProps) {
             />
           </Reveal>
 
-          <Reveal as="ul" variant="stagger" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-            {content.styleTiles.map((tile) => (
-              <li key={tile.style}>
-                <Link
-                  href={routes.discover({ style: tile.style })}
-                  className="card-surface group relative flex aspect-[3/4] items-end overflow-hidden rounded-lg border border-border-default hover:border-accent"
-                >
-                  <Media
-                    {...resolveMedia(tile.image, locale as Locale)}
-                    preset="categoryCard"
-                    fill
-                    className="absolute inset-0 size-full"
-                    imageClassName="media-zoom group-hover:scale-105"
-                  />
-                  <span
-                    aria-hidden
-                    className="absolute inset-0"
-                    style={{ background: 'var(--scrim-bottom-strong)' }}
-                  />
-                  <span className="relative z-10 p-5 text-card-title text-content-on-cinema">
-                    {tStyles(danceStyleLabelKey(tile.style as never) as 'danceStyles.hipHop')}
-                    <span className="text-caption mt-1 block text-content-on-cinema-muted">
-                      {tCommon('counts.classes', { count: tile.classCount })}
-                    </span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </Reveal>
+          <StyleTileGrid tiles={content.styleTiles} locale={locale as Locale} />
         </div>
       </section>
 

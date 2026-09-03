@@ -22,16 +22,6 @@ const HOME = '/en';
 const heroVideo = (page: Page) => page.locator('.hero-video-wrap > video');
 const ghosts = (page: Page) => page.locator('.hero-ghost');
 
-/** Насколько пикселей справа кадр НЕ покрывает контейнер. ≤ 0 — покрывает. */
-async function gapRight(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const limit = document.documentElement.clientWidth;
-    const video = document.querySelector('.hero-video-wrap > video');
-    if (!video) return Number.NaN;
-    return Math.round(limit - video.getBoundingClientRect().right);
-  });
-}
-
 test.describe('фоновая петля', () => {
   test('петля играет и покрывает первый экран', async ({ page }) => {
     await page.goto(HOME);
@@ -49,23 +39,52 @@ test.describe('фоновая петля', () => {
       .toBeGreaterThan(0);
   });
 
-  test('кадр перекрывает контейнер на всём протяжении сдвига', async ({ page }) => {
+  test('кадр перекрывает контейнер в каждой фазе сдвига', async ({ page }) => {
     await page.goto(HOME);
     await expect(heroVideo(page)).toHaveCount(1);
 
     /*
-     * Замеры вдоль сдвига, а не один: полоса открывается ближе к его концу.
-     * Шаг покрывает первую половину цикла, где смещение максимально нарастает.
+     * Сдвиг задаётся напрямую, а не выжидается по часам.
+     *
+     * Проверяемое свойство — геометрическое: при любом смещении в пределах
+     * `slidePercent` правый край кадра обязан оставаться за границей контейнера.
+     * Раньше тест ждал реальный четырнадцатисекундный цикл и брал шесть замеров
+     * «на глазок»: он не покрывал крайнюю фазу, зависел от загруженности машины
+     * и на занятом раннере падал без дефекта. Здесь перебираются все фазы,
+     * включая крайнюю, и проверка занимает миллисекунды.
+     *
+     * Заодно это работает на всех ширинах: сам цикл сдвига живёт только от
+     * 1024px, но ширина обёртки — общий CSS, и связка чисел обязана держаться
+     * везде.
      */
-    const samples: number[] = [];
-    for (let index = 0; index < 6; index += 1) {
-      samples.push(await gapRight(page));
-      await page.waitForTimeout(1_200);
-    }
+    const gaps = await page.evaluate((slidePercent) => {
+      const wrap = document.querySelector<HTMLElement>('.hero-video-wrap');
+      const video = document.querySelector('.hero-video-wrap > video');
+      if (!wrap || !video) return null;
 
-    expect(Math.max(...samples), `зазоры справа по фазам: ${samples.join(', ')}`).toBeLessThanOrEqual(
-      0,
-    );
+      const limit = document.documentElement.clientWidth;
+      const original = wrap.style.transform;
+      const originalTransition = wrap.style.transition;
+      /* Без перехода: замер должен относиться к заданной фазе, а не к пути к ней. */
+      wrap.style.transition = 'none';
+
+      const steps = 10;
+      const measured: number[] = [];
+      for (let step = 0; step <= steps; step += 1) {
+        wrap.style.transform = `translateX(-${(slidePercent * step) / steps}%)`;
+        measured.push(Math.round(limit - video.getBoundingClientRect().right));
+      }
+
+      wrap.style.transform = original;
+      wrap.style.transition = originalTransition;
+      return measured;
+    }, motion.heroGhostTrail.slidePercent);
+
+    expect(gaps, 'кадр первого экрана не найден').not.toBeNull();
+    expect(
+      Math.max(...gaps!),
+      `зазоры справа по фазам сдвига: ${gaps!.join(', ')}`,
+    ).toBeLessThanOrEqual(0);
   });
 
   test('петля декоративна: без кнопок управления, но с уважением к настройкам', async ({
@@ -87,6 +106,13 @@ test.describe('фоновая петля', () => {
 
 test.describe('шлейф копий', () => {
   test('число копий не превышает предел политики', async ({ page }) => {
+    /*
+     * Проверка идёт по живому циклу: копии рождаются раз в 900ms и живут пять
+     * секунд, и подделать это временем нельзя — предел проверяется именно на
+     * работающем цикле. Отсюда `slow`: тест по своей природе длинный, и на
+     * занятой машине первая копия появляется не в первую секунду.
+     */
+    test.slow();
     await page.goto(HOME);
 
     const wideEnough =
@@ -95,7 +121,7 @@ test.describe('шлейф копий', () => {
 
     /* Копии появляются не сразу: цикл стартует после первого кадра петли. */
     await expect
-      .poll(() => ghosts(page).count(), { timeout: 15_000 })
+      .poll(() => ghosts(page).count(), { timeout: 25_000 })
       .toBeGreaterThan(0);
 
     /*

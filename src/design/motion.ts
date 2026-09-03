@@ -143,7 +143,8 @@ export const heroGhostTrail = {
 
 /** Счётчики показателей hero (`data-count`). */
 export const counterMotion = {
-  durationMs: 1_600,
+  /** 2200ms из прототипа: с ними число успевает «набежать», а не мигнуть. */
+  durationMs: 2_200,
   /** ease-out quartic — как в макете: быстрый старт, мягкая остановка. */
   easingPower: 4,
   /** Порог видимости, при котором счётчик стартует. */
