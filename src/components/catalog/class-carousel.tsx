@@ -112,10 +112,18 @@ export function ClassCarousel({ children, label, className }: ClassCarouselProps
         ref={listRef}
         id={listId}
         /*
-         * `group` с именем роли: лента — это регион с собственным содержимым,
-         * и скринридер должен объявить её название перед перечислением карточек.
+         * Роль `list` сохраняется, а имя даёт `aria-label`.
+         *
+         * Изначально здесь стояло `role="group"` — чтобы скринридер объявил
+         * название региона перед карточками. Но роль на `<ul>` ЗАМЕНЯЕТ роль
+         * списка, и четыре `<li>` внутри теряли родителя: аудит axe нашёл это
+         * как нарушение критерия 1.3.1 («list item must be contained in a
+         * list»). Список с именем объявляется не хуже группы и при этом
+         * сообщает число элементов — «список Popular Right Now, 4 элемента».
+         *
+         * Прокручиваемый и фокусируемый элемент — сам список: клавиатурная
+         * прокрутка обязана работать без дополнительной обёртки (WCAG 2.1.1).
          */
-        role="group"
         aria-label={label}
         tabIndex={0}
         className={cn(
@@ -170,7 +178,7 @@ function CarouselArrow({ direction, controls, disabled, label, onClick }: Carous
         'grid size-10 place-items-center rounded-full',
         'border border-border-default bg-surface-card text-content-primary',
         'transition-[transform,border-color,color] duration-normal ease-brand',
-        'hover:border-accent hover:text-accent hover:scale-105 active:scale-95',
+        'hover:border-accent hover:text-content-accent hover:scale-105 active:scale-95',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
         'disabled:pointer-events-none disabled:opacity-40',
       )}

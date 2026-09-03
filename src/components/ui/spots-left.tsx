@@ -35,7 +35,7 @@ export function SpotsLeft({ spots, waitlistOpen = false, className }: SpotsLeftP
 
   if (soldOut && waitlistOpen) {
     return (
-      <span className={cn('text-caption font-semibold text-signal', className)}>
+      <span className={cn('text-caption font-semibold text-content-signal', className)}>
         {t('common.actions.joinWaitlist')}
       </span>
     );
@@ -46,8 +46,8 @@ export function SpotsLeft({ spots, waitlistOpen = false, className }: SpotsLeftP
       className={cn(
         'text-caption font-semibold',
         soldOut && 'text-content-tertiary',
-        few && 'text-warning',
-        !soldOut && !few && 'text-success',
+        few && 'text-content-warning',
+        !soldOut && !few && 'text-content-success',
         className,
       )}
     >

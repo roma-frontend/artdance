@@ -49,6 +49,30 @@ export interface SemanticColors {
    */
   'accent-on-cinema': string;
 
+  /* ─────────────────────────────────────────────────────────────────────────
+     Текстовые варианты цветных ролей.
+
+     Роль `accent` и статусные роли — это ЗАЛИВКИ: кнопка, плашка, полоса,
+     точка. Как цвет текста они не работают, и это не мелочь: брендовый
+     бургунди `#8B1A2B` на тёмной подложке даёт 1.8:1, золотой `#B89A5E` на
+     белой карточке — 2.7:1, янтарный `#C4841D` — 3.2:1. Надзаголовки секций,
+     цены, «осталось мало мест» и рейтинги были написаны именно ими.
+
+     Поэтому у каждой цветной роли есть текстовый вариант, и он ЗАВИСИТ ОТ
+     ТЕМЫ, даже когда заливка от темы не зависит. Пары проверяются
+     `src/design/tokens/contrast.test.ts`, а страница целиком —
+     `e2e/accessibility.spec.ts`.
+
+     Исключение — кинематографичные плоскости: они одинаковы в обеих темах, и
+     для них есть свои роли (`accent-on-cinema`, `metal`).
+     ───────────────────────────────────────────────────────────────────────── */
+  'content-accent': string;
+  'content-metal': string;
+  'content-success': string;
+  'content-warning': string;
+  'content-danger': string;
+  'content-signal': string;
+
   /* Границы */
   'border-subtle': string;
   'border-default': string;
@@ -137,11 +161,26 @@ export const lightColors: SemanticColors = {
   ...cinema,
 
   'content-primary': ink[900],
-  'content-secondary': ink[500],
-  'content-tertiary': ink[400],
+  /*
+   * Второстепенный и третьестепенный текст сдвинуты на шаг темнее прежних.
+   *
+   * Было `ink[500]` / `ink[400]`: третьестепенный давал 3.0:1 на утопленной
+   * подложке и 3.5:1 на карточке — ниже порога AA для текста 12px, которым он и
+   * набран (метаданные карточек, единицы у цены, подписи под звёздами). Иерархия
+   * сохранена: между шагами 500 и 600 разница видна.
+   */
+  'content-secondary': ink[600],
+  'content-tertiary': ink[500],
   'content-disabled': ink[300],
   'content-inverse': ivory[200],
   'content-on-accent': absolute.white,
+
+  'content-accent': crimson[600],
+  'content-metal': gold[700],
+  'content-success': green[600],
+  'content-warning': amber[700],
+  'content-danger': crimson[700],
+  'content-signal': crimson[500],
 
   'border-subtle': ivory[400],
   'border-default': ink[100],
@@ -181,10 +220,25 @@ export const darkColors: SemanticColors = {
 
   'content-primary': ivory[200],
   'content-secondary': 'rgba(247, 244, 239, 0.62)',
-  'content-tertiary': 'rgba(247, 244, 239, 0.38)',
+  /*
+   * Было 0.38 — 3.4:1 на карточке, ниже порога для текста 12px. 0.50 даёт
+   * 4.8:1 и остаётся заметно тише второстепенного.
+   */
+  'content-tertiary': 'rgba(247, 244, 239, 0.50)',
   'content-disabled': 'rgba(247, 244, 239, 0.22)',
   'content-inverse': ink[900],
   'content-on-accent': absolute.white,
+
+  /*
+   * Текстовые варианты в тёмной теме — светлые шаги рамп. Заливки при этом
+   * остаются прежними: кнопка обязана быть брендового бургунди в обеих темах.
+   */
+  'content-accent': crimson[300],
+  'content-metal': gold[400],
+  'content-success': green[300],
+  'content-warning': amber[400],
+  'content-danger': crimson[300],
+  'content-signal': crimson[350],
 
   'border-subtle': 'rgba(247, 244, 239, 0.05)',
   'border-default': 'rgba(247, 244, 239, 0.10)',

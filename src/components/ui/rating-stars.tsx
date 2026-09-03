@@ -79,7 +79,7 @@ export function RatingStars({
         {/* Верхний слой: те же звёзды, обрезанные по доле оценки. */}
         <span
           aria-hidden
-          className="absolute inset-0 inline-flex gap-0.5 overflow-hidden text-metal"
+          className="absolute inset-0 inline-flex gap-0.5 overflow-hidden text-content-metal"
           style={{ width: `${filledPercent}%` }}
         >
           {Array.from({ length: reviews.maxRating }, (_, index) => (
@@ -88,7 +88,7 @@ export function RatingStars({
         </span>
       </span>
 
-      <span className="text-caption font-semibold text-metal">
+      <span className="text-caption font-semibold text-content-metal">
         {format.number(clamped, 'rating')}
       </span>
 

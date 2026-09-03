@@ -37,18 +37,18 @@ const badgeVariants = cva(
         /** Нейтральная метка на карточке: направление, уровень, оснащение. */
         neutral: 'bg-surface-sunken text-content-secondary',
         /** Брендовая: акцентная роль элемента. */
-        accent: 'bg-accent-soft text-accent',
+        accent: 'bg-accent-soft text-content-accent',
         /** Живое и срочное: «осталось 2 места», «идёт трансляция». */
-        signal: 'bg-signal-soft text-signal uppercase tracking-wide',
+        signal: 'bg-signal-soft text-content-signal uppercase tracking-wide',
         /** Премиальное отличие: верификация, рейтинг, «выбор редакции». */
-        metal: 'bg-metal-soft text-metal',
-        success: 'bg-success-soft text-success',
-        warning: 'bg-warning-soft text-warning',
+        metal: 'bg-metal-soft text-content-metal',
+        success: 'bg-success-soft text-content-success',
+        warning: 'bg-warning-soft text-content-warning',
         /**
          * Плотная метка поверх фотографии (`.cc-badge` в макете): на снимке
          * полупрозрачный фон не читается, нужна сплошная плашка.
          */
-        onMedia: 'bg-surface-card text-accent uppercase tracking-wide shadow-sm',
+        onMedia: 'bg-surface-card text-content-accent uppercase tracking-wide shadow-sm',
       },
       size: {
         sm: 'px-2.5 py-1',

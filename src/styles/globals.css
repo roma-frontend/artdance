@@ -29,6 +29,17 @@
   --color-content-on-cinema-muted: var(--content-on-cinema-muted);
   --color-accent-on-cinema: var(--accent-on-cinema);
 
+  /*
+   * Текстовые варианты цветных ролей. Заливка и текст — разные роли: см.
+   * подробное обоснование в `src/design/tokens/semantic.ts`.
+   */
+  --color-content-accent: var(--content-accent);
+  --color-content-metal: var(--content-metal);
+  --color-content-success: var(--content-success);
+  --color-content-warning: var(--content-warning);
+  --color-content-danger: var(--content-danger);
+  --color-content-signal: var(--content-signal);
+
   --color-border-subtle: var(--border-subtle);
   --color-border-default: var(--border-default);
   --color-border-strong: var(--border-strong);

@@ -47,7 +47,7 @@ export function SiteFooter() {
         <div className="grid gap-10 lg:grid-cols-[2fr_repeat(4,1fr)]">
           <div>
             <Link href={routes.home()} className="flex items-center gap-3">
-              <BrandMark className="text-accent" />
+              <BrandMark className="text-content-accent" />
               <span className="text-card-title">{t('brand.name')}</span>
             </Link>
 
@@ -67,7 +67,7 @@ export function SiteFooter() {
                         'text-caption inline-flex items-center rounded-full px-3 py-1.5',
                         'border border-border-default text-content-secondary',
                         'transition-colors duration-normal ease-brand',
-                        'hover:border-accent hover:text-accent',
+                        'hover:border-accent hover:text-content-accent',
                       )}
                     >
                       {SOCIAL_LABELS[key]}

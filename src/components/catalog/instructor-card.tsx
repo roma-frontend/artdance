@@ -72,7 +72,7 @@ export function InstructorCard({ item, locale, className }: InstructorCardProps)
           </Link>
         </h3>
 
-        <p className="text-eyebrow mt-1.5 text-metal">{item.headline}</p>
+        <p className="text-eyebrow mt-1.5 text-content-metal">{item.headline}</p>
 
         <div className="text-caption mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-content-tertiary">
           <RatingStars rating={item.ratingAverage} count={item.ratingCount} hideCount />

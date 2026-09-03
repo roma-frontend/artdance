@@ -46,7 +46,7 @@ export function Price({
     <span
       className={cn(
         'text-price inline-flex items-baseline gap-1',
-        emphasis === 'accent' && 'text-accent',
+        emphasis === 'accent' && 'text-content-accent',
         emphasis === 'total' && 'text-content-primary',
         emphasis === 'onCinema' && 'text-content-on-cinema',
         className,

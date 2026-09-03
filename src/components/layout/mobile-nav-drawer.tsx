@@ -100,8 +100,8 @@ export function MobileNavDrawer({ solid, className }: MobileNavDrawerProps) {
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'border-b border-border-default py-3.5 text-heading-4',
-                    'transition-colors duration-normal ease-brand hover:text-accent',
-                    active ? 'text-accent' : 'text-content-primary',
+                    'transition-colors duration-normal ease-brand hover:text-content-accent',
+                    active ? 'text-content-accent' : 'text-content-primary',
                   )}
                 >
                   {t(item.labelKey)}

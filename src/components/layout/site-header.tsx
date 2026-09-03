@@ -76,7 +76,17 @@ export function SiteHeader() {
         )}
       >
         <Link href={routes.home()} className="group/logo flex items-center gap-3">
-          <BrandMark className="text-accent transition-transform duration-slow ease-brand group-hover/logo:-rotate-12" />
+          {/*
+            Знак бренда следует той же логике, что и словесная марка: над
+            кинематографичным первым экраном бургунди на почти чёрном
+            практически не виден, поэтому там берётся осветлённый акцент.
+          */}
+          <BrandMark
+            className={cn(
+              'transition-transform duration-slow ease-brand group-hover/logo:-rotate-12',
+              solid ? 'text-content-accent' : 'text-accent-on-cinema',
+            )}
+          />
           <span
             className={cn(
               'text-card-title transition-colors duration-slow ease-standard',
@@ -126,7 +136,7 @@ export function SiteHeader() {
                   /* Не помещающиеся иконки уходят в мобильное меню, а не исчезают. */
                   item.compact ? undefined : 'max-lg:hidden',
                   solid
-                    ? 'text-content-secondary hover:border-accent hover:bg-accent-soft hover:text-accent'
+                    ? 'text-content-secondary hover:border-accent hover:bg-accent-soft hover:text-content-accent'
                     : 'text-content-on-cinema-muted hover:border-border-on-cinema hover:text-content-on-cinema',
                 )}
               >

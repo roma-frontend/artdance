@@ -18,7 +18,7 @@ const { edgeTolerancePx, minHiddenStepRatio } = carouselScroll;
 
 const HOME = '/en';
 
-const carousel = (page: Page): Locator => page.getByRole('group', { name: en.home.popular.title });
+const carousel = (page: Page): Locator => page.getByRole('list', { name: en.home.popular.title });
 const firstClass = demoClasses.find((item) => item.isTrending) ?? demoClasses[0]!;
 
 test.describe('ClassCard', () => {

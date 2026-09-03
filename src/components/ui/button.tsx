@@ -26,8 +26,8 @@ const buttonVariants = cva(
     variants: {
       variant: {
         accent: 'bg-accent text-content-on-accent hover:bg-accent-hover hover:-translate-y-px shadow-md',
-        outline: 'border-border-default text-content-primary hover:border-accent hover:text-accent',
-        ghost: 'border-accent text-accent hover:bg-accent hover:text-content-on-accent',
+        outline: 'border-border-default text-content-primary hover:border-accent hover:text-content-accent',
+        ghost: 'border-content-accent text-content-accent hover:bg-accent hover:text-content-on-accent',
         contrast: 'bg-surface-card text-content-primary hover:-translate-y-px shadow-md',
         onCinema:
           'border-border-on-cinema text-content-on-cinema hover:bg-content-on-cinema hover:text-content-inverse',

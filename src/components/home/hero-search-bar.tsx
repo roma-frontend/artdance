@@ -78,7 +78,7 @@ export function HeroSearchBar({ className }: { className?: string }) {
           больше, значение придёт оттуда же.
         */}
         <ul className="text-caption flex flex-wrap items-center gap-1 text-content-secondary">
-          <li className="rounded-full bg-accent-soft px-3 py-2 font-semibold text-accent">
+          <li className="rounded-full bg-accent-soft px-3 py-2 font-semibold text-content-accent">
             {site.address.city}
           </li>
           <li className="rounded-full px-3 py-2">{t('search.anyDate')}</li>

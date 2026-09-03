@@ -56,7 +56,7 @@ export function SectionHeading({
         <p
           className={cn(
             'eyebrow-rule text-eyebrow mb-3',
-            onCinema ? 'text-metal' : 'text-accent',
+            onCinema ? 'text-metal' : 'text-content-accent',
             align === 'center' && 'justify-center',
           )}
         >
