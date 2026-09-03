@@ -30,6 +30,21 @@ import { locales } from '../src/i18n/config';
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
 /**
+ * Проект, на котором идёт аудит страницы.
+ *
+ * Контраст, роли ARIA, порядок заголовков и доступные имена от ширины окна не
+ * зависят: это свойства разметки и палитры. Прогон одного и того же аудита на
+ * трёх ширинах втрое увеличивал время джоба в CI (двадцатиминутный лимит был
+ * превышен) и не находил ничего нового.
+ *
+ * То, что действительно зависит от ширины, проверяется отдельно: раскладка —
+ * `layout-integrity.spec.ts`, мобильное меню — ниже, на своём проекте.
+ */
+const AUDIT_PROJECT = 'desktop';
+/** Мобильное меню существует только там, где есть бургер. */
+const DRAWER_PROJECT = 'mobile';
+
+/**
  * Привести страницу к конечному состоянию.
  *
  * Движок пропускает скрытые элементы, а секции ниже первого экрана до появления
@@ -92,6 +107,13 @@ async function audit(page: Page): Promise<void> {
 
 for (const locale of locales) {
   test.describe(`лендинг /${locale}`, () => {
+    test.beforeEach(({}, testInfo) => {
+      test.skip(
+        testInfo.project.name !== AUDIT_PROJECT,
+        'Контраст и роли не зависят от ширины окна — аудит идёт на одном проекте',
+      );
+    });
+
     test('светлая тема без нарушений WCAG', async ({ page }) => {
       test.slow();
       await page.emulateMedia({ colorScheme: 'light', reducedMotion: 'reduce' });
@@ -117,16 +139,13 @@ for (const locale of locales) {
  * внутри. Проверка в закрытом состоянии об этом состоянии не знает ничего.
  */
 test.describe('мобильное меню', () => {
-  test('открытая панель без нарушений WCAG', async ({ page }) => {
+  test('открытая панель без нарушений WCAG', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== DRAWER_PROJECT, 'Бургер есть только на узких экранах');
+
     const burger = page.getByRole('button', { name: en.nav.openMenu, exact: true });
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/en');
-
-    if ((await burger.count()) === 0) {
-      test.skip(true, 'Бургер есть только на узких экранах');
-      return;
-    }
 
     await burger.click();
     await expect(page.getByRole('dialog')).toBeVisible();
