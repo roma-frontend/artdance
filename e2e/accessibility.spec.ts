@@ -21,6 +21,7 @@ import { expect, test, type Page } from '@playwright/test';
 import en from '../src/i18n/messages/en';
 import { demoInstructors } from '../prisma/fixtures/demo';
 import { security } from '../src/config/business';
+import { isAcceptedBrandColor } from '../src/design/tokens/contrast';
 import { locales } from '../src/i18n/config';
 
 /**
@@ -81,7 +82,9 @@ async function settleContent(page: Page): Promise<void> {
   });
 }
 
-/** Отчёт «правило — сколько узлов — где», иначе падение нечитаемо. */
+/**
+ * Отчёт «правило — сколько узлов — где», иначе падение нечитаемо.
+ */
 function describeViolations(violations: Awaited<ReturnType<AxeBuilder['analyze']>>['violations']) {
   if (violations.length === 0) return '';
   return violations
@@ -98,13 +101,44 @@ function describeViolations(violations: Awaited<ReturnType<AxeBuilder['analyze']
     .join('\n');
 }
 
+type Violations = Awaited<ReturnType<AxeBuilder['analyze']>>['violations'];
+
+/**
+ * Убрать из отчёта принятое отклонение по контрасту.
+ *
+ * Акцент платформы — бургунди `#8B1A2B` в обеих темах и на любом фоне: решение
+ * заказчика от 04.09.2026, зафиксированное в `src/design/tokens/contrast.ts`
+ * вместе с ценой (на почти чёрном фоне это 1.3–2.2:1 вместо 4.5:1). Правило
+ * `color-contrast` при этом НЕ отключается: отбрасываются только те узлы, где
+ * цветом текста стоит именно брендовый бургунди. Любая другая пара с плохим
+ * контрастом по-прежнему валит проверку — а именно за этим она и нужна.
+ */
+function withoutAcceptedContrast(violations: Violations): Violations {
+  return violations
+    .map((violation) => {
+      if (violation.id !== 'color-contrast') return violation;
+
+      const nodes = violation.nodes.filter((node) => {
+        const foreground = node.any
+          .map((check) => (check.data as { fgColor?: string } | undefined)?.fgColor)
+          .find((color): color is string => typeof color === 'string');
+        /* Цвет не разобрался — оставляем узел: молча пропускать нельзя. */
+        return foreground === undefined || !isAcceptedBrandColor(foreground);
+      });
+
+      return { ...violation, nodes };
+    })
+    .filter((violation) => violation.nodes.length > 0);
+}
+
 async function audit(page: Page): Promise<void> {
   await settleContent(page);
 
   const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
-  const ids = results.violations.map((violation) => violation.id);
+  const violations = withoutAcceptedContrast(results.violations);
+  const ids = violations.map((violation) => violation.id);
 
-  expect(ids, `Нарушения WCAG:\n${describeViolations(results.violations)}`).toEqual([]);
+  expect(ids, `Нарушения WCAG:\n${describeViolations(violations)}`).toEqual([]);
 }
 
 for (const locale of locales) {

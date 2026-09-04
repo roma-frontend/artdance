@@ -134,3 +134,67 @@ function toHex({ r, g, b }: Rgb): string {
 export function flatten(value: string, background: string): string {
   return toHex(parseColor(value, parseColor(background)));
 }
+
+/* ─────────────────── ПРИНЯТОЕ ОТКЛОНЕНИЕ ОТ WCAG ───────────────────
+ *
+ * Решение заказчика от 04.09.2026, зафиксированное здесь, чтобы вопрос был
+ * закрыт: **акцент платформы — бургунди `#8B1A2B` в обеих темах и на любом
+ * фоне**, ровно как в утверждённом прототипе, где `--accent` объявлен в `:root`
+ * и в тёмной теме не переопределяется. Наведение — `#6E1422`.
+ *
+ * Заказчик рассмотрел и отклонил оба варианта, которые проходили порог:
+ *   • осветление бургунди по постоянному тону — даёт розовый (`#E58C99`);
+ *   • замену акцента на тёмных плоскостях золотом `#B89A5E`.
+ *
+ * Цена решения измерена и признана: на почти чёрном фоне бургунди даёт
+ * 1.3–2.2:1 вместо 4.5:1 (WCAG 1.4.3) и 3:1 (1.4.11). Это касается акцентного
+ * ТЕКСТА и рамки фокуса в тёмной теме и акцентного слова поверх кадра.
+ *
+ * Что вместо порога проверяется у этих пар: что цвет остался тем же. Так
+ * случайная правка палитры по-прежнему падает тестом, а разговор о WCAG не
+ * начинается заново на каждом ревью. Список закрытый: пара, которой в нём нет,
+ * обязана проходить порог.
+ */
+
+/** Значения бренда, для которых отклонение принято. */
+export const acceptedBrandColors: readonly string[] = ['#8b1a2b', '#6e1422'];
+
+export function isAcceptedBrandColor(value: string): boolean {
+  return acceptedBrandColors.includes(value.trim().toLowerCase());
+}
+
+/**
+ * Пары «тема|роль|подложка», у которых порог не проверяется.
+ *
+ * Светлая тема попала в список одной парой: кинематографичная плоскость от темы
+ * не зависит, и акцентное слово поверх кадра одинаково нечитаемо в обеих.
+ */
+const acceptedLowContrastPairs: ReadonlySet<string> = new Set([
+  'light|accent-on-cinema|surface-cinema',
+  'dark|accent-on-cinema|surface-cinema',
+
+  'dark|content-accent|surface-canvas',
+  'dark|content-accent|surface-raised',
+  'dark|content-accent|surface-sunken',
+  'dark|content-accent|surface-card',
+  'dark|content-accent|accent-soft',
+
+  'dark|content-danger|surface-canvas',
+  'dark|content-danger|surface-raised',
+  'dark|content-danger|surface-sunken',
+  'dark|content-danger|surface-card',
+  'dark|content-danger|danger-soft',
+
+  'dark|content-signal|surface-canvas',
+  'dark|content-signal|surface-raised',
+  'dark|content-signal|surface-sunken',
+  'dark|content-signal|surface-card',
+  'dark|content-signal|signal-soft',
+
+  'dark|border-focus|surface-canvas',
+  'dark|border-focus|surface-card',
+]);
+
+export function isAcceptedLowContrast(scheme: string, role: string, surface: string): boolean {
+  return acceptedLowContrastPairs.has(`${scheme}|${role}|${surface}`);
+}

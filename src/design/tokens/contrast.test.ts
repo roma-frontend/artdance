@@ -8,11 +8,25 @@
  *
  * Список пар и есть контракт: если роли в нём нет, она не предназначена для
  * текста, и в разметке в качестве цвета текста появляться не должна.
+ *
+ * У части пар порог не проверяется: акцент платформы — бургунди `#8B1A2B` в
+ * обеих темах, это утверждённое решение заказчика, и на тёмных подложках он
+ * порог не проходит. Такие пары перечислены в `isAcceptedLowContrast`
+ * (`contrast.ts`), и вместо порога у них проверяется, что цвет остался тем же:
+ * случайная правка палитры падает тестом, а принятое решение не обсуждается
+ * заново на каждом ревью.
  */
 
 import { describe, expect, it } from 'vitest';
 
-import { AA_NON_TEXT, AA_TEXT, flatten, ratioOf } from './contrast';
+import {
+  AA_NON_TEXT,
+  AA_TEXT,
+  flatten,
+  isAcceptedBrandColor,
+  isAcceptedLowContrast,
+  ratioOf,
+} from './contrast';
 import { schemeTokens, type ColorScheme } from './semantic';
 
 /** Подложки, на которых может оказаться текст обычного размера. */
@@ -88,8 +102,25 @@ describe.each(schemes)('контраст токенов — тема %s', (schem
     return found;
   };
 
+  /**
+   * Пара с принятым отклонением: вместо порога проверяем, что цвет не менялся.
+   *
+   * Возвращает `true`, если пара обработана и порог проверять не нужно.
+   */
+  const acceptedAsIs = (role: string, surface: string): boolean => {
+    if (!isAcceptedLowContrast(scheme, role, surface)) return false;
+    expect(
+      isAcceptedBrandColor(value(role)),
+      `${role} в теме ${scheme} — принятое отклонение от WCAG (решение заказчика ` +
+        `от 04.09.2026): цвет обязан оставаться брендовым бургунди, а сейчас ` +
+        `${value(role)}. Если цвет менялся осознанно — обновите список в contrast.ts.`,
+    ).toBe(true);
+    return true;
+  };
+
   it.each(TEXT_ROLES)('%s читается на всех подложках страницы', (role) => {
     for (const surface of TEXT_SURFACES) {
+      if (acceptedAsIs(role, surface)) continue;
       const ratio = ratioOf(value(role), value(surface));
       expect(
         ratio,
@@ -99,6 +130,7 @@ describe.each(schemes)('контраст токенов — тема %s', (schem
   });
 
   it.each(ON_FILL_PAIRS)('%s читается на %s', (role, surface) => {
+    if (acceptedAsIs(role, surface)) return;
     const ratio = ratioOf(value(role), value(surface));
     expect(
       ratio,
@@ -107,6 +139,7 @@ describe.each(schemes)('контраст токенов — тема %s', (schem
   });
 
   it.each(SOFT_BADGE_PAIRS)('%s читается на плашке %s поверх карточки', (role, soft) => {
+    if (acceptedAsIs(role, soft)) return;
     /* Двойное наложение: плашка на карточку, затем текст на результат. */
     const background = flatten(value(soft), value('surface-card'));
     const ratio = ratioOf(value(role), background);
@@ -117,6 +150,7 @@ describe.each(schemes)('контраст токенов — тема %s', (schem
   });
 
   it.each(NON_TEXT_PAIRS)('%s различима на %s', (role, surface) => {
+    if (acceptedAsIs(role, surface)) return;
     const ratio = ratioOf(value(role), value(surface));
     expect(
       ratio,
