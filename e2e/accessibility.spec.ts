@@ -19,6 +19,8 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
 import en from '../src/i18n/messages/en';
+import { demoInstructors } from '../prisma/fixtures/demo';
+import { security } from '../src/config/business';
 import { locales } from '../src/i18n/config';
 
 /**
@@ -130,6 +132,57 @@ for (const locale of locales) {
   });
 }
 
+
+/**
+ * Экраны покупки: корзина, бронирование, оформление.
+ *
+ * Здесь появляются пары, которых на лендинге нет вовсе: поля ввода с подписями
+ * и ошибками, зачёркнутые недоступные слоты, календарь с недоступными днями,
+ * плитки способов оплаты. Именно на них ошибка контраста и роли ARIA стоит
+ * дороже всего — это последний шаг перед списанием денег.
+ *
+ * Обе темы, как и у лендинга: тёмная — отдельный набор пар, и именно на ней
+ * акцентный текст и «осталось мало мест» уходят на светлые шаги рампы.
+ */
+test.describe('экраны покупки', () => {
+  test.beforeEach(async ({ context }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== AUDIT_PROJECT,
+      'Контраст и роли не зависят от ширины окна — аудит идёт на одном проекте',
+    );
+
+    /*
+     * Оформление закрыто гейтом приватных разделов в `proxy.ts`: он проверяет
+     * НАЛИЧИЕ cookie сессии, поэтому для рендера страницы её достаточно
+     * выставить. Настоящая авторизация — `@/lib/auth/guards`, и она появится
+     * волной auth.
+     */
+    await context.addCookies([
+      { name: security.session.cookieName, value: 'e2e', domain: '127.0.0.1', path: '/' },
+    ]);
+  });
+
+  const screens = [
+    '/en/cart',
+    '/en/booking',
+    `/en/instructors/${demoInstructors[0]!.slug}/book`,
+    '/en/checkout/contact',
+    '/en/checkout/delivery',
+    '/en/checkout/payment',
+    '/en/checkout/confirm',
+  ];
+
+  for (const path of screens) {
+    for (const colorScheme of ['light', 'dark'] as const) {
+      test(`${path} — тема ${colorScheme} без нарушений WCAG`, async ({ page }) => {
+        test.slow();
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+        await page.goto(path);
+        await audit(page);
+      });
+    }
+  }
+});
 
 /**
  * Открытое мобильное меню — отдельное состояние страницы.

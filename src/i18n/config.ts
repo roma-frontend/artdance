@@ -74,6 +74,12 @@ export const formats = {
     mediumDate: { day: 'numeric', month: 'long', year: 'numeric' },
     weekdayShort: { weekday: 'short' },
     weekdayLong: { weekday: 'long' },
+    /**
+     * «сб, 7 сент.» — день без года и без времени. Нужен там, где год очевиден
+     * из контекста (выбранная дата в календаре брони, заголовок списка слотов),
+     * а время указано рядом отдельным элементом.
+     */
+    dayWithWeekday: { weekday: 'short', day: 'numeric', month: 'short' },
     monthYear: { month: 'long', year: 'numeric' },
     bookingStamp: {
       weekday: 'short',

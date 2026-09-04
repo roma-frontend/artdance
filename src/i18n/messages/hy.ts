@@ -99,6 +99,7 @@ const hy: Messages = {
       vat: "ԱԱՀ",
       free: "Անվճար",
       capacity: "Տեղեր",
+      quantity: "Քանակ",
       rating: "Վարկանիշ",
       reviews: "Կարծիքներ",
       students: "Սովորողներ",
@@ -406,6 +407,7 @@ const hy: Messages = {
     promoApply: "Կիրառել",
     promoApplied: "{code} պրոմոկոդը կիրառվեց",
     promoInvalid: "Պրոմոկոդն անվավեր է",
+    pricesChanged: "Զամբյուղի գները փոխվել են։ Ստուգեք ընդհանուր գումարը վճարելուց առաջ։",
     trustSecure: "Անվտանգ",
     trustReturns: "Անվճար վերադարձ",
     trustPayments: "ARCA / Idram / Telcell",
@@ -474,11 +476,13 @@ const hy: Messages = {
       retryCta: "Կրկին փորձել",
     },
     termsConsent:
-      "Պատվերը ձևակերպելով՝ ընդունում եք {termsLink} և {refundLink}։",
+      "Պատվերը ձևակերպելով՝ ընդունում եք <terms>Օգտագործման պայմանները</terms> և <refund>Վերադարձի քաղաքականությունը</refund>։",
   },
 
   booking: {
     title: "Ընտրեք ամսաթիվ և ժամ",
+    startTitle: "Ամրագրեք պարապմունք",
+    startSubtitle: "Ընտրեք մարզիչ, ապա՝ ձեզ հարմար ամսաթիվն ու ժամը։",
     subtitleWith: "{title}՝ {instructor}-ի հետ",
     calendarTitle: "{month}",
     previousMonth: "Նախորդ ամիս",
@@ -486,6 +490,7 @@ const hy: Messages = {
     availableTimes: "Ազատ ժամեր — {date}",
     noSlots: "Այս օրվա համար ազատ ժամ չկա",
     noSlotsHint: "Փորձեք այլ օր կամ դիտեք մարզչի հասանելիությունը։",
+    timeRange: "{start}–{end}",
     locationTitle: "Որտեղ անցկացնենք",
     locationStudio: "Ստուդիայում",
     locationStudioNote: "{studio} · ներառված է",

@@ -14,6 +14,7 @@ import { ThemeColorSync } from '@/components/layout/theme-color-sync';
 import { ThemeProvider } from '@/components/layout/theme-provider';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { fontVariables } from '@/design/fonts';
+import { SearchOverlayProvider } from '@/components/search/search-overlay';
 import { schemeTokens } from '@/design/tokens';
 import { localeMeta, locales, isLocale, type Locale } from '@/i18n/config';
 import { routing } from '@/i18n/routing';
@@ -118,6 +119,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
     <html
       lang={meta.bcp47}
       dir={meta.direction}
+      data-scroll-behavior="smooth"
       /*
        * `data-theme` здесь НЕ выставляется: значение зависит от выбора
        * пользователя (localStorage) или системной настройки, и сервер их не
@@ -132,13 +134,23 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         <ThemeProvider>
           <ThemeColorSync />
           <NextIntlClientProvider>
-            <SkipToContent />
-            <ScrollProgress />
-            <PointerGlow />
-            <SiteHeader />
-            {children}
-            <MobileDock />
-            <ThemeToggle />
+            {/*
+              Поиск оборачивает шапку и страницу: оверлей монтируется один раз на
+              приложение (у него глобальное сочетание Cmd/Ctrl+K), а открывает его
+              иконка в шапке — она `compact`, то есть остаётся видимой и на
+              телефоне. Плитка «Поиск» в шторке разделов осталась обычной ссылкой
+              на каталог: открывать диалог поверх закрывающейся шторки означало бы
+              передавать фокус между двумя модальными слоями одновременно.
+            */}
+            <SearchOverlayProvider>
+              <SkipToContent />
+              <ScrollProgress />
+              <PointerGlow />
+              <SiteHeader />
+              {children}
+              <MobileDock />
+              <ThemeToggle />
+            </SearchOverlayProvider>
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

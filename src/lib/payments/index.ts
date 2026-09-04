@@ -56,6 +56,16 @@ export function availablePaymentMethods(): readonly PaymentMethod[] {
 }
 
 /**
+ * Принимает ли текущий провайдер реквизиты карты на нашей стороне.
+ *
+ * Решает, рендерить ли поля карты в оформлении. Спрашивается у провайдера, а не
+ * задаётся в компоненте: для redirect-схемы своя форма карты — прямой вред.
+ */
+export function supportsInlineCardForm(): boolean {
+  return getPaymentProvider().supportsInlineCard;
+}
+
+/**
  * Роутинг по способу оплаты: позволяет держать карты в банке-эквайрере,
  * а кошельки — в агрегаторе. Пока провайдер один, возвращает его же.
  */

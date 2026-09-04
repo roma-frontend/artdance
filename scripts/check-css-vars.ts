@@ -40,6 +40,14 @@ const EXTERNAL_PREFIXES = [
   '--default-',
   '--spacing', // базовая шкала Tailwind, объявляется самим фреймворком
   '--gap', // выставляется инлайном в toggle-group
+  /*
+   * Ширина полосы прокрутки, убранной при блокировке скролла. Объявляет
+   * react-remove-scroll (через него работают модальные окна Radix и vaul) в
+   * рантайме, вместе с атрибутом `data-scroll-locked` на `<body>`. Мы читаем её,
+   * чтобы вернуть фиксированной обвязке ширину, на которую выросла область
+   * просмотра, — см. правила по `data-scroll-locked` в `globals.css`.
+   */
+  '--removed-body-scroll-bar-size',
 ];
 
 const DECLARATION = /(--[a-z0-9-]+)\s*:/g;

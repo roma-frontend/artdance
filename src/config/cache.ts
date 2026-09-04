@@ -9,7 +9,9 @@
  *
  * Правило: любой маршрут с персональными данными обязан попасть в
  * `privatePaths` и получить `no-store`. Ошибка в эту сторону — утечка чужого
- * заказа из CDN-кеша, поэтому список приватного ведётся явно, а не по остатку.
+ * заказа из CDN-кеша, поэтому список приватного ведётся явно, а не по остатку,
+ * а его приоритет над публичными шаблонами проверяется на живой сборке
+ * (`e2e/commerce-screens.spec.ts`, блок «Кеширование»).
  */
 
 // Относительный импорт: этот модуль читается из next.config.ts, где алиасы
@@ -78,6 +80,14 @@ export const privatePaths = [
   '/checkout/:path*',
   '/booking',
   '/booking/:path*',
+  /*
+   * Бронирование у инструктора лежит под каталожным `/instructors/:slug*`, но
+   * кешироваться не должно: на странице набор свободных слотов, а устаревший
+   * ответ здесь означает двойную бронь (`dataRevalidate.availability = 0`).
+   * Работает благодаря тому, что приватные правила идут в `headers()`
+   * ПОСЛЕДНИМИ — см. `buildCacheHeaderRules`.
+   */
+  '/instructors/:slug/book',
   '/account',
   '/account/:path*',
   '/studio',
@@ -111,13 +121,17 @@ function withLocales(paths: readonly string[], value: string): HeaderRule[] {
 /**
  * Правила для `next.config.ts → headers()`.
  *
- * Порядок важен: Next применяет первое совпадение, поэтому приватные маршруты
- * идут ПЕРЕД каталогом — иначе `/hy/account` попал бы под правило каталога
- * из-за пересечения шаблонов.
+ * **Порядок важен, и он обратный интуиции: при совпадении нескольких шаблонов
+ * значение заголовка ставит ПОСЛЕДНЕЕ правило.** Поэтому приватные маршруты идут
+ * в конце — иначе `/hy/instructors/:slug/book` (страница бронирования, где лежит
+ * набор свободных слотов) получал бы `public, s-maxage=180` от каталожного
+ * `/hy/instructors/:slug*`, потому что тот шаблон покрывает и вложенный путь.
+ * Проверяется на живой сборке: `e2e/commerce-screens.spec.ts`, блок
+ * «Кеширование» — предположение о порядке нельзя держать в комментарии, оно
+ * стоит выдачи чужого заказа из CDN.
  */
 export function buildCacheHeaderRules(): HeaderRule[] {
   return [
-    ...withLocales(privatePaths, cacheControl.none),
     ...withLocales(legalPaths, cacheControl.legal),
     ...withLocales(contentPaths, cacheControl.content),
     ...withLocales(catalogPaths, cacheControl.catalog),
@@ -130,6 +144,8 @@ export function buildCacheHeaderRules(): HeaderRule[] {
       source: '/media/:path*',
       headers: [{ key: 'Cache-Control', value: cacheControl.media }],
     },
+    /* Последними: приватное перебивает любой публичный шаблон, который его задел. */
+    ...withLocales(privatePaths, cacheControl.none),
   ];
 }
 

@@ -27,10 +27,15 @@ import { cn } from '@/lib/utils';
 interface InstructorCardProps {
   item: HomeInstructorCard;
   locale: Locale;
+  /**
+   * Куда ведёт карточка. По умолчанию — профиль инструктора; на странице входа в
+   * бронирование это сразу выбор даты, потому что там у карточки одна задача.
+   */
+  href?: string;
   className?: string;
 }
 
-export function InstructorCard({ item, locale, className }: InstructorCardProps) {
+export function InstructorCard({ item, locale, href, className }: InstructorCardProps) {
   const t = useTranslations();
 
   return (
@@ -65,7 +70,7 @@ export function InstructorCard({ item, locale, className }: InstructorCardProps)
       <div className="flex flex-1 flex-col p-5">
         <h3 className="text-card-title">
           <Link
-            href={routes.instructor(item.slug)}
+            href={href ?? routes.instructor(item.slug)}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
             {item.name}

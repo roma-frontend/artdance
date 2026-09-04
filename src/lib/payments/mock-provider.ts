@@ -50,6 +50,12 @@ export const mockPaymentProvider: PaymentProvider = {
   id: 'mock',
   supportedMethods: paymentMethods as readonly PaymentMethod[],
   supportsPartialRefund: true,
+  /**
+   * Разработка ведётся на mock, и форма карты — часть экрана оформления,
+   * которую нужно видеть и проверять до подписания договора с банком. У реальных
+   * адаптеров с redirect-схемой флаг будет `false`.
+   */
+  supportsInlineCard: true,
 
   async createPayment(order: PaymentOrderRef): Promise<PaymentIntent> {
     const providerTransactionId = `mock_${randomUUID()}`;

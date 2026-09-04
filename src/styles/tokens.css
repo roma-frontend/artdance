@@ -72,7 +72,11 @@
   --layout-nav-height: 4.5rem;
   --layout-nav-height-scrolled: 3.5rem;
   --layout-bottom-nav-height: 4rem;
+  --layout-overlay-top-offset: 15dvh;
   --layout-drawer-width: 17.5rem;
+  --layout-sidebar-width: 22.5rem;
+  --layout-sidebar-width-booking: 23.75rem;
+  --layout-sidebar-width-checkout: 25rem;
   --radius-none: 0;
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
@@ -176,7 +180,7 @@
   --content-success: #20603D;
   --content-warning: #7A5210;
   --content-danger: #6E1422;
-  --content-signal: #B31228;
+  --content-signal: #6e1422;
   --border-subtle: #E8E1D6;
   --border-default: #E8E2DA;
   --border-strong: #CFC8BF;
@@ -187,7 +191,7 @@
   --accent-soft: rgba(139, 26, 43, 0.08);
   --accent-glow: rgba(139, 26, 43, 0.25);
   --accent-contrast: #FFFFFF;
-  --signal: #D6162B;
+  --signal: #6E1422;
   --signal-soft: rgba(214, 22, 43, 0.10);
   --metal: #B89A5E;
   --metal-soft: rgba(184, 154, 94, 0.12);
@@ -195,7 +199,7 @@
   --success-soft: #DFF0E6;
   --warning: #C4841D;
   --warning-soft: #FBEEDA;
-  --danger: #D6162B;
+  --danger: #6E1422;
   --danger-soft: #FAE1E4;
   --info: #2F5FA0;
   --info-soft: #DFE8F5;
@@ -243,12 +247,12 @@
   --border-strong: rgba(247, 244, 239, 0.18);
   --border-focus: #E58C99;
   --accent: #8B1A2B;
-  --accent-hover: #B31228;
+  --accent-hover: #6e1422;
   --accent-active: #6E1422;
   --accent-soft: rgba(139, 26, 43, 0.20);
   --accent-glow: rgba(139, 26, 43, 0.35);
   --accent-contrast: #FFFFFF;
-  --signal: #D6162B;
+  --signal: #6E1422;
   --signal-soft: rgba(214, 22, 43, 0.16);
   --metal: #B89A5E;
   --metal-soft: rgba(184, 154, 94, 0.16);
@@ -256,7 +260,7 @@
   --success-soft: rgba(45, 122, 79, 0.18);
   --warning: #C4841D;
   --warning-soft: rgba(196, 132, 29, 0.18);
-  --danger: #D6162B;
+  --danger: #6E1422;
   --danger-soft: rgba(214, 22, 43, 0.18);
   --info: #2F5FA0;
   --info-soft: rgba(47, 95, 160, 0.18);
@@ -305,12 +309,12 @@
     --border-strong: rgba(247, 244, 239, 0.18);
     --border-focus: #E58C99;
     --accent: #8B1A2B;
-    --accent-hover: #B31228;
+    --accent-hover: #6e1422;
     --accent-active: #6E1422;
     --accent-soft: rgba(139, 26, 43, 0.20);
     --accent-glow: rgba(139, 26, 43, 0.35);
     --accent-contrast: #FFFFFF;
-    --signal: #D6162B;
+    --signal: #6E1422;
     --signal-soft: rgba(214, 22, 43, 0.16);
     --metal: #B89A5E;
     --metal-soft: rgba(184, 154, 94, 0.16);
@@ -318,7 +322,7 @@
     --success-soft: rgba(45, 122, 79, 0.18);
     --warning: #C4841D;
     --warning-soft: rgba(196, 132, 29, 0.18);
-    --danger: #D6162B;
+    --danger: #6E1422;
     --danger-soft: rgba(214, 22, 43, 0.18);
     --info: #2F5FA0;
     --info-soft: rgba(47, 95, 160, 0.18);

@@ -19,6 +19,24 @@ const optionalString = z.preprocess(
   z.string().min(1).optional(),
 );
 
+/**
+ * Необязательный URL. Та же предобработка, что у `optionalString`, и она здесь
+ * обязательна: `.env.example` перечисляет все ключи с пустыми значениями, и
+ * `z.url()` на пустой строке падает. Без этого разработчик, скопировавший
+ * пример, получает «Invalid URL» на переменной незаключённого договора с банком
+ * — то есть на том, что ему сейчас вообще не нужно.
+ */
+const optionalUrl = z.preprocess(
+  (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+  z.url().optional(),
+);
+
+/** Необязательный адрес почты. Пустая строка — «не задан», а не ошибка формата. */
+const optionalEmail = z.preprocess(
+  (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+  z.string().email().optional(),
+);
+
 const requiredString = z.string().min(1);
 const boolFlag = z
   .preprocess((v) => (v === undefined ? undefined : String(v).toLowerCase()), z.enum(['true', 'false']).optional())
@@ -34,11 +52,11 @@ const clientSchema = z.object({
   NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: optionalString,
   NEXT_PUBLIC_SENTRY_REPLAY_ON_ERROR: optionalString,
   NEXT_PUBLIC_POSTHOG_KEY: optionalString,
-  NEXT_PUBLIC_POSTHOG_HOST: z.url().optional(),
+  NEXT_PUBLIC_POSTHOG_HOST: optionalUrl,
   NEXT_PUBLIC_GA_MEASUREMENT_ID: optionalString,
   NEXT_PUBLIC_TURNSTILE_SITE_KEY: optionalString,
   NEXT_PUBLIC_MAPS_API_KEY: optionalString,
-  NEXT_PUBLIC_MEDIA_CDN_URL: z.url().optional(),
+  NEXT_PUBLIC_MEDIA_CDN_URL: optionalUrl,
   /** Runtime-переключатели, которые обязаны быть видны клиенту. */
   NEXT_PUBLIC_FEATURE_SHOP: boolFlag,
   NEXT_PUBLIC_FEATURE_COURSES: boolFlag,
@@ -89,14 +107,14 @@ const serverSchema = z.object({
   /* Платежи — активный провайдер выбирается здесь, код от него не зависит */
   PAYMENT_PROVIDER: z.enum(['paynet', 'arca-epg', 'ameria-vpos', 'idram', 'mock']).default('mock'),
   PAYMENT_RETURN_PATH: z.string().startsWith('/').default('/checkout/result'),
-  PAYNET_API_URL: z.url().optional(),
+  PAYNET_API_URL: optionalUrl,
   PAYNET_MERCHANT_ID: optionalString,
   PAYNET_API_KEY: optionalString,
   PAYNET_WEBHOOK_SECRET: optionalString,
-  ARCA_EPG_API_URL: z.url().optional(),
+  ARCA_EPG_API_URL: optionalUrl,
   ARCA_EPG_USERNAME: optionalString,
   ARCA_EPG_PASSWORD: optionalString,
-  AMERIA_VPOS_API_URL: z.url().optional(),
+  AMERIA_VPOS_API_URL: optionalUrl,
   AMERIA_VPOS_CLIENT_ID: optionalString,
   AMERIA_VPOS_USERNAME: optionalString,
   AMERIA_VPOS_PASSWORD: optionalString,
@@ -108,12 +126,12 @@ const serverSchema = z.object({
   R2_ACCESS_KEY_ID: optionalString,
   R2_SECRET_ACCESS_KEY: optionalString,
   R2_BUCKET: optionalString,
-  R2_PUBLIC_BASE_URL: z.url().optional(),
+  R2_PUBLIC_BASE_URL: optionalUrl,
 
   /* Уведомления */
   RESEND_API_KEY: optionalString,
-  EMAIL_FROM: z.string().email().optional(),
-  EMAIL_REPLY_TO: z.string().email().optional(),
+  EMAIL_FROM: optionalEmail,
+  EMAIL_REPLY_TO: optionalEmail,
   SMS_PROVIDER: z.enum(['twilio', 'local-aggregator', 'mock']).default('mock'),
   SMS_API_KEY: optionalString,
   SMS_API_SECRET: optionalString,
@@ -130,7 +148,7 @@ const serverSchema = z.object({
 
   /* Внешние сервисы */
   MAPS_SERVER_API_KEY: optionalString,
-  EXCHANGE_RATE_API_URL: z.url().optional(),
+  EXCHANGE_RATE_API_URL: optionalUrl,
 });
 
 /* ──────────────────────────── PARSE ──────────────────────────── */

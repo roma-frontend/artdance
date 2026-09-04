@@ -114,6 +114,16 @@ export interface PaymentProvider {
   readonly supportedMethods: readonly PaymentMethod[];
   /** Поддерживает ли частичный возврат — влияет на логику отмены брони. */
   readonly supportsPartialRefund: boolean;
+  /**
+   * Принимает ли провайдер реквизиты карты на НАШЕЙ стороне.
+   *
+   * От этого зависит, рендерить ли поля карты в оформлении. Флаг объявлен у
+   * провайдера, а не у компонента, потому что это его свойство: у redirect-схемы
+   * (ArCa EPG, Paynet) карта вводится на странице банка, и своё поле «номер
+   * карты» в этом случае не просто лишнее, а вредное — оно приучает вводить
+   * карту где угодно. Включать вместе с PCI-обязательствами, не «для удобства».
+   */
+  readonly supportsInlineCard: boolean;
 
   createPayment(order: PaymentOrderRef): Promise<PaymentIntent>;
 

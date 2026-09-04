@@ -101,6 +101,7 @@ const en = {
       vat: 'VAT',
       free: 'Free',
       capacity: 'Capacity',
+      quantity: 'Quantity',
       rating: 'Rating',
       reviews: 'Reviews',
       students: 'Students',
@@ -397,6 +398,7 @@ const en = {
     promoApply: 'Apply',
     promoApplied: 'Code {code} applied',
     promoInvalid: 'This code is not valid',
+    pricesChanged: 'Prices in your bag have changed. Check the total before you pay.',
     trustSecure: 'Secure',
     trustReturns: 'Free returns',
     trustPayments: 'ARCA / Idram / Telcell',
@@ -463,11 +465,19 @@ const en = {
       viewOrderCta: 'View order',
       retryCta: 'Try again',
     },
-    termsConsent: 'By placing this order you accept the {termsLink} and {refundLink}.',
+    /**
+     * Ссылки — теги, а не плейсхолдеры: подпись ссылки должна переводиться
+     * вместе с фразой (в русском и армянском она стоит в косвенном падеже).
+     */
+    termsConsent:
+      'By placing this order you accept the <terms>Terms of Service</terms> and <refund>Refund Policy</refund>.',
   },
 
   booking: {
     title: 'Choose date & time',
+    /** Страница входа в бронирование: сначала инструктор, потом дата и время. */
+    startTitle: 'Book a session',
+    startSubtitle: 'Pick an instructor and choose a time that works for you.',
     subtitleWith: '{title} with {instructor}',
     calendarTitle: '{month}',
     previousMonth: 'Previous month',
@@ -475,6 +485,8 @@ const en = {
     availableTimes: 'Available times — {date}',
     noSlots: 'No available times on this date',
     noSlotsHint: 'Try another day or check the instructor’s availability.',
+    /** Диапазон занятия: «18:00–19:30». Тире — не дефис, а короткое тире. */
+    timeRange: '{start}–{end}',
     locationTitle: 'Location options',
     locationStudio: 'At the studio',
     locationStudioNote: '{studio} · included',

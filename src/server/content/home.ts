@@ -26,37 +26,19 @@ import {
   demoEvents,
   demoHeroStats,
   demoInstructors,
-  demoMediaAlt,
   demoProducts,
   demoReviews,
   demoStyleTiles,
   demoVenues,
 } from '../../../prisma/fixtures/demo';
 import { booking } from '@/config';
-import type { HomeContent, LocalizedText, MediaRef, VideoRef } from '@/domain/content';
+import type { HomeContent, VideoRef } from '@/domain/content';
 import {
   heroVideoDurationSeconds,
   heroVideoSources,
 } from '@/design/hero-video.generated';
 
-/**
- * Описание изображения на трёх языках. Отсутствие описания — не повод показать
- * пустой `alt`: это ошибка контента, и она должна быть заметна на разработке.
- */
-function altFor(key: string): LocalizedText {
-  const alt = demoMediaAlt[key];
-  if (!alt) {
-    throw new Error(
-      `[content] Нет alt-текста для ассета «${key}». Добавьте его в prisma/fixtures/demo.ts ` +
-        '(в production — MediaAsset.altText и переводы).',
-    );
-  }
-  return alt;
-}
-
-function mediaRef(key: string, focalPoint?: string): MediaRef {
-  return focalPoint ? { key, alt: altFor(key), focalPoint } : { key, alt: altFor(key) };
-}
+import { mediaRef } from './media';
 
 /**
  * Фоновая петля первого экрана.

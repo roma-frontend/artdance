@@ -130,7 +130,6 @@
   }
 
   html {
-    scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     /* Фиксированная шапка не должна накрывать цель якорной ссылки. */
     scroll-padding-top: var(--layout-nav-height);
@@ -339,6 +338,138 @@
     height: var(--border-width-thin);
     flex: none;
     background-color: var(--metal);
+  }
+
+  /*
+   * Поле ввода и его подпись (`.form-input`, `.form-2col` в прототипе).
+   *
+   * Объявлены классами, а не набором утилит у каждого поля, по трём причинам.
+   * Первая: в продукте больше тридцати форм, и «поле выглядит чуть иначе на
+   * шаге доставки» — это не гипотеза, а неизбежность при копировании десяти
+   * утилит. Вторая: толщина рамки 1.5px (`--border-width-thin`) не выражается
+   * утилитой Tailwind, а произвольное значение в разметке запрещено линтером.
+   * Третья: смена вида полей на всём сайте должна быть правкой одного места.
+   *
+   * Само поле остаётся обычным `<input>`: у него нет поведения, ради которого
+   * нужен компонент, а подпись, ошибку и связь через `aria-describedby`
+   * навешивает `FormField`.
+   */
+  .form-input {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-width-thin) solid var(--border-default);
+    border-radius: var(--radius-md);
+    background-color: var(--surface-card);
+    color: var(--content-primary);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    transition: border-color var(--duration-normal) var(--ease-standard);
+  }
+
+  .form-input::placeholder {
+    color: var(--content-tertiary);
+  }
+
+  .form-input:hover:not(:disabled, [aria-invalid='true']) {
+    border-color: var(--border-strong);
+  }
+
+  .form-input:focus-visible {
+    border-color: var(--accent);
+  }
+
+  /*
+   * Ошибка обозначена рамкой И текстом рядом (его рисует `FormField`): цвет не
+   * может быть единственным носителем смысла — WCAG 1.4.1.
+   */
+  .form-input[aria-invalid='true'] {
+    border-color: var(--danger);
+  }
+
+  .form-input:disabled {
+    color: var(--content-disabled);
+    background-color: var(--surface-sunken);
+    cursor: not-allowed;
+  }
+
+  /*
+   * Два поля в строку. В прототипе сетка схлопывается на 480px — до этой ширины
+   * «Имя» и «Фамилия» рядом дают по девять символов на поле.
+   */
+  .form-2col {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  @media (width >= theme(--breakpoint-xs)) {
+    .form-2col {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  /*
+   * Внутренняя страница под фиксированной шапкой (`.hero-spacer` +
+   * `.inner-container` в прототипе).
+   *
+   * В макете место под шапку занимает пустой div с зашитым padding — приём,
+   * который молча ломается при смене высоты шапки. Здесь отступ считается от
+   * того же токена, что задаёт саму шапку, поэтому «сделайте шапку ниже»
+   * остаётся правкой одной строки.
+   */
+  .inner-page {
+    padding-top: calc(var(--layout-nav-height) + var(--space-8));
+    padding-bottom: var(--space-16);
+  }
+
+  /*
+   * Сетка «содержимое + правая колонка»: занятие, инструктор, корзина,
+   * бронирование, оформление (`.detail-grid`, `.booking-detail-grid`,
+   * `.checkout-grid` в прототипе).
+   *
+   * Объявлена один раз здесь, а не утилитами у каждой страницы, ровно по той
+   * причине, из-за которой в макете стоит `display: … !important`: там сетка
+   * перебивает inline-стили, унаследованные от предыдущей версии экрана. В
+   * продукте у сетки один источник, а ширина колонки приходит токеном.
+   *
+   * До планшета — одна колонка: правая колонка уезжает под содержимое. Итог и
+   * кнопка при этом обязаны остаться достижимыми (`StickyActionBar`, волна
+   * booking) — это задача экрана, а не сетки.
+   */
+  .detail-grid,
+  .booking-detail-grid,
+  .checkout-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+  }
+
+  @media (width >= theme(--breakpoint-md)) {
+    .detail-grid {
+      grid-template-columns: 1fr var(--layout-sidebar-width);
+      gap: var(--space-12);
+    }
+
+    .booking-detail-grid {
+      grid-template-columns: 1fr var(--layout-sidebar-width-booking);
+      gap: var(--space-12);
+    }
+
+    .checkout-grid {
+      grid-template-columns: 1fr var(--layout-sidebar-width-checkout);
+      gap: var(--space-12);
+    }
+
+    /*
+     * Правая колонка следует за прокруткой, как в макете (`top: 5rem`).
+     * Смещение — высота шапки плюс воздух: под шапкой сводка была бы обрезана.
+     */
+    .detail-grid > :last-child,
+    .booking-detail-grid > :last-child,
+    .checkout-grid > :last-child {
+      position: sticky;
+      top: calc(var(--layout-nav-height) + var(--space-2));
+      align-self: start;
+    }
   }
 
   /*
@@ -870,6 +1001,165 @@
   [data-slot='sheet-content'][data-state='closed'] {
     animation: sheet-overlay-out var(--duration-normal) var(--ease-standard);
   }
+}
+
+/*
+ * Появление и уход `Dialog` — тот же пробел, что был у `Sheet`.
+ *
+ * Вендорный `DialogContent` рассчитывает на `animate-in`, `fade-in-0` и
+ * `zoom-in-95` из пакета `tw-animate-css`, которого в проекте нет: классы в
+ * разметке есть, CSS они не генерируют, и диалог возникает мгновенным щелчком.
+ * Правило объявлено вне `@layer` по той же причине, что слои z-index выше:
+ * нелейерный CSS выигрывает у утилит, и патчить обновляемый файл не нужно.
+ *
+ * Масштаб маленький (0.98, не 0.95) и длительность короткая: полноэкранный
+ * поиск с заметным «наездом» читается как всплывающая реклама, а не как рабочий
+ * инструмент. Брендовая кривая здесь не используется — она рассчитана на сдвиг
+ * в несколько пикселей (см. историю `MobileMenuSheet`).
+ */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.98;
+  }
+}
+
+@keyframes dialog-out {
+  to {
+    opacity: 0;
+    scale: 0.98;
+  }
+}
+
+@keyframes dialog-overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-overlay-out {
+  to {
+    opacity: 0;
+  }
+}
+
+[data-slot='dialog-overlay'][data-state='open'],
+[data-slot='alert-dialog-overlay'][data-state='open'] {
+  animation: dialog-overlay-in var(--duration-normal) var(--ease-standard);
+}
+
+[data-slot='dialog-overlay'][data-state='closed'],
+[data-slot='alert-dialog-overlay'][data-state='closed'] {
+  animation: dialog-overlay-out var(--duration-fast) var(--ease-standard);
+}
+
+[data-slot='dialog-content'][data-state='open'],
+[data-slot='alert-dialog-content'][data-state='open'] {
+  animation: dialog-in var(--duration-normal) var(--ease-standard);
+}
+
+[data-slot='dialog-content'][data-state='closed'],
+[data-slot='alert-dialog-content'][data-state='closed'] {
+  animation: dialog-out var(--duration-fast) var(--ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Масштаб — движение, прозрачность — нет. Уходит только первое. */
+  [data-slot='dialog-content'][data-state='open'],
+  [data-slot='alert-dialog-content'][data-state='open'] {
+    animation: dialog-overlay-in var(--duration-normal) var(--ease-standard);
+  }
+
+  [data-slot='dialog-content'][data-state='closed'],
+  [data-slot='alert-dialog-content'][data-state='closed'] {
+    animation: dialog-overlay-out var(--duration-fast) var(--ease-standard);
+  }
+}
+
+/*
+ * Компенсация полосы прокрутки при открытом модальном окне.
+ *
+ * Механика Radix (а vaul построен на нём): при блокировке прокрутки на `<body>`
+ * появляется атрибут `data-scroll-locked`, правило `overflow: hidden`, отступ в
+ * ширину исчезнувшей полосы (`margin-right`, замерено — 15px) и переменная
+ * `--removed-body-scroll-bar-size` с этой шириной.
+ *
+ * Библиотечный отступ на `<body>` мы ОТМЕНЯЕМ, и это главное решение здесь.
+ * Логика библиотеки рассчитана на страницу с однородным фоном: она сохраняет
+ * ширину содержимого, оставляя справе полосу пустого места. У нас же секции
+ * во всю ширину и тёмные (hero, editorial), а фон канвы светлый — и эта полоса
+ * пустого места становится видимой: затемнение модального окна лежит поверх
+ * области просмотра целиком, светлая канва под ним превращается в серую полосу
+ * рядом с тёмным первым экраном. Именно её было видно у правого края.
+ *
+ * Поэтому страница остаётся во всю ширину области просмотра (полос пустого места
+ * нет вовсе), а сдвиг компенсируется там, где он виден, — у контейнера контента.
+ * `.page-container` для этого и существует: он единственный задаёт ширину
+ * содержимого и боковые поля, поэтому одна прибавка к его правому отступу
+ * удерживает на месте всё, что выровнено по правому краю: иконки шапки, CTA,
+ * кнопки карусели.
+ *
+ * `!important` нужен потому, что правило библиотеки само помечено `!important`;
+ * спор решает специфичность — `body[data-scroll-locked]` (0-1-1) сильнее
+ * `.with-scroll-bars-hidden` (0-1-0). Патчить вендорные файлы нельзя: их
+ * перезаписывает `shadcn add --overwrite`.
+ *
+ * Что здесь СОЗНАТЕЛЬНО не используется: `scrollbar-gutter: stable` на `html`.
+ * Свойство выглядит подходящим («зарезервируй место под полосу навсегда»), но в
+ * Chrome вместе с `overflow: hidden` оно вычитает жёлоб из содержимого: `<body>`
+ * сужается на ширину полосы, а фиксированное затемнение остаётся прежним — и
+ * разница вылезает той же полосой. Замерено в настоящем браузере: 884.8 → 869.8
+ * при затемнении 884.8.
+ */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
+/*
+ * Сдвиг компенсируется у фиксированной обвязки, а не у страницы и не у
+ * контейнера контента.
+ *
+ * Шапка, док и кнопка темы прижаты к правому краю ОБЛАСТИ ПРОСМОТРА, а она как
+ * раз выросла на ширину полосы — поэтому им возвращается ровно эта ширина через
+ * `right`. Содержимое в потоке при этом остаётся во всю ширину: секции во всю
+ * ширину дотягиваются до края, и полосы пустого места не возникает.
+ *
+ * Почему `right` у внешнего элемента, а не `padding` у `.page-container`: у
+ * внутреннего контейнера шапки объявлен `transition-all`, и любое изменение
+ * отступа он проигрывает анимацией — иконки плавно уезжали на полтора десятка
+ * пикселей и так же возвращались (замерено: 841 → 849 за 650ms). У самой шапки
+ * переход только по цвету, поэтому смена `right` применяется мгновенно и
+ * незаметно.
+ */
+body[data-scroll-locked] header,
+body[data-scroll-locked] .mobile-dock-shell {
+  right: var(--removed-body-scroll-bar-size, 0px);
+}
+
+/* Кнопка темы уже отстоит от края, поэтому ширина полосы прибавляется к отступу. */
+body[data-scroll-locked] .above-mobile-dock {
+  right: calc(var(--space-6) + var(--removed-body-scroll-bar-size, 0px));
+}
+
+/*
+ * Замок прокрутки должен действовать на `html`, а не только на `<body>`.
+ *
+ * Radix блокирует прокрутку правилом `body { overflow: hidden }`. В обычном
+ * документе этого достаточно: браузер переносит overflow корневого элемента на
+ * область просмотра, а если у `html` он `visible` — берёт значение у `body`. У
+ * нас `html` объявлен с `overflow-x: clip` (см. `@layer base`), то есть его
+ * overflow НЕ `visible`, поэтому область просмотра слушает именно `html`, а
+ * `overflow` у `body` игнорируется. Следствие: при открытом модальном окне
+ * страница под затемнением продолжала прокручиваться, а полоса оставалась
+ * рабочей — её и было видно рядом с открытой шторкой.
+ *
+ * Правило вешается по атрибуту, который Radix ставит на `<body>` сам, поэтому
+ * работает для всех модальных окон проекта — диалогов, шторок, поиска — и не
+ * требует ни своего провайдера, ни правок в компонентах.
+ */
+html:has(body[data-scroll-locked]) {
+  overflow: hidden;
 }
 
 /*

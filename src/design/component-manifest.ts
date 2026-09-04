@@ -636,6 +636,43 @@ export const componentManifest: readonly ComponentSpec[] = [
       'уменьшаются на 480px.',
   },
   {
+    name: 'CartLineItem',
+    path: 'components/cart/cart-line-item.tsx',
+    role: 'Позиция корзины: миниатюра, вариант, цена, количество, удаление',
+    wave: 'commerce',
+    prototypeClasses: ['img-product'],
+    screens: ['cart'],
+    i18n: ['cart', 'shop', 'common.actions', 'common.labels', 'a11y'],
+    image: 'thumbnail',
+    states: ['default', 'pending', 'low-stock', 'out-of-stock', 'price-changed'],
+    notes:
+      'Перенесён из CartScreen отдельным компонентом: строка товара с количеством и удалением ' +
+      'используется и в корзине, и в подтверждении заказа, и в кабинете. Количество не хранится ' +
+      'внутри — истина о корзине на сервере (после validateCart цена и остаток могут ' +
+      'измениться), компонент сообщает о желании изменить его и рисует ответ. Порог «осталось ' +
+      'мало» — commerce.lowStockThreshold. Миниатюра 100 → 76 → 60px, как в макете, но ' +
+      'пропорция задаётся preset thumbnail, а не классом. Удаление — текстовая кнопка, как в ' +
+      'прототипе: крестик в углу строки нажимается случайно. Доступное имя кнопки включает ' +
+      'название товара — пять кнопок «Удалить» подряд для скринридера неразличимы.',
+  },
+  {
+    name: 'PromoCodeForm',
+    path: 'components/cart/promo-code-form.tsx',
+    role: 'Ввод промокода и снятие применённого',
+    wave: 'commerce',
+    prototypeClasses: [],
+    screens: ['cart', 'checkout'],
+    i18n: ['cart', 'validation'],
+    states: ['empty', 'too-short', 'pending', 'applied', 'invalid'],
+    notes:
+      'В ПРОТОТИПЕ ЭТОГО БЛОКА НЕТ: скидка показана уже применённой строкой «Discount ' +
+      '(WELCOME10)», то есть код взялся из ниоткуда. Ключи в каталоге переводов при этом есть, ' +
+      'а состояния promo-applied / promo-invalid перечислены у CartScreen — поле ожидается ' +
+      'продуктом. Валидность кода проверяет server action, компонент — только длину ' +
+      '(promotions.codeMinLength) и регистр. В заказе один код ' +
+      '(promotions.maxCodesPerOrder), поэтому заменить его можно только сняв прежний.',
+  },
+  {
     name: 'CheckoutScreen',
     path: 'app/[locale]/checkout/[step]/page.tsx',
     role: 'Оформление заказа: шаги, формы, сводка справа',
@@ -772,6 +809,39 @@ export const componentManifest: readonly ComponentSpec[] = [
       'владелец продукта в одном месте. Цвет не единственный носитель смысла — текст всегда ' +
       'называет количество словами (WCAG 1.4.1). «Мест нет» и «есть лист ожидания» — разные ' +
       'состояния: во втором действие ещё возможно, и подпись это сообщает.',
+  },
+  {
+    name: 'QuantityStepper',
+    path: 'components/ui/quantity-stepper.tsx',
+    role: 'Счётчик количества: «−», число, «+»',
+    wave: 'commerce',
+    prototypeClasses: [],
+    screens: ['cart', 'shop'],
+    i18n: ['a11y', 'common.labels'],
+    states: ['default', 'at-min', 'at-max', 'disabled'],
+    notes:
+      'В макете это три div с символами и без обработчиков. Здесь две кнопки с доступными ' +
+      'именами (a11y.quantityIncrease / quantityDecrease) и иконками lucide: «−» из шрифта ' +
+      'скринридер читает как «минус», иконка помечена aria-hidden. Границы — из домена ' +
+      '(clampQuantity → commerce.maxQuantityPerItem), то же правило действует на сервере. ' +
+      'Кнопка на границе отключается, а не молча ничего не делает.',
+  },
+  {
+    name: 'CountdownTimer',
+    path: 'components/ui/countdown-timer.tsx',
+    role: 'Обратный отсчёт до истечения срока',
+    wave: 'booking',
+    prototypeClasses: [],
+    screens: ['booking', 'checkout'],
+    i18n: ['booking'],
+    states: ['running', 'warning', 'expired', 'before-hydration'],
+    notes:
+      'Считает сервер, отображает клиент: приходит момент (expiresAt), а не «осталось 15 ' +
+      'минут» — длительность, посчитанная на сервере и отрисованная через две секунды, уже ' +
+      'врёт. До гидратации выводится прочерк: разница часов сервера и клиента дала бы разный ' +
+      'текст в одном узле, то есть ошибку гидратации. Часы клиента могут быть неверны, поэтому ' +
+      'onExpire не отменяет бронь, а просит экран перечитать состояние. По истечении таймер ' +
+      'останавливается. aria-live намеренно нет: секунды вслух перекрывают всё остальное.',
   },
   {
     name: 'FavoriteButton',

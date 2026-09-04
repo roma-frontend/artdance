@@ -23,9 +23,11 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import type { MouseEvent } from 'react';
 
 import { BrandMark } from '@/components/brand/brand-mark';
 import { navIcons } from '@/components/layout/nav-icons';
+import { useSearchOverlay } from '@/components/search/search-overlay';
 import { Button } from '@/components/ui/button';
 import {
   hasCinemaHero,
@@ -44,6 +46,7 @@ export function SiteHeader() {
   const t = useTranslations();
   const pathname = usePathname();
   const scrolledPast = useScrolledPast(motion.headerScroll.thresholdPx);
+  const { openSearch } = useSearchOverlay();
 
   const solid = scrolledPast || !hasCinemaHero(pathname);
 
@@ -125,6 +128,21 @@ export function SiteHeader() {
                 key={item.id}
                 href={item.href}
                 aria-label={t(item.labelKey)}
+                /*
+                 * Поиск открывается оверлеем, но остаётся ссылкой на каталог:
+                 * без JavaScript переход сработает как обычно, с JavaScript
+                 * `preventDefault` подменяет его полноэкранным поиском.
+                 * `aria-haspopup` сообщает скринридеру, что откроется диалог.
+                 */
+                {...(item.opensSearch
+                  ? {
+                      'aria-haspopup': 'dialog' as const,
+                      onClick: (event: MouseEvent<HTMLAnchorElement>) => {
+                        event.preventDefault();
+                        openSearch();
+                      },
+                    }
+                  : {})}
                 className={cn(
                   'inline-flex size-9 items-center justify-center rounded-full border border-transparent',
                   'transition-colors duration-normal ease-brand',

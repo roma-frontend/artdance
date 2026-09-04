@@ -56,6 +56,14 @@ export interface NavIconItem extends NavItem {
    * а не исчезают: пропавшая без альтернативы функция — это дефект, а не адаптив.
    */
   compact: boolean;
+  /**
+   * Иконка открывает полноэкранный поиск, а не переходит по `href`.
+   *
+   * `href` при этом обязателен и остаётся рабочим: без JavaScript оверлея нет, и
+   * ссылка на каталог — единственный способ добраться до поиска. Обработчик
+   * подавляет переход только тогда, когда оверлею есть чем его заменить.
+   */
+  opensSearch?: boolean;
 }
 
 /**
@@ -74,9 +82,9 @@ const primaryNav: readonly NavItem[] = [
 ];
 
 /**
- * Иконки справа. Поиск ведёт в каталог с его фильтрами: полноэкранный
- * `SearchOverlay` приходит в волне `catalog`, и до тех пор кнопка обязана
- * куда-то приводить — неработающая иконка хуже отсутствующей.
+ * Иконки справа. Поиск открывает полноэкранный `SearchOverlay`, а `href` служит
+ * фоллбэком без JavaScript: каталог со своими фильтрами отвечает на тот же
+ * вопрос, только без подсказок на ходу.
  */
 const iconActions: readonly NavIconItem[] = [
   {
@@ -85,6 +93,7 @@ const iconActions: readonly NavIconItem[] = [
     labelKey: 'common.actions.search',
     href: routes.discover(),
     compact: true,
+    opensSearch: true,
   },
   {
     id: 'cart',
