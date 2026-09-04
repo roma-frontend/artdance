@@ -13,21 +13,28 @@
  *   5. через `fadeAllMs` DOM очищается и кадр возвращается за `returnMs`;
  *   6. цикл повторяется.
  *
- * Копии — настоящие `<video>`, как в макете, а не кадры на канве: только так
- * шлейф остаётся живым (каждая копия продолжает играть с того момента, когда
- * была снята), и именно это делает эффект узнаваемым. Стоимость приемлема,
- * потому что наша петля — 1280px и 591 KB против 1920px и 20,6 МБ в прототипе:
- * шесть копий здесь дешевле, чем шесть там.
+ * **Копия — снимок кадра на `<canvas>`, а не второй `<video>`, и это главное
+ * отличие от прототипа.** В макете каждая копия — настоящий видеоэлемент,
+ * продолжающий играть с момента снятия. Красиво на бумаге, но означает до семи
+ * параллельных декодеров одного файла (петля плюс шесть копий). Аппаратный
+ * декодер обрабатывает один поток; остальные уходят на процессор, и фоновая
+ * петля, которую никто не должен замечать, начинает дёргаться — вместе со всей
+ * прокруткой страницы. У снимка стоимость иная: один `drawImage` раз в 0,9 с,
+ * дальше композитор просто двигает и гасит готовый растр.
  *
- * Три отличия от прототипа, все — не про вид:
+ * Разница видна только при остановленном кадре: внутри копии нет движения. Копия
+ * полупрозрачна (35%), обесцвечена и затемнена, и «шевеление» в ней не читается
+ * — а вот рывки основной петли читались сразу. Фильтр при этом запекается в
+ * растр при отрисовке, а не висит CSS-свойством: живой `filter` на семи слоях —
+ * ещё один проход композитора на каждый кадр.
+ *
+ * Остальные отличия от прототипа, все — не про вид:
  *
  * • **Все таймеры убираются при размонтировании.** В прототипе страница живёт
  *   вечно и утечка невозможна; в приложении с навигацией незакрытый `setInterval`
- *   продолжает рождать `<video>` на странице, которой уже нет.
- * • **Копии не появляются, если экран узкий или пользователь просил убрать
- *   движение.** Шлейф без движения — грязь на экране.
- * • **Источники те же, что у основной петли**, а не путь строкой: браузер берёт
- *   их из кеша, второй загрузки не происходит.
+ *   продолжает плодить узлы на странице, которой уже нет.
+ * • **Шлейф живёт только вместе с петлёй.** Узкий экран, просьба убрать движение,
+ *   ушедший из виду первый экран (`active`) — цикл останавливается.
  */
 
 'use client';
@@ -36,32 +43,19 @@ import { useEffect, useRef, type RefObject } from 'react';
 
 import { videoProcessing } from '@/config/media-processing';
 import { motion } from '@/design/motion';
-import type { VideoRef } from '@/domain/content';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
-
-/** MIME-типы источников. Дублируют список в `HeroVideo` по одной причине: */
-const mimeByFormat = {
-  av1: 'video/mp4; codecs=av01.0.05M.08',
-  vp9: 'video/webm; codecs=vp9',
-  h264: 'video/mp4; codecs=avc1.640028',
-} as const;
 
 interface HeroGhostTrailProps {
   /** Обёртка основного видео: её сдвигает цикл. */
   wrapRef: RefObject<HTMLDivElement | null>;
-  /** Основная петля: у неё берётся `currentTime` для новой копии. */
+  /** Основная петля: с неё снимается кадр для новой копии. */
   videoRef: RefObject<HTMLVideoElement | null>;
-  /** Источники петли — те же файлы, что уже в кеше браузера. */
-  video: VideoRef;
+  /** Петля сейчас играет и видна. Иначе цикл не нужен. */
+  active: boolean;
 }
 
-interface Ghost {
-  element: HTMLDivElement;
-  video: HTMLVideoElement;
-}
-
-export function HeroGhostTrail({ wrapRef, videoRef, video }: HeroGhostTrailProps) {
+export function HeroGhostTrail({ wrapRef, videoRef, active }: HeroGhostTrailProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const reducedMotion = usePrefersReducedMotion();
   const wideEnough = useMediaQuery(
@@ -74,19 +68,23 @@ export function HeroGhostTrail({ wrapRef, videoRef, video }: HeroGhostTrailProps
     const container = containerRef.current;
     const wrap = wrapRef.current;
     const mainVideo = videoRef.current;
-    if (!container || !wrap || !mainVideo || !enabled) return;
+    if (!container || !wrap || !mainVideo || !enabled || !active) return;
 
     const trail = motion.heroGhostTrail;
-    const maxGhosts = videoProcessing.heroLoop.ghostTrailMax;
+    const { ghostTrailMax, ghostFrameWidth, maxWidth, maxHeight } = videoProcessing.heroLoop;
 
-    let ghosts: Ghost[] = [];
+    /** Снимок делается в пропорциях исходной петли, а не элемента на экране. */
+    const frameWidth = ghostFrameWidth;
+    const frameHeight = Math.round((ghostFrameWidth * maxHeight) / maxWidth);
+
+    let ghosts: HTMLElement[] = [];
     let spawning = false;
     let disposed = false;
 
     /*
      * Все отложенные вызовы регистрируются, чтобы уборка гарантированно их
-     * отменила. Забытый таймер здесь означает `<video>`, добавленный в DOM
-     * страницы, которую пользователь уже покинул.
+     * отменила. Забытый таймер здесь означает узел, добавленный в DOM страницы,
+     * которую пользователь уже покинул.
      */
     const timers = new Set<ReturnType<typeof setTimeout>>();
     let spawnTimer: ReturnType<typeof setInterval> | null = null;
@@ -100,47 +98,37 @@ export function HeroGhostTrail({ wrapRef, videoRef, video }: HeroGhostTrailProps
       return id;
     };
 
-    /** Освобождение копии: остановить воспроизведение и убрать из DOM. */
-    const dispose = (ghost: Ghost) => {
-      ghost.video.pause();
-      /* Пустой src и load() освобождают декодер, иначе он живёт до сборки мусора. */
-      ghost.video.removeAttribute('src');
-      ghost.video.load();
-      ghost.element.remove();
-    };
-
     const clearGhosts = () => {
-      for (const ghost of ghosts) dispose(ghost);
+      for (const ghost of ghosts) ghost.remove();
       ghosts = [];
     };
 
     const spawn = () => {
-      if (!spawning || ghosts.length >= maxGhosts) return;
+      if (!spawning || ghosts.length >= ghostTrailMax) return;
+      /* Кадра ещё нет — рисовать нечего, и пустой прямоугольник хуже пропуска. */
+      if (mainVideo.readyState < mainVideo.HAVE_CURRENT_DATA) return;
 
       const element = document.createElement('div');
       element.className = 'hero-ghost';
 
-      const copy = document.createElement('video');
-      copy.muted = true;
-      copy.playsInline = true;
-      copy.loop = true;
-      /** Копия догоняет основную петлю: шлейф отстаёт по кадру, а не по сюжету. */
-      for (const source of video.sources) {
-        const sourceElement = document.createElement('source');
-        sourceElement.src = source.url;
-        sourceElement.type = mimeByFormat[source.format];
-        copy.append(sourceElement);
-      }
-      copy.currentTime = mainVideo.currentTime;
-      void copy.play().catch(() => {
-        /* Автозапуск копии может быть отклонён — тогда она просто останется кадром. */
-      });
+      const canvas = document.createElement('canvas');
+      canvas.width = frameWidth;
+      canvas.height = frameHeight;
 
-      element.append(copy);
+      const context = canvas.getContext('2d');
+      if (!context) return;
+
+      /*
+       * Обесцвечивание и затемнение запекаются в растр здесь, один раз. Те же
+       * значения, что у копий в макете (`motion.heroGhostTrail.filter`), только
+       * платим за них не каждый кадр композитора, а один `drawImage`.
+       */
+      context.filter = trail.filter;
+      context.drawImage(mainVideo, 0, 0, frameWidth, frameHeight);
+
+      element.append(canvas);
       container.append(element);
-
-      const ghost: Ghost = { element, video: copy };
-      ghosts.push(ghost);
+      ghosts.push(element);
 
       /*
        * Два кадра ожидания перед сменой прозрачности: браузер должен успеть
@@ -158,8 +146,8 @@ export function HeroGhostTrail({ wrapRef, videoRef, video }: HeroGhostTrailProps
         element.style.transition = `opacity ${trail.ghostFadeOutMs}ms ease-in-out`;
         element.style.opacity = '0';
         later(() => {
-          ghosts = ghosts.filter((item) => item !== ghost);
-          dispose(ghost);
+          ghosts = ghosts.filter((item) => item !== element);
+          element.remove();
         }, trail.ghostRemoveAfterMs);
       }, trail.lifetimeMs);
     };
@@ -188,8 +176,8 @@ export function HeroGhostTrail({ wrapRef, videoRef, video }: HeroGhostTrailProps
 
       later(() => {
         for (const ghost of ghosts) {
-          ghost.element.style.transition = `opacity ${trail.fadeAllOutMs}ms ease-in-out`;
-          ghost.element.style.opacity = '0';
+          ghost.style.transition = `opacity ${trail.fadeAllOutMs}ms ease-in-out`;
+          ghost.style.opacity = '0';
         }
         later(() => {
           clearGhosts();
@@ -220,7 +208,7 @@ export function HeroGhostTrail({ wrapRef, videoRef, video }: HeroGhostTrailProps
       wrap.style.transition = '';
       wrap.style.transform = '';
     };
-  }, [enabled, video, videoRef, wrapRef]);
+  }, [active, enabled, videoRef, wrapRef]);
 
   if (!enabled) return null;
 

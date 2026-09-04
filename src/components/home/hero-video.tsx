@@ -9,8 +9,21 @@
  * 2. **Автозапуск подавляется по настройке пользователя** — `prefers-reduced-motion`,
  *    `prefers-reduced-data`, `Save-Data`, медленное соединение. Тогда остаётся
  *    постер, и это полноценное состояние экрана, а не деградация.
- * 3. **Петля не грузится до первого кадра разметки** — `preload="none"`.
+ * 3. **Петля не грузится до первого кадра разметки** — источник появляется только
+ *    после гидратации, и до этого момента `<video>` не тянет ни байта.
  * 4. **Трейл копий ограничен** политикой и включается только на широких экранах.
+ *
+ * Плавность воспроизведения обеспечивают три решения, каждое против конкретной
+ * причины рывков:
+ *
+ * • **Источник выбирается по способности устройства декодировать его аппаратно**
+ *   (`pickDecodableSource`). Самый лёгкий файл — AV1, но аппаратный декодер AV1
+ *   есть далеко не у всех, и на остальных машинах браузер декодирует его
+ *   процессором. Экономия 500 KB не стоит дёргающегося фона.
+ * • **Петля играет только пока её видно** (`useBackgroundVideo`): вне области
+ *   просмотра и в неактивной вкладке декодирование останавливается.
+ * • **Старт после `canplay`**, а не с первых байтов: иначе первые секунды —
+ *   самые заметные — идут рывками на медленном соединении.
  *
  * Кнопки паузы здесь нет по решению заказчика. WCAG 2.2.2 требует управления
  * движением дольше пяти секунд, и роль этого управления здесь выполняет
@@ -22,21 +35,16 @@
 
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Media } from '@/components/ui/media';
 import { HeroGhostTrail } from '@/components/home/hero-ghost-trail';
 import { videoProcessing } from '@/config/media-processing';
 import { hasPlayableVideo, resolveMedia, type VideoRef } from '@/domain/content';
+import { useBackgroundVideo } from '@/lib/hooks/use-background-video';
 import { usePrefersStillImage } from '@/lib/hooks/use-motion-preferences';
+import { pickDecodableSource } from '@/lib/media/video-source';
 import type { Locale } from '@/i18n/config';
-
-/** MIME-типы источников. Порядок в разметке задаёт приоритет для браузера. */
-const mimeByFormat = {
-  av1: 'video/mp4; codecs=av01.0.05M.08',
-  vp9: 'video/webm; codecs=vp9',
-  h264: 'video/mp4; codecs=avc1.640028',
-} as const;
 
 export interface HeroVideoProps {
   video: VideoRef | null;
@@ -51,6 +59,7 @@ export interface HeroVideoProps {
  * не в CSS: автозапуск — поведение, и медиа-запрос его не отключит.
  */
 export function HeroVideo({ video, poster, locale }: HeroVideoProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   /** Обёртку сдвигает цикл шлейфа — поэтому ссылка живёт здесь, а не внутри него. */
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -64,10 +73,41 @@ export function HeroVideo({ video, poster, locale }: HeroVideoProps) {
    */
   const playable = hasPlayableVideo(video) && !stillImage;
 
+  /**
+   * Выбранный источник. Пока он не определён, `<video>` без `src` и не грузит
+   * ничего: решение принимается по ответу `mediaCapabilities`, а не по порядку
+   * `<source>` в разметке.
+   */
+  const [source, setSource] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!playable || !hasPlayableVideo(video)) return;
+
+    let cancelled = false;
+    void pickDecodableSource(video.sources).then((chosen) => {
+      if (!cancelled && chosen) setSource(chosen.url);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [playable, video]);
+
+  /** Играет только пока видно; возвращённый признак ведёт за собой шлейф. */
+  const active = useBackgroundVideo({
+    videoRef,
+    containerRef,
+    enabled: playable && source !== null,
+  });
+
   const posterProps = resolveMedia(poster, locale);
 
   return (
-    <div className="absolute inset-0 z-0 overflow-hidden" data-parallax="background">
+    <div
+      ref={containerRef}
+      className="absolute inset-0 z-0 overflow-hidden"
+      data-parallax="background"
+    >
       {/*
         Постер лежит под видео и остаётся видимым, пока петля не начала играть.
         Это же изображение — единственное содержимое экрана при экономии данных.
@@ -92,26 +132,24 @@ export function HeroVideo({ video, poster, locale }: HeroVideoProps) {
             <video
               ref={videoRef}
               className="transition-opacity duration-slow ease-brand"
-              autoPlay
+              /* `autoPlay` нет намеренно: воспроизведением управляет хук. */
               muted
               loop
               playsInline
-              preload="none"
+              src={source ?? undefined}
+              preload={source === null ? 'none' : 'auto'}
               /** Без описания и без управления фокусом: это фон, а не контент. */
               aria-hidden
               tabIndex={-1}
-            >
-              {video.sources.map((source) => (
-                <source key={source.format} src={source.url} type={mimeByFormat[source.format]} />
-              ))}
-            </video>
+            />
           </div>
 
           {/*
             Шлейф копий кадра. Отдельным компонентом: у него своя стоимость и свои
-            условия включения — широкий экран и разрешённое движение.
+            условия включения — широкий экран, разрешённое движение и играющая
+            петля.
           */}
-          <HeroGhostTrail wrapRef={wrapRef} videoRef={videoRef} video={video} />
+          <HeroGhostTrail wrapRef={wrapRef} videoRef={videoRef} active={active} />
         </>
       )}
     </div>

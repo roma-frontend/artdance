@@ -33,7 +33,7 @@ function Calendar({
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn(
-        "group/calendar bg-background p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
+        "group/calendar bg-background p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent rounded-(--radius-md)",
         String.raw`rtl:**:[.rdp-button\_next>svg]:rotate-180`,
         String.raw`rtl:**:[.rdp-button\_previous>svg]:rotate-180`,
         className
@@ -197,7 +197,15 @@ function CalendarDayButton({
       ref={ref}
       variant="ghost"
       size="icon"
-      data-day={day.date.toLocaleDateString()}
+      /*
+       * ОТЛИЧИЕ ОТ ВЕНДОРНОЙ ОБЁРТКИ: здесь было `day.date.toLocaleDateString()`,
+       * и это давало ошибку гидратации на каждой ячейке календаря. Данные ICU в
+       * Node и в браузере не совпадают: сервер отдавал `01.09.2026`, Chrome
+       * считал `9/1/2026`. Атрибут — машинное значение (селекторы тестов,
+       * автоматизация), поэтому формат обязан быть стабильным и не зависеть от
+       * локали окружения: ISO-дата по локальному календарю.
+       */
+      data-day={isoDay(day.date)}
       data-selected-single={
         modifiers.selected &&
         !modifiers.range_start &&
@@ -218,3 +226,16 @@ function CalendarDayButton({
 }
 
 export { Calendar, CalendarDayButton }
+
+/**
+ * Дата ячейки в стабильном виде `YYYY-MM-DD`.
+ *
+ * Собирается из локальных полей даты, а не через `toISOString()`: тот переводит
+ * в UTC, и для часовых поясов восточнее Гринвича полночь 10 сентября стала бы
+ * «9 сентября» в атрибуте.
+ */
+function isoDay(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}-${month}-${day}`
+}

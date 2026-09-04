@@ -125,8 +125,8 @@ test.describe('шлейф копий', () => {
       .toBeGreaterThan(0);
 
     /*
-     * Предел важнее самого эффекта: каждая копия — отдельный декодер видео, и
-     * бесконечно растущий список означал бы просадку кадров и нагрев.
+     * Предел важнее самого эффекта: каждая копия — отдельный слой, и бесконечно
+     * растущий список означал бы просадку кадров и нагрев.
      */
     for (let index = 0; index < 8; index += 1) {
       expect(await ghosts(page).count()).toBeLessThanOrEqual(
@@ -134,6 +134,55 @@ test.describe('шлейф копий', () => {
       );
       await page.waitForTimeout(900);
     }
+  });
+
+  test('копия шлейфа — снимок кадра, а не второй декодер', async ({ page }) => {
+    /*
+     * Главное решение по производительности первого экрана, и его легко потерять
+     * при возврате «как в макете»: там копии — настоящие `<video>`, то есть до
+     * семи параллельных декодов одного файла. Аппаратный декодер обрабатывает
+     * один поток, остальные уходят на процессор, и фон начинает дёргаться вместе
+     * со всей прокруткой. Проверяется факт: на странице ровно один видеоэлемент,
+     * а копии — растры.
+     */
+    test.slow();
+    await page.goto(HOME);
+
+    const wideEnough =
+      (page.viewportSize()?.width ?? 0) >= videoProcessing.heroLoop.ghostTrailMinViewportWidth;
+    test.skip(!wideEnough, 'Шлейф включается только на широких экранах');
+
+    await expect.poll(() => ghosts(page).count(), { timeout: 25_000 }).toBeGreaterThan(0);
+
+    await expect(page.locator('.hero-ghost > canvas').first()).toHaveCount(1);
+    await expect(page.locator('video')).toHaveCount(1);
+  });
+
+  test('петля не декодируется, когда первый экран ушёл из вида', async ({ page }) => {
+    /*
+     * Декодирование — самая дорогая работа на странице, и по умолчанию браузер
+     * продолжает её, пока элемент существует: пользователь читает подвал, а
+     * процессор всё ещё разбирает 25 кадров в секунду для экрана, которого не
+     * видно. Проверяется, что время воспроизведения перестаёт расти.
+     */
+    test.slow();
+    await page.goto(HOME);
+
+    const video = heroVideo(page);
+    await expect
+      .poll(() => video.evaluate((node: HTMLVideoElement) => node.currentTime), { timeout: 25_000 })
+      .toBeGreaterThan(0);
+
+    await page.evaluate(() => window.scrollTo(0, window.innerHeight * 3));
+    /* Пауза приходит через IntersectionObserver — даём браузеру кадр на решение. */
+    await expect
+      .poll(() => video.evaluate((node: HTMLVideoElement) => node.paused), { timeout: 10_000 })
+      .toBe(true);
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect
+      .poll(() => video.evaluate((node: HTMLVideoElement) => node.paused), { timeout: 10_000 })
+      .toBe(false);
   });
 
   test('на узком экране шлейфа нет вовсе', async ({ page }) => {

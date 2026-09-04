@@ -159,7 +159,7 @@ export function BookingCalendar({
         months: 'w-full',
         month: 'w-full gap-4',
         /* Подпись месяца слева, кнопки справа — как в прототипе. */
-        month_caption: 'text-card-title flex h-11 items-center justify-start px-0',
+        month_caption: 'text-card-title flex h-11 items-center justify-start p-6',
         caption_label: 'text-card-title select-none',
         nav: 'absolute end-0 top-0 flex items-center gap-2',
         button_previous:

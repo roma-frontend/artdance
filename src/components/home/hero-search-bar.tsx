@@ -37,10 +37,11 @@ export function HeroSearchBar({ className }: { className?: string }) {
   return (
     <form
       /*
-       * Отрицательный отступ сверху — «наезд» на hero из макета. Значение из
-       * шкалы отступов, а не подобранное на глаз.
+       * Строка лежит внутри первого экрана, у его нижней кромки, поэтому никаких
+       * отрицательных отступов ей не нужно: воздух под ней даёт сам первый экран
+       * (`.hero-viewport`), а над ней — содержимое hero.
        */
-      className={cn('page-container relative z-20 -mt-15', className)}
+      className={cn('page-container relative', className)}
       action={routes.discover()}
       onSubmit={(event) => {
         event.preventDefault();
@@ -76,16 +77,28 @@ export function HeroSearchBar({ className }: { className?: string }) {
           Подписи текущего выбора. Город берётся из конфигурации площадки, а не
           пишется строкой: у платформы один город на старте, и когда их станет
           больше, значение придёт оттуда же.
+
+          На телефоне подписи уходят в отдельную строку под полем и не
+          переносятся внутри неё: в армянской локали «Ցանկացած ամսաթիվ» рядом с
+          кнопкой давало третью строку, и строка поиска уезжала под мобильный
+          док. Порядок в разметке при этом не меняется — только визуальный
+          (`order`), поэтому табуляция остаётся «поле → кнопка».
         */}
-        <ul className="text-caption flex flex-wrap items-center gap-1 text-content-secondary">
-          <li className="rounded-full bg-accent-soft px-3 py-2 font-semibold text-content-accent">
+        <ul className="text-caption scrollbar-none flex flex-wrap items-center gap-1 text-content-secondary max-sm:order-last max-sm:w-full max-sm:flex-nowrap max-sm:overflow-x-auto">
+          <li className="rounded-full bg-accent-soft px-3 py-2 font-semibold whitespace-nowrap text-content-accent">
             {site.address.city}
           </li>
-          <li className="rounded-full px-3 py-2">{t('search.anyDate')}</li>
-          <li className="rounded-full px-3 py-2">{t('search.anyStyle')}</li>
+          <li className="rounded-full px-3 py-2 whitespace-nowrap">{t('search.anyDate')}</li>
+          <li className="rounded-full px-3 py-2 whitespace-nowrap">{t('search.anyStyle')}</li>
         </ul>
 
-        <Button type="submit" size="md" className="max-sm:w-full">
+        {/*
+          Кнопка не растягивается на всю строку на телефоне: вместе с чипами она
+          укладывается во вторую строку поля, и строка остаётся в две строки
+          вместо трёх — на коротком экране это разница между «видно целиком» и
+          «уехало под док».
+        */}
+        <Button type="submit" size="md" className="ms-auto">
           {t('common.actions.explore')}
         </Button>
       </div>

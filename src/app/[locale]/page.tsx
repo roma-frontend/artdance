@@ -58,11 +58,11 @@ export default async function HomePage({ params }: PageProps) {
 
   return (
     <main id={site.mainContentId}>
-      {/* ── HERO: всегда кинематографичная тёмная плоскость, независимо от темы ── */}
-      <HeroSection hero={content.hero} locale={locale as Locale} />
-
-      {/* ── ПОИСК: наезжает на первый экран, отсюда же вырастет ассистент ── */}
-      <HeroSearchBar />
+      {/* ── HERO: тёмная плоскость в обеих темах, поиск внутри первого экрана ── */}
+      <HeroSection hero={content.hero} locale={locale as Locale}>
+        {/* Отсюда же вырастет ассистент: запрос уходит в URL, а не в состояние. */}
+        <HeroSearchBar />
+      </HeroSection>
 
       {/* ── MARQUEE: направления берутся из домена, не из вёрстки ── */}
       <StyleMarquee />

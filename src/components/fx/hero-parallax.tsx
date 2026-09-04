@@ -29,7 +29,13 @@ import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 /** Роли элементов первого экрана. Значение атрибута `data-parallax`. */
 export type HeroParallaxRole = 'background' | 'content' | 'overlay';
 
-export function HeroParallax({ children }: { children: ReactNode }) {
+export function HeroParallax({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const rootRef = useRef<HTMLDivElement>(null);
   const reducedMotion = usePrefersReducedMotion();
 
@@ -97,5 +103,14 @@ export function HeroParallax({ children }: { children: ReactNode }) {
     };
   }, [reducedMotion]);
 
-  return <div ref={rootRef}>{children}</div>;
+  /*
+   * Обёртка получает класс снаружи: первый экран и поисковая строка образуют
+   * одну вертикаль высотой в экран (`.hero-viewport`), и растягиваться должен
+   * именно этот узел, а не только секция внутри него.
+   */
+  return (
+    <div ref={rootRef} className={className}>
+      {children}
+    </div>
+  );
 }

@@ -148,7 +148,7 @@ function DockTab({ item, activeSlot }: { item?: MobileDockItem; activeSlot?: num
       aria-current={active ? 'page' : undefined}
       className={cn(
         'relative z-raised flex h-full min-w-0 flex-col items-center justify-center gap-1',
-        'text-2xs transition-colors duration-normal ease-brand',
+        'text-xs transition-colors duration-normal ease-brand',
         active ? 'font-bold text-content-accent' : 'font-semibold text-content-tertiary',
       )}
     >
