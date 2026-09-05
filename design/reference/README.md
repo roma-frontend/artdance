@@ -31,8 +31,8 @@
 - точки перелома `xxs: 360` и `wide: 1441` добавлены в `breakpoint`
   (`src/design/tokens/primitives.ts`), `tokens.css` перегенерирован;
 - числа анимаций из inline-JS вынесены в `src/design/motion.ts`;
-- политика видео и команды кодирования — `videoProcessing` и
-  `videoEncodeCommands` в `src/config/media-processing.ts`;
+- политика видео — `videoProcessing` и реестр петель `videoLoopPolicy` в
+  `src/config/media-processing.ts`, кодирование — `npm run video:encode`;
 - видео учтено в `designVideos` (`design/asset-manifest.ts`) и **сознательно не
   копируется в репозиторий** — см. `docs/00-decision-record.md` §5.
 

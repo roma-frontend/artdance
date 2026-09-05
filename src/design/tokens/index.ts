@@ -46,6 +46,7 @@ export const tokens = {
   aspectRatio: primitives.aspectRatio,
   opacity: primitives.opacity,
   scrim: primitives.scrim,
+  mask: primitives.mask,
 } as const;
 
 /**

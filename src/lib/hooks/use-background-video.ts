@@ -7,7 +7,7 @@
  * ушёл далеко вверх. На ноутбуке это греющийся вентилятор и подтормаживания
  * прокрутки; на телефоне — ещё и батарея.
  *
- * Поэтому здесь три вещи, которых нет у обычного `<video autoplay>`:
+ * Поэтому здесь четыре вещи, которых нет у обычного `<video autoplay>`:
  *
  * 1. **Пауза, когда петля вне области просмотра.** `IntersectionObserver`, а не
  *    обработчик прокрутки: браузер сам решает, когда считать пересечение.
@@ -16,9 +16,19 @@
  * 3. **Старт не раньше, чем набралось данных.** `autoplay` начинает играть с
  *    первых же байтов и на медленном соединении даёт рывок на первых секундах —
  *    ровно там, где его видно лучше всего. Ждём `canplay`.
+ * 4. **Файл не скачивается, пока петля далеко.** Петля ниже первого экрана
+ *    (заявление бренда) не должна тратить трафик при загрузке страницы: до неё
+ *    могут не долистать. Признак `near` говорит, что пора выбирать источник, и
+ *    срабатывает за `preloadAheadViewports` экранов до появления.
  *
- * Возвращает признак «петля сейчас активна». Он нужен шлейфу: его цикл рождает
- * копии кадра, и продолжать это для невидимого экрана бессмысленно.
+ * Возвращает два признака, и разница между ними существенная:
+ *   • `near` — пора ГОТОВИТЬ петлю (качать). Область просмотра, расширенная на
+ *     запас упреждения;
+ *   • `active` — пора ИГРАТЬ. Настоящая область просмотра, активная вкладка и
+ *     выбранный источник.
+ *
+ * `active` нужен ещё и шлейфу первого экрана: его цикл рождает копии кадра, и
+ * продолжать это для невидимого экрана бессмысленно.
  */
 
 'use client';
@@ -29,34 +39,80 @@ interface BackgroundVideoOptions {
   videoRef: RefObject<HTMLVideoElement | null>;
   /** Узел, по видимости которого принимается решение. */
   containerRef: RefObject<HTMLElement | null>;
-  /** Петля вообще должна играть: `false` при экономии данных и просьбе убрать движение. */
+  /** Петля вообще может играть: `false` при экономии данных и просьбе убрать движение. */
   enabled: boolean;
+  /**
+   * Источник выбран и подставлен в элемент. До этого играть нечему, но наблюдать
+   * за секцией уже нужно — иначе выбор источника ждал бы воспроизведения, а
+   * воспроизведение выбора источника.
+   */
+  ready?: boolean;
+  /**
+   * За сколько высот области просмотра до появления считать петлю «на подходе».
+   * `0` — только когда секция действительно видна (первый экран).
+   */
+  preloadAheadViewports?: number;
+}
+
+export interface BackgroundVideoState {
+  /** Пора качать: секция на подходе. */
+  near: boolean;
+  /** Пора играть: секция видна, вкладка активна, источник есть. */
+  active: boolean;
 }
 
 export function useBackgroundVideo({
   videoRef,
   containerRef,
   enabled,
-}: BackgroundVideoOptions): boolean {
+  ready = true,
+  preloadAheadViewports = 0,
+}: BackgroundVideoOptions): BackgroundVideoState {
   /** Виден ли контейнер. Начальное значение — «нет»: до замера ничего не играем. */
   const [inViewport, setInViewport] = useState(false);
+  const [nearAhead, setNearAhead] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container || !enabled) return;
 
-    const observer = new IntersectionObserver(
+    /* Порога нет: важен сам факт пересечения, а не доля. */
+    const viewport = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) setInViewport(entry.isIntersecting);
       },
-      /* Порога нет: важен сам факт пересечения, а не доля. */
       { threshold: 0 },
     );
-    observer.observe(container);
+    viewport.observe(container);
 
-    return () => observer.disconnect();
-  }, [containerRef, enabled]);
+    /*
+     * Второй наблюдатель — с запасом упреждения. Отдельный, а не один с
+     * `rootMargin`: расширенная рамка отвечает на вопрос «пора качать», и если
+     * считать по ней же видимость, петля начинала бы играть за экран до того,
+     * как её видно, — то есть ровно та работа, которую этот хук и убирает.
+     *
+     * При нулевом запасе его нет вовсе: рамки совпадают, и «на подходе»
+     * означает «видно» (см. `near` ниже).
+     */
+    if (preloadAheadViewports <= 0) return () => viewport.disconnect();
+
+    const ahead = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          /* Однократно: файл, начавший качаться, не нужно «отменять» при уходе. */
+          if (entry.isIntersecting) setNearAhead(true);
+        }
+      },
+      { threshold: 0, rootMargin: `${Math.round(preloadAheadViewports * 100)}% 0px` },
+    );
+    ahead.observe(container);
+
+    return () => {
+      viewport.disconnect();
+      ahead.disconnect();
+    };
+  }, [containerRef, enabled, preloadAheadViewports]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -67,7 +123,7 @@ export function useBackgroundVideo({
     return () => document.removeEventListener('visibilitychange', sync);
   }, [enabled]);
 
-  const active = enabled && inViewport && pageVisible;
+  const active = enabled && ready && inViewport && pageVisible;
 
   useEffect(() => {
     const element = videoRef.current;
@@ -81,7 +137,7 @@ export function useBackgroundVideo({
     /*
      * `play()` возвращает промис и законно отклоняется — политика автозапуска,
      * смена источника, размонтирование. Отказ здесь не ошибка: на экране
-     * остаётся постер, а это полноценное состояние первого экрана.
+     * остаётся постер, а это полноценное состояние секции.
      */
     const start = () => {
       void element.play().catch(() => {});
@@ -96,5 +152,11 @@ export function useBackgroundVideo({
     return () => element.removeEventListener('canplay', start);
   }, [active, videoRef]);
 
-  return active;
+  /**
+   * «На подходе». При нулевом запасе упреждения совпадает с видимостью: у
+   * первого экрана упреждать нечего, он виден при загрузке.
+   */
+  const near = enabled && (preloadAheadViewports > 0 ? nearAhead : inViewport);
+
+  return { near, active };
 }

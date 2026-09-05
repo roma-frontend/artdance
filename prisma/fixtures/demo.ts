@@ -588,10 +588,20 @@ export const demoMediaAlt: Record<string, { hy: string; ru: string; en: string }
     ru: 'Танцовщица в движении в тёмном зале, контровой свет',
     en: 'A dancer mid-movement in a dark studio, lit from behind',
   },
+  'hero-loop-poster': {
+    hy: 'Պարուհին շարժման մեջ մուգ դահլիճում, հակադիր լուսավորությամբ',
+    ru: 'Танцовщица в движении в тёмном зале, контровой свет',
+    en: 'A dancer mid-movement in a dark studio, lit from behind',
+  },
   'editorial-rhythm': {
     hy: 'Պարային շարժման կինեմատոգրաֆիկ կադր',
     ru: 'Кинематографичный кадр танцевального движения',
     en: 'A cinematic frame of dance movement',
+  },
+  'editorial-loop-poster': {
+    hy: 'Պարուհին բորդո զգեստով պտույտի մեջ բեմում՝ կարմիր հակադիր լույսի ներքո',
+    ru: 'Танцовщица в бордовом платье в повороте на сцене, красный контровой свет',
+    en: 'A dancer in a burgundy dress mid-turn on stage under red backlight',
   },
   'style-hip-hop': {
     hy: 'Հիփ-հոփ պարող փողոցային ոճով',

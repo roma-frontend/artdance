@@ -22,7 +22,7 @@ import { basename, dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { designAssets, designVideos, unusedSourceFiles } from '../design/asset-manifest.ts';
-import { videoProcessing } from '../src/config/media-processing.ts';
+import { videoLoopPolicy, type VideoLoopKey } from '../src/config/media-processing.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -70,6 +70,17 @@ if (existsSync(sourceHtml)) {
 const accountedSources = new Set<string>();
 
 for (const asset of designAssets) {
+  /*
+   * Производный ассет: постер петли, извлечённый из видео. В папке прототипа
+   * его нет и быть не должно — его делает `npm run video:encode`. Учитываем
+   * исходное видео и идём дальше, иначе сверка сообщила бы об отсутствующем
+   * файле, которого никто не терял.
+   */
+  if (asset.derivedFromVideo) {
+    accountedSources.add(asset.source);
+    continue;
+  }
+
   const from = join(sourcePhotos, asset.source);
   accountedSources.add(asset.source);
 
@@ -117,7 +128,15 @@ for (const video of designVideos) {
     );
   }
 
-  const budget = videoProcessing.heroLoop.maxBytes;
+  /** Бюджет своей петли, а не hero: у editorial он строже. */
+  const loopKey = (Object.keys(videoLoopPolicy) as VideoLoopKey[]).find(
+    (key) => videoLoopPolicy[key].baseName === video.name,
+  );
+  if (loopKey === undefined) {
+    problems.push(`${video.name}: нет петли с таким baseName в videoLoopPolicy`);
+    continue;
+  }
+  const budget = videoLoopPolicy[loopKey].maxBytes;
   videoReports.push(
     `${video.source}: ${(bytes / (1024 * 1024)).toFixed(1)} MB в макете, ` +
       `бюджет петли ${Math.round(budget / 1024)} KB → нужно кодирование ` +
@@ -168,9 +187,10 @@ if (videoReports.length > 0) {
   console.log('\nВидео (в репозиторий не копируется — см. designVideos):');
   for (const report of videoReports) console.log(`  • ${report}`);
   console.log(
-    '  Команды кодирования — videoEncodeCommands в src/config/media-processing.ts.\n' +
-      '  Готовая петля и постер уходят в бакет, а не в git: 21 МБ в истории остаются\n' +
-      '  в каждом клоне навсегда.',
+    '  Кодирование — npm run video:encode -- --loop <петля> --input <файл>\n' +
+      '  (политика: videoLoopPolicy в src/config/media-processing.ts).\n' +
+      '  Исходники в git не попадают: 21 МБ в истории остаются в каждом клоне навсегда.\n' +
+      '  В репозитории живут только закодированная петля и её постер.',
   );
 }
 

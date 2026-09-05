@@ -1,26 +1,35 @@
 /**
- * Выбор источника фоновой петли по способности устройства его декодировать.
+ * Выбор источника фоновой петли: сначала по ширине экрана, затем по способности
+ * устройства декодировать файл аппаратно.
  *
- * **Зачем это нужно.** Браузер берёт первый `<source>`, который «поддерживает», и
- * поддержка здесь означает только «умею декодировать», а не «умею декодировать
- * аппаратно». AV1 у нас самый лёгкий по весу (605 KB против 1,1 МБ у H.264), но
- * аппаратный декодер AV1 есть лишь у относительно новых GPU. На остальных
- * машинах браузер честно выбирает AV1 и декодирует его на процессоре — и тогда
- * фоновая петля, которая должна быть незаметной, начинает съедать кадры и
- * дёргаться. Экономия 500 KB трафика не стоит рывков на каждом просмотре.
+ * **Почему ширина решается раньше формата.** У петли несколько версий кадра
+ * (`videoLoopPolicy[…].renditions`), и разница между ними больше, чем между
+ * кодеками. Кадр первого экрана рисуется шириной 135% от окна: на мониторе 1440
+ * это 1944 пикселя, и версия в 1280 растягивалась там в полтора раза — мыло,
+ * которое никаким битрейтом не лечится. На телефоне ровно наоборот: кадр
+ * занимает около 560 пикселей, и версия в 1920 была бы мегабайтом, скачанным,
+ * чтобы выбросить три четверти пикселей.
  *
- * Поэтому источник выбирается через `navigator.mediaCapabilities`: он отвечает
- * не «поддерживается ли», а `smooth` (успеет ли в реальном времени) и
+ * **Почему формат не берётся просто первым.** Браузер выбирает первый `<source>`,
+ * который «поддерживает», и поддержка здесь означает только «умею декодировать»,
+ * а не «умею декодировать аппаратно». AV1 самый лёгкий по весу, но аппаратный
+ * декодер AV1 есть лишь у относительно новых GPU. На остальных машинах браузер
+ * честно выбирает AV1 и декодирует его на процессоре — и тогда фоновая петля,
+ * которая должна быть незаметной, начинает съедать кадры и дёргаться. Экономия
+ * трафика не стоит рывков на каждом просмотре.
+ *
+ * Поэтому формат выбирается через `navigator.mediaCapabilities`: он отвечает не
+ * «поддерживается ли», а `smooth` (успеет ли в реальном времени) и
  * `powerEfficient` (аппаратный ли путь). Приоритет: аппаратный и плавный →
  * плавный → любой поддерживаемый в исходном порядке (он идёт от самого лёгкого к
  * самому совместимому, и H.264 в конце декодируется аппаратно почти везде).
  *
- * Параметры запроса — из `videoProcessing.heroLoop`: те же ширина, высота, fps и
- * битрейт, с которыми файл закодирован. Спрашивать про случайные числа
- * бессмысленно: ответ зависит именно от них.
+ * Параметры запроса берутся из политики ТОЙ ЖЕ версии кадра: спрашивать про
+ * случайные числа бессмысленно, ответ зависит именно от разрешения и битрейта, с
+ * которыми файл закодирован.
  */
 
-import { videoProcessing } from '@/config/media-processing';
+import { videoLoopPolicy, type VideoLoopKey } from '@/config/media-processing';
 import type { VideoFormat } from '@/domain/content';
 
 /** MIME-типы источников. Единственное место, где они объявлены. */
@@ -32,6 +41,8 @@ export const videoMimeByFormat: Record<VideoFormat, string> = {
 
 export interface VideoSourceChoice {
   format: VideoFormat;
+  /** Ширина кадра в пикселях: по ней отбирается версия под экран. */
+  width: number;
   url: string;
 }
 
@@ -41,13 +52,61 @@ interface DecodeVerdict extends VideoSourceChoice {
 }
 
 /**
+ * Версия кадра для текущего окна: последняя из политики, чей порог не превышает
+ * ширину окна. Порядок в политике — по возрастанию, поэтому перебор идёт с конца.
+ *
+ * Ширина окна, а не размер самого элемента: элемент к моменту выбора может ещё не
+ * иметь итоговых размеров, а решение нужно до первого байта.
+ */
+function renditionWidthFor(loop: VideoLoopKey): number {
+  const { renditions } = videoLoopPolicy[loop];
+  const viewport = globalThis.window?.innerWidth ?? 0;
+
+  const suitable = [...renditions]
+    .sort((a, b) => a.minViewportWidth - b.minViewportWidth)
+    .filter((rendition) => viewport >= rendition.minViewportWidth)
+    .at(-1);
+
+  /* Окно уже самого мелкого порога быть не может, но подстраховка дешевле сбоя. */
+  return (suitable ?? renditions[0]!).width;
+}
+
+/** Битрейт, с которым закодирована версия этой ширины — для запроса к устройству. */
+function bitrateFor(loop: VideoLoopKey, width: number, format: VideoFormat): number {
+  const { renditions } = videoLoopPolicy[loop];
+  const rendition = renditions.find((item) => item.width === width) ?? renditions.at(-1)!;
+  return rendition.bitrateKbps[format];
+}
+
+/** Высота версии этой ширины. Нужна тому же запросу. */
+function heightFor(loop: VideoLoopKey, width: number): number {
+  const { renditions } = videoLoopPolicy[loop];
+  return (renditions.find((item) => item.width === width) ?? renditions.at(-1)!).height;
+}
+
+/**
  * Лучший источник для этого устройства. `null` — ни один не поддерживается
  * (тогда на экране остаётся постер, и это рабочее состояние).
  */
 export async function pickDecodableSource(
   sources: readonly VideoSourceChoice[],
+  loop: VideoLoopKey,
 ): Promise<VideoSourceChoice | null> {
   if (sources.length === 0) return null;
+
+  /*
+   * Отбор по ширине идёт до всего остального.
+   *
+   * Берётся не «точно такая ширина», а самая узкая из доступных, которая не уже
+   * нужной: закодированная ширина равна `min(ширина исходника, ширина версии)`, и
+   * у исходника 720p широкая версия окажется файлом 1280. Если ничего подходящего
+   * нет вовсе, берётся самая широкая из имеющихся — лучше показать кадр не той
+   * ширины, чем не показать ничего.
+   */
+  const targetWidth = renditionWidthFor(loop);
+  const widths = [...new Set(sources.map((source) => source.width))].sort((a, b) => a - b);
+  const chosenWidth = widths.find((width) => width >= targetWidth) ?? widths.at(-1)!;
+  const candidates = sources.filter((source) => source.width === chosenWidth);
 
   const capabilities = globalThis.navigator?.mediaCapabilities;
   /*
@@ -55,20 +114,21 @@ export async function pickDecodableSource(
    * лёгкого к самому совместимому, и «совместимый» здесь важнее — угадывать
    * наличие аппаратного AV1 вслепую хуже, чем взять H.264.
    */
-  if (!capabilities?.decodingInfo) return sources.at(-1) ?? null;
+  if (!capabilities?.decodingInfo) return candidates.at(-1) ?? null;
 
-  const { maxWidth, maxHeight, targetFps, bitrateKbps } = videoProcessing.heroLoop;
+  const { targetFps } = videoLoopPolicy[loop];
+  const height = heightFor(loop, chosenWidth);
 
   const verdicts = await Promise.all(
-    sources.map(async (source): Promise<DecodeVerdict | null> => {
+    candidates.map(async (source): Promise<DecodeVerdict | null> => {
       try {
         const info = await capabilities.decodingInfo({
           type: 'file',
           video: {
             contentType: videoMimeByFormat[source.format],
-            width: maxWidth,
-            height: maxHeight,
-            bitrate: bitrateKbps[source.format] * 1_000,
+            width: source.width,
+            height,
+            bitrate: bitrateFor(loop, source.width, source.format) * 1_000,
             framerate: targetFps,
           },
         });
@@ -82,7 +142,7 @@ export async function pickDecodableSource(
   );
 
   const supported = verdicts.filter((verdict): verdict is DecodeVerdict => verdict !== null);
-  if (supported.length === 0) return sources.at(-1) ?? null;
+  if (supported.length === 0) return candidates.at(-1) ?? null;
 
   return (
     supported.find((verdict) => verdict.smooth && verdict.powerEfficient) ??

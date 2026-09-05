@@ -32,21 +32,20 @@ import {
   demoVenues,
 } from '../../../prisma/fixtures/demo';
 import { booking } from '@/config';
-import type { HomeContent, VideoRef } from '@/domain/content';
-import {
-  heroVideoDurationSeconds,
-  heroVideoSources,
-} from '@/design/hero-video.generated';
+import type { VideoLoopKey } from '@/config/media-processing';
+import type { HomeContent, MediaRef, VideoRef } from '@/domain/content';
+import { videoLoops } from '@/design/video-loops.generated';
 
 import { mediaRef } from './media';
 
 /**
- * Фоновая петля первого экрана.
+ * Ссылка на фоновую петлю.
  *
- * Файлы собраны `npm run video:encode` из исходника макета (20,6 МБ, 1920×1080,
- * 8 с) по политике `videoProcessing.heroLoop`: 1280px, 24 fps, без звука, три
- * формата — 591 KB (AV1), 664 KB (VP9), 1075 KB (H.264). Браузер скачивает
- * ровно один из них, поэтому пользователь платит за самый лёгкий, который
+ * Одна функция на все петли главной: у первого экрана и у заявления бренда
+ * различаются только имя петли и постер. Файлы собраны
+ * `npm run video:encode -- --loop <петля>` по политике `videoLoopPolicy`;
+ * браузер скачивает РОВНО ОДИН источник из трёх — тот, который умеет
+ * декодировать аппаратно, — поэтому пользователь платит за самый лёгкий, который
  * поддерживает.
  *
  * Вес и длительность берутся из генерируемого манифеста, а не пишутся руками:
@@ -55,22 +54,33 @@ import { mediaRef } from './media';
  * Здесь же — единственное место, которое изменится при появлении бакета: путь
  * `/media/video/…` станет ключом объекта в R2, а компоненты не заметят разницы.
  */
-function heroVideo(): VideoRef | null {
-  if (heroVideoSources.length === 0) return null;
+function videoLoop(loop: VideoLoopKey, poster: MediaRef): VideoRef | null {
+  const { sources, durationSeconds } = videoLoops[loop];
+  if (sources.length === 0) return null;
 
-  const lightest = heroVideoSources.reduce((min, item) => (item.bytes < min.bytes ? item : min));
+  const lightest = sources.reduce((min, item) => (item.bytes < min.bytes ? item : min));
 
   return {
-    sources: heroVideoSources.map((item) => ({
+    sources: sources.map((item) => ({
       format: item.format,
+      width: item.width,
       url: `/media/video/${item.file}`,
     })),
-    /** Постер — первый кадр этой же петли (`designVideos[].poster` в манифесте). */
-    poster: mediaRef('hero-dancer'),
-    durationSeconds: heroVideoDurationSeconds,
+    poster,
+    durationSeconds,
     bytes: lightest.bytes,
   };
 }
+
+/**
+ * Постеры петель — первые кадры этих же петель (`designVideos[].poster`).
+ *
+ * Именно первый кадр, а не подходящая фотография: постер показывается до старта
+ * воспроизведения, и любой другой кадр дал бы видимый скачок в момент, когда на
+ * секцию смотрят.
+ */
+const heroPoster = (): MediaRef => mediaRef('hero-loop-poster');
+const editorialPoster = (): MediaRef => mediaRef('editorial-loop-poster');
 
 export function getHomeContent(): HomeContent {
   /** Имя инструктора для карточки занятия: в БД это join, здесь — поиск по slug. */
@@ -111,8 +121,8 @@ export function getHomeContent(): HomeContent {
 
   return {
     hero: {
-      video: heroVideo(),
-      image: mediaRef('hero-dancer'),
+      video: videoLoop('hero', heroPoster()),
+      image: heroPoster(),
       stats: demoHeroStats,
     },
     styleTiles: demoStyleTiles.map((tile) => ({
@@ -121,7 +131,8 @@ export function getHomeContent(): HomeContent {
       classCount: tile.classCount,
     })),
     editorial: {
-      image: mediaRef('editorial-rhythm'),
+      video: videoLoop('editorial', editorialPoster()),
+      image: editorialPoster(),
     },
     /**
      * «Популярное сейчас». Сегодня — порядок фикстуры (сначала трендовые), в

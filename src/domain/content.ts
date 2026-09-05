@@ -37,9 +37,12 @@ export interface MediaRef {
 
 export type VideoFormat = 'av1' | 'vp9' | 'h264';
 
-/** Ссылка на видео. Источники перечислены в порядке предпочтения. */
+/**
+ * Ссылка на видео. Источники перечислены в порядке предпочтения: по возрастанию
+ * ширины кадра, внутри ширины — по приоритету формата.
+ */
 export interface VideoRef {
-  sources: ReadonlyArray<{ format: VideoFormat; url: string }>;
+  sources: ReadonlyArray<{ format: VideoFormat; width: number; url: string }>;
   /** Постер обязателен: без него первый кадр — пустой прямоугольник. */
   poster: MediaRef;
   durationSeconds: number;
@@ -83,6 +86,25 @@ export interface HomeStyleTile {
   style: string;
   image: MediaRef;
   classCount: number;
+}
+
+/**
+ * Заявление бренда («EVERY BODY HAS A RHYTHM. FIND YOURS.»).
+ *
+ * Видео здесь, а не в hero-типе, потому что фоновых петель на главной две, и они
+ * независимы: у editorial своя политика кодирования, свой бюджет и своя
+ * упреждающая загрузка. Общего типа с `HomeHeroContent` намеренно нет — у hero
+ * есть показатели, у editorial их нет, и объединение дало бы обоим по половине
+ * лишних полей.
+ */
+export interface HomeEditorialContent {
+  /** Фоновая петля. `null` до кодирования — тогда остаётся постер. */
+  video: VideoRef | null;
+  /**
+   * Постер и он же фоллбэк: показывается до старта воспроизведения, при
+   * `prefers-reduced-motion` и при экономии данных.
+   */
+  image: MediaRef;
 }
 
 /**
@@ -204,7 +226,7 @@ export interface HomeEventCard {
 export interface HomeContent {
   hero: HomeHeroContent;
   styleTiles: readonly HomeStyleTile[];
-  editorial: { image: MediaRef };
+  editorial: HomeEditorialContent;
   popularClasses: readonly HomeClassCard[];
   instructors: readonly HomeInstructorCard[];
   venues: readonly HomeVenueCard[];

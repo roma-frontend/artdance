@@ -31,7 +31,11 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 
-import { mediaProcessing, videoProcessing } from '../src/config/media-processing.ts';
+import {
+  mediaProcessing,
+  videoLoopKeys,
+  videoLoopPolicy,
+} from '../src/config/media-processing.ts';
 
 const ROOT = process.cwd();
 const NEXT_DIR = join(ROOT, '.next');
@@ -74,9 +78,29 @@ const ASSET_BUDGET = {
   publicTotal: mediaProcessing.budgetBytes.seedTotal + 1024 * 1024,
   /** SVG сжимается по пути: считаем gzip. Иконка на 50 KB — это векторная каша. */
   vectorFileGzip: 20 * 1024,
-  /** На один источник петли, а не на все три вместе. */
-  videoFile: videoProcessing.heroLoop.maxBytes,
 } as const;
+
+/**
+ * Бюджет видеофайла — свой у каждой петли.
+ *
+ * Единого порога здесь быть не может: у петель разные разрешения и разная
+ * степень открытости кадра, поэтому и стоимость бита разная. Файл сопоставляется
+ * с петлёй по имени; не принадлежащий ни одной петле файл проверяется самым
+ * строгим порогом — это либо забытый ассет, либо ошибка в реестре, и молча
+ * пропускать его нельзя.
+ *
+ * Порог — на ОДИН файл, а не на сумму: браузер скачивает ровно один из
+ * источников — свою версию по ширине экрана и свой формат по декодируемости.
+ * Складывать все двенадцать файлов и сравнивать с общим порогом означало бы
+ * считать трафик, которого ни у кого не будет.
+ */
+function videoBudgetFor(file: string): number {
+  const base = basename(file);
+  for (const key of videoLoopKeys) {
+    if (base.startsWith(videoLoopPolicy[key].baseName)) return videoLoopPolicy[key].maxBytes;
+  }
+  return Math.min(...videoLoopKeys.map((key) => videoLoopPolicy[key].maxBytes));
+}
 
 interface FileEntry {
   name: string;
@@ -228,18 +252,20 @@ if (publicTotal > ASSET_BUDGET.publicTotal) {
 const videos = walk(PUBLIC_DIR, (file) => VIDEO_EXTENSIONS.has(extname(file).toLowerCase()));
 
 if (videos.length > 0) {
+  const lightest = Math.min(...videos.map((file) => file.raw));
   console.log(
-    `\nВидео: ${videos.length} источника, ` +
-      `самый лёгкий ${kb(Math.min(...videos.map((file) => file.raw)))} ` +
-      `(браузер скачивает один)`,
+    `\nВидео: ${videoLoopKeys.length} петли, ${videos.length} файлов ` +
+      `(версии кадра × форматы), самый лёгкий ${kb(lightest)}. ` +
+      `Браузер скачивает ОДИН файл на петлю: свою версию по ширине экрана и свой формат`,
   );
-  report('Источники петли', videos, false);
+  report('Источники петель', videos, false);
 
   for (const file of videos) {
-    if (file.raw > ASSET_BUDGET.videoFile) {
+    const budget = videoBudgetFor(file.name);
+    if (file.raw > budget) {
       violations.push(
-        `видео ${file.name}: ${kb(file.raw)} > ${kb(ASSET_BUDGET.videoFile)}. ` +
-          'Выполните npm run video:encode',
+        `видео ${file.name}: ${kb(file.raw)} > ${kb(budget)}. ` +
+          'Выполните npm run video:encode -- --loop <петля> --input <файл>',
       );
     }
   }

@@ -29,6 +29,14 @@ export const seedMedia = {
     blurDataUrl:
       'data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADwAQCdASoMAAcAAwBSJYgCdAD0t81XVuAA/vlM4OM8U4UoyCRBzOFw66qzm64+TTaa/+QcN5oQQcWalgmXvBOAAAA=',
   },
+  'editorial-loop-poster': {
+    file: 'editorial-loop-poster.webp',
+    width: 1280,
+    height: 720,
+    bytes: 20914,
+    blurDataUrl:
+      'data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoMAAcAAwBSJQBOgBulqOqr3AD++ftoJ9LvRRwzSxZ/vYG6LNJOhfhAAAA=',
+  },
   'editorial-rhythm': {
     file: 'editorial-rhythm.webp',
     width: 1376,
@@ -44,6 +52,14 @@ export const seedMedia = {
     bytes: 57612,
     blurDataUrl:
       'data:image/webp;base64,UklGRkQAAABXRUJQVlA4IDgAAACwAQCdASoMAAcAAwBSJYwCdADZVYkAAP3Sj4uX/2/8GHDdayMfoS1kQ+VPijQkVVeUE3AhfGxAAA==',
+  },
+  'hero-loop-poster': {
+    file: 'hero-loop-poster.webp',
+    width: 1920,
+    height: 1080,
+    bytes: 108978,
+    blurDataUrl:
+      'data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAADQAQCdASoMAAcAAwBSJZQCdADcn8VP4AD90o+f7r7f3iv38UTOLBaMMdjNoPjDTldjE5Cf29CbNtAAAAA=',
   },
   'instructor-anna-mkrtchyan': {
     file: 'instructor-anna-mkrtchyan.webp',
@@ -170,4 +186,4 @@ export const seedMedia = {
 export type SeedMediaName = keyof typeof seedMedia;
 
 /** Суммарный вес папки сид-медиа, байт. Сверяется с `mediaProcessing.budgetBytes.seedTotal`. */
-export const seedMediaTotalBytes = 990474;
+export const seedMediaTotalBytes = 1120366;

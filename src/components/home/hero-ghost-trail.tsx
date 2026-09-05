@@ -71,11 +71,22 @@ export function HeroGhostTrail({ wrapRef, videoRef, active }: HeroGhostTrailProp
     if (!container || !wrap || !mainVideo || !enabled || !active) return;
 
     const trail = motion.heroGhostTrail;
-    const { ghostTrailMax, ghostFrameWidth, maxWidth, maxHeight } = videoProcessing.heroLoop;
+    const { ghostTrailMax, ghostFrameWidth, renditions } = videoProcessing.heroLoop;
 
-    /** Снимок делается в пропорциях исходной петли, а не элемента на экране. */
+    /**
+     * Снимок делается в пропорциях ТОГО файла, который сейчас играет, а не в
+     * пропорциях элемента на экране и не в пропорциях политики: версий кадра у
+     * петли несколько, и браузер выбирает свою по ширине окна. Пропорции берутся у
+     * самого видео (`videoWidth`/`videoHeight`) — оно единственный источник,
+     * который знает, что именно декодируется. Значения из политики остаются
+     * запасом на случай, если метаданные ещё не пришли.
+     */
+    const widest = renditions.reduce((max, item) => (item.width > max.width ? item : max));
+    const sourceWidth = mainVideo.videoWidth || widest.width;
+    const sourceHeight = mainVideo.videoHeight || widest.height;
+
     const frameWidth = ghostFrameWidth;
-    const frameHeight = Math.round((ghostFrameWidth * maxHeight) / maxWidth);
+    const frameHeight = Math.round((ghostFrameWidth * sourceHeight) / sourceWidth);
 
     let ghosts: HTMLElement[] = [];
     let spawning = false;

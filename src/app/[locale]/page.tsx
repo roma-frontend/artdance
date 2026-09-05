@@ -117,7 +117,11 @@ export default async function HomePage({ params }: PageProps) {
       </section>
 
       {/* ── EDITORIAL: цитата брендгайда как полноэкранное заявление ── */}
-      <EditorialStatement image={content.editorial.image} locale={locale as Locale} />
+      <EditorialStatement
+        video={content.editorial.video}
+        image={content.editorial.image}
+        locale={locale as Locale}
+      />
 
       {/* ── INSTRUCTORS ── */}
       <section className="section-y">

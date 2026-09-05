@@ -35,6 +35,16 @@ export interface DesignAsset {
   usedFor: ReadonlyArray<{ entity: string; id: string; placeholder?: true }>;
   /** Требует пережатия перед production: PNG-фотография или > 500 KB. */
   needsOptimization?: true;
+  /**
+   * Файл не импортируется из папки прототипа, а извлекается из видео
+   * (`npm run video:encode`) — это постер петли, её первый кадр.
+   *
+   * Пометка нужна `design:import`: он сверяет манифест с папкой прототипа и без
+   * неё сообщал бы об «отсутствующем исходнике» для файла, которого там не было
+   * и не будет. Постер обязан быть кадром именно закодированной петли, иначе при
+   * старте воспроизведения виден скачок.
+   */
+  derivedFromVideo?: true;
 }
 
 /**
@@ -65,8 +75,27 @@ export const designVideos: readonly DesignVideo[] = [
     source: 'dancer-fhd.mp4',
     subject: 'Танцовщица в движении, FHD — фоновая петля первого экрана',
     usedFor: [{ entity: 'page', id: 'home.hero' }],
-    poster: 'hero-dancer',
+    poster: 'hero-loop-poster',
     sourceBytes: 21_600_140,
+  },
+  {
+    /**
+     * Петля editorial-секции. Пришла от заказчика 04.09.2026 отдельно от
+     * прототипа — в утверждённом HTML на этом месте статичный кадр
+     * (`editorial-rhythm`). Отклонение согласовано заказчиком, см.
+     * `docs/00-decision-record.md` §8.
+     *
+     * Исходник — сгенерированный клип, и это видно по двум признакам, которые
+     * снимает конвейер: знак генератора в правом нижнем углу и незамкнутый шов
+     * (последний кадр не совпадает с первым). Оба лечатся политикой
+     * `videoProcessing.editorialLoop`, а не правкой файла руками.
+     */
+    name: 'editorial-loop',
+    source: 'Image_to_video_one_single_con.mp4',
+    subject: 'Танцовщица в бордовом платье в повороте на сцене, красный контровой свет — петля editorial-секции',
+    usedFor: [{ entity: 'page', id: 'home.editorial' }],
+    poster: 'editorial-loop-poster',
+    sourceBytes: 3_844_666,
   },
 ];
 
@@ -75,13 +104,31 @@ export const designAssets: readonly DesignAsset[] = [
     name: 'hero-dancer',
     source: '01a8724c-2a8f-4949-b140-afd241b012b8.png',
     preset: 'heroFullBleed',
-    subject: 'Танцовщица в движении, контровой свет — постер фоновой петли первого экрана',
-    usedFor: [{ entity: 'page', id: 'home.hero' }],
-    // 1,9 MB PNG. С версии от 02.09.2026 hero — видео, и этот кадр стал его
-    // постером: он показывается до начала воспроизведения, при
-    // prefers-reduced-motion и при экономии данных. То есть остаётся
-    // LCP-элементом и обязан быть лёгким.
+    subject: 'Танцовщица в движении, контровой свет — кадр первого экрана из макета',
+    usedFor: [{ entity: 'page', id: 'home.hero', placeholder: true }],
+    /*
+     * Постером петли этот файл больше НЕ является — им стал `hero-loop-poster`,
+     * снятый с самой петли. Причина измерена: SSIM между этим кадром и первым
+     * кадром петли — 0.86, то есть это другой момент съёмки, и при старте
+     * воспроизведения был виден скачок. Вдобавок файл всего 1672px шириной, а
+     * кадр первого экрана рисуется в ~1944px — то есть он ещё и растягивался.
+     *
+     * В манифесте остаётся: это файл утверждённого прототипа, и `design:import`
+     * обязан его учитывать.
+     */
     needsOptimization: true,
+  },
+  {
+    /**
+     * Постер петли первого экрана — её первый кадр, снятый с графа фильтров до
+     * сжатия (`npm run video:encode -- --loop hero`).
+     */
+    name: 'hero-loop-poster',
+    source: 'dancer-fhd.mp4',
+    preset: 'heroFullBleed',
+    subject: 'Танцовщица в движении, контровой свет — постер петли первого экрана',
+    usedFor: [{ entity: 'page', id: 'home.hero' }],
+    derivedFromVideo: true,
   },
   {
     name: 'editorial-rhythm',
@@ -89,10 +136,31 @@ export const designAssets: readonly DesignAsset[] = [
     preset: 'editorialFullBleed',
     subject: 'Кинематографичный кадр для editorial-секции «Every body has a rhythm»',
     usedFor: [
-      { entity: 'page', id: 'home.editorial' },
+      { entity: 'page', id: 'home.editorial', placeholder: true },
       { entity: 'event', id: 'bachata-night-workshop', placeholder: true },
     ],
     needsOptimization: true,
+  },
+  {
+    /**
+     * Постер петли editorial-секции — её ПЕРВЫЙ кадр.
+     *
+     * Не файл из папки прототипа: он извлекается из закодированной петли
+     * (`npm run video:encode -- --loop editorial`) и дальше идёт общим конвейером
+     * изображений. Кадр именно первый, потому что постер показывается до старта
+     * воспроизведения, при `prefers-reduced-motion` и при экономии данных: любой
+     * другой кадр дал бы видимый скачок в момент, когда на секцию смотрят.
+     *
+     * Прежний `editorial-rhythm` для этой секции не годится: он светлый и тёплый
+     * (ivory-фон), а петля — тёмная сцена в бордовом. Подмена одного другим
+     * читалась бы как смена картинки, а не как оживший кадр.
+     */
+    name: 'editorial-loop-poster',
+    source: 'Image_to_video_one_single_con.mp4',
+    preset: 'editorialFullBleed',
+    subject: 'Танцовщица в бордовом платье в повороте — постер петли editorial-секции',
+    usedFor: [{ entity: 'page', id: 'home.editorial' }],
+    derivedFromVideo: true,
   },
 
   /* Направления танца */

@@ -156,10 +156,13 @@ export {
   mediaProcessing,
   presetBudget,
   variantKey,
-  videoEncodeCommands,
+  videoLoopKeys,
+  videoLoopPolicy,
   videoProcessing,
   type MediaBudgetGroup,
   type MediaOutputFormat,
+  type VideoLoopKey,
+  type VideoLoopPolicy,
 } from './media-processing';
 
 /** Видео-курсы (Phase 3). Держим здесь, чтобы плеер не знал про провайдера. */

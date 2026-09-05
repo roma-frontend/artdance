@@ -80,25 +80,31 @@ export function HeroVideo({ video, poster, locale }: HeroVideoProps) {
    */
   const [source, setSource] = useState<string | null>(null);
 
+  /**
+   * Наблюдение начинается сразу, воспроизведение — когда источник выбран.
+   * Запаса упреждения у первого экрана нет: он виден при загрузке, упреждать
+   * нечего. Но признак `near` всё равно гейтит загрузку — если страницу открыли
+   * по ссылке-якорю в середину, петля первого экрана не тратит трафик впустую.
+   */
+  const { near, active } = useBackgroundVideo({
+    videoRef,
+    containerRef,
+    enabled: playable,
+    ready: source !== null,
+  });
+
   useEffect(() => {
-    if (!playable || !hasPlayableVideo(video)) return;
+    if (!near || !hasPlayableVideo(video)) return;
 
     let cancelled = false;
-    void pickDecodableSource(video.sources).then((chosen) => {
+    void pickDecodableSource(video.sources, 'hero').then((chosen) => {
       if (!cancelled && chosen) setSource(chosen.url);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [playable, video]);
-
-  /** Играет только пока видно; возвращённый признак ведёт за собой шлейф. */
-  const active = useBackgroundVideo({
-    videoRef,
-    containerRef,
-    enabled: playable && source !== null,
-  });
+  }, [near, video]);
 
   const posterProps = resolveMedia(poster, locale);
 

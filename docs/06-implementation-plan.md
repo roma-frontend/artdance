@@ -31,7 +31,7 @@
 |---|---|---|---|
 | 1.1 | Первая миграция: `npm run db:migrate` | 0.3 | схема в БД, `prisma migrate diff` пуст |
 | 1.2 | `npm run design:import` + `npm run media:optimize` | — | ✅ сделано: 6,7 МБ → 0,94 МБ, `perf:budget` зелёный |
-| 1.2b | Кодировать петлю hero: `videoEncodeCommands`, загрузить в бакет, снять постер | 0.4 | петля ≤ 1,2 МБ в трёх форматах, постер на месте, автозапуск подавляется при reduced-motion и Save-Data |
+| 1.2b | Кодировать петли: `npm run video:encode -- --loop <петля>`, снять постер | 0.4 | ✅ сделано: обе петли в двух версиях кадра под ширину экрана, три формата на версию, бюджет 2,4 МБ на файл, постеры — первый кадр своей петли, автозапуск подавляется при reduced-motion и Save-Data |
 | 1.3 | Компонент `Media` с presets и fallback | 1.2 | ни одного прямого `next/image` в проекте |
 | 1.4 | Примитивы: `Badge`, `Price`, `RatingStars`, `SectionHeading`, `EmptyState` | 1.3 | все варианты из манифеста |
 | 1.5 | `SiteHeader`, `MobileNavDrawer`, `SiteFooter`, `ThemeToggle` | 1.4 | тема переключается и сохраняется в cookie; мобильное меню с ловушкой фокуса и закрытием по Esc |

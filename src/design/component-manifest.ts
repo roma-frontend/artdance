@@ -430,7 +430,35 @@ export const componentManifest: readonly ComponentSpec[] = [
     image: 'editorialFullBleed',
     notes:
       'Типографика display-editorial до 8rem. Фон с opacity .3 и blur(1px), поверх — ' +
-      'scrim.editorialRadial. Не зависит от темы.',
+      'scrim.editorialRadial. Не зависит от темы. ' +
+      'ОТЛИЧИЕ ОТ МАКЕТА: фон — фоновая петля (EditorialVideo), а не статичный кадр. ' +
+      'Клип прислан заказчиком 04.09.2026, отклонение согласовано (docs/00-decision-record.md ' +
+      '§8); при reduced-motion и Save-Data остаётся постер, то есть ровно макет. Добавлен ' +
+      'второй scrim под текстом (scrim.editorialCopy): яркость движущегося кадра за ' +
+      'заголовком меняется на каждом кадре, и без вуали ivory-текст терял контраст.',
+  },
+  {
+    name: 'EditorialVideo',
+    path: 'components/home/editorial-video.tsx',
+    role: 'Фоновая петля заявления бренда с постером и упреждающей загрузкой',
+    wave: 'foundation',
+    prototypeClasses: ['editorial-bg'],
+    screens: ['home'],
+    i18n: [],
+    image: 'editorialFullBleed',
+    states: ['poster', 'loading', 'playing', 'reduced-motion', 'save-data'],
+    notes:
+      'В прототипе фон секции — <img>. Петля добавлена по просьбе заказчика; политика ' +
+      'кодирования — videoProcessing.editorialLoop, файлы собраны npm run video:encode -- ' +
+      '--loop editorial. Отличия от петли первого экрана: (1) файл не качается, пока секция ' +
+      'далеко — источник выбирается за preloadAheadViewportFactor экранов до появления, ' +
+      'иначе петля тратилась бы на секцию, до которой могут не долистать; (2) шлейфа копий ' +
+      'нет — он был бы вторым набором декодов ради эффекта, который в этой секции не читается; ' +
+      '(3) кадр растворён к краям маской mask.cinemaEdges, иначе видео читается как ' +
+      'вставленное окно в чёрной секции; (4) blur() на видео нет — у постера он скрывает ' +
+      'артефакты одного кадра, у петли это фильтр на каждый кадр во весь экран. ' +
+      'Постер — ПЕРВЫЙ кадр самой петли (editorial-loop-poster), поэтому подмена не читается ' +
+      'как смена картинки. Кнопки паузы нет по тому же решению, что у hero.',
   },
   {
     name: 'VenueCard',

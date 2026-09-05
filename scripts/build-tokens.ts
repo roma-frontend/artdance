@@ -73,6 +73,7 @@ function buildScaleBlock(): string {
   flatten('aspect', tokens.aspectRatio, entries);
   flatten('opacity', tokens.opacity, entries);
   flatten('scrim', tokens.scrim, entries);
+  flatten('mask', tokens.mask, entries);
   return block(':root', entries);
 }
 
