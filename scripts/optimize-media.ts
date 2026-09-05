@@ -19,7 +19,15 @@
  * `public/media/seed`, куда файлы попадают через `npm run design:import`.
  */
 
-import { readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import {
+  readdirSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -44,17 +52,50 @@ interface SeedEntry {
   height: number;
   bytes: number;
   blurDataUrl: string;
+  fingerprint: string;
+}
+
+/**
+ * Отпечаток содержимого файла — восемь шестнадцатеричных знаков.
+ *
+ * **Зачем.** Имя файла ассета производно от семантического имени, и при замене
+ * содержимого не менялось. Значит, не менялся и URL, а по URL кешируют все:
+ * браузер, CDN и — что здесь важнее всего — оптимизатор изображений Next, который
+ * держит производные в `.next/cache/images`. Заменённый постер продолжал
+ * отдаваться прежним, и это не теория: после подмены постера первого экрана на
+ * первый кадр нового клипа страница целую секунду показывала кадр из ПРОШЛОГО
+ * макета.
+ *
+ * Отпечаток стоит в ИМЕНИ файла (`hero-loop-poster.f4fca815.webp`), а не в query:
+ * Next 16 отклоняет локальные изображения с query-строкой, если она не описана в
+ * `images.localPatterns`, а описать там произвольный отпечаток нечем — сравнение
+ * точное. У видео та же болезнь вылечена так же, отпечатком в имени.
+ */
+function fingerprintOf(data: Buffer): string {
+  return createHash('sha256').update(data).digest('hex').slice(0, 8);
+}
+
+/** Имя оптимизированного файла: `<имя>.<отпечаток>.webp`. */
+function seedFileName(name: string, fingerprint: string): string {
+  return `${name}.${fingerprint}.${SEED_FORMAT}`;
 }
 
 function kb(bytes: number): string {
   return `${Math.round(bytes / 1024)} KB`;
 }
 
-/** Все файлы ассета в папке сида: и оптимизированный, и ещё не тронутый исходник. */
+/**
+ * Все файлы ассета в папке сида: и оптимизированный, и ещё не тронутый исходник.
+ *
+ * Сравнение по префиксу, а не по равенству: у оптимизированного файла в имени стоит
+ * отпечаток содержимого (`hero-loop-poster.f4fca815.webp`), поэтому равенство
+ * базового имени его больше не находит.
+ */
 function filesFor(name: string): string[] {
-  return readdirSync(SEED_DIR).filter(
-    (file) => file.slice(0, file.length - extname(file).length) === name,
-  );
+  return readdirSync(SEED_DIR).filter((file) => {
+    const base = file.slice(0, file.length - extname(file).length);
+    return base === name || base.startsWith(`${name}.`);
+  });
 }
 
 function renderGenerated(list: readonly SeedEntry[]): string {
@@ -66,6 +107,7 @@ function renderGenerated(list: readonly SeedEntry[]): string {
     width: ${entry.width},
     height: ${entry.height},
     bytes: ${entry.bytes},
+    fingerprint: '${entry.fingerprint}',
     blurDataUrl:
       '${entry.blurDataUrl}',
   },`,
@@ -90,6 +132,14 @@ export interface SeedMediaEntry {
   width: number;
   height: number;
   bytes: number;
+  /**
+   * Отпечаток содержимого. Подставляется в URL как \`?v=…\`.
+   *
+   * Имя файла производно от семантического имени и при замене содержимого не
+   * меняется — а по URL кешируют браузер, CDN и оптимизатор изображений Next.
+   * Без отпечатка заменённый ассет продолжает отдаваться прежним.
+   */
+  fingerprint: string;
   /** Инлайновый плейсхолдер, сгенерированный конвейером. */
   blurDataUrl: string;
 }
@@ -124,16 +174,40 @@ async function main(): Promise<void> {
     const originals = files.filter((file) => extname(file) !== `.${SEED_FORMAT}`);
     const budgetGroup = presetBudget[asset.preset];
     const maxWidth = mediaProcessing.seedMaxWidth[budgetGroup];
-    const targetFile = `${asset.name}.${SEED_FORMAT}`;
 
     /* ── Уже оптимизирован: описываем файл как есть, без ре-энкода ── */
     if (optimized !== undefined && originals.length === 0) {
-      const described = await describeImage(readFileSync(join(SEED_DIR, optimized)));
+      const data = readFileSync(join(SEED_DIR, optimized));
+      const described = await describeImage(data);
+      const fingerprint = fingerprintOf(data);
+      const expected = seedFileName(asset.name, fingerprint);
+
+      /*
+       * Имя обязано соответствовать содержимому. Расхождение означает, что файл
+       * подменили, не переименовав, — и тогда прежний URL продолжает отдавать
+       * прежнюю производную из кеша оптимизатора.
+       */
+      if (optimized !== expected) {
+        if (checkOnly) {
+          problems.push(
+            `${optimized}: отпечаток в имени не совпадает с содержимым (ожидается ${expected}). ` +
+              'Выполните npm run media:optimize',
+          );
+        } else {
+          renameSync(join(SEED_DIR, optimized), join(SEED_DIR, expected));
+          console.log(`  ${optimized} → ${expected}`);
+        }
+      }
 
       skipped += 1;
       sourceTotal += described.bytes;
       resultTotal += described.bytes;
-      entries.push({ name: asset.name, file: optimized, ...described });
+      entries.push({
+        name: asset.name,
+        file: expected,
+        fingerprint,
+        ...described,
+      });
 
       if (!withinBudget(described.bytes, asset.preset)) {
         problems.push(
@@ -162,6 +236,8 @@ async function main(): Promise<void> {
     }
 
     const { master } = result.image;
+    const fingerprint = fingerprintOf(master.data);
+    const targetFile = seedFileName(asset.name, fingerprint);
     processed += 1;
     resultTotal += master.bytes;
 
@@ -171,7 +247,14 @@ async function main(): Promise<void> {
       );
     } else {
       writeFileSync(join(SEED_DIR, targetFile), master.data);
-      for (const original of originals) unlinkSync(join(SEED_DIR, original));
+      /*
+       * Удаляются и исходник, и прежняя оптимизированная версия: в имени стоит
+       * отпечаток, поэтому новый файл не перезаписывает старый — они бы накопились
+       * в папке и уехали в деплой мёртвым грузом.
+       */
+      for (const file of files) {
+        if (file !== targetFile) unlinkSync(join(SEED_DIR, file));
+      }
       const saved = Math.round((1 - master.bytes / sourceBytes) * 100);
       console.log(
         `  ${asset.name.padEnd(30)} ${kb(sourceBytes).padStart(8)} → ${kb(master.bytes).padStart(7)}` +
@@ -180,7 +263,12 @@ async function main(): Promise<void> {
     }
 
     /** Плейсхолдер и размеры — из итоговых байт: тогда `--check` стабилен. */
-    entries.push({ name: asset.name, file: targetFile, ...(await describeImage(master.data)) });
+    entries.push({
+      name: asset.name,
+      file: targetFile,
+      fingerprint,
+      ...(await describeImage(master.data)),
+    });
 
     if (!withinBudget(master.bytes, asset.preset)) {
       problems.push(

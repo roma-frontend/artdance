@@ -8,7 +8,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import en from '../src/i18n/messages/en';
-import { motion } from '../src/design/motion';
 import { raw } from '../src/design/tokens';
 
 /** Английская локаль: у неё в каталоге эталонные строки. */
@@ -28,14 +27,30 @@ test.describe('SiteHeader', () => {
     await page.goto(HOME);
   });
 
-  test('над hero шапка прозрачная, после прокрутки — сплошная', async ({ page }) => {
+  test('над кинематографичным экраном шапка прозрачная, после него — сплошная', async ({
+    page,
+  }) => {
     await expect(header(page)).toHaveAttribute('data-state', 'top');
 
-    await page.mouse.wheel(0, motion.headerScroll.thresholdPx + 40);
+    /*
+     * Прокрутка внутри первого экрана состояние НЕ меняет, и это главное свойство
+     * проверки. Прежде шапка становилась сплошной после 60 пикселей; с приколотым
+     * первым экраном это давало светлую полосу поверх тёмного театра на две
+     * высоты окна вперёд.
+     */
+    await page.mouse.wheel(0, 200);
+    await expect(header(page)).toHaveAttribute('data-state', 'top');
+
+    /* За обёрткой первого экрана — сплошная. */
+    await page.evaluate(() => {
+      const stage = document.querySelector<HTMLElement>('[data-hero-stage]');
+      const end = stage ? stage.offsetTop + stage.getBoundingClientRect().height : 0;
+      window.scrollTo({ top: end + 200, behavior: 'instant' });
+    });
     await expect(header(page)).toHaveAttribute('data-state', 'scrolled');
 
     /* Возврат наверх обязан вернуть прозрачность: состояние двустороннее. */
-    await page.mouse.wheel(0, -(motion.headerScroll.thresholdPx + 40));
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await expect(header(page)).toHaveAttribute('data-state', 'top');
   });
 

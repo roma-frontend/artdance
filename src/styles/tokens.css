@@ -127,6 +127,8 @@
   --scrim-bottom-strong: linear-gradient(to top, rgba(11,10,9,0.90) 0%, rgba(11,10,9,0.10) 50%, transparent 100%);
   --scrim-bottom-soft: linear-gradient(to top, rgba(11,10,9,0.70), transparent);
   --scrim-hero-diagonal: linear-gradient(160deg, rgba(11,10,9,0.92) 0%, rgba(11,10,9,0.60) 35%, rgba(139,26,43,0.25) 100%);
+  --scrim-hero-curtain: linear-gradient(100deg, rgba(11,10,9,0.94) 0%, rgba(11,10,9,0.86) 26%, rgba(11,10,9,0.60) 43%, rgba(11,10,9,0.24) 57%, rgba(11,10,9,0) 70%);
+  --scrim-hero-curtain-narrow: linear-gradient(180deg, rgba(11,10,9,0.60) 0%, rgba(11,10,9,0.72) 34%, rgba(11,10,9,0.88) 62%, rgba(11,10,9,0.94) 100%);
   --scrim-editorial-radial: radial-gradient(ellipse at center, rgba(110,15,28,0.30) 0%, rgba(11,10,9,0.90) 70%);
   --scrim-editorial-copy: radial-gradient(ellipse 68% 44% at 50% 47%, rgba(11,10,9,0.62) 0%, rgba(11,10,9,0.34) 62%, rgba(11,10,9,0) 100%);
   --mask-cinema-edges: radial-gradient(ellipse 92% 96% at 50% 46%, rgba(0,0,0,1) 36%, rgba(0,0,0,0.6) 70%, rgba(0,0,0,0) 100%);
@@ -150,9 +152,8 @@
   --card-tilt-rotate: 6deg;
   --card-tilt-lift: -4px;
   --card-tilt-scale: 1.01;
-  --hero-wrap-width: 135%;
-  --hero-ghost-opacity: 0.35;
-  --hero-ghost-filter: saturate(0.1) brightness(0.45);
+  --hero-reveal-runway: 1;
+  --hero-scrim-start: 0.5;
 }
 
 :root,

@@ -241,6 +241,14 @@ function frameFilters(loop: VideoLoopPolicy, rendition: VideoRendition, source: 
     chain.push(`delogo=x=${x}:y=${y}:w=${w}:h=${h}`);
   }
   chain.push(`scale=${width}:-2`, `fps=${fps}`);
+  /*
+   * Переворот идёт ПОСЛЕДНИМ.
+   *
+   * Фильтр `reverse` буферизует весь клип в памяти, поэтому кадры должны прийти к
+   * нему уже уменьшенными и с нужной частотой: перевернуть 1080p и потом уменьшить
+   * значило бы держать в памяти вчетверо больше данных без всякой пользы.
+   */
+  if (loop.reversed) chain.push('reverse');
   return chain.join(',');
 }
 
@@ -292,6 +300,20 @@ interface Encoded {
   width: number;
   file: string;
   bytes: number;
+}
+
+/**
+ * Параметры x264. Отдельной функцией, потому что `-x264-params` принимает ОДНУ
+ * строку: дописать ключевые кадры вторым флагом нельзя — второй `-x264-params`
+ * перебивает первый, и адаптивное квантование в тенях молча теряется.
+ */
+function x264Params(loop: VideoLoopPolicy): string {
+  const params = ['aq-mode=3', 'aq-strength=1.1'];
+  if (loop.scrub) {
+    const interval = loop.scrub.keyframeIntervalFrames;
+    params.push(`keyint=${interval}`, `min-keyint=${interval}`, 'scenecut=0');
+  }
+  return params.join(':');
 }
 
 function encode(
@@ -363,7 +385,7 @@ function encode(
       '-profile:v',
       'high',
       '-x264-params',
-      'aq-mode=3:aq-strength=1.1',
+      x264Params(loop),
       '-pix_fmt',
       'yuv420p',
       '-movflags',
@@ -371,9 +393,33 @@ function encode(
     ],
   };
 
+  /*
+   * Плотные ключевые кадры для клипа, который отматывается прокруткой.
+   *
+   * `-g` задаёт максимальное расстояние между ключевыми кадрами; для x264 то же
+   * число дублируется в `-x264-params` вместе с `min-keyint`, иначе энкодер
+   * оставляет за собой право поставить ключевой кадр реже. `scenecut=0` — по той
+   * же причине: смен сцены в клипе нет, и автоматика только сбивала бы шаг.
+   *
+   * Без этого отматывание идёт ступенями: браузер показывает ближайший
+   * предыдущий ключевой кадр, а не тот, который запрошен.
+   */
+  const keyframes = loop.scrub
+    ? ['-g', String(loop.scrub.keyframeIntervalFrames), '-keyint_min', String(loop.scrub.keyframeIntervalFrames)]
+    : [];
+
   const temporary = join(OUT_DIR, `${loop.baseName}.encoding${FILE_SUFFIX[format]}`);
 
-  run('ffmpeg', ['-y', '-i', input, ...video.args, ...noAudio, ...encoders[format], temporary]);
+  run('ffmpeg', [
+    '-y',
+    '-i',
+    input,
+    ...video.args,
+    ...noAudio,
+    ...encoders[format],
+    ...keyframes,
+    temporary,
+  ]);
 
   /*
    * Имя получается ПОСЛЕ кодирования, потому что отпечаток считается по готовому
@@ -822,8 +868,14 @@ function main(): void {
     process.exit(1);
   }
 
-  const poster = extractPoster(loopKey, loop, input, source, duration);
-  console.log(`  постер ${poster} — первый кадр петли до сжатия (дальше: npm run media:optimize)`);
+  const poster = loop.extractsPoster
+    ? extractPoster(loopKey, loop, input, source, duration)
+    : null;
+  if (poster !== null) {
+    console.log(`  постер ${poster} — первый кадр петли до сжатия (дальше: npm run media:optimize)`);
+  } else {
+    console.log('  постер не снимается: у этой петли его роль исполняет другая');
+  }
 
   writeManifest();
   console.log('  Дальше: npm run media:optimize && npm run video:check');

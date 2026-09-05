@@ -122,6 +122,11 @@ export function getHomeContent(): HomeContent {
   return {
     hero: {
       video: videoLoop('hero', heroPoster()),
+      /**
+       * Перевёрнутый клип для обратного прохода раскрытия. Скачивается лениво —
+       * только если посетитель начал раскрытие первого экрана.
+       */
+      reverseVideo: videoLoop('heroReverse', heroPoster()),
       image: heroPoster(),
       stats: demoHeroStats,
     },

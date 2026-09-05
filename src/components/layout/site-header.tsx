@@ -5,10 +5,13 @@
  *   • `top`      — прозрачная, светлый текст: шапка лежит поверх тёмного hero;
  *   • `scrolled` — фон канвы, размытие и уменьшенная высота.
  *
- * Состояние зависит не только от скролла: на страницах без кинематографичного
- * первого экрана шапка сплошная сразу, иначе тёмный текст лёг бы на светлый фон.
- * Список таких страниц — в `hasCinemaHero`, компонент не знает, что нарисовано
- * на главной.
+ * Состояние зависит не от порога прокрутки, а от того, лежит ли за шапкой
+ * кинематографичный первый экран. Прежде это был порог из прототипа — 60
+ * пикселей, — и он работал, пока первый экран уезжал вверх сразу. С раскрытием
+ * занавеса экран приколот на две высоты окна, и порог красил шапку в цвет канвы,
+ * когда за ней ещё тёмный театр: светлая полоса поверх кадра. Список страниц с
+ * таким первым экраном — в `hasCinemaHero`; сам факт «кадр ещё за шапкой» меряется
+ * по обёртке экрана, поэтому компонент не знает, что на главной нарисовано.
  *
  * Клиентский компонент: положение скролла известно только в браузере. Всё
  * остальное — ссылки, иконки, ключи переводов — приходит из `@/config`, поэтому
@@ -23,7 +26,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import type { MouseEvent } from 'react';
+import { useRef, type MouseEvent } from 'react';
 
 import { BrandMark } from '@/components/brand/brand-mark';
 import { navIcons } from '@/components/layout/nav-icons';
@@ -37,21 +40,22 @@ import {
   primaryNavItems,
   routes,
 } from '@/config';
-import { motion } from '@/design/motion';
 import { Link, usePathname } from '@/i18n/routing';
-import { useScrolledPast } from '@/lib/hooks/use-scrolled-past';
+import { useCinemaHeroBehind } from '@/lib/hooks/use-cinema-hero-behind';
 import { cn } from '@/lib/utils';
 
 export function SiteHeader() {
   const t = useTranslations();
   const pathname = usePathname();
-  const scrolledPast = useScrolledPast(motion.headerScroll.thresholdPx);
+  const headerRef = useRef<HTMLElement>(null);
+  const heroBehind = useCinemaHeroBehind(headerRef, hasCinemaHero(pathname));
   const { openSearch } = useSearchOverlay();
 
-  const solid = scrolledPast || !hasCinemaHero(pathname);
+  const solid = !heroBehind;
 
   return (
     <header
+      ref={headerRef}
       data-state={solid ? 'scrolled' : 'top'}
       className={cn(
         'fixed inset-x-0 top-0 z-header border-b',

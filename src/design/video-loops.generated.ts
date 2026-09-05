@@ -27,14 +27,25 @@ export interface VideoLoopManifest {
 export const videoLoops: Record<VideoLoopKey, VideoLoopManifest> = {
   hero: {
     sources: [
-      { format: 'av1', width: 1280, file: 'hero-loop-1280-282e6703.av1.mp4', bytes: 772629 },
-      { format: 'vp9', width: 1280, file: 'hero-loop-1280-c477b11e.webm', bytes: 867473 },
-      { format: 'h264', width: 1280, file: 'hero-loop-1280-4847989e.mp4', bytes: 1339472 },
-      { format: 'av1', width: 1920, file: 'hero-loop-1920-e8edfb52.av1.mp4', bytes: 1233120 },
-      { format: 'vp9', width: 1920, file: 'hero-loop-1920-cbc52919.webm', bytes: 1504106 },
-      { format: 'h264', width: 1920, file: 'hero-loop-1920-500f7022.mp4', bytes: 2286726 },
+      { format: 'av1', width: 1280, file: 'hero-loop-1280-a44a1835.av1.mp4', bytes: 653691 },
+      { format: 'vp9', width: 1280, file: 'hero-loop-1280-5d9a435e.webm', bytes: 1347706 },
+      { format: 'h264', width: 1280, file: 'hero-loop-1280-bbd88caf.mp4', bytes: 1520346 },
+      { format: 'av1', width: 1920, file: 'hero-loop-1920-d8d237b3.av1.mp4', bytes: 803748 },
+      { format: 'vp9', width: 1920, file: 'hero-loop-1920-ef40dbe8.webm', bytes: 2002938 },
+      { format: 'h264', width: 1920, file: 'hero-loop-1920-2f45ca55.mp4', bytes: 2322420 },
     ],
-    durationSeconds: 8,
+    durationSeconds: 10,
+  },
+  heroReverse: {
+    sources: [
+      { format: 'av1', width: 1280, file: 'hero-loop-reverse-1280-2181cb93.av1.mp4', bytes: 823010 },
+      { format: 'vp9', width: 1280, file: 'hero-loop-reverse-1280-0756c841.webm', bytes: 1184117 },
+      { format: 'h264', width: 1280, file: 'hero-loop-reverse-1280-1f043d80.mp4', bytes: 1329887 },
+      { format: 'av1', width: 1920, file: 'hero-loop-reverse-1920-a162b20f.av1.mp4', bytes: 1356149 },
+      { format: 'vp9', width: 1920, file: 'hero-loop-reverse-1920-4a2b41e0.webm', bytes: 1858355 },
+      { format: 'h264', width: 1920, file: 'hero-loop-reverse-1920-98043d40.mp4', bytes: 2057397 },
+    ],
+    durationSeconds: 10,
   },
   editorial: {
     sources: [

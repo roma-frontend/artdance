@@ -281,10 +281,17 @@ function buildMotionBlock(): string {
     ['card-tilt-rotate', `${motion.cardTilt.maxRotateDeg}deg`],
     ['card-tilt-lift', `${motion.cardTilt.liftPx}px`],
     ['card-tilt-scale', String(motion.cardTilt.scale)],
-    /** Геометрия и вид шлейфа фоновой петли — числа из прототипа. */
-    ['hero-wrap-width', `${motion.heroGhostTrail.wrapWidthPercent}%`],
-    ['hero-ghost-opacity', String(motion.heroGhostTrail.opacity)],
-    ['hero-ghost-filter', motion.heroGhostTrail.filter],
+    /**
+     * Полоса разгона первого экрана в высотах окна: геометрия задаётся в CSS,
+     * а число живёт в `motion.heroParallax` вместе с остальным раскрытием.
+     */
+    ['hero-reveal-runway', String(motion.heroParallax.revealRunwayViewports)],
+    /**
+     * Плотность вуали под текстом в начале раскрытия. Живёт в CSS, потому что
+     * это значение обязано быть в первом кадре разметки: вуаль густеет из
+     * браузера, а до гидратации она должна уже стоять на своём месте.
+     */
+    ['hero-scrim-start', String(motion.heroParallax.overlayOpacityAtStart)],
   ];
   return block(':root', entries);
 }

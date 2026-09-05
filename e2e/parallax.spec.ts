@@ -1,14 +1,16 @@
 /**
- * Параллакс первого экрана и секции-заявления.
+ * Слои первого экрана и параллакс секции-заявления.
  *
- * Проверяется не «эффект красивый», а три проверяемых свойства:
- *   • слои двигаются с РАЗНОЙ скоростью — иначе это не параллакс, а прокрутка;
- *   • у hero содержимое уходит быстрее фона и гаснет, затемнение растворяется;
- *     у editorial скорость убывает от кадра к заголовку;
+ * Проверяется не «эффект красивый», а проверяемые свойства:
+ *   • текст первого экрана НЕ двигается и НЕ гаснет — он виден до конца раскрытия;
+ *   • вуаль под ним, наоборот, густеет: к развязке за текстом открытая сцена, и
+ *     растворяющаяся вуаль означала бы ivory-заголовок на светлом фоне;
+ *   • у editorial слои двигаются с РАЗНОЙ скоростью, убывающей от кадра к
+ *     заголовку — иначе это не параллакс, а прокрутка;
  *   • при просьбе убрать движение не двигается ничего.
  *
- * Значения коэффициентов не дублируются: тест берёт их из `motion.heroParallax`
- * и `motion.sectionParallax`, то есть из того же места, что и компоненты.
+ * Значения не дублируются: тест берёт их из `motion.heroParallax` и
+ * `motion.sectionParallax`, то есть из того же места, что и компоненты.
  */
 
 import { expect, test, type Page } from '@playwright/test';
@@ -21,9 +23,8 @@ const HOME = '/en';
 /**
  * Сдвиг по вертикали, объявленный компонентом.
  *
- * Читается инлайновый стиль, а не матрица `transform`: у фона первого экрана
- * есть ещё и `scale`, и в итоговой матрице сдвиг оказывается умноженным на
- * масштаб (90px при масштабе 1.13 читаются как 101.7). Для проверки
+ * Читается инлайновый стиль, а не матрица `transform`: у слоёв есть ещё и `scale`,
+ * и в итоговой матрице сдвиг оказывается умноженным на масштаб. Для проверки
  * коэффициентов нужно именно то значение, которое написал компонент.
  */
 async function declaredTranslateY(page: Page, selector: string): Promise<number> {
@@ -42,50 +43,90 @@ async function opacityOf(page: Page, selector: string): Promise<number> {
   }, selector);
 }
 
-test.describe('параллакс первого экрана', () => {
-  test('фон и содержимое уходят с разной скоростью, затемнение гаснет', async ({ page }) => {
+/** Прокрутить на заданную долю полосы разгона первого экрана. */
+async function scrollToProgress(page: Page, progress: number): Promise<void> {
+  await page.evaluate((value) => {
+    const stage = document.querySelector<HTMLElement>('[data-hero-stage]');
+    if (!stage) throw new Error('обёртка первого экрана не найдена');
+    const runway = stage.getBoundingClientRect().height - window.innerHeight;
+    window.scrollTo({ top: stage.offsetTop + runway * value, behavior: 'instant' });
+  }, progress);
+}
+
+test.describe('слои первого экрана', () => {
+  /*
+   * Селекторы уточнены обёрткой первого экрана: те же имена ролей носит и
+   * секция-заявление ниже, и без уточнения `[data-parallax="overlay"]` находит
+   * два элемента сразу.
+   */
+  const stage = '[data-hero-stage] ';
+
+  /** Прокрутить на заданную долю полосы разгона. */
+  async function scrollToReveal(page: Page, reveal: number): Promise<void> {
+    await scrollToProgress(page, reveal);
+  }
+
+  test('текст первого экрана не двигается и не гаснет до конца раскрытия', async ({ page }) => {
     await page.goto(HOME);
 
-    const background = '[data-parallax="background"]';
-    const content = '[data-parallax="content"]';
-    const overlay = '[data-parallax="overlay"]';
-
-    expect(await declaredTranslateY(page, content)).toBeCloseTo(0, 0);
-
-    const scrollBy = 300;
-    await page.evaluate((value) => window.scrollTo({ top: value }), scrollBy);
-    /* Один кадр на применение стилей. */
-    await expect.poll(() => declaredTranslateY(page, content)).not.toBeCloseTo(0, 0);
-
-    const backgroundShift = await declaredTranslateY(page, background);
-    const contentShift = await declaredTranslateY(page, content);
-
     /*
-     * Фон идёт ВНИЗ (положительный сдвиг) медленнее, содержимое — ВВЕРХ
-     * (отрицательный) быстрее. Именно разнонаправленность создаёт глубину.
+     * Решение заказчика от 05.09.2026: заголовок, кнопки и показатели видны до
+     * конца. Прежде текст уезжал вверх на 180 пикселей и гас к 0.13 прохода —
+     * проверка держит именно отказ от этого поведения, потому что вернуть его
+     * случайной правкой параллакса легко, а заметить трудно.
      */
-    expect(backgroundShift).toBeGreaterThan(0);
-    expect(contentShift).toBeLessThan(0);
-    expect(Math.abs(contentShift)).toBeGreaterThan(Math.abs(backgroundShift));
+    const heading = page.getByRole('heading', { level: 1 });
+    const before = await heading.boundingBox();
 
-    /* Коэффициенты — те же, что в конфигурации движения. */
-    expect(backgroundShift).toBeCloseTo(scrollBy * motion.heroParallax.backgroundFactor, 0);
-    expect(contentShift).toBeCloseTo(scrollBy * motion.heroParallax.contentFactor, 0);
+    await scrollToReveal(page, 1);
 
-    /* Содержимое и затемнение гаснут по мере ухода экрана. */
-    expect(await opacityOf(page, content)).toBeLessThan(1);
-    expect(await opacityOf(page, overlay)).toBeLessThan(1);
+    const after = await heading.boundingBox();
+    expect(before, 'заголовок первого экрана не найден').not.toBeNull();
+    expect(after).not.toBeNull();
+    /* Приколотый экран стоит: заголовок обязан остаться на том же месте. */
+    expect(Math.abs(after!.y - before!.y)).toBeLessThan(2);
+
+    await expect(heading).toBeVisible();
+    expect(await opacityOf(page, `${stage}h1`)).toBeCloseTo(1, 2);
   });
 
-  test('при просьбе убрать движение слои не двигаются', async ({ page }) => {
+  test('вуаль под текстом густеет по мере прихода света', async ({ page }) => {
+    await page.goto(HOME);
+
+    const overlay = `${stage}[data-parallax="overlay"]`;
+    const { overlayOpacityAtStart, overlayFullAtProgress } = motion.heroParallax;
+
+    /*
+     * Направление важнее самих значений. Вуаль защищает текст, который остаётся на
+     * виду; в начале за ним почти абсолютно чёрный бархат, в конце — открытая
+     * сцена. Растворяющаяся вуаль здесь означала бы ivory-заголовок на светлом
+     * фоне, то есть потерю контраста ровно в развязке.
+     */
+    await expect.poll(() => opacityOf(page, overlay)).toBeCloseTo(overlayOpacityAtStart, 2);
+
+    await scrollToReveal(page, overlayFullAtProgress / 2);
+    /*
+     * Через ожидание, а не прямым чтением: плотность пишется на кадре анимации, и
+     * сразу после прокрутки в узле ещё стоит прежнее значение.
+     */
+    await expect.poll(() => opacityOf(page, overlay)).toBeGreaterThan(overlayOpacityAtStart);
+    expect(await opacityOf(page, overlay)).toBeLessThan(1);
+
+    await scrollToReveal(page, 1);
+    await expect.poll(() => opacityOf(page, overlay)).toBeCloseTo(1, 2);
+  });
+
+  test('при просьбе убрать движение вуаль остаётся в начальной плотности', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(HOME);
 
     await page.evaluate(() => window.scrollTo({ top: 300 }));
     await page.waitForTimeout(300);
 
-    expect(await declaredTranslateY(page, '[data-parallax="content"]')).toBeCloseTo(0, 0);
-    expect(await opacityOf(page, '[data-parallax="content"]')).toBeCloseTo(1, 1);
+    expect(await opacityOf(page, `${stage}[data-parallax="overlay"]`)).toBeCloseTo(
+      motion.heroParallax.overlayOpacityAtStart,
+      2,
+    );
   });
 });
 
