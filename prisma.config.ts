@@ -6,32 +6,34 @@
  */
 
 import { config as loadEnv } from 'dotenv';
-import { defineConfig, env } from 'prisma/config';
+import { defineConfig } from 'prisma/config';
 
 // Prisma 7 больше не читает .env автоматически. Порядок важен:
 // .env.local перекрывает .env, как в Next.js.
 loadEnv({ path: ['.env.local', '.env'], quiet: true });
 
 /**
- * Миграции и introspection идут по прямому подключению: pooler не поддерживает
- * advisory locks, которые нужны Migrate.
+ * Подключение нужно только командам миграций и introspection. `prisma generate`
+ * обходится без него — но объявленный блок `datasource` разрешается ЖАДНО, при
+ * загрузке этого файла, и делает переменную обязательной для ЛЮБОЙ команды
+ * призмы. Генерация клиента входит в `npm run build` (клиент не хранится в
+ * репозитории), а на хостинге переменных базы при сборке может не быть вовсе —
+ * тогда деплой падал бы на `PrismaConfigEnvError`, ничего не пытаясь подключить.
  *
- * Прямое подключение — предпочтение, а не требование. `env()` разрешается жадно,
- * при загрузке этого файла, поэтому отсутствие DIRECT_DATABASE_URL валит даже
- * `prisma generate`, которому база вообще не нужна — а генерация теперь часть
- * сборки. Обязательна только DATABASE_URL (см. `src/config/env.ts`), значит
- * деплой с одной переменной должен собираться.
+ * Поэтому блок появляется только тогда, когда URL действительно есть.
+ *
+ * Предпочтение — прямое подключение: pooler не поддерживает advisory locks,
+ * которые нужны Migrate. Запасной вариант через `DATABASE_URL` рабочий ровно
+ * настолько, насколько это подключение не через pooler.
  */
-const migrationUrlVariable = process.env.DIRECT_DATABASE_URL?.trim()
-  ? 'DIRECT_DATABASE_URL'
-  : 'DATABASE_URL';
+const migrationUrl = [process.env.DIRECT_DATABASE_URL, process.env.DATABASE_URL]
+  .map((value) => value?.trim())
+  .find((value) => Boolean(value));
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
 
-  datasource: {
-    url: env(migrationUrlVariable),
-  },
+  ...(migrationUrl ? { datasource: { url: migrationUrl } } : {}),
 
   migrations: {
     path: 'prisma/migrations',

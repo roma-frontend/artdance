@@ -44,13 +44,25 @@ npm run dev                   # http://localhost:3000/hy
 Хостинг запускает только `install` и `build`, поэтому `npm run build` сам вызывает
 `prisma generate`: сгенерированный клиент (`src/generated/`) не хранится в
 репозитории, Prisma 7 не создаёт его на `postinstall`, а кеш сборки на Vercel
-сохраняет `node_modules`, но не исходники.
+сохраняет `node_modules`, но не исходники. Генерация не требует базы: блок
+`datasource` в `prisma.config.ts` объявляется только при наличии URL, иначе
+`generate` падал бы на разрешении переменной, ничего не пытаясь подключить.
 
-Минимум переменных, без которых сборка падает (схема окружения проверяется на
-старте): `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_APP_ENV`, `NEXT_PUBLIC_DEFAULT_LOCALE`,
-`DATABASE_URL`, `AUTH_SECRET` (≥32 символов). `DIRECT_DATABASE_URL` нужна для
-миграций — при её отсутствии Prisma работает по `DATABASE_URL`, но применять
-миграции через pooler нельзя.
+`.env.local` в репозиторий не попадает — переменные задаются в панели хостинга
+отдельно для Production и Preview. Без этих сборка падает:
+
+| | |
+|---|---|
+| `NEXT_PUBLIC_APP_URL` | абсолютный адрес деплоя |
+| `NEXT_PUBLIC_APP_ENV` | `production` / `preview` |
+| `NEXT_PUBLIC_DEFAULT_LOCALE` | `hy` |
+| `DATABASE_URL` | пререндер страниц оформления читает серверное окружение |
+| `AUTH_SECRET` | ≥32 символов |
+
+`NEXT_PUBLIC_*` подставляются на этапе сборки, а не рантайма: добавление
+переменной требует нового деплоя, не перезапуска. `DIRECT_DATABASE_URL` нужна
+миграциям — при её отсутствии Prisma берёт `DATABASE_URL`, но применять миграции
+через pooler нельзя: Migrate требует advisory locks.
 
 ## Команды
 
