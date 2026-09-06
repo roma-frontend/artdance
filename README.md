@@ -39,12 +39,25 @@ npm run dev                   # http://localhost:3000/hy
 старте (`src/config/env.ts`). Это сделано намеренно — лучше упасть при деплое, чем
 на платеже клиента.
 
+## Деплой
+
+Хостинг запускает только `install` и `build`, поэтому `npm run build` сам вызывает
+`prisma generate`: сгенерированный клиент (`src/generated/`) не хранится в
+репозитории, Prisma 7 не создаёт его на `postinstall`, а кеш сборки на Vercel
+сохраняет `node_modules`, но не исходники.
+
+Минимум переменных, без которых сборка падает (схема окружения проверяется на
+старте): `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_APP_ENV`, `NEXT_PUBLIC_DEFAULT_LOCALE`,
+`DATABASE_URL`, `AUTH_SECRET` (≥32 символов). `DIRECT_DATABASE_URL` нужна для
+миграций — при её отсутствии Prisma работает по `DATABASE_URL`, но применять
+миграции через pooler нельзя.
+
 ## Команды
 
 | | |
 |---|---|
 | `npm run dev` | dev-сервер |
-| `npm run build` | production-сборка (включает проверку типов) |
+| `npm run build` | production-сборка: `prisma generate` + `next build`, включает проверку типов |
 | `npm run verify` | **полная проверка перед коммитом**: токены, переводы, медиа, типы, линтер, тесты |
 | `npm run verify:quick` | только типы и линтер |
 | `npm run verify:headers` | поднимает сборку и сверяет фактические CSP, security-заголовки, кеш и CSRF |

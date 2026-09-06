@@ -12,13 +12,25 @@ import { defineConfig, env } from 'prisma/config';
 // .env.local перекрывает .env, как в Next.js.
 loadEnv({ path: ['.env.local', '.env'], quiet: true });
 
+/**
+ * Миграции и introspection идут по прямому подключению: pooler не поддерживает
+ * advisory locks, которые нужны Migrate.
+ *
+ * Прямое подключение — предпочтение, а не требование. `env()` разрешается жадно,
+ * при загрузке этого файла, поэтому отсутствие DIRECT_DATABASE_URL валит даже
+ * `prisma generate`, которому база вообще не нужна — а генерация теперь часть
+ * сборки. Обязательна только DATABASE_URL (см. `src/config/env.ts`), значит
+ * деплой с одной переменной должен собираться.
+ */
+const migrationUrlVariable = process.env.DIRECT_DATABASE_URL?.trim()
+  ? 'DIRECT_DATABASE_URL'
+  : 'DATABASE_URL';
+
 export default defineConfig({
   schema: 'prisma/schema.prisma',
 
   datasource: {
-    // Миграции и introspection идут по прямому подключению: pooler не
-    // поддерживает advisory locks, которые нужны Migrate.
-    url: env('DIRECT_DATABASE_URL'),
+    url: env(migrationUrlVariable),
   },
 
   migrations: {

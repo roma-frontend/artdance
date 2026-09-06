@@ -9,7 +9,8 @@
   "packageManager": "npm@11.13.0",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "//build": "Prisma 7 не генерирует клиент на postinstall, а src/generated/ не в репозитории. Хостинг запускает только install+build, и кеш node_modules на Vercel сохраняется, а src/generated — нет: генерация обязана быть частью сборки, а не отдельным шагом CI.",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
