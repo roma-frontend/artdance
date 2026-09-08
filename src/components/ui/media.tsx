@@ -26,13 +26,29 @@
  */
 
 import NextImage from 'next/image';
+import { CalendarDays, GraduationCap, Music4, ShoppingBag, User, Warehouse } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
-import { blurDataUrl, imagePresets, mediaFallbacks, type ImagePresetKey } from '@/config/media';
+import { blurDataUrl, imagePresets, type ImagePresetKey, type MediaFallbackKind } from '@/config/media';
 import { seedMedia } from '@/design/seed-media';
 import { cn } from '@/lib/utils';
 
-type FallbackKind = keyof typeof mediaFallbacks;
+/**
+ * Иконка заглушки по роли.
+ *
+ * Карта полная и проверяется типом: новая роль в `mediaFallbackKinds` без иконки
+ * не соберётся. Иконки, а не файлы, — см. комментарий у `mediaFallbackKinds`:
+ * заглушка обязана переключать тему вместе со страницей и не может быть SVG,
+ * проходящим через оптимизатор изображений.
+ */
+const fallbackIcons = {
+  avatar: User,
+  instructor: GraduationCap,
+  studio: Warehouse,
+  product: ShoppingBag,
+  classCard: Music4,
+  event: CalendarDays,
+} satisfies Record<MediaFallbackKind, typeof User>;
 
 export interface MediaProps {
   /**
@@ -58,7 +74,7 @@ export interface MediaProps {
    */
   priority?: boolean;
   /** Фоллбэк по роли, если фото нет. Без него пустой `src` вернёт `null`. */
-  fallback?: FallbackKind;
+  fallback?: MediaFallbackKind;
   /** Классы контейнера. Само изображение всегда `object-cover`. */
   className?: string;
   /** Классы изображения — для эффектов вроде `scale` на hover родителя. */
@@ -67,6 +83,17 @@ export interface MediaProps {
   fill?: boolean;
   /** Точка фокуса кадра, если центр обрезает главное. */
   objectPosition?: CSSProperties['objectPosition'];
+  /**
+   * Размеры и плейсхолдер из данных.
+   *
+   * Приходят из `MediaAsset` вместе со ссылкой. Приоритет у них выше манифеста
+   * сид-ассетов: манифест знает только файлы, лежащие в репозитории, а
+   * загруженное заказчиком изображение существует лишь в базе и в бакете.
+   * Без этих полей у такого кадра не резервируется место в разметке.
+   */
+  width?: number;
+  height?: number;
+  blurDataUrl?: string;
 }
 
 interface ResolvedSource {
@@ -76,13 +103,30 @@ interface ResolvedSource {
   blur: string;
 }
 
-/** Разрешение источника: сид-ассет → путь, размеры и собственный плейсхолдер. */
-function resolve(src: string): ResolvedSource {
+/**
+ * Разрешение источника.
+ *
+ * Порядок важен: размеры из данных сильнее манифеста. Манифест — про файлы
+ * репозитория (баннеры разделов, зашитые в код), данные — про всё остальное.
+ */
+function resolve(
+  src: string,
+  fromData: { width?: number; height?: number; blurDataUrl?: string },
+): ResolvedSource {
+  if (fromData.width !== undefined && fromData.height !== undefined) {
+    return {
+      url: src,
+      width: fromData.width,
+      height: fromData.height,
+      blur: fromData.blurDataUrl ?? blurDataUrl,
+    };
+  }
+
   const seed = seedMedia(src);
   if (seed) {
     return { url: seed.src, width: seed.width, height: seed.height, blur: seed.blurDataUrl };
   }
-  return { url: src, blur: blurDataUrl };
+  return { url: src, blur: fromData.blurDataUrl ?? blurDataUrl };
 }
 
 export function Media({
@@ -95,14 +139,49 @@ export function Media({
   imageClassName,
   fill = false,
   objectPosition,
+  width,
+  height,
+  blurDataUrl: blurFromData,
 }: MediaProps) {
-  const effectiveSrc = src && src.length > 0 ? src : fallback ? mediaFallbacks[fallback] : null;
-
-  /** Нет ни фото, ни фоллбэка — не рисуем пустой блок и не ломаем сетку. */
-  if (!effectiveSrc) return null;
-
   const spec = imagePresets[preset];
-  const resolved = resolve(effectiveSrc);
+
+  /**
+   * Фотографии нет — рисуем заглушку роли.
+   *
+   * Место занимается тем же соотношением сторон, что и у настоящего кадра: иначе
+   * карточка без фото ниже остальных и сетка рвётся. Иконка декоративна
+   * (`aria-hidden`), а описание, если оно есть, отдаётся через `role="img"` с
+   * `aria-label` — иначе на месте фотографии для скринридера нет ничего.
+   */
+  if (!src || src.length === 0) {
+    if (!fallback) return null;
+
+    const Icon = fallbackIcons[fallback];
+
+    return (
+      <div
+        className={cn(
+          'relative flex items-center justify-center overflow-hidden bg-surface-sunken',
+          className,
+        )}
+        style={fill ? undefined : { aspectRatio: spec.aspectRatio }}
+        {...(alt.length > 0 ? { role: 'img', 'aria-label': alt } : {})}
+      >
+        <Icon
+          /*
+           * Размер от контейнера, а не фиксированный: одна и та же заглушка
+           * стоит и в аватаре 44px, и в обложке карточки 400px. Ограничение
+           * сверху нужно, чтобы на большой обложке иконка не превратилась в
+           * рисунок — заглушка обязана читаться как «фото нет», а не как контент.
+           */
+          className="size-1/3 max-h-12 max-w-12 text-content-tertiary"
+          aria-hidden="true"
+        />
+      </div>
+    );
+  }
+
+  const resolved = resolve(src, { width, height, blurDataUrl: blurFromData });
   const isPriority = priority ?? spec.priority;
 
   /**

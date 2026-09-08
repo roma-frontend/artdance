@@ -39,7 +39,7 @@ export default async function Image({ params }: ImageProps) {
   const { locale, style: slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const hub = getStyleHub(slug);
+  const hub = await getStyleHub(slug);
   if (!hub) notFound();
 
   const t = await getTranslations({ locale: locale as Locale });

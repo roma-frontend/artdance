@@ -23,8 +23,8 @@ export const size = ogImageSize;
 export const contentType = ogImageContentType;
 
 /** Те же слаги, что у страницы зала: иначе карточка рисуется по запросу. */
-export function generateStaticParams(): Array<{ slug: string }> {
-  return getCatalogSlugs().venues.map((slug) => ({ slug }));
+export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
+  return (await getCatalogSlugs()).venues.map((slug) => ({ slug }));
 }
 
 interface ImageProps {
@@ -35,7 +35,7 @@ export default async function Image({ params }: ImageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const item = getVenueDetail(slug);
+  const item = await getVenueDetail(slug);
   if (!item) notFound();
 
   const t = await getTranslations({ locale: locale as Locale });

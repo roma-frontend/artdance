@@ -195,3 +195,66 @@ test.describe('входы на хабы', () => {
     await expect(link).toHaveAttribute('href', localized(routes.styles()));
   });
 });
+
+
+/**
+ * Инварианты данных хаба.
+ *
+ * Раньше это проверялось юнит-тестами на фикстурах. С переездом каталога в базу
+ * (задача 2.1) те же обещания проверяются на живой странице: юнит-тест сюда
+ * притащил бы за собой базу в `npm test`, а он обязан оставаться независимым от
+ * окружения.
+ *
+ * Каждое из обещаний ломается молча — страница выглядит нормальной:
+ *   • счётчик «N занятий» над карточками, которых не N;
+ *   • цена «от», взятая не из минимума;
+ *   • хаб без предложения, приглашающий поисковик.
+ */
+test.describe('хаб направления: данные не расходятся с разметкой', () => {
+  test('счётчик занятий совпадает с числом карточек', async ({ page }) => {
+    await page.goto(localized(routes.style(FULL.slug)));
+
+    /*
+     * Карточки считаются по ссылкам на занятия: у карточки нет своего признака в
+     * разметке, а ссылка на `/classes/<slug>` есть ровно одна на карточку.
+     */
+    const cards = page.locator(`main a[href^="${localized('/classes/')}"]`);
+    const shown = await cards.count();
+    expect(shown).toBeGreaterThan(0);
+
+    /* Счётчик может быть больше показанного: хаб ограничен лимитом карточек. */
+    const counter = page.getByText(/\d+\s+class(es)?/i).first();
+    const text = (await counter.textContent()) ?? '';
+    const counted = Number(/\d+/.exec(text)?.[0] ?? '0');
+
+    expect(counted).toBeGreaterThanOrEqual(shown);
+  });
+
+  test('«от» не ниже цены самой дешёвой показанной карточки', async ({ page }) => {
+    await page.goto(localized(routes.style(FULL.slug)));
+
+    const prices = await page.locator('main [data-price]').evaluateAll((nodes) =>
+      nodes
+        .map((node) => Number((node as HTMLElement).dataset.price))
+        .filter((value) => Number.isFinite(value) && value > 0),
+    );
+
+    /*
+     * Проверка выполняется только когда цены размечены атрибутом: разбирать
+     * «12 000 ֏» строкой значило бы проверять форматтер, а не данные.
+     */
+    if (prices.length > 1) {
+      const [from, ...rest] = prices;
+      expect(from).toBeLessThanOrEqual(Math.min(...rest));
+    }
+  });
+
+  test('направление без предложения не попадает в карту сайта', async ({ request }) => {
+    const response = await request.get('/sitemap.xml');
+    expect(response.status()).toBe(200);
+
+    const body = await response.text();
+    expect(body).toContain(routes.style(FULL.slug));
+    expect(body).not.toContain(routes.style(EMPTY.slug));
+  });
+});

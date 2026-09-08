@@ -33,6 +33,19 @@ export interface MediaRef {
   alt: LocalizedText;
   /** Точка фокуса кадра, если центр обрезает главное (`'50% 25%'`). */
   focalPoint?: string;
+  /**
+   * Размеры кадра и плейсхолдер — из `MediaAsset`.
+   *
+   * Необязательные, потому что у ключа, зашитого в код (баннер раздела), их
+   * взять негде: там их находит манифест сид-ассетов. Но когда ссылка пришла из
+   * базы, они обязаны доехать до компонента: без них `Media` не резервирует
+   * место (сдвиг вёрстки) и показывает общий серый плейсхолдер вместо размытого
+   * кадра. Именно для этого в схеме есть `width`, `height` и `blurDataUrl` —
+   * чтобы разметка не зависела от файлового манифеста.
+   */
+  width?: number;
+  height?: number;
+  blurDataUrl?: string;
 }
 
 export type VideoFormat = 'av1' | 'vp9' | 'h264';
@@ -54,11 +67,21 @@ export interface VideoRef {
 export function resolveMedia(
   ref: MediaRef,
   locale: Locale,
-): { src: string; alt: string; objectPosition?: string } {
+): {
+  src: string;
+  alt: string;
+  objectPosition?: string;
+  width?: number;
+  height?: number;
+  blurDataUrl?: string;
+} {
   return {
     src: ref.key,
     alt: ref.alt[locale],
     ...(ref.focalPoint ? { objectPosition: ref.focalPoint } : {}),
+    ...(ref.width !== undefined ? { width: ref.width } : {}),
+    ...(ref.height !== undefined ? { height: ref.height } : {}),
+    ...(ref.blurDataUrl ? { blurDataUrl: ref.blurDataUrl } : {}),
   };
 }
 
@@ -237,8 +260,17 @@ export interface EventCardItem {
   title: string;
   /** Значение `EventType`: подпись берётся из i18n. */
   type: string;
-  /** Дата начала. В фикстурах год подставляется от текущего. */
-  startsAt: Date;
+  /**
+   * Начало события — ISO-строка, а не `Date`.
+   *
+   * Так выглядит значение после кеша: слой запросов кладёт результат в кеш
+   * данных, а тот сериализует, и `Date` возвращается строкой. Тип, обещающий
+   * `Date`, означал бы `item.startsAt.toISOString is not a function` на первой
+   * же собранной странице — так и случилось при переносе на базу.
+   *
+   * Разбор — в компоненте, одной строкой: `new Date(item.startsAt)`.
+   */
+  startsAt: string;
   /** `HH:mm`—`HH:mm` как в макете: событие идёт часы, а не минуты. */
   startTime: string;
   endTime: string;

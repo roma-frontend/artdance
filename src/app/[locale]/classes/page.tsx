@@ -51,8 +51,7 @@ export default async function ClassesPage({ params, searchParams }: PageProps) {
   setRequestLocale(locale as Locale);
 
   const query = parseCatalogQuery(await searchParams);
-  const result = getClassList(query);
-  const facets = getClassFacets();
+  const [result, facets] = await Promise.all([getClassList(query), getClassFacets()]);
 
   const t = await getTranslations('catalog');
   const tNav = await getTranslations('nav');

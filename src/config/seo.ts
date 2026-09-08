@@ -7,7 +7,6 @@
 
 import { site } from './site';
 import { locales } from '@/i18n/config';
-import { mediaFallbacks } from './media';
 
 export const seo = {
   titleTemplate: '%s — {brand}',
@@ -22,7 +21,15 @@ export const seo = {
   openGraph: {
     type: 'website',
     siteName: site.name,
-    defaultImage: mediaFallbacks.openGraph,
+    /*
+     * Общей картинки-заглушки здесь нет.
+     *
+     * Была ссылка на `/media/og/default.jpg` — файл, которого в `public` нет:
+     * разметка обещала поисковику картинку, отвечающую 404. Своё превью собирает
+     * каждый раздел (`opengraph-image.tsx`), а `openGraph.images` в метаданных
+     * ОТМЕНЯЕТ файловое соглашение (см. `lib/seo/metadata.ts`), поэтому
+     * значение по умолчанию не просто лишнее — оно вредное.
+     */
     imageWidth: 1200,
     imageHeight: 630,
     /**

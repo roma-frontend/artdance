@@ -18,8 +18,8 @@ import type { MetadataRoute } from 'next';
 import { buildSitemap } from '@/lib/seo/sitemap';
 import { getCatalogSlugs, getStyleHubSlugs } from '@/server/content/catalog';
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const slugs = getCatalogSlugs();
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const slugs = await getCatalogSlugs();
 
   return buildSitemap({
     classes: slugs.classes,
@@ -31,6 +31,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
      * собирает все восемнадцать страниц, а в карту сайта попадают только те, у
      * которых есть занятия или преподаватели.
      */
-    styles: getStyleHubSlugs(),
+    styles: await getStyleHubSlugs(),
   });
 }

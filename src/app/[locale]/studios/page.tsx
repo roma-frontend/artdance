@@ -50,8 +50,8 @@ export default async function StudiosPage({ params, searchParams }: PageProps) {
   setRequestLocale(locale as Locale);
 
   const query = parseCatalogQuery(await searchParams);
-  const result = getVenueList(query);
-  const facets = getVenueFacets();
+  const result = await getVenueList(query);
+  const facets = await getVenueFacets();
 
   const t = await getTranslations('catalog');
   const tNav = await getTranslations('nav');
@@ -76,7 +76,7 @@ export default async function StudiosPage({ params, searchParams }: PageProps) {
         query={query}
         result={result}
         /* Направления берутся из занятий: у зала своего списка направлений нет. */
-        facets={{ districts: facets.districts, styles: getClassFacets().styles }}
+        facets={{ districts: facets.districts, styles: (await getClassFacets()).styles }}
         sorts={venueSortOptions}
         section="studios"
       >

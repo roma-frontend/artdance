@@ -63,13 +63,13 @@ interface PageProps {
  * меняется реже, чем его читают. Доступность слотов здесь не показывается —
  * за ней человек идёт на экран бронирования.
  */
-export function generateStaticParams() {
-  return getCatalogSlugs().instructors.map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  return (await getCatalogSlugs()).instructors.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
-  const item = getInstructorDetail(slug);
+  const item = await getInstructorDetail(slug);
   if (!item) return {};
 
   return buildMetadata({
@@ -86,7 +86,7 @@ export default async function InstructorProfilePage({ params }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const item = getInstructorDetail(slug);
+  const item = await getInstructorDetail(slug);
   if (!item) notFound();
 
   const t = await getTranslations('instructor');

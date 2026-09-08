@@ -48,7 +48,7 @@ export default async function EventsPage({ params, searchParams }: PageProps) {
   setRequestLocale(locale as Locale);
 
   const query = parseCatalogQuery(await searchParams);
-  const result = getEventList(query);
+  const result = await getEventList(query);
 
   const t = await getTranslations('catalog');
   const tNav = await getTranslations('nav');
@@ -67,7 +67,7 @@ export default async function EventsPage({ params, searchParams }: PageProps) {
       <CatalogShell
         query={query}
         result={result}
-        facets={{ districts: getVenueFacets().districts }}
+        facets={{ districts: (await getVenueFacets()).districts }}
         sorts={eventSortOptions}
         section="events"
       >

@@ -29,8 +29,8 @@ export const size = ogImageSize;
 export const contentType = ogImageContentType;
 
 /** Те же слаги, что у страницы профиля: иначе карточка рисуется по запросу. */
-export function generateStaticParams() {
-  return getCatalogSlugs().instructors.map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  return (await getCatalogSlugs()).instructors.map((slug) => ({ slug }));
 }
 
 interface ImageProps {
@@ -41,7 +41,7 @@ export default async function Image({ params }: ImageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const item = getInstructorDetail(slug);
+  const item = await getInstructorDetail(slug);
   if (!item) notFound();
 
   const t = await getTranslations({ locale: locale as Locale });

@@ -27,6 +27,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 
 import { ClassCard } from '@/components/catalog/class-card';
 import { CardTilt } from '@/components/fx/card-tilt';
+import { AlternativeSlots } from '@/components/booking/alternative-slots';
 import { PageHero, breadcrumbsFromTrail } from '@/components/layout/page-hero';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { StickyActionBar } from '@/components/layout/sticky-action-bar';
@@ -61,13 +62,27 @@ interface PageProps {
  * показывается — за ней человек идёт на экран бронирования, который не
  * кешируется (`dataRevalidate.availability = 0`).
  */
-export function generateStaticParams() {
-  return getCatalogSlugs().classes.map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  return (await getCatalogSlugs()).classes.map((slug) => ({ slug }));
 }
+
+/*
+ * `export const revalidate` здесь нет намеренно.
+ *
+ * Next разбирает настройки сегмента статически и принимает только литерал:
+ * `revalidate = dataRevalidate.entity` роняет сборку («Invalid segment
+ * configuration export»), а число по месту — это ровно тот случай, который
+ * запрещают правила проекта: срок кеша обязан жить в `src/config/cache.ts`.
+ *
+ * Обновление идёт по тегу: запрос помечен `cacheTags.class(slug)`
+ * (`server/queries/classes.ts`), и `revalidateTag` из операции, изменившей
+ * занятие, сбрасывает и данные, и собранную страницу. Это событийный путь, а не
+ * таймер, и он точнее: цена меняется тогда, когда её изменили.
+ */
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
-  const item = getClassDetail(slug);
+  const item = await getClassDetail(slug);
   if (!item) return {};
 
   const t = await getTranslations({ locale: locale as Locale, namespace: 'classDetail' });
@@ -86,7 +101,7 @@ export default async function ClassDetailPage({ params }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const item = getClassDetail(slug);
+  const item = await getClassDetail(slug);
   if (!item) notFound();
 
   const t = await getTranslations('classDetail');
@@ -302,9 +317,25 @@ export default async function ClassDetailPage({ params }: PageProps) {
                 <Link href={bookHref}>{actionLabel}</Link>
               </Button>
 
-              {/* Заполненная группа объясняет, что будет дальше, а не молчит. */}
-              {soldOut && item.waitlistOpen && (
-                <p className="text-caption mt-4 text-content-secondary">{t('waitlistNote')}</p>
+              {/*
+                Заполненная группа объясняет, что будет дальше, а не молчит:
+                сначала ближайшие свободные времена у того же инструктора (C-02),
+                потом лист ожидания. Порядок именно такой — конкретное время
+                закрывает вопрос сразу, а лист ожидания оставляет его открытым.
+
+                Времена приходят запросом из браузера, а не пропсом: страница
+                статическая, и вшитая в неё доступность замёрзла бы на сборке.
+              */}
+              {soldOut && (
+                <>
+                  <AlternativeSlots
+                    instructorSlug={item.instructorSlug}
+                    className="mt-5 border-t border-border-default pt-5"
+                  />
+                  {item.waitlistOpen && (
+                    <p className="text-caption mt-4 text-content-secondary">{t('waitlistNote')}</p>
+                  )}
+                </>
               )}
 
               <p className="text-caption mt-4 text-content-tertiary">

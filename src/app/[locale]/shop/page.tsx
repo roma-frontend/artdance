@@ -49,7 +49,7 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
   setRequestLocale(locale as Locale);
 
   const query = parseCatalogQuery(await searchParams);
-  const result = getProductList(query);
+  const result = await getProductList(query);
 
   const t = await getTranslations('catalog');
   const tNav = await getTranslations('nav');
@@ -77,7 +77,7 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
       <CatalogShell
         query={query}
         result={result}
-        facets={{ categories: getProductCategories() }}
+        facets={{ categories: await getProductCategories() }}
         sorts={productSortOptions}
         section="shop"
       >

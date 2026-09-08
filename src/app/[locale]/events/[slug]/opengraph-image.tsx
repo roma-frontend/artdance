@@ -27,8 +27,8 @@ export const size = ogImageSize;
 export const contentType = ogImageContentType;
 
 /** Те же слаги, что у страницы события: иначе карточка рисуется по запросу. */
-export function generateStaticParams() {
-  return getCatalogSlugs().events.map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  return (await getCatalogSlugs()).events.map((slug) => ({ slug }));
 }
 
 interface ImageProps {
@@ -39,7 +39,7 @@ export default async function Image({ params }: ImageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const item = getEventDetail(slug);
+  const item = await getEventDetail(slug);
   if (!item) notFound();
 
   const t = await getTranslations({ locale: locale as Locale });
@@ -50,7 +50,7 @@ export default async function Image({ params }: ImageProps) {
     eyebrow: t(eventTypeLabelKey(item.type as never)),
     title: item.title,
     meta: [
-      format.dateTime(item.startsAt, 'dayWithWeekday'),
+      format.dateTime(new Date(item.startsAt), 'dayWithWeekday'),
       item.startTime,
       item.locationName,
     ],

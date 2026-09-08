@@ -106,16 +106,34 @@ export const imagePresets = {
 
 export type ImagePresetKey = keyof typeof imagePresets;
 
-/** Fallback-графика. Отсутствие фото не должно ломать сетку. */
-export const mediaFallbacks = {
-  avatar: '/media/fallback/avatar.svg',
-  instructor: '/media/fallback/instructor.svg',
-  studio: '/media/fallback/studio.svg',
-  product: '/media/fallback/product.svg',
-  classCard: '/media/fallback/class.svg',
-  event: '/media/fallback/event.svg',
-  openGraph: '/media/og/default.jpg',
-} as const;
+/**
+ * Роли, для которых у `Media` есть заглушка.
+ *
+ * Это список ролей, а не путей к файлам, и причина конкретная: раньше здесь
+ * лежали шесть ссылок на `/media/fallback/*.svg`, которых в `public` нет —
+ * первая же сущность без фотографии получала 404 вместо заглушки. Файлы не
+ * добавлены осознанно:
+ *
+ *   • `next/image` не отдаёт SVG при `dangerouslyAllowSVG: false` (и отключать
+ *     это ради заглушки нельзя — SVG из внешних источников это вектор XSS);
+ *   • растровый файл не переключает тему: на тёмной странице светлая плитка
+ *     выглядит дырой в вёрстке;
+ *   • ни один цвет заглушки не должен быть литералом в `public`.
+ *
+ * Поэтому заглушку рисует сам компонент — подложкой из токенов и иконкой
+ * `lucide-react`. Соответствие «роль → иконка» живёт рядом с разметкой
+ * (`components/ui/media.tsx`), как и у `StatusBadge`.
+ */
+export const mediaFallbackKinds = [
+  'avatar',
+  'instructor',
+  'studio',
+  'product',
+  'classCard',
+  'event',
+] as const;
+
+export type MediaFallbackKind = (typeof mediaFallbackKinds)[number];
 
 /** Ключи бакета — путь к файлу строится только через эти функции. */
 export const mediaPaths = {

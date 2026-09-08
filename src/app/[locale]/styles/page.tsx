@@ -51,7 +51,7 @@ export default async function StylesPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 
-  const summaries = getStyleSummaries();
+  const summaries = await getStyleSummaries();
 
   /*
    * Плитками показываются только направления, у которых есть И кадр, И занятия:

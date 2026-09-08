@@ -45,13 +45,13 @@ interface PageProps {
   params: Promise<{ locale: string; slug: string }>;
 }
 
-export function generateStaticParams() {
-  return getCatalogSlugs().events.map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  return (await getCatalogSlugs()).events.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
-  const item = getEventDetail(slug);
+  const item = await getEventDetail(slug);
   if (!item) return {};
 
   return buildMetadata({
@@ -67,7 +67,7 @@ export default async function EventDetailPage({ params }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const item = getEventDetail(slug);
+  const item = await getEventDetail(slug);
   if (!item) notFound();
 
   const t = await getTranslations('events');
@@ -142,8 +142,8 @@ export default async function EventDetailPage({ params }: PageProps) {
               <ul className="grid gap-3 xs:grid-cols-2">
                 <li className="text-body flex items-center gap-3 rounded-md border border-border-default bg-surface-card px-4 py-3">
                   <CalendarDaysIcon aria-hidden className="size-4 shrink-0 text-content-accent" />
-                  <time dateTime={item.startsAt.toISOString()}>
-                    {format.dateTime(item.startsAt, 'mediumDate')}
+                  <time dateTime={item.startsAt}>
+                    {format.dateTime(new Date(item.startsAt), 'mediumDate')}
                   </time>
                 </li>
                 <li className="text-body flex items-center gap-3 rounded-md border border-border-default bg-surface-card px-4 py-3">
@@ -219,8 +219,8 @@ export default async function EventDetailPage({ params }: PageProps) {
                 <div>
                   <dt className="text-content-tertiary">{tCommon('labels.date')}</dt>
                   <dd className="mt-0.5 font-semibold text-content-primary">
-                    <time dateTime={item.startsAt.toISOString()}>
-                      {format.dateTime(item.startsAt, 'dayWithWeekday')}
+                    <time dateTime={item.startsAt}>
+                      {format.dateTime(new Date(item.startsAt), 'dayWithWeekday')}
                     </time>
                   </dd>
                 </div>

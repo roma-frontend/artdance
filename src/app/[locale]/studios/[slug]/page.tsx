@@ -54,13 +54,13 @@ interface PageProps {
   params: Promise<{ locale: string; slug: string }>;
 }
 
-export function generateStaticParams() {
-  return getCatalogSlugs().venues.map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  return (await getCatalogSlugs()).venues.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
-  const item = getVenueDetail(slug);
+  const item = await getVenueDetail(slug);
   if (!item) return {};
 
   return buildMetadata({
@@ -75,7 +75,7 @@ export default async function StudioDetailPage({ params }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const item = getVenueDetail(slug);
+  const item = await getVenueDetail(slug);
   if (!item) notFound();
 
   const t = await getTranslations('studio');

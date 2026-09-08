@@ -57,17 +57,17 @@ export function EventCard({ item, locale, className }: EventCardProps) {
 
         {/* Бейдж даты: число крупно, месяц под ним — как в макете. */}
         <time
-          dateTime={item.startsAt.toISOString()}
+          dateTime={item.startsAt}
           className={cn(
             'absolute top-3 left-3 grid place-items-center rounded-md px-3 py-2',
             'bg-accent text-content-on-accent shadow-md',
           )}
         >
           <span className="text-heading-4 leading-none">
-            {format.dateTime(item.startsAt, { day: 'numeric' })}
+            {format.dateTime(new Date(item.startsAt), { day: 'numeric' })}
           </span>
           <span className="text-2xs mt-0.5 uppercase">
-            {format.dateTime(item.startsAt, { month: 'short' })}
+            {format.dateTime(new Date(item.startsAt), { month: 'short' })}
           </span>
         </time>
       </div>

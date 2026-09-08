@@ -81,13 +81,13 @@ interface PageProps {
  * статических документов на локаль дешевле одного вызова функции на каждый
  * переход.
  */
-export function generateStaticParams() {
+export async function generateStaticParams() {
   return danceStyles.map((style) => ({ style: danceStyleSlug(style) }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, style: slug } = await params;
-  const hub = getStyleHub(slug);
+  const hub = await getStyleHub(slug);
   if (!hub) return {};
 
   const t = await getTranslations({ locale: locale as Locale });
@@ -105,7 +105,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
      * Направление без предложения из индекса исключено, но остаётся доступным по
      * адресу и по внутренним ссылкам.
      */
-    noIndex: !getStyleHubSlugs().includes(hub.slug),
+    noIndex: !(await getStyleHubSlugs()).includes(hub.slug),
   });
 }
 
@@ -113,7 +113,7 @@ export default async function StyleHubPage({ params }: PageProps) {
   const { locale, style: slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const hub = getStyleHub(slug);
+  const hub = await getStyleHub(slug);
   if (!hub) notFound();
 
   const style = hub.style as DanceStyle;

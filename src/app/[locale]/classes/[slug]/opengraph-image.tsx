@@ -35,8 +35,8 @@ export const contentType = ogImageContentType;
  * адресов её собирать, и рисует по запросу — то есть при каждой отправке ссылки в
  * мессенджер. Со списком карточки лежат в CDN готовыми.
  */
-export function generateStaticParams() {
-  return getCatalogSlugs().classes.map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  return (await getCatalogSlugs()).classes.map((slug) => ({ slug }));
 }
 
 interface ImageProps {
@@ -47,7 +47,7 @@ export default async function Image({ params }: ImageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const item = getClassDetail(slug);
+  const item = await getClassDetail(slug);
   if (!item) notFound();
 
   const t = await getTranslations({ locale: locale as Locale });

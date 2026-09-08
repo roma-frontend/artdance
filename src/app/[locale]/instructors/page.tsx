@@ -49,8 +49,8 @@ export default async function InstructorsPage({ params, searchParams }: PageProp
   setRequestLocale(locale as Locale);
 
   const query = parseCatalogQuery(await searchParams);
-  const result = getInstructorList(query);
-  const facets = getInstructorFacets();
+  const result = await getInstructorList(query);
+  const facets = await getInstructorFacets();
 
   const t = await getTranslations('catalog');
   const tNav = await getTranslations('nav');

@@ -277,9 +277,9 @@ async function ExploreSections({ locale }: { locale: Locale }) {
   const home = getHomeContent();
   const defaults = { sort: 'relevance', page: 1, pageSize: 8 } as const;
 
-  const classes = getClassList({ ...defaults });
-  const instructors = getInstructorList({ ...defaults, pageSize: 4 });
-  const venues = getVenueList({ ...defaults, pageSize: 3 });
+  const classes = await getClassList({ ...defaults });
+  const instructors = await getInstructorList({ ...defaults, pageSize: 4 });
+  const venues = await getVenueList({ ...defaults, pageSize: 3 });
 
   return (
     <>

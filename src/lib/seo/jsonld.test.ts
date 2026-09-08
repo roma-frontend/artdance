@@ -40,7 +40,7 @@ const event: EventDetail = {
   title: demoEvent.title,
   description: demoEvent.description,
   type: demoEvent.type,
-  startsAt: new Date('2026-09-15T00:00:00.000Z'),
+  startsAt: new Date('2026-09-15T00:00:00.000Z').toISOString(),
   startTime: demoEvent.startTime,
   endTime: demoEvent.endTime,
   locationName: demoVenue.name,

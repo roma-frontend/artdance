@@ -123,7 +123,7 @@ export {
   imagePresets,
   imageQuality,
   imageWidths,
-  mediaFallbacks,
+  mediaFallbackKinds,
   mediaPaths,
   mediaUrl,
   mediaBaseUrl,
@@ -132,3 +132,4 @@ export {
   type ImagePresetKey,
 } from './media';
 export { seo, type SeoConfig } from './seo';
+export { ranking, type RankingSignalName, type RankingWeights } from './ranking';
