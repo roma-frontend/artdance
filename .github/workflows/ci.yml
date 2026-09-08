@@ -114,6 +114,25 @@ jobs:
     # 1200×630, каждая с пережатием кадра через sharp. Это минуты, а не секунды.
     timeout-minutes: 30
     needs: [consistency]
+    # База нужна самой сборке: каталог читается из Prisma (задача 2.1), а
+    # `generateStaticParams` берёт слаги оттуда же. До этого `DATABASE_URL` был
+    # заглушкой, и сборка проходила без базы вовсе — теперь такой прогон падает
+    # на первой же статической странице занятия.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: artdance
+        ports:
+          - 5432:5432
+        # Без health-check сборка стартует раньше, чем база примет соединение.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -122,6 +141,10 @@ jobs:
           cache: npm
       - run: npm ci --prefer-offline --no-audit
       - run: npx prisma generate
+      # Схема и данные: без сида каталог пуст, и сборка соберёт нулевые страницы,
+      # а бюджет веса и заголовки будут проверены не на том, что увидит человек.
+      - run: npx prisma migrate deploy
+      - run: npm run db:seed
       - run: npm run build
       # Бюджет по gzip: JS отдельно для начальной загрузки и ленивых чанков,
       # плюс вес изображений и шрифтов из public/.
@@ -155,6 +178,23 @@ jobs:
     # найдено, что аудит доступности запускался на трёх ширинах вместо одной.
     timeout-minutes: 45
     needs: [consistency]
+    # Та же база, что и у сборки: экраны каталога читают Prisma, а проверки
+    # входа — таблицы сессий и попыток. Без сида страницы пусты, и падают не
+    # проверки поведения, а отсутствие данных.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: artdance
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -163,6 +203,8 @@ jobs:
           cache: npm
       - run: npm ci --prefer-offline --no-audit
       - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run db:seed
       # Только chromium: все три профиля в playwright.config.ts на нём и работают.
       - run: npx playwright install --with-deps chromium
       # Проверки идут против production-сборки: у dev-сервера другой CSS-конвейер.
