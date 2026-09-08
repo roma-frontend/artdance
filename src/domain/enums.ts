@@ -23,6 +23,18 @@ import { keyIncludes, searchKey } from '@/lib/search/normalize';
 export const userRoles = ['CUSTOMER', 'INSTRUCTOR', 'VENUE_OWNER', 'ADMIN', 'SUPPORT'] as const;
 export type UserRole = (typeof userRoles)[number];
 
+/**
+ * Проверка значения из внешнего источника.
+ *
+ * Нужна на границе с базой и с сессией: строка, пришедшая оттуда, типизирована
+ * как `UserRole` только по договорённости. Переименованная роль без миграции
+ * данных даёт пользователя с несуществующими правами, и молча пропустить его
+ * значит выдать ему поведение по умолчанию — то есть неизвестно какое.
+ */
+export function isUserRole(value: unknown): value is UserRole {
+  return typeof value === 'string' && (userRoles as readonly string[]).includes(value);
+}
+
 const userRoleLabelKeys: Record<UserRole, MessageKey> = {
   CUSTOMER: 'auth.roles.customer',
   INSTRUCTOR: 'auth.roles.instructor',

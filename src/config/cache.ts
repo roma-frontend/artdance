@@ -115,6 +115,7 @@ export const privatePaths = [
   '/sign-in',
   '/sign-up',
   '/forgot-password',
+  '/reset-password',
   '/reset-password/:path*',
   '/verify-email/:path*',
 ] as const;

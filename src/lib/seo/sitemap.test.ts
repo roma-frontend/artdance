@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { locales } from '@/i18n/config';
-import { isEnabled, legalDocuments, seo, type FeatureKey } from '@/config';
+import { isEnabled, legalDocuments, noIndexPathPrefixes, seo, type FeatureKey } from '@/config';
 
 import { buildSitemap, hreflangAlternates, localeAlternates, sitemapPaths } from './sitemap';
 
@@ -191,6 +191,28 @@ function toTemplate(path: string): string {
 const NOT_IN_SITEMAP = ['/cart', '/checkout', '/checkout/[step]', '/booking', '/instructors/[slug]/book'];
 
 /**
+ * Закрыт ли маршрут от индексации.
+ *
+ * Список берётся из `noIndexPathPrefixes`, а не переписывается здесь: страницы
+ * входа, регистрации и кабинета появились позже этого теста, и второй список
+ * означал бы ложную тревогу при каждом новом приватном экране — с предложением
+ * «исправить» его добавлением приватной страницы в карту сайта.
+ *
+ * `NOT_IN_SITEMAP` остаётся для того, чего в префиксах нет по другой причине:
+ * `/booking` и бронирование у инструктора закрыты как приватные (`privatePaths`),
+ * но живут под публичными префиксами.
+ */
+function isNoIndex(route: string): boolean {
+  return noIndexPathPrefixes.some(
+    (prefix) => route === prefix || route.startsWith(`${prefix}/`),
+  );
+}
+
+function isOutOfIndex(route: string): boolean {
+  return NOT_IN_SITEMAP.includes(route) || isNoIndex(route);
+}
+
+/**
  * Разделы за флагом поставки.
  *
  * Страница существует, но при выключенном флаге не должна быть ни в навигации,
@@ -223,7 +245,7 @@ describe('состав карты сайта', () => {
 
   it('каждая публичная страница попала в карту', () => {
     const forgotten = routes.filter(
-      (route) => !templates.has(route) && !NOT_IN_SITEMAP.includes(route) && !isGatedOff(route),
+      (route) => !templates.has(route) && !isOutOfIndex(route) && !isGatedOff(route),
     );
     expect(forgotten, `страница есть, а в карте её нет: ${forgotten.join(', ')}`).toEqual([]);
   });
@@ -256,7 +278,7 @@ describe('карточки для соцсетей', () => {
 
   it('у каждой публичной страницы есть своя карточка', () => {
     const missing = routes.filter(
-      (route) => !hasOgImage(route) && !NOT_IN_SITEMAP.includes(route) && !isGatedOff(route),
+      (route) => !hasOgImage(route) && !isOutOfIndex(route) && !isGatedOff(route),
     );
 
     expect(

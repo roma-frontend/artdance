@@ -132,7 +132,13 @@ export default async function proxy(request: NextRequest) {
   const pathWithoutLocale = stripLocale(pathname);
 
   if (isProtectedPath(pathWithoutLocale) && !request.cookies.has(security.session.cookieName)) {
-    const redirectTo = pathname + request.nextUrl.search;
+    /*
+     * Путь запоминается БЕЗ префикса локали. Локаль вернёт навигация next-intl
+     * после входа: сохранив `/en/account`, мы получили бы `/en/en/account` —
+     * страницу, которой нет, ровно в момент, когда человек только что успешно
+     * вошёл. Ошибка не видна ни типам, ни сборке, потому что оба пути — строки.
+     */
+    const redirectTo = pathWithoutLocale + request.nextUrl.search;
     const signInUrl = new URL(
       `/${localeOf(pathname)}${routes.signIn(redirectTo)}`,
       request.url,

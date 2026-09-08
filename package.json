@@ -39,6 +39,7 @@
     "verify": "npm run tokens:check && npm run css:check && npm run i18n:check && npm run media:check && npm run video:check && npm run design:check && npm run typecheck && npm run lint && npm run test",
     "verify:quick": "npm run typecheck && npm run lint",
     "verify:headers": "node scripts/verify-headers.mjs",
+    "verify:auth": "tsx scripts/verify-auth.mjs",
     "perf:budget": "tsx scripts/check-performance-budget.ts"
   },
   "prisma": {

@@ -11,55 +11,55 @@
  *    сессией: проверка `isActive` идёт при каждом обращении, а не при логине.
  * 4. `proxy.ts` только перенаправляет на страницу входа. Настоящая проверка —
  *    здесь: cookie можно подделать, серверную проверку — нет.
+ *
+ * **Сессию проверяет библиотека, а не запрос к таблице.** Значение cookie — это
+ * токен и его подпись, а не первичный ключ: прямой `findUnique({ where: { token } })`
+ * не нашёл бы ничего, а если бы нашёл — пропустил бы неподписанное значение,
+ * подставленное вручную. `auth.api.getSession` сверяет подпись, срок и
+ * существование записи одним вызовом.
  */
 
 import 'server-only';
 
-import { cookies } from 'next/headers';
+import { headers } from 'next/headers';
 
-import { security } from '@/config/business';
 import type { Capability } from '@/config/capabilities';
 import { db } from '@/lib/db';
 import { domainErrors } from '@/domain/errors';
-import { hasAtLeastRole, type UserRole } from '@/domain/enums';
+import { hasAtLeastRole, isUserRole, type UserRole } from '@/domain/enums';
+import { isLocale, type Locale } from '@/i18n/config';
+
+import { auth } from './auth';
 
 export interface Caller {
   id: string;
   email: string;
   name: string;
   role: UserRole;
-  locale: string;
+  locale: Locale;
 }
 
 /**
  * Текущий пользователь или `null`. Возвращает `null` вместо исключения, потому
  * что публичные страницы легально вызывают это для персонализации.
+ *
+ * `role` и `locale` приходят в сессии как дополнительные поля пользователя, но
+ * проверяются заново: значение из базы может оказаться строкой, которой больше нет
+ * в словаре (переименовали роль, забыли миграцию данных), и молча пропустить её
+ * значит получить пользователя с несуществующими правами.
  */
 export async function getCaller(): Promise<Caller | null> {
-  const jar = await cookies();
-  const token = jar.get(security.session.cookieName)?.value;
-  if (!token) return null;
-
-  const session = await db.session.findUnique({
-    where: { token },
-    select: {
-      expiresAt: true,
-      user: { select: { id: true, email: true, name: true, role: true, locale: true, isActive: true } },
-    },
-  });
-
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session) return null;
-  if (session.expiresAt <= new Date()) return null;
-  /** Блокировка вступает в силу мгновенно, не дожидаясь истечения сессии. */
-  if (!session.user.isActive) return null;
 
-  return {
-    id: session.user.id,
-    email: session.user.email,
-    name: session.user.name,
-    role: session.user.role,
-    locale: session.user.locale,
-  };
+  const { user } = session;
+  /** Блокировка вступает в силу мгновенно, не дожидаясь истечения сессии. */
+  if (user.isActive === false) return null;
+
+  const role: UserRole = isUserRole(user.role) ? user.role : 'CUSTOMER';
+  const locale: Locale = typeof user.locale === 'string' && isLocale(user.locale) ? user.locale : 'hy';
+
+  return { id: user.id, email: user.email, name: user.name, role, locale };
 }
 
 /** Требует аутентификации. Бросает `DomainError`, который маппится в 401. */
