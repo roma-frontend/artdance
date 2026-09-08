@@ -60,7 +60,16 @@ export const routes = {
   signIn: (redirectTo?: string) => withQuery('/sign-in', redirectTo ? { redirectTo } : undefined),
   signUp: (redirectTo?: string) => withQuery('/sign-up', redirectTo ? { redirectTo } : undefined),
   forgotPassword: () => '/forgot-password',
-  resetPassword: (token: string) => `/reset-password/${token}`,
+  /**
+   * Ссылка сброса пароля.
+   *
+   * Токен в query, а не в сегменте пути: Better Auth формирует ссылку из письма
+   * как `{redirectTo}?token=…`, и подстроить под неё сегмент невозможно — токен
+   * генерируется на сервере в момент отправки. Секрет в query здесь безопаснее
+   * обычного: страница отдаётся с `no-store`, а `Referrer-Policy` не пускает
+   * адрес во внешние запросы.
+   */
+  resetPassword: (token?: string) => withQuery('/reset-password', token ? { token } : undefined),
   verifyEmail: (token: string) => `/verify-email/${token}`,
 
   /* Кабинет клиента */
@@ -281,6 +290,7 @@ export const noIndexPathPrefixes = [
   '/api',
   '/sign-in',
   '/sign-up',
+  '/forgot-password',
   '/reset-password',
   '/verify-email',
 ] as const;

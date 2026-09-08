@@ -193,6 +193,12 @@ test.describe('каталог', () => {
     '/en/discover',
     '/en/shop',
     `/en/classes/${demoClasses[0]!.slug}`,
+    /*
+     * Заполненная группа — отдельный экран: у неё есть блок ближайших свободных
+     * времён, приходящий запросом, и пары «текст — фон» в нём не встречаются
+     * больше нигде.
+     */
+    `/en/classes/${(demoClasses.find((item) => item.spotsLeft <= 0) ?? demoClasses[0]!).slug}`,
     `/en/instructors/${demoInstructors[0]!.slug}`,
     `/en/studios/${demoVenues[0]!.slug}`,
     `/en/events/${demoEvents[0]!.slug}`,

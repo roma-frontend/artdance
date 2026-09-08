@@ -24,6 +24,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { demoClasses, demoEvents, demoInstructors, demoVenues } from '../prisma/fixtures/demo';
+import { limits } from '../src/config/business';
 import { routes } from '../src/config/routes';
 import { raw } from '../src/design/tokens';
 import en from '../src/i18n/messages/en';
@@ -173,4 +174,65 @@ test('сортировка меняет порядок ссылкой, а не �
    * порядок результатов — часть адреса страницы, а не состояние в памяти.
    */
   await expect(option).toHaveAttribute('href', /[?&]sort=/);
+});
+
+
+/**
+ * Тупик «мест нет» обязан заканчиваться предложением (C-02).
+ *
+ * Проверяется именно на заполненной группе и именно через сеть: страница занятия
+ * статическая, а времена приходят из `/api/availability`. Если бы доступность
+ * вшили в HTML, тест прошёл бы и на замороженных данных — поэтому проверяется,
+ * что запрос действительно уходит и что ссылки ведут к бронированию.
+ */
+test.describe('Заполненная группа предлагает альтернативы', () => {
+  const soldOut = demoClasses.find((item) => item.spotsLeft <= 0);
+
+  test('ближайшие свободные времена приходят запросом и ведут на бронирование', async ({
+    page,
+  }) => {
+    test.skip(!soldOut, 'в демо-данных нет заполненной группы');
+
+    const availabilityCalls: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/availability')) availabilityCalls.push(request.url());
+    });
+
+    await page.goto(localized(routes.class(soldOut!.slug)));
+
+    /* Заголовок появляется только после ответа: до него на месте блока скелет. */
+    await expect(
+      page.getByRole('heading', { level: 3, name: en.booking.alternativesTitle }),
+    ).toBeVisible();
+
+    expect(availabilityCalls.length, 'доступность обязана запрашиваться, а не быть в HTML')
+      .toBeGreaterThan(0);
+
+    const bookingHref = localized(routes.instructorBooking(soldOut!.instructorSlug));
+    /*
+     * Ссылки считаются внутри самого блока: на странице есть ещё кнопка записи и
+     * закреплённая панель, и они ведут туда же.
+     */
+    const section = page
+      .locator('section')
+      .filter({ has: page.getByRole('heading', { level: 3, name: en.booking.alternativesTitle }) });
+    const offers = section.locator(`a[href="${bookingHref}"]`);
+
+    /* Предложений не больше предела из бизнес-правил, и каждое ведёт к брони. */
+    await expect(offers.first()).toBeVisible();
+    expect(await offers.count()).toBeLessThanOrEqual(limits.alternativeSlots);
+  });
+
+  test('свободная группа альтернативы не показывает: они дублировали бы календарь', async ({
+    page,
+  }) => {
+    const available = demoClasses.find((item) => item.spotsLeft > 0);
+    test.skip(!available, 'в демо-данных нет свободной группы');
+
+    await page.goto(localized(routes.class(available!.slug)));
+
+    await expect(
+      page.getByRole('heading', { level: 3, name: en.booking.alternativesTitle }),
+    ).toHaveCount(0);
+  });
 });
