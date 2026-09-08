@@ -593,6 +593,8 @@ const hy: Messages = {
     continueCta: "Անցնել վճարման",
     cancellationNote: "Անվճար չեղարկում՝ առնվազն {hours} առաջ։",
     holdNotice: "Ժամը պահվում է ձեզ համար {minutes}։",
+    alternativesTitle: "Մոտակա ազատ ժամերը",
+    alternativesHint: "Խումբը լրացված է. այս ժամերին մարզիչը ազատ է։",
     holdExpired: "Ժամի պահման ժամկետն ավարտվեց։ Ընտրեք ժամը կրկին։",
     conflictError: "Այս ժամը հենց նոր զբաղվեց։ Ընտրեք այլ ժամ։",
     leadTimeError: "Ամրագրել պետք է սկսելուց առնվազն {hours} առաջ։",
@@ -605,6 +607,13 @@ const hy: Messages = {
     cancelLate: "Անվճար չեղարկման ժամկետն անցել է՝ կպահվի արժեքի {rate}-ը։",
     rescheduleTitle: "Տեղափոխել ամրագրումը",
     rescheduleLimit: "Այս ամրագրման տեղափոխումների սահմանաչափը սպառված է։",
+    rescheduleWindowClosed:
+      "Տեղափոխումը փակվում է սկսելուց {hours} առաջ։ Չեղարկումը դեռ հասանելի է։",
+    capacityError:
+      "{count, plural, =0 {Այս պարապմունքին տեղեր չկան} one {Մնացել է ընդամենը # տեղ} other {Մնացել է ընդամենը # տեղ}}",
+    cancelForbidden: "Այս ամրագրումն այլևս հնարավոր չէ չեղարկել առցանց՝ գրեք աջակցությանը։",
+    refundNotAllowed: "Այս ամրագրման համար գումարի վերադարձ նախատեսված չէ։",
+    duplicateEnrollment: "Դուք արդեն գրանցված եք այս պարապմունքին։",
   },
 
   auth: {
@@ -1066,6 +1075,22 @@ const hy: Messages = {
     communityGuidelines: "Համայնքի կանոններ",
     copyright: "© {year} {brand}։ Բոլոր իրավունքները պաշտպանված են։",
     paymentMethodsLabel: "Ընդունում ենք",
+  },
+
+  holidays: {
+    newYear: "Ամանոր",
+    newYearSecond: "Ամանորի երկրորդ օր",
+    christmas: "Սուրբ Ծնունդ",
+    fallenRemembrance: "Հայրենիքի պաշտպանության համար զոհվածների հիշատակի օր",
+    armyDay: "Բանակի օր",
+    womensDay: "Կանանց տոն",
+    genocideRemembrance: "Եղեռնի զոհերի հիշատակի օր",
+    labourDay: "Աշխատանքի օր",
+    victoryDay: "Հաղթանակի և Խաղաղության տոն",
+    republicDay: "Հանրապետության օր",
+    constitutionDay: "Սահմանադրության օր",
+    independenceDay: "Անկախության օր",
+    newYearEve: "Ամանորի նախօրե",
   },
 
   errors: {

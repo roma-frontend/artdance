@@ -25,6 +25,12 @@
  * горизонте. Пустой массив — свободных дней нет, и это отдельное состояние с
  * объяснением, а не молча серый календарь.
  *
+ * **Дни сравниваются ключом `YYYY-MM-DD` в поясе бизнеса, а не объектами `Date`.**
+ * Полночь 13 сентября в Ереване — это 12 сентября 20:00 UTC, и сравнение по
+ * локальным суткам браузера объявляло бы доступным предыдущий день у половины
+ * посетителей. Ключ строит `zonedDateKey` — та же функция, что нарезает слоты на
+ * сервере, поэтому расхождения между сеткой и календарём быть не может.
+ *
  * **Часовой пояс — бизнеса, а не устройства.** `site.timeZone`: человек,
  * открывший сайт из Москвы, должен видеть ереванские сутки, иначе «10 сентября»
  * у него и у инструктора — разные дни.
@@ -40,6 +46,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { booking, site } from '@/config';
+import { zonedDateKey } from '@/domain/availability/compute';
 import { isLocale, localeMeta, type Locale } from '@/i18n/config';
 import { dayPickerLocales } from '@/i18n/date-locales';
 import { cn } from '@/lib/utils';
@@ -51,10 +58,11 @@ interface BookingCalendarProps {
   month?: Date;
   onMonthChange?(month: Date): void;
   /**
-   * Дни, на которые есть свободные слоты. `undefined` — доступность неизвестна
-   * (выбирается любой день в горизонте), `[]` — свободных дней нет.
+   * Дни, на которые есть свободные слоты, как `YYYY-MM-DD` в поясе бизнеса.
+   * `undefined` — доступность неизвестна (выбирается любой день в горизонте),
+   * `[]` — свободных дней нет.
    */
-  availableDates?: readonly Date[] | undefined;
+  availableDates?: readonly string[] | undefined;
   loading?: boolean;
   /** Точка «сейчас». Параметром, чтобы тесты не зависели от даты запуска. */
   now?: Date;
@@ -68,10 +76,6 @@ function startOfDay(date: Date): Date {
   const copy = new Date(date);
   copy.setHours(0, 0, 0, 0);
   return copy;
-}
-
-function dayKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 }
 
 export function BookingCalendar({
@@ -91,16 +95,16 @@ export function BookingCalendar({
   const today = startOfDay(now);
   const horizon = startOfDay(new Date(today.getTime() + booking.maxAdvanceDays * MS_PER_DAY));
 
-  /** Дни без доступности гасятся по ключу «год-месяц-день», а не по времени. */
+  /** Дни без доступности гасятся по ключу `YYYY-MM-DD` в поясе бизнеса. */
   const availableKeys = useMemo(
-    () => (availableDates ? new Set(availableDates.map((date) => dayKey(startOfDay(date)))) : null),
+    () => (availableDates ? new Set(availableDates) : null),
     [availableDates],
   );
 
   const disabled = useMemo<Matcher[]>(() => {
     const matchers: Matcher[] = [{ before: today }, { after: horizon }];
     if (availableKeys) {
-      matchers.push((date: Date) => !availableKeys.has(dayKey(startOfDay(date))));
+      matchers.push((date: Date) => !availableKeys.has(zonedDateKey(date, site.timeZone)));
     }
     return matchers;
   }, [availableKeys, horizon, today]);

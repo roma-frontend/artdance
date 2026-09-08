@@ -4,7 +4,13 @@
  * Слева календарь и слоты, справа сводка. Компонент держит одно состояние на
  * четырёх участников (`BookingCalendar`, `TimeSlotPicker`,
  * `LocationOptionPicker`, `BookingSummary`) и ничего не считает сам: суммы —
- * `domain/money.ts`, время — `lib/time/clock.ts`, правила — `config/business.ts`.
+ * `domain/money.ts`, время — `lib/time/clock.ts`, доступность —
+ * `domain/availability/compute.ts` на сервере, правила — `config/business.ts`.
+ *
+ * **Доступность приходит днями, а не одним набором слотов.** Сервер отдаёт список
+ * дней, в которые инструктор принимает, и сетку времён каждого дня. Поэтому смена
+ * даты меняет времена, а календарь гасит дни, в которые записаться нельзя, — без
+ * запроса и без второго источника правды о расписании.
  *
  * **Выбор слота начинает удержание.** Слот держится `booking.holdTtlMinutes`, и
  * это видно таймером в сводке, а не обещанием в тексте. Смена времени начинает
@@ -17,20 +23,20 @@
  *
  * **Что здесь заглушка.** Удержание создаётся в браузере, а не запросом
  * `POST /api/booking/hold`: гонку за слот решает уникальный индекс `SlotHold` в
- * БД, и это задача волны booking. По той же причине смена даты не перечитывает
- * доступность — она приходит одним набором на весь экран. Оба шва помечены
- * `TODO(booking)` и не требуют правок компонентов, только источник данных.
+ * БД, и это задача волны booking. Шов помечен `TODO(booking)` и не требует правок
+ * компонентов, только источник данных.
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { BookingCalendar } from '@/components/booking/booking-calendar';
 import { BookingSummary } from '@/components/booking/booking-summary';
 import { LocationOptionPicker } from '@/components/booking/location-option-picker';
 import { TimeSlotPicker } from '@/components/booking/time-slot-picker';
-import { booking, routes, type BookingLocationOption } from '@/config';
+import { booking, routes, site, type BookingLocationOption } from '@/config';
+import { zonedDateKey } from '@/domain/availability/compute';
 import { useRouter } from '@/i18n/routing';
 import type { BookingContent } from '@/server/content/booking';
 
@@ -41,7 +47,11 @@ interface BookingScreenProps {
 export function BookingScreen({ content }: BookingScreenProps) {
   const router = useRouter();
 
-  const [date, setDate] = useState<Date | undefined>(() => new Date(content.earliestDateIso));
+  const initialDay = content.days.find((day) => day.dateKey === content.initialDateKey);
+
+  const [date, setDate] = useState<Date | undefined>(() =>
+    initialDay ? new Date(initialDay.dateIso) : undefined,
+  );
   const [startTime, setStartTime] = useState<string | undefined>(
     content.preselectedSlot ?? undefined,
   );
@@ -57,6 +67,23 @@ export function BookingScreen({ content }: BookingScreenProps) {
   const [holdExpiresAt, setHoldExpiresAt] = useState<string | null>(() =>
     content.preselectedSlot ? holdUntil() : null,
   );
+
+  /** Ключи доступных дней — то, чем календарь гасит остальное. */
+  const availableDates = useMemo(
+    () => content.days.map((day) => day.dateKey),
+    [content.days],
+  );
+
+  /*
+   * Времена выбранного дня. День ищется по ключу суток пояса бизнеса, а не по
+   * совпадению моментов: `Date` из календаря — это полночь дня в его собственном
+   * представлении, и сравнивать его с серверным моментом напрямую нельзя.
+   */
+  const slots = useMemo(() => {
+    if (!date) return [];
+    const key = zonedDateKey(date, site.timeZone);
+    return content.days.find((day) => day.dateKey === key)?.slots ?? [];
+  }, [content.days, date]);
 
   const selectSlot = (start: string) => {
     setStartTime(start);
@@ -84,11 +111,15 @@ export function BookingScreen({ content }: BookingScreenProps) {
           выглядит как несработавшее нажатие.
         */}
         <div className="rounded-xl border border-border-default bg-surface-card p-6 shadow-md md:p-8">
-          <BookingCalendar selected={date} onSelect={selectDate} />
+          <BookingCalendar
+            selected={date}
+            onSelect={selectDate}
+            availableDates={availableDates}
+          />
 
           <div className="mt-6 border-t border-border-default pt-6">
             <TimeSlotPicker
-              slots={content.slots}
+              slots={slots}
               selected={startTime}
               onSelect={selectSlot}
               date={date}

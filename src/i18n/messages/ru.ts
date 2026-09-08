@@ -588,6 +588,8 @@ const ru: Messages = {
     continueCta: 'Перейти к оплате',
     cancellationNote: 'Бесплатная отмена не позднее чем за {hours} до начала.',
     holdNotice: 'Слот удерживается за вами {minutes}.',
+    alternativesTitle: 'Ближайшее свободное время',
+    alternativesHint: 'Группа заполнена — вот когда у этого инструктора есть места.',
     holdExpired: 'Время удержания слота истекло. Выберите время заново.',
     conflictError: 'Это время только что заняли. Выберите другой слот.',
     leadTimeError: 'Бронировать нужно минимум за {hours} до начала.',
@@ -599,6 +601,12 @@ const ru: Messages = {
     cancelLate: 'Окно бесплатной отмены прошло: удержим {rate} стоимости.',
     rescheduleTitle: 'Перенести бронь',
     rescheduleLimit: 'Достигнут лимит переносов для этой брони.',
+    rescheduleWindowClosed: 'Перенос закрывается за {hours} до начала. Отмена ещё доступна.',
+    capacityError:
+      '{count, plural, =0 {Мест на это занятие нет} one {Осталось всего # место} few {Осталось всего # места} many {Осталось всего # мест} other {Осталось всего # места}}',
+    cancelForbidden: 'Эту бронь больше нельзя отменить онлайн — напишите в поддержку.',
+    refundNotAllowed: 'По этой брони возврат не предусмотрен.',
+    duplicateEnrollment: 'Вы уже записаны на это занятие.',
   },
 
   auth: {
@@ -1060,6 +1068,22 @@ const ru: Messages = {
     communityGuidelines: 'Правила сообщества',
     copyright: '© {year} {brand}. Все права защищены.',
     paymentMethodsLabel: 'Принимаем',
+  },
+
+  holidays: {
+    newYear: 'Новый год',
+    newYearSecond: 'Второй день Нового года',
+    christmas: 'Рождество',
+    fallenRemembrance: 'День памяти погибших защитников Отечества',
+    armyDay: 'День армии',
+    womensDay: 'Международный женский день',
+    genocideRemembrance: 'День памяти жертв Геноцида армян',
+    labourDay: 'День труда',
+    victoryDay: 'День Победы и мира',
+    republicDay: 'День Первой Республики',
+    constitutionDay: 'День Конституции',
+    independenceDay: 'День независимости',
+    newYearEve: 'Канун Нового года',
   },
 
   errors: {

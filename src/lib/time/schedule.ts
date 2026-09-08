@@ -29,15 +29,20 @@ const MS_PER_MINUTE = 60_000;
 const MS_PER_DAY = MINUTES_PER_DAY * MS_PER_MINUTE;
 
 /**
- * Смещение часового пояса от UTC в минутах для конкретного момента.
+ * Форматтеры кешируются по поясу.
  *
- * Считается через `Intl`: формат `sv-SE` даёт `YYYY-MM-DD HH:mm:ss`, который
- * разбирается однозначно на любой платформе. Способ выглядит окольным, но у него
- * нет альтернативы без библиотеки: `Date` не умеет отвечать на вопрос «сколько
- * времени в Ереване» напрямую.
+ * `new Intl.DateTimeFormat` — самый дорогой вызов в этом модуле, а движок
+ * доступности спрашивает смещение десятки тысяч раз при развёртке расписания на
+ * горизонт бронирования. Один формат на пояс превращает секунды в миллисекунды и
+ * ничего не меняет в результате: формат зависит только от пояса.
  */
-function zoneOffsetMinutes(instant: Date, timeZone: string): number {
-  const formatted = new Intl.DateTimeFormat('sv-SE', {
+const zoneFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function zoneFormatter(timeZone: string): Intl.DateTimeFormat {
+  const cached = zoneFormatters.get(timeZone);
+  if (cached) return cached;
+
+  const created = new Intl.DateTimeFormat('sv-SE', {
     timeZone,
     year: 'numeric',
     month: '2-digit',
@@ -46,7 +51,21 @@ function zoneOffsetMinutes(instant: Date, timeZone: string): number {
     minute: '2-digit',
     second: '2-digit',
     hourCycle: 'h23',
-  }).format(instant);
+  });
+  zoneFormatters.set(timeZone, created);
+  return created;
+}
+
+/**
+ * Смещение часового пояса от UTC в минутах для конкретного момента.
+ *
+ * Считается через `Intl`: формат `sv-SE` даёт `YYYY-MM-DD HH:mm:ss`, который
+ * разбирается однозначно на любой платформе. Способ выглядит окольным, но у него
+ * нет альтернативы без библиотеки: `Date` не умеет отвечать на вопрос «сколько
+ * времени в Ереване» напрямую.
+ */
+function zoneOffsetMinutes(instant: Date, timeZone: string): number {
+  const formatted = zoneFormatter(timeZone).format(instant);
 
   const asUtc = Date.parse(`${formatted.replace(' ', 'T')}Z`);
   return Math.round((asUtc - instant.getTime()) / MS_PER_MINUTE);

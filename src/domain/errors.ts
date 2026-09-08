@@ -97,6 +97,36 @@ export const domainErrors = {
   captchaFailed: () =>
     new DomainError({ code: 'CAPTCHA_FAILED', messageKey: 'validation.captchaRequired' }),
 
+  /**
+   * Неверная пара адрес/пароль.
+   *
+   * Одно сообщение на оба случая — «нет такого адреса» и «пароль не тот». Разные
+   * ответы превращают форму входа в способ проверить, зарегистрирован ли человек
+   * на платформе; для маркетплейса это ещё и утечка клиентской базы.
+   */
+  invalidCredentials: () =>
+    new DomainError({ code: 'UNAUTHORIZED', messageKey: 'auth.signIn.invalidCredentials' }),
+
+  /** Аккаунт заблокирован после серии неудачных попыток входа. */
+  tooManyAttempts: (minutes: number) =>
+    new DomainError({
+      code: 'RATE_LIMITED',
+      messageKey: 'auth.signIn.tooManyAttempts',
+      params: { minutes },
+    }),
+
+  /** Адрес уже занят. Показывается только при регистрации, где скрывать нечего. */
+  emailTaken: () =>
+    new DomainError({
+      code: 'VALIDATION_FAILED',
+      messageKey: 'auth.signUp.emailTaken',
+      field: 'email',
+    }),
+
+  /** Ссылка сброса пароля недействительна или просрочена. */
+  invalidResetToken: () =>
+    new DomainError({ code: 'VALIDATION_FAILED', messageKey: 'auth.resetPassword.invalidToken' }),
+
   slotUnavailable: () =>
     new DomainError({ code: 'SLOT_UNAVAILABLE', messageKey: 'errors.slotUnavailable.description' }),
 
@@ -120,6 +150,38 @@ export const domainErrors = {
 
   rescheduleLimitReached: () =>
     new DomainError({ code: 'RESCHEDULE_LIMIT_REACHED', messageKey: 'booking.rescheduleLimit' }),
+
+  /**
+   * Мест меньше, чем просят. `count` — сколько осталось: «мест нет» без числа
+   * заставляет человека угадывать, пройдёт ли заявка на двоих вместо трёх.
+   */
+  capacityExceeded: (spotsLeft: number) =>
+    new DomainError({
+      code: 'CAPACITY_EXCEEDED',
+      messageKey: 'booking.capacityError',
+      params: { count: spotsLeft },
+    }),
+
+  /** Окно бесплатной отмены закрыто, а платная для этой брони недопустима. */
+  cancellationWindowClosed: () =>
+    new DomainError({
+      code: 'CANCELLATION_WINDOW_CLOSED',
+      messageKey: 'booking.cancelForbidden',
+    }),
+
+  /** Перенос запрошен позже окна: остаётся отмена по общим правилам. */
+  rescheduleWindowClosed: (hours: string) =>
+    new DomainError({
+      code: 'CANCELLATION_WINDOW_CLOSED',
+      messageKey: 'booking.rescheduleWindowClosed',
+      params: { hours },
+    }),
+
+  refundNotAllowed: () =>
+    new DomainError({ code: 'REFUND_NOT_ALLOWED', messageKey: 'booking.refundNotAllowed' }),
+
+  duplicateEnrollment: () =>
+    new DomainError({ code: 'DUPLICATE_ENROLLMENT', messageKey: 'booking.duplicateEnrollment' }),
 
   outOfStock: (name: string) =>
     new DomainError({ code: 'OUT_OF_STOCK', messageKey: 'errors.outOfStock.description', params: { name } }),

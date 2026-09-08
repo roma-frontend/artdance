@@ -597,6 +597,8 @@ const en = {
     continueCta: 'Continue to payment',
     cancellationNote: 'Free cancellation up to {hours} before the session.',
     holdNotice: 'This slot is held for you for {minutes}.',
+    alternativesTitle: 'Next available times',
+    alternativesHint: 'This group is full — these times are open with the same instructor.',
     holdExpired: 'Your slot hold expired. Please pick a time again.',
     conflictError: 'This time was just taken. Please choose another slot.',
     leadTimeError: 'Bookings must be made at least {hours} in advance.',
@@ -608,6 +610,12 @@ const en = {
     cancelLate: 'You are past the free window: {rate} of the price will be withheld.',
     rescheduleTitle: 'Reschedule booking',
     rescheduleLimit: 'You have reached the maximum number of reschedules for this booking.',
+    rescheduleWindowClosed: 'Reschedules close {hours} before the session. You can still cancel.',
+    capacityError:
+      '{count, plural, =0 {No spots left for this session} one {Only # spot left} other {Only # spots left}}',
+    cancelForbidden: 'This booking can no longer be cancelled online — contact support.',
+    refundNotAllowed: 'This booking is not eligible for a refund.',
+    duplicateEnrollment: 'You are already booked for this session.',
   },
 
   auth: {
@@ -1079,6 +1087,27 @@ const en = {
     communityGuidelines: 'Community guidelines',
     copyright: '© {year} {brand}. All rights reserved.',
     paymentMethodsLabel: 'We accept',
+  },
+
+  /**
+   * Нерабочие праздники РА. Список и даты — `src/domain/holidays.ts`; здесь
+   * только названия. Показываются в календаре доступности («14 сентября — нет
+   * занятий») и в объяснении срока доставки.
+   */
+  holidays: {
+    newYear: 'New Year’s Day',
+    newYearSecond: 'New Year holiday',
+    christmas: 'Christmas Day',
+    fallenRemembrance: 'Remembrance Day of the fallen defenders',
+    armyDay: 'Army Day',
+    womensDay: 'International Women’s Day',
+    genocideRemembrance: 'Armenian Genocide Remembrance Day',
+    labourDay: 'Labour Day',
+    victoryDay: 'Victory and Peace Day',
+    republicDay: 'First Republic Day',
+    constitutionDay: 'Constitution Day',
+    independenceDay: 'Independence Day',
+    newYearEve: 'New Year’s Eve',
   },
 
   errors: {
