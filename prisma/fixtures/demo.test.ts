@@ -16,15 +16,22 @@ import { commerce, promotions } from '../../src/config/business';
 import { add, applyRate, distributeProportionally, multiply } from '../../src/domain/money';
 
 import {
+  demoAccounts,
   demoCartTotals,
   demoClasses,
+  demoEmailDomain,
   demoEvents,
   demoInstructors,
   demoProductCategories,
   demoProducts,
+  demoReviewerEmail,
   demoReviews,
   demoStyleTiles,
+  demoThrowawayEmail,
+  demoThrowawayPrefixes,
+  demoVenueOwnerEmail,
   demoVenues,
+  isDemoThrowawayEmail,
 } from './demo';
 
 describe('целостность фикстур', () => {
@@ -134,5 +141,60 @@ describe('корзина из макета пересчитывается наш
   it('скидка распределяется по позициям без расхождения с итогом', () => {
     const parts = distributeProportionally(demoCartTotals.discount, lineTotals);
     expect(parts.reduce((a, b) => a + b, 0)).toBe(demoCartTotals.discount);
+  });
+});
+
+
+/**
+ * Одноразовые адреса проверок.
+ *
+ * Смысл тестов ровно один: сид удаляет из базы то, что создают проверки, и НЕ
+ * удаляет ничего другого. Ошибка в любую сторону дорогая — либо база обрастает
+ * мусором, либо `db:seed` стирает аккаунт, на котором человек что-то отлаживал.
+ */
+describe('одноразовые адреса проверок', () => {
+  it('сгенерированный адрес распознаётся как мусор', () => {
+    for (const prefix of demoThrowawayPrefixes) {
+      expect(isDemoThrowawayEmail(demoThrowawayEmail(prefix)), prefix).toBe(true);
+    }
+  });
+
+  it('адрес уникален между вызовами с разной меткой', () => {
+    expect(demoThrowawayEmail('probe', 1)).not.toBe(demoThrowawayEmail('probe', 2));
+  });
+
+  it('аккаунты сида не считаются мусором', () => {
+    const seeded = [
+      ...demoAccounts.map((account) => account.email),
+      ...demoInstructors.map((instructor) => instructor.email),
+      ...demoVenues.map((venue) => demoVenueOwnerEmail(venue.slug)),
+      ...demoReviews.map((review) => demoReviewerEmail(review.authorName)),
+    ];
+    for (const email of seeded) {
+      expect(isDemoThrowawayEmail(email), email).toBe(false);
+    }
+  });
+
+  it('адрес на другом домене не трогается, даже с тем же префиксом', () => {
+    expect(isDemoThrowawayEmail('probe-1@artdance.am')).toBe(false);
+    expect(isDemoThrowawayEmail('signup-1@gmail.com')).toBe(false);
+  });
+
+  it('регистр и пробелы не мешают распознаванию', () => {
+    expect(isDemoThrowawayEmail(`  PROBE-7@${demoEmailDomain.toUpperCase()} `)).toBe(true);
+  });
+
+  it('префикс должен быть началом адреса, а не любой его частью', () => {
+    expect(isDemoThrowawayEmail(`real-probe-7@${demoEmailDomain}`)).toBe(false);
+  });
+
+  it('все демо-адреса живут на одном домене', () => {
+    const all = [
+      ...demoAccounts.map((account) => account.email),
+      ...demoInstructors.map((instructor) => instructor.email),
+    ];
+    for (const email of all) {
+      expect(email.endsWith(`@${demoEmailDomain}`), email).toBe(true);
+    }
   });
 });

@@ -227,8 +227,8 @@ model User {
   emailVerified Boolean   @default(false)
   phone         String?   @unique
   phoneVerified Boolean   @default(false)
-  passwordHash  String?
   name          String
+  // Better Auth называет это поле `image`; сопоставление — в src/lib/auth/auth.ts.
   avatarKey     String?
   role          UserRole  @default(CUSTOMER)
   locale        Locale    @default(hy)
@@ -242,8 +242,7 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   sessions           Session[]
-  accounts           OauthAccount[]
-  verificationTokens VerificationToken[]
+  accounts           Account[]
   notificationPrefs  NotificationPreference[]
   addresses          Address[]
   instructor         InstructorProfile?
@@ -272,6 +271,7 @@ model Session {
   userAgent String?
   expiresAt DateTime
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -279,36 +279,51 @@ model Session {
   @@index([expiresAt])
 }
 
-model OauthAccount {
-  id             String   @id @default(cuid())
-  userId         String
-  provider       String
-  providerUserId String
-  accessToken    String?
-  refreshToken   String?
-  expiresAt      DateTime?
-  createdAt      DateTime @default(now())
+// Способ входа: пароль или внешний провайдер. Имена полей — как их ждёт Better
+// Auth, чтобы не описывать пятнадцать сопоставлений в конфигурации: чем меньше
+// переименований между библиотекой и схемой, тем меньше мест, где они разойдутся.
+//
+// Хеш пароля живёт здесь, а не в `User`: у одного аккаунта может не быть пароля
+// вовсе (вход только через Google), и колонка в `User` в этом случае была бы
+// вечно пустой и вечно подозрительной.
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String
+  // Кто выдал идентификатор: `credential` для пароля, домен провайдера для OAuth.
+  issuer                String
+  // Идентификатор пользователя у провайдера. Для пароля — id самого пользователя.
+  accountId             String
+  providerId            String
+  password              String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([provider, providerUserId])
+  @@unique([issuer, accountId])
   @@index([userId])
 }
 
+// Одноразовый токен: подтверждение адреса, сброс пароля, OTP.
+//
+// `purpose` отдельной колонкой нет: Better Auth кодирует назначение в
+// `identifier` («reset-password:user@example.com»), и вторая колонка с тем же
+// смыслом разошлась бы с первой на первом же новом сценарии.
 model VerificationToken {
   id         String   @id @default(cuid())
-  userId     String?
   identifier String
-  tokenHash  String   @unique
-  purpose    String
-  attempts   Int      @default(0)
+  value      String
   expiresAt  DateTime
-  consumedAt DateTime?
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([identifier, purpose])
+  @@index([identifier])
   @@index([expiresAt])
 }
 
@@ -356,6 +371,11 @@ model InstructorProfile {
   headline        String
   bio             String
   styles          DanceStyle[]
+  // Узкие специализации внутри направления: «Salsa On1», «Bachata Sensual».
+  // Отдельно от `styles`: направление — фильтр каталога и enum, специализация —
+  // текст исполнителя о себе. Свести их в одно поле значит либо потерять
+  // фильтрацию, либо заставить инструктора описывать себя списком из enum.
+  specializations String[]
   yearsExperience Int        @default(0)
   // Базовая ставка за час — «от» в карточке. Конкретные цены в PriceOption.
   hourlyRateFrom  Int
@@ -788,9 +808,12 @@ model Booking {
   currencyCode   String   @default("AMD")
 
   // Условия отмены зафиксированы на момент брони — так спор решается по чекам,
-  // а не по текущему состоянию конфига.
+  // а не по текущему состоянию конфига. По той же причине здесь окно и лимит
+  // переносов: «мне обещали два переноса» — такой же спор, как про удержание.
   cancellationWindowHours Int
   lateCancellationRate    Decimal @db.Decimal(5, 4)
+  rescheduleWindowHours   Int
+  maxReschedules          Int
 
   rescheduleCount Int      @default(0)
   rescheduledFromId String?
@@ -1306,6 +1329,14 @@ model Review {
   venueId      String?
   rating       Int
   body         String
+  // Подпись автора под именем: «Salsa · 6 месяцев на ArtDance».
+  //
+  // Хранится, а не выводится: это фраза автора о своём опыте, а не производная
+  // от даты регистрации. Вывод («направление первой брони» + «месяцев с
+  // регистрации») ломается на любом непрямом случае — человек занимался офлайн,
+  // пришёл за одним занятием, сменил направление, — и подпись начинает
+  // сообщать неправду от лица клиента.
+  authorRole   String?
   // Отзыв только после подтверждённой брони/полученного заказа.
   isVerifiedPurchase Boolean    @default(false)
   moderation   ModerationStatus @default(PENDING)
@@ -1365,6 +1396,11 @@ model MediaAsset {
   // Alt-текст обязателен для a11y; переводы — в MediaAssetTranslation.
   altText      String
   blurDataUrl  String?
+  // Точка фокуса кадра («50% 25%») для обрезки в карточках, где центр съедает
+  // главное — лицо у верхней границы. Это свойство самого снимка, а не вёрстки:
+  // один и тот же кадр обрезается одинаково на всех экранах, и решает это тот,
+  // кто загрузил фотографию, а не разработчик в CSS.
+  focalPoint   String?
   sortOrder    Int      @default(0)
 
   instructorId String?

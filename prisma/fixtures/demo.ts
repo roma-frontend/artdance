@@ -25,11 +25,13 @@ import type {
 /* ─────────────────────────── Направления ─────────────────────────── */
 
 /** Счётчики занятий из блока «Find Your Way to Dance» прототипа. */
-export const demoStyleTiles: ReadonlyArray<{
+export interface DemoStyleTile {
   style: DanceStyle;
   asset: string;
   classCount: number;
-}> = [
+}
+
+export const demoStyleTiles: ReadonlyArray<DemoStyleTile> = [
   { style: 'HIP_HOP', asset: 'style-hip-hop', classCount: 48 },
   { style: 'BALLET', asset: 'style-ballet', classCount: 24 },
   { style: 'SALSA', asset: 'style-salsa', classCount: 32 },
@@ -341,7 +343,14 @@ export const demoClasses: readonly DemoClass[] = [
   },
 ];
 
-/** Слоты со страницы бронирования прототипа. */
+/**
+ * Слоты со страницы бронирования прототипа.
+ *
+ * В макете это шесть кнопок одного дня. Картинке этого хватает, движку — нет:
+ * календарь обязан знать, в какие дни инструктор работает вообще, иначе человек
+ * выбирает дату и получает пустую сетку. Поэтому времена макета остались, но
+ * стали ориентиром для расписания ниже, а не источником самих слотов.
+ */
 export const demoAvailableSlots = ['10:00', '11:30', '14:00', '18:00', '19:30', '21:00'] as const;
 
 /**
@@ -353,6 +362,58 @@ export const demoTakenSlots = ['10:00', '11:30', '21:00'] as const;
 
 /** Слот, выбранный на скриншоте макета: сводка справа посчитана именно от него. */
 export const demoSelectedSlot = '18:00';
+
+/* ──────────────────── Расписание инструкторов ──────────────────── */
+
+/** Окно приёма: день недели (0 — воскресенье) и время суток в поясе бизнеса. */
+export interface DemoAvailabilityWindow {
+  weekday: number;
+  startTime: string;
+  endTime: string;
+}
+
+/**
+ * Окна одного рабочего дня.
+ *
+ * Подобраны так, чтобы все шесть времён макета попадали внутрь приёма: утро
+ * закрывает 10:00 и 11:30, день — 14:00, вечер — 18:00, 19:30 и 21:00. Остальные
+ * времена сетки появляются честно — из правила и шага `slotGranularityMinutes`,
+ * а не из вёрстки. Перерыв между окнами тоже настоящий: инструктор обедает и
+ * переезжает между залами.
+ */
+const demoWorkdayWindows: readonly Omit<DemoAvailabilityWindow, 'weekday'>[] = [
+  { startTime: '10:00', endTime: '13:00' },
+  { startTime: '14:00', endTime: '16:00' },
+  { startTime: '18:00', endTime: '22:30' },
+];
+
+function workdays(...weekdays: number[]): readonly DemoAvailabilityWindow[] {
+  return weekdays.flatMap((weekday) =>
+    demoWorkdayWindows.map((window) => ({ weekday, ...window })),
+  );
+}
+
+/**
+ * Кто когда принимает. Дни разведены между инструкторами: одинаковое расписание у
+ * всех выглядело бы как заглушка и скрывало бы ошибки фильтра по дате.
+ *
+ * В production это строки `AvailabilityRule`, привязанные к `InstructorProfile`;
+ * форма та же, поэтому переход на базу меняет источник, а не движок.
+ */
+export const demoInstructorAvailability: Readonly<
+  Record<string, readonly DemoAvailabilityWindow[]>
+> = {
+  /** Вт, чт, сб. */
+  'anna-mkrtchyan': workdays(2, 4, 6),
+  /** Ср, пт, вс. */
+  'arman-harutyunyan': workdays(3, 5, 0),
+  /** Пн, чт, сб. */
+  'nare-grigoryan': workdays(1, 4, 6),
+  /** Вт, пт, вс. */
+  'david-sargsyan': workdays(2, 5, 0),
+  /** Пн, ср, пт. */
+  'sona-hovhannisyan': workdays(1, 3, 5),
+};
 
 
 /* ─────────────────────────── Товары ─────────────────────────── */
@@ -442,6 +503,105 @@ export const demoProductCategories: ReadonlyArray<{ slug: string; name: string; 
   { slug: 'accessories', name: 'Accessories', order: 3 },
   { slug: 'gift-cards', name: 'Gift Cards', order: 4 },
 ];
+
+/* ─────────────────────── Аккаунты для разработки ─────────────────────── */
+
+/**
+ * Домен всех демо-адресов.
+ *
+ * Заведомо несуществующий: ни одно письмо из dev-окружения не должно уйти
+ * реальному человеку.
+ */
+export const demoEmailDomain = 'demo.artdance.am';
+
+/**
+ * Аккаунты, которые создаёт сид.
+ *
+ * В макете их нет — в нём нет ни входа, ни кабинета. Но без них база бесполезна:
+ * кабинет клиента, инструктора и админку не открыть, а роли и capability не
+ * проверить.
+ *
+ * Пароль один на всех и лежит здесь открыто: это локальная разработка, и любой
+ * «секрет» в сиде — фикция. В production сид аккаунтов не запускается.
+ */
+export const demoPassword = 'artdance-dev-2026';
+
+export const demoAccounts: ReadonlyArray<{
+  email: string;
+  name: string;
+  role: 'ADMIN' | 'SUPPORT' | 'CUSTOMER' | 'VENUE_OWNER';
+  locale: 'hy' | 'ru' | 'en';
+}> = [
+  { email: `admin@${demoEmailDomain}`, name: 'Demo Admin', role: 'ADMIN', locale: 'ru' },
+  { email: `support@${demoEmailDomain}`, name: 'Demo Support', role: 'SUPPORT', locale: 'ru' },
+  { email: `client@${demoEmailDomain}`, name: 'Demo Client', role: 'CUSTOMER', locale: 'ru' },
+];
+
+/**
+ * Владелец площадки: по одному на каждую студию из макета.
+ *
+ * Адрес выводится из слага площадки, а не выдумывается: так он предсказуем и не
+ * расходится между сидом и тестами.
+ */
+export function demoVenueOwnerEmail(venueSlug: string): string {
+  return `owner-${venueSlug}@${demoEmailDomain}`;
+}
+
+/** Автор отзыва: адрес выводится из имени тем же правилом. */
+export function demoReviewerEmail(authorName: string): string {
+  return `${authorName.toLowerCase().replace(/[^a-z]+/g, '-')}@${demoEmailDomain}`;
+}
+
+/* ─────────────────── Одноразовые адреса проверок ─────────────────── */
+
+/**
+ * Префиксы адресов, которые создают ПРОВЕРКИ, а не сид.
+ *
+ * `verify:auth` и e2e регистрируются заново на каждом запуске — иначе тест «новый
+ * аккаунт создаётся» проходил бы только один раз. Уникальность адреса даёт
+ * временная метка, и за месяц работы база обрастает сотнями мёртвых
+ * пользователей: они попадают в выборки админки, в счётчики и в глаза.
+ *
+ * Список нужен именно списком, а не правилом «всё, чего нет в сиде»: аккаунт,
+ * который разработчик создал через форму регистрации руками, сид стирать не
+ * должен. Здесь перечислено то, что заведомо мусор.
+ *
+ * Кто какой префикс использует:
+ *   `probe-`   — `scripts/verify-auth.mjs`, проверка регистрации;
+ *   `signup-`  — e2e, регистрация через форму;
+ *   `lockout-` — e2e, блокировка после серии неудач (оставляет `LoginAttempt`);
+ *   `terms-`   — e2e, отказ формы без согласия с правилами;
+ *   `no-such-` — e2e и `verify:auth`, вход на несуществующий адрес.
+ */
+export const demoThrowawayPrefixes = ['probe', 'signup', 'lockout', 'terms', 'no-such'] as const;
+
+export type DemoThrowawayPrefix = (typeof demoThrowawayPrefixes)[number];
+
+/**
+ * Одноразовый адрес для проверки.
+ *
+ * Метка времени по умолчанию — не «случайность ради случайности»: два запуска
+ * подряд не должны спорить за один адрес, а перебрать порядок тестов внутри
+ * запуска нельзя.
+ */
+export function demoThrowawayEmail(
+  prefix: DemoThrowawayPrefix,
+  unique: string | number = Date.now(),
+): string {
+  return `${prefix}-${unique}@${demoEmailDomain}`;
+}
+
+/**
+ * Адрес создан проверкой и подлежит удалению.
+ *
+ * Сравнение регистронезависимо: адрес мог прийти из формы, где человек нажал
+ * Caps Lock.
+ */
+export function isDemoThrowawayEmail(email: string): boolean {
+  const address = email.trim().toLowerCase();
+  if (!address.endsWith(`@${demoEmailDomain}`)) return false;
+  return demoThrowawayPrefixes.some((prefix) => address.startsWith(`${prefix}-`));
+}
 
 /* ─────────────────────────── События ─────────────────────────── */
 
