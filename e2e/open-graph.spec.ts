@@ -55,8 +55,21 @@ function pngSize(bytes: Buffer): { width: number; height: number } {
   return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
 }
 
+/**
+ * Карточка скачивается с ТЕСТОВОГО сервера, а не по адресу из разметки.
+ *
+ * В `og:image` стоит абсолютный URL, собранный из `NEXT_PUBLIC_APP_URL`
+ * (`localhost:3000`), — так и должно быть, мессенджеры относительный адрес
+ * игнорируют. Но сборка под проверками слушает другой порт, и запрос по адресу из
+ * разметки уходит в никуда: в CI это `ECONNREFUSED ::1:3000`, а на машине
+ * разработчика проходит случайно — там на 3000 обычно висит свой сервер.
+ *
+ * Поэтому из абсолютного адреса берётся путь, а `request.get` достраивает его до
+ * `baseURL`. Проверяется тот же файл, но у того сервера, который проверяем.
+ */
 async function fetchCard(request: APIRequestContext, url: string): Promise<Buffer> {
-  const response = await request.get(url);
+  const { pathname, search } = new URL(url);
+  const response = await request.get(`${pathname}${search}`);
 
   expect(response.status(), `карточка ${url} не отдалась`).toBe(200);
   expect(response.headers()['content-type']).toContain('image/png');
