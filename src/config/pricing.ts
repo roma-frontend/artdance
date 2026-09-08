@@ -8,6 +8,8 @@
  * Суммы в минорных единицах отсутствуют: AMD целочисленный (см. `business.currency`).
  */
 
+import type { MessageKey } from '@/i18n/types';
+
 /** ID планов — стабильные ключи, используются в БД, i18n и аналитике. */
 export const subscriptionPlanIds = ['starter', 'pro', 'elite'] as const;
 export type SubscriptionPlanId = (typeof subscriptionPlanIds)[number];
@@ -38,8 +40,8 @@ export interface SubscriptionPlan {
   /** Скидка за годовую оплату, в процентах — для бейджа «−2 месяца». */
   yearlyDiscountPercent: number;
   quota: PlanQuota;
-  /** Порядок фич в таблице сравнения — ключи i18n, не тексты. */
-  featureKeys: readonly string[];
+  /** Порядок фич в таблице сравнения — id из `planFeatureIds`, не тексты. */
+  featureKeys: readonly PlanFeatureId[];
   trialDays: number;
 }
 
@@ -123,6 +125,55 @@ export const subscriptionPlans: Record<SubscriptionPlanId, SubscriptionPlan> = {
 export const orderedSubscriptionPlans: readonly SubscriptionPlan[] = subscriptionPlanIds
   .map((id) => subscriptionPlans[id])
   .sort((a, b) => a.order - b.order);
+
+/* ─────────────────── Ключи перевода тарифа ───────────────────
+ *
+ * Названия и описания планов лежат в каталоге переводов, а ключ собирается из
+ * id. Без типа это выглядело так: `t(\`plans.${plan.id}.name\` as 'plans.pro.name')`
+ * — приведение, которое молчит и об опечатке, и о переименовании namespace, и о
+ * новом плане без перевода. С `MessageKey` каждое из трёх становится ошибкой
+ * сборки.
+ */
+
+export function subscriptionPlanNameKey(id: SubscriptionPlanId): MessageKey {
+  return `pricing.plans.${id}.name`;
+}
+
+export function subscriptionPlanDescriptionKey(id: SubscriptionPlanId): MessageKey {
+  return `pricing.plans.${id}.description`;
+}
+
+/**
+ * Возможности плана.
+ *
+ * Список закрытый: `featureKeys` плана — это id из этого набора, а не свободные
+ * строки. Иначе фича без перевода обнаруживается пустой строкой в таблице
+ * сравнения — на демонстрации заказчику.
+ */
+export const planFeatureIds = [
+  'groupClasses',
+  'unlimitedGroupClasses',
+  'privateSessions',
+  'unlimitedPrivateSessions',
+  'styleAccess',
+  'allStyles',
+  'communityEvents',
+  'mobileApp',
+  'progressJournal',
+  'priorityBooking',
+  'performanceOpportunities',
+  'everythingInPro',
+  'competitionPrep',
+  'guestWorkshops',
+  'studioRentalDiscount',
+  'vipEvents',
+] as const;
+
+export type PlanFeatureId = (typeof planFeatureIds)[number];
+
+export function planFeatureLabelKey(feature: PlanFeatureId): MessageKey {
+  return `pricing.features.${feature}`;
+}
 
 /* ─────────────────── Разовые продукты платформы ─────────────────── */
 

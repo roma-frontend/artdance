@@ -50,6 +50,15 @@ export const site = {
     facebook: 'https://facebook.com/artdance.am',
   },
 
+  /**
+   * Внешние карты. Встроенная карта — отдельная задача плана (2.10) и требует
+   * `NEXT_PUBLIC_MAPS_API_KEY`; ссылка «открыть в картах» работает без ключа и
+   * нужна независимо от неё: маршрут человек всё равно строит в своём приложении.
+   */
+  maps: {
+    directionsBase: 'https://www.google.com/maps/search/?api=1&query=',
+  },
+
   /** Часовой пояс бизнеса. Все слоты и расписания считаются в нём. */
   timeZone: 'Asia/Yerevan',
 
@@ -72,4 +81,15 @@ export type Site = typeof site;
 export function absoluteUrl(path: string): string {
   const base = site.url.replace(/\/$/, '');
   return path.startsWith('/') ? `${base}${path}` : `${base}/${path}`;
+}
+
+/**
+ * Ссылка «открыть в картах» по координатам.
+ *
+ * Координаты, а не адрес строкой: у площадок в Ереване адрес часто описательный
+ * («напротив входа в парк»), и поиск по нему приводит не туда. Точка приводит
+ * туда всегда.
+ */
+export function directionsUrl(latitude: number, longitude: number): string {
+  return `${site.maps.directionsBase}${latitude},${longitude}`;
 }

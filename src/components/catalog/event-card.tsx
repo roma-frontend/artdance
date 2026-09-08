@@ -19,14 +19,14 @@ import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
 import { SpotsLeft } from '@/components/ui/spots-left';
 import { routes } from '@/config';
-import { resolveMedia, type HomeEventCard } from '@/domain/content';
+import { resolveMedia, type EventCardItem } from '@/domain/content';
 import { eventTypeLabelKey } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
 interface EventCardProps {
-  item: HomeEventCard;
+  item: EventCardItem;
   locale: Locale;
   className?: string;
 }
@@ -74,7 +74,7 @@ export function EventCard({ item, locale, className }: EventCardProps) {
 
       <div className="flex flex-1 flex-col p-5">
         <Badge variant="accent" className="self-start">
-          {t(eventTypeLabelKey(item.type as never) as 'events.typeWorkshop')}
+          {t(eventTypeLabelKey(item.type as never))}
         </Badge>
 
         <h3 className="text-card-title mt-3">

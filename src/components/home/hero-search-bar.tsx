@@ -29,10 +29,21 @@ import { routes, site } from '@/config';
 import { useRouter } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
-export function HeroSearchBar({ className }: { className?: string }) {
+export function HeroSearchBar({
+  initialQuery = '',
+  className,
+}: {
+  /**
+   * Начальное значение. Нужно на `/discover`: строка обязана показывать тот
+   * запрос, по которому получены результаты, иначе после уточнения фильтра
+   * человек видит пустое поле и решает, что запрос потерялся.
+   */
+  initialQuery?: string;
+  className?: string;
+}) {
   const t = useTranslations();
   const router = useRouter();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
 
   return (
     <form

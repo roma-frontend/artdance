@@ -16,16 +16,17 @@ import { BadgeCheckIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Media } from '@/components/ui/media';
+import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Price } from '@/components/ui/price';
 import { RatingStars } from '@/components/ui/rating-stars';
 import { routes } from '@/config';
-import { resolveMedia, type HomeInstructorCard } from '@/domain/content';
+import { resolveMedia, type InstructorCardItem } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
 interface InstructorCardProps {
-  item: HomeInstructorCard;
+  item: InstructorCardItem;
   locale: Locale;
   /**
    * Куда ведёт карточка. По умолчанию — профиль инструктора; на странице входа в
@@ -59,12 +60,25 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
         {item.isVerified && (
           <span
             title={t('instructor.verifiedBadge')}
-            className="absolute top-3 right-3 grid size-6 place-items-center rounded-full bg-success text-content-on-accent"
+            className="absolute top-3 left-3 grid size-6 place-items-center rounded-full bg-success text-content-on-accent"
           >
             <BadgeCheckIcon className="size-3.5" aria-hidden />
             <span className="sr-only">{t('instructor.verifiedBadge')}</span>
           </span>
         )}
+
+        {/*
+          Сердечко справа, знак верификации слева: в прототипе знак стоял справа,
+          но сохранить фаворитом инструктора важнее, чем видеть галочку именно в
+          этом углу, а две круглые метки в одном углу читаются как одна.
+        */}
+        <FavoriteButton
+          target="instructor"
+          slug={item.slug}
+          name={item.name}
+          onMedia
+          className="absolute top-2.5 right-2.5 z-10"
+        />
       </div>
 
       <div className="flex flex-1 flex-col p-5">

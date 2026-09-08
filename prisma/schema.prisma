@@ -1425,6 +1425,36 @@ model Notification {
   @@index([status, scheduledFor])
 }
 
+/// Подписчик рассылки (A-09).
+///
+/// Отдельно от `User` намеренно: подписаться можно, не регистрируясь, и это
+/// основной случай — блок подписки стоит на главной, до всякого входа. Обратное
+/// тоже верно: у зарегистрированного пользователя согласие на рассылку живёт в
+/// `NotificationPreference`, и связывать два разных согласия одной записью
+/// означало бы, что отписка от письма выключает уведомление о брони.
+///
+/// Подтверждение адреса обязательно (double opt-in): без него любой может
+/// подписать чужой адрес, а рассылка попадает в спам по жалобам.
+model NewsletterSubscriber {
+  id     String  @id @default(cuid())
+  email  String  @unique
+  locale Locale
+  /// Ссылка на пользователя, если подписка оформлена из аккаунта. Не обязательна.
+  userId String?
+  /// Токен подтверждения и отписки. Одноразовый, живёт до подтверждения.
+  token       String    @unique
+  confirmedAt DateTime?
+  /// Момент отписки. Запись не удаляется: повторная подписка не должна
+  /// «обнулять» историю жалоб, а закон требует доказательства согласия.
+  unsubscribedAt DateTime?
+  /// Откуда пришла подписка: `home`, `checkout`, `account`. Для отчётов.
+  source    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([confirmedAt, unsubscribedAt])
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   actorId    String?

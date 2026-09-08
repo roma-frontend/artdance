@@ -4,7 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
-import { absoluteUrl, seo, site } from '@/config';
+import { absoluteUrl, routes, seo, site } from '@/config';
 import { PointerGlow } from '@/components/fx/pointer-glow';
 import { ScrollProgress } from '@/components/fx/scroll-progress';
 import { MobileDock } from '@/components/layout/mobile-dock';
@@ -15,8 +15,11 @@ import { ThemeProvider } from '@/components/layout/theme-provider';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { fontVariables } from '@/design/fonts';
 import { SearchOverlayProvider } from '@/components/search/search-overlay';
+import { JsonLdScript } from '@/components/seo/json-ld';
 import { schemeTokens } from '@/design/tokens';
 import { localeMeta, locales, isLocale, type Locale } from '@/i18n/config';
+import { organizationSchema, websiteSchema } from '@/lib/seo/jsonld';
+import { localeAlternates } from '@/lib/seo/sitemap';
 import { routing } from '@/i18n/routing';
 
 import '@/styles/globals.css';
@@ -78,10 +81,7 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
     applicationName: brand,
     alternates: {
       canonical: `/${locale}`,
-      languages: Object.fromEntries([
-        ...locales.map((l) => [localeMeta[l].bcp47, `/${l}`]),
-        ['x-default', `/${seo.hreflang.xDefault}`],
-      ]),
+      languages: localeAlternates(routes.home()),
     },
     openGraph: {
       type: 'website',
@@ -90,13 +90,13 @@ export async function generateMetadata({ params }: LocaleLayoutProps): Promise<M
       url: absoluteUrl(`/${locale}`),
       title: t('title'),
       description: t('description'),
-      images: [
-        {
-          url: seo.openGraph.defaultImage,
-          width: seo.openGraph.imageWidth,
-          height: seo.openGraph.imageHeight,
-        },
-      ],
+      /*
+       * Картинки здесь нет: её ставит файловое соглашение
+       * (`opengraph-image.tsx` в каждом публичном сегменте). Объявленная в
+       * метаданных, она ОТМЕНЯЕТ файловую — проверено на сборке, страница
+       * занятия отдавала общую заглушку вместо своей карточки. Подробности — в
+       * шапке `src/lib/seo/metadata.ts`.
+       */
     },
     twitter: {
       card: seo.twitter.card,
@@ -114,6 +114,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
   setRequestLocale(rawLocale);
 
   const meta = localeMeta[rawLocale];
+  const tBrand = await getTranslations({ locale: rawLocale, namespace: 'brand' });
+  const brand = tBrand('name');
 
   return (
     <html
@@ -131,6 +133,15 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       className={fontVariables}
     >
       <body className="has-mobile-dock">
+        {/*
+          Organization и WebSite — схемы уровня сайта, поэтому они в layout, а не
+          на каждой странице: повторять их в каждом документе значит трижды
+          сообщить об одной организации. Схемы сущностей добавляют сами страницы.
+        */}
+        <JsonLdScript
+          schema={[organizationSchema(rawLocale, brand), websiteSchema(rawLocale, brand)]}
+        />
+
         <ThemeProvider>
           <ThemeColorSync />
           <NextIntlClientProvider>

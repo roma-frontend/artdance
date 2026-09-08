@@ -16,19 +16,20 @@
  * «Saturday, 18:00» из данных означало бы английский день недели на армянской
  * странице.
  *
- * Кнопки «в избранное» здесь пока нет намеренно: она требует сессии, а показывать
- * сердечко, которое ничего не делает, — хуже, чем не показывать его вовсе. Придёт
- * с волной аутентификации (`FavoriteButton` в карте компонентов).
+ * **Сердечко видно всегда.** В прототипе `♡` появляется только при наведении
+ * курсора — на телефоне такая кнопка недостижима в принципе. Отметка работает и
+ * без входа: набор гостя живёт в браузере и переносится в аккаунт при входе.
  */
 
 import { useFormatter, useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
+import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
 import { SpotsLeft } from '@/components/ui/spots-left';
 import { routes } from '@/config';
-import { resolveMedia, type HomeClassCard } from '@/domain/content';
+import { resolveMedia, type ClassCardItem } from '@/domain/content';
 import { danceStyleLabelKey, skillLevelLabelKey } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
@@ -36,7 +37,7 @@ import { dateForWeekday } from '@/lib/format/weekday';
 import { cn } from '@/lib/utils';
 
 interface ClassCardProps {
-  item: HomeClassCard;
+  item: ClassCardItem;
   locale: Locale;
   className?: string;
 }
@@ -77,13 +78,25 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
             </Badge>
           )
         )}
+
+        {/*
+          Сердечко поверх кадра. `z-10` обязателен: растянутый якорь названия
+          накрывает карточку целиком, и без слоя выше кнопка была бы под ним.
+        */}
+        <FavoriteButton
+          target="class"
+          slug={item.slug}
+          name={item.title}
+          onMedia
+          className="absolute top-2.5 right-2.5 z-10"
+        />
       </div>
 
       <div className="flex flex-1 flex-col p-5">
         <p className="text-caption flex flex-wrap items-center gap-2 text-content-tertiary">
-          <span>{t(danceStyleLabelKey(item.style as never) as 'danceStyles.hipHop')}</span>
+          <span>{t(danceStyleLabelKey(item.style as never))}</span>
           <i aria-hidden className="size-1 shrink-0 rounded-full bg-border-strong" />
-          <span>{t(skillLevelLabelKey(item.level as never) as 'levels.beginner')}</span>
+          <span>{t(skillLevelLabelKey(item.level as never))}</span>
           <i aria-hidden className="size-1 shrink-0 rounded-full bg-border-strong" />
           <span>{t('common.units.minutes', { count: item.durationMinutes })}</span>
         </p>

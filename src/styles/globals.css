@@ -884,6 +884,17 @@
     bottom: calc(var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-6));
   }
 
+  /*
+   * Полоса действия детальной страницы (`StickyActionBar`).
+   *
+   * Отличается от `.above-mobile-dock` отсутствием зазора: это панель во всю
+   * ширину, прижатая к верхней кромке дока, а не плавающая кнопка. Зазор под
+   * панелью выглядел бы щелью, через которую видно содержимое страницы.
+   */
+  .above-mobile-dock-flush {
+    bottom: calc(var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  }
+
   @media (width >= theme(--breakpoint-lg)) {
     .has-mobile-dock {
       padding-bottom: 0;
@@ -891,6 +902,10 @@
 
     .above-mobile-dock {
       bottom: var(--space-6);
+    }
+
+    .above-mobile-dock-flush {
+      bottom: 0;
     }
   }
 

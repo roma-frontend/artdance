@@ -54,7 +54,7 @@ export function TrustBadges({ variant = 'cart', paymentMethods, className }: Tru
       ? /* Перечисление собирает `Intl.ListFormat`: разделитель зависит от языка. */
         format.list(
           paymentMethods.map((method) =>
-            t(paymentMethodLabelKey(method) as 'checkout.payment.methodArca'),
+            t(paymentMethodLabelKey(method)),
           ),
           'enumeration',
         )

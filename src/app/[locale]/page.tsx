@@ -21,6 +21,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { HeroSection } from '@/components/home/hero-section';
 import { HeroSearchBar } from '@/components/home/hero-search-bar';
 import { EditorialStatement } from '@/components/home/editorial-statement';
+import { NewsletterSection } from '@/components/home/newsletter-section';
 import { StyleMarquee } from '@/components/home/style-marquee';
 import { TestimonialCard } from '@/components/home/testimonial-card';
 import { CardTilt } from '@/components/fx/card-tilt';
@@ -37,7 +38,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Price } from '@/components/ui/price';
 import { SectionHeading } from '@/components/ui/section-heading';
-import { features, orderedSubscriptionPlans, routes, site } from '@/config';
+import {
+  features,
+  orderedSubscriptionPlans,
+  routes,
+  site,
+  subscriptionPlanDescriptionKey,
+  subscriptionPlanNameKey,
+} from '@/config';
 import { danceStyles } from '@/domain/enums';
 import { Link } from '@/i18n/routing';
 import { getHomeContent } from '@/server/content/home';
@@ -55,6 +63,8 @@ export default async function HomePage({ params }: PageProps) {
   const t = await getTranslations('home');
   const tCommon = await getTranslations('common');
   const tPricing = await getTranslations('pricing');
+  /** Корневой переводчик — для ключей, собранных из данных (`MessageKey`). */
+  const tRoot = await getTranslations();
 
   return (
     <main id={site.mainContentId}>
@@ -322,10 +332,10 @@ export default async function HomePage({ params }: PageProps) {
                     </Badge>
                   )}
                   <h3 className="text-card-title mb-2">
-                    {tPricing(`plans.${plan.id}.name` as 'plans.pro.name')}
+                    {tRoot(subscriptionPlanNameKey(plan.id))}
                   </h3>
                   <p className="text-body-sm mb-6 text-content-secondary">
-                    {tPricing(`plans.${plan.id}.description` as 'plans.pro.description')}
+                    {tRoot(subscriptionPlanDescriptionKey(plan.id))}
                   </p>
                   <Price amount={plan.price.MONTHLY} unit="perMonth" emphasis="total" />
                   <Button
@@ -336,7 +346,7 @@ export default async function HomePage({ params }: PageProps) {
                   >
                     <Link href={routes.pricing()}>
                       {tPricing('selectCta', {
-                        plan: tPricing(`plans.${plan.id}.name` as 'plans.pro.name'),
+                        plan: tRoot(subscriptionPlanNameKey(plan.id)),
                       })}
                     </Link>
                   </Button>
@@ -346,6 +356,9 @@ export default async function HomePage({ params }: PageProps) {
           </div>
         </section>
       )}
+
+      {/* ── NEWSLETTER: последний шанс остаться на связи, перед подвалом ── */}
+      <NewsletterSection locale={locale as Locale} source="home" />
 
       {/* ── FOOTER: колонки из слоя навигации, год из системного времени ── */}
       <SiteFooter />

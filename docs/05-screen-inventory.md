@@ -18,6 +18,8 @@
 | `/` | `app/[locale]/page.tsx` | ✅ home | `catalog` 180s | трендовые занятия, топ-инструкторы, площадки, товары, события, отзывы, счётчики |
 | `/discover` | `app/[locale]/discover/page.tsx` | ✅ discover | `catalog` | занятия с фильтрами из URL, курсорная пагинация |
 | `/classes/[slug]` | `app/[locale]/classes/[slug]/page.tsx` | ✅ class | `catalog` | занятие, инструктор, площадка, ближайшие сессии, отзывы, похожие |
+| `/styles` | `app/[locale]/styles/page.tsx` | — | `catalog` | ✅ перечень 18 направлений: плитки тех, где есть занятия, и полный список текстом |
+| `/styles/[style]` | `app/[locale]/styles/[style]/page.tsx` | — | `catalog` | ✅ SEO-хаб направления (A-01): описание из i18n, занятия, преподаватели, залы, соседние направления. 18 страниц × 3 локали; в индекс попадают только направления с предложением |
 | `/instructors` | `app/[locale]/instructors/page.tsx` | — | `catalog` | инструкторы с фильтрами |
 | `/instructors/[slug]` | `app/[locale]/instructors/[slug]/page.tsx` | ✅ instructor | `catalog` | профиль, опыт, тарифы, занятия, доступность, отзывы |
 | `/studios` | `app/[locale]/studios/page.tsx` | — | `catalog` | площадки, карта |
@@ -27,11 +29,11 @@
 | `/shop` | `app/[locale]/shop/page.tsx` | ✅ shop | `catalog` | товары, категории, фильтры |
 | `/shop/[slug]` | `app/[locale]/shop/[slug]/page.tsx` | — | `catalog` | товар, варианты, галерея, остатки |
 | `/pricing` | `app/[locale]/pricing/page.tsx` | — | `content` | `orderedSubscriptionPlans` из конфига |
-| `/about`, `/contact`, `/faq`, `/help` | соответствующие `page.tsx` | — | `content` | статический контент |
-| `/blog`, `/blog/[slug]` | `app/[locale]/blog/**` | — | `content` | посты |
-| `/become-instructor`, `/list-your-studio` | `app/[locale]/**` | — | `content` | лендинги привлечения |
-| `/gift-cards` | `app/[locale]/gift-cards/page.tsx` | — | `content` | номиналы из `promotions.giftCard` |
-| `/legal/*` | `app/[locale]/legal/[slug]/page.tsx` | — | `legal` 24h | документы заказчика |
+| `/about`, `/contact`, `/faq`, `/help` | соответствующие `page.tsx` | — | `content` | ✅ текст из i18n, числа из бизнес-правил; у `/contact` — server action с капчей |
+| `/blog`, `/blog/[slug]` | `app/[locale]/blog/**` | — | `content` | посты. Не сделано: модели записей в схеме нет, публикации — часть CMS-lite (A-17). Ссылка убрана из подвала, пока раздела нет |
+| `/become-instructor`, `/list-your-studio` | `app/[locale]/**` | — | `content` | ✅ лендинги привлечения; комиссия, выплаты и окна отмены из `commission` / `payout` / `venue` |
+| `/gift-cards` | `app/[locale]/gift-cards/page.tsx` | — | `content` | ✅ номиналы из `promotions.giftCard`; покупка — вместе с магазином (фаза 4) |
+| `/legal/*` | `app/[locale]/legal/[slug]/page.tsx` | — | `legal` 24h | ✅ шесть документов из `config/legal.ts`, статус `draft` до проверки юристом (8.2) |
 
 ## Бронирование и оформление
 
@@ -71,12 +73,14 @@
 | Маршрут | Файл | Готово |
 |---|---|---|
 | `/api/health` | `app/api/health/route.ts` | ✅ |
+| `/api/search` | `app/api/search/route.ts` | ✅ подсказки поиска: лимит частоты, коды ошибок, `no-store` |
 | `robots.txt` | `app/robots.ts` | ✅ |
-| `sitemap.xml` | `app/sitemap.ts` | — |
+| `sitemap.xml` | `app/sitemap.ts` | ✅ одна запись на страницу с `alternates.languages` |
+| `**/opengraph-image` | `app/[locale]/**/opengraph-image.tsx` | ✅ карточки ссылок для соцсетей (A-23). Своя в каждом публичном сегменте: наследования у файлового соглашения нет, покрытие проверяет `sitemap.test.ts`. Кадр пережимается в JPEG (`sharp`), потому что движок отрисовки не читает WebP; шрифты — `src/design/og-fonts/` |
 | 404 | `app/[locale]/not-found.tsx` | ✅ |
 | Ошибка раздела | `app/[locale]/error.tsx` | ✅ |
 | Критическая ошибка | `app/global-error.tsx` | ✅ |
-| Skeleton | `app/[locale]/loading.tsx` | ✅ |
+| Skeleton | `app/[locale]/loading.tsx` | — переход между разделами пока держит предыдущий экран до готовности нового |
 
 ---
 

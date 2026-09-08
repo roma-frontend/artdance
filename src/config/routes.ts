@@ -11,24 +11,36 @@
 export const routes = {
   /* Публичная часть */
   home: () => '/',
-  discover: (params?: DiscoverParams) => withQuery('/discover', params),
+  discover: (params?: ListingParams) => withQuery('/discover', params),
 
-  classes: () => '/classes',
+  classes: (params?: ListingParams) => withQuery('/classes', params),
   class: (slug: string) => `/classes/${slug}`,
+
+  /**
+   * Направления танца. Хаб направления — не то же самое, что каталог с фильтром:
+   * `/classes?style=salsa` отвечает «вот занятия», а `/styles/salsa` — «вот что
+   * такое сальса, кто её ведёт, где ей учат и сколько это стоит». Первый адрес
+   * нужен человеку, который уже выбрал; второй — тому, кто ищет «уроки сальсы в
+   * Ереване» в поисковике, и именно он индексируется.
+   *
+   * Слаг собирается `danceStyleSlug()`, а не пишется строкой.
+   */
+  styles: () => '/styles',
+  style: (slug: string) => `/styles/${slug}`,
 
   courses: () => '/courses',
   course: (slug: string) => `/courses/${slug}`,
   courseLesson: (courseSlug: string, lessonSlug: string) => `/courses/${courseSlug}/${lessonSlug}`,
 
-  instructors: (params?: InstructorParams) => withQuery('/instructors', params),
+  instructors: (params?: ListingParams) => withQuery('/instructors', params),
   instructor: (slug: string) => `/instructors/${slug}`,
   instructorBooking: (slug: string) => `/instructors/${slug}/book`,
 
-  studios: () => '/studios',
+  studios: (params?: ListingParams) => withQuery('/studios', params),
   studio: (slug: string) => `/studios/${slug}`,
   studioBooking: (slug: string) => `/studios/${slug}/book`,
 
-  events: () => '/events',
+  events: (params?: ListingParams) => withQuery('/events', params),
   event: (slug: string) => `/events/${slug}`,
 
   shop: (params?: ShopParams) => withQuery('/shop', params),
@@ -103,6 +115,15 @@ export const routes = {
   listYourStudio: () => '/list-your-studio',
   giftCards: () => '/gift-cards',
   pricing: () => '/pricing',
+
+  /**
+   * Рассылка. Подтверждение и отписка — отдельные маршруты с одноразовым
+   * токеном: подписать чужой адрес не должно быть возможно, а отписка обязана
+   * работать из письма одним переходом, без входа в аккаунт.
+   */
+  newsletterConfirm: (token: string) => `/newsletter/confirm/${token}`,
+  newsletterUnsubscribe: (token: string) => `/newsletter/unsubscribe/${token}`,
+
   terms: () => '/legal/terms',
   privacy: () => '/legal/privacy',
   refundPolicy: () => '/legal/refund-policy',
@@ -130,7 +151,20 @@ export const apiRoutes = {
 export const checkoutSteps = ['contact', 'delivery', 'payment', 'confirm'] as const;
 export type CheckoutStep = (typeof checkoutSteps)[number];
 
-export interface DiscoverParams {
+/**
+ * Параметры листинга каталога.
+ *
+ * Один тип на все листинги, а не три почти одинаковых. Разница между
+ * `/discover`, `/instructors` и `/studios` — в том, какие параметры экран
+ * учитывает, а не в том, как они называются: `?style=salsa&sort=priceAsc`
+ * обязан означать одно и то же везде, иначе фильтр, перенесённый между
+ * разделами, тихо перестаёт работать.
+ *
+ * Экран объявляет поддерживаемые фильтры сам (`availableSorts`,
+ * `DiscoverFilters`); неизвестный параметр отбрасывается при разборе
+ * (`parseCatalogQuery`), а не ломает страницу.
+ */
+export interface ListingParams {
   /**
    * Свободный запрос из поисковой строки первого экрана.
    *
@@ -141,30 +175,32 @@ export interface DiscoverParams {
   q?: string;
   style?: string;
   level?: string;
-  city?: string;
+  /**
+   * Район города, а не город: платформа работает в Ереване, и «Kentron» —
+   * то, по чему человек действительно выбирает зал рядом с домом. Параметр
+   * города появится вместе со вторым городом, а не заранее.
+   */
+  district?: string;
   date?: string;
   priceMin?: number;
   priceMax?: number;
-  sort?: string;
-  page?: number;
-}
-
-export interface InstructorParams {
-  style?: string;
-  city?: string;
+  /** Только проверенные инструкторы. Применимо к `/instructors`. */
   verified?: boolean;
+  /**
+   * Раздел результатов поиска на `/discover`: `classes`, `studios`, `all`.
+   * Значения — `searchScopes`; в URL, потому что выбранный раздел обязан
+   * открываться по прямой ссылке, как и любой другой фильтр.
+   */
+  scope?: string;
   sort?: string;
   page?: number;
 }
 
-export interface ShopParams {
+/** Магазин добавляет к общим фильтрам свойства товара. */
+export interface ShopParams extends ListingParams {
   category?: string;
   size?: string;
   color?: string;
-  priceMin?: number;
-  priceMax?: number;
-  sort?: string;
-  page?: number;
 }
 
 /** Сериализация query без `undefined`/пустых значений — стабильные URL для кеша и SEO. */
@@ -179,8 +215,60 @@ function withQuery(path: string, params?: object): string {
   return qs ? `${path}?${qs}` : path;
 }
 
+/* ─────────────────────────── Разделы каталога ───────────────────────────
+ *
+ * Раздел листинга — значение, а не функция, и это требование границы
+ * сервер/клиент, а не вкусовщина: фильтры и сортировка живут в клиентском
+ * компоненте, а функцию в клиентский компонент передать нельзя («Functions
+ * cannot be passed directly to Client Components»). Поэтому страница сообщает
+ * оболочке, КАКОЙ она раздел, а адрес по разделу собирает уже сама оболочка —
+ * через `routes`, а не через склейку строк.
+ */
+
+export const listingSections = [
+  'discover',
+  'classes',
+  'instructors',
+  'studios',
+  'events',
+  'shop',
+] as const;
+
+export type ListingSection = (typeof listingSections)[number];
+
+/**
+ * Маршрут листинга по разделу.
+ *
+ * Тип параметра — `ShopParams`: он расширяет `ListingParams`, поэтому маршрут,
+ * принимающий общие фильтры, подходит под общую подпись, а `/shop` дополнительно
+ * понимает размер и цвет.
+ */
+export const listingRoute: Record<ListingSection, (params?: ShopParams) => string> = {
+  discover: routes.discover,
+  classes: routes.classes,
+  instructors: routes.instructors,
+  studios: routes.studios,
+  events: routes.events,
+  shop: routes.shop,
+};
+
 /** Пути, требующие аутентификации. Используется middleware — не дублировать список. */
 export const protectedPathPrefixes = ['/account', '/studio', '/venue', '/admin', '/checkout'] as const;
+
+/**
+ * Путь под защитой?
+ *
+ * Сравнение по сегментам, а не по префиксу строки, и это не педантизм:
+ * `'/studios'.startsWith('/studio')` — правда, поэтому публичный листинг залов
+ * уезжал на страницу входа вместе с кабинетом владельца. Дефект такого рода не
+ * видят ни типы, ни сборка: раздел просто перестаёт существовать. Та же ловушка
+ * ждала бы `/venue` и `/venues`.
+ */
+export function isProtectedPath(pathWithoutLocale: string): boolean {
+  return protectedPathPrefixes.some(
+    (prefix) => pathWithoutLocale === prefix || pathWithoutLocale.startsWith(`${prefix}/`),
+  );
+}
 
 /** Пути, закрытые от индексации. Попадает в `robots.ts`. */
 export const noIndexPathPrefixes = [

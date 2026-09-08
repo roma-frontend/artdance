@@ -1,18 +1,34 @@
+/**
+ * Пагинация.
+ *
+ * Отличие от вендорного примитива shadcn: подписи и доступные имена приходят
+ * пропсами и не имеют значений по умолчанию. В исходном варианте здесь стояли
+ * `aria-label="Go to previous page"` и `<span>Next</span>` — на армянской
+ * странице скринридер читал бы их по-английски, а линтер про строку внутри
+ * вендорного файла не жалуется. Раз подпись обязательна, отсутствие перевода
+ * становится ошибкой типов, а не находкой на приёмке.
+ */
+
 import * as React from "react"
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MoreHorizontalIcon,
 } from "lucide-react"
+import { Slot } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { buttonVariants, type Button } from "@/components/ui/button"
 
-function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+function Pagination({
+  className,
+  label,
+  ...props
+}: React.ComponentProps<"nav"> & { label: string }) {
   return (
     <nav
       role="navigation"
-      aria-label="pagination"
+      aria-label={label}
       data-slot="pagination"
       className={cn("mx-auto flex w-full justify-center", className)}
       {...props}
@@ -39,6 +55,12 @@ function PaginationItem({ ...props }: React.ComponentProps<"li">) {
 
 type PaginationLinkProps = {
   isActive?: boolean
+  /**
+   * Отрисовать как дочерний элемент. Нужно для локализованного `Link` из
+   * `@/i18n/routing`: собственный `<a href>` потерял бы префикс локали и
+   * клиентскую навигацию.
+   */
+  asChild?: boolean
 } & Pick<React.ComponentProps<typeof Button>, "size"> &
   React.ComponentProps<"a">
 
@@ -46,10 +68,13 @@ function PaginationLink({
   className,
   isActive,
   size = "icon",
+  asChild = false,
   ...props
 }: PaginationLinkProps) {
+  const Component = asChild ? Slot.Root : "a"
+
   return (
-    <a
+    <Component
       aria-current={isActive ? "page" : undefined}
       data-slot="pagination-link"
       data-active={isActive}
@@ -67,33 +92,35 @@ function PaginationLink({
 
 function PaginationPrevious({
   className,
+  label,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) {
+}: React.ComponentProps<typeof PaginationLink> & { label: string }) {
   return (
     <PaginationLink
-      aria-label="Go to previous page"
+      aria-label={label}
       size="default"
       className={cn("gap-1 px-2.5 sm:pl-2.5", className)}
       {...props}
     >
       <ChevronLeftIcon />
-      <span className="hidden sm:block">Previous</span>
+      <span className="hidden sm:block">{label}</span>
     </PaginationLink>
   )
 }
 
 function PaginationNext({
   className,
+  label,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) {
+}: React.ComponentProps<typeof PaginationLink> & { label: string }) {
   return (
     <PaginationLink
-      aria-label="Go to next page"
+      aria-label={label}
       size="default"
       className={cn("gap-1 px-2.5 sm:pr-2.5", className)}
       {...props}
     >
-      <span className="hidden sm:block">Next</span>
+      <span className="hidden sm:block">{label}</span>
       <ChevronRightIcon />
     </PaginationLink>
   )
@@ -101,8 +128,9 @@ function PaginationNext({
 
 function PaginationEllipsis({
   className,
+  label,
   ...props
-}: React.ComponentProps<"span">) {
+}: React.ComponentProps<"span"> & { label: string }) {
   return (
     <span
       aria-hidden
@@ -111,7 +139,7 @@ function PaginationEllipsis({
       {...props}
     >
       <MoreHorizontalIcon className="size-4" />
-      <span className="sr-only">More pages</span>
+      <span className="sr-only">{label}</span>
     </span>
   )
 }

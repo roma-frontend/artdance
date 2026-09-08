@@ -9,7 +9,7 @@
  */
 
 export { clientEnv, isLocal, isPreview, isProduction, type ClientEnv } from './env';
-export { site, absoluteUrl, type Site } from './site';
+export { site, absoluteUrl, directionsUrl, type Site } from './site';
 export {
   routes,
   apiRoutes,
@@ -17,8 +17,7 @@ export {
   protectedPathPrefixes,
   noIndexPathPrefixes,
   type CheckoutStep,
-  type DiscoverParams,
-  type InstructorParams,
+  type ListingParams,
   type ShopParams,
 } from './routes';
 export {
@@ -44,18 +43,36 @@ export {
 export {
   subscriptionPlans,
   subscriptionPlanIds,
+  subscriptionPlanNameKey,
+  subscriptionPlanDescriptionKey,
   orderedSubscriptionPlans,
   billingIntervals,
+  planFeatureIds,
+  planFeatureLabelKey,
   priceGuidance,
   lineItemTypes,
   commissionableLineItems,
   nonRefundableLineItems,
   type BillingInterval,
   type LineItemType,
+  type PlanFeatureId,
   type PlanQuota,
   type SubscriptionPlan,
   type SubscriptionPlanId,
 } from './pricing';
+export {
+  legalDocuments,
+  legalDocumentBySlug,
+  legalDocumentIds,
+  legalDocumentIntroKey,
+  legalDocumentSlugs,
+  legalDocumentTitleKey,
+  legalSectionBodyKey,
+  legalSectionTitleKey,
+  type LegalDocumentId,
+  type LegalDocumentSpec,
+  type LegalDocumentStatus,
+} from './legal';
 export { features, isEnabled, deliveryPhases, type DeliveryPhaseId, type FeatureKey } from './features';
 export {
   headerCta,

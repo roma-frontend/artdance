@@ -13,12 +13,12 @@
 import { Media } from '@/components/ui/media';
 import { RatingStars } from '@/components/ui/rating-stars';
 import { reviews } from '@/config';
-import { resolveMedia, type HomeTestimonial } from '@/domain/content';
+import { resolveMedia, type TestimonialItem } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
 import { cn } from '@/lib/utils';
 
 interface TestimonialCardProps {
-  item: HomeTestimonial;
+  item: TestimonialItem;
   locale: Locale;
   className?: string;
 }

@@ -25,7 +25,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { security } from '@/config/business';
-import { protectedPathPrefixes, routes } from '@/config/routes';
+import { isProtectedPath, routes } from '@/config/routes';
 import {
   authContentSecurityPolicy,
   authCspPathPrefixes,
@@ -130,9 +130,8 @@ export default async function proxy(request: NextRequest) {
   const response = intlMiddleware(request);
 
   const pathWithoutLocale = stripLocale(pathname);
-  const isProtected = protectedPathPrefixes.some((prefix) => pathWithoutLocale.startsWith(prefix));
 
-  if (isProtected && !request.cookies.has(security.session.cookieName)) {
+  if (isProtectedPath(pathWithoutLocale) && !request.cookies.has(security.session.cookieName)) {
     const redirectTo = pathname + request.nextUrl.search;
     const signInUrl = new URL(
       `/${localeOf(pathname)}${routes.signIn(redirectTo)}`,

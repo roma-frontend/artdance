@@ -19,7 +19,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
 import en from '../src/i18n/messages/en';
-import { demoInstructors } from '../prisma/fixtures/demo';
+import { demoClasses, demoEvents, demoInstructors, demoVenues } from '../prisma/fixtures/demo';
 import { security } from '../src/config/business';
 import { isAcceptedBrandColor } from '../src/design/tokens/contrast';
 import { locales } from '../src/i18n/config';
@@ -168,6 +168,59 @@ for (const locale of locales) {
 
 
 /**
+ * Каталог: листинги и страницы сущностей.
+ *
+ * На этих экранах появляются свои пары и роли, которых нет ни на лендинге, ни на
+ * шагах покупки: чипы фильтров со счётчиками (`fieldset`/`legend` и
+ * `aria-current`), выпадающее меню сортировки из ссылок, выключенные кнопки с
+ * объяснением рядом, аватар с бейджем верификации, таймлайн опыта, кинематогра-
+ * фичный баннер с крошками поверх фотографии.
+ *
+ * Баннер — главная причина проверять обе темы: он остаётся тёмным в обеих, и
+ * пара «текст на снимке» там одна и та же, а вот всё под ним меняется вместе с
+ * темой.
+ */
+test.describe('каталог', () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== AUDIT_PROJECT,
+      'Контраст и роли не зависят от ширины окна — аудит идёт на одном проекте',
+    );
+  });
+
+  const screens = [
+    '/en/classes',
+    '/en/discover',
+    '/en/shop',
+    `/en/classes/${demoClasses[0]!.slug}`,
+    `/en/instructors/${demoInstructors[0]!.slug}`,
+    `/en/studios/${demoVenues[0]!.slug}`,
+    `/en/events/${demoEvents[0]!.slug}`,
+    /*
+     * Хабы направлений: наполненный и пустой. У пустого набор пар «текст — фон»
+     * другой — это пустое состояние на штриховой рамке, где легко потерять
+     * контраст подписи, — и именно он показывается тому, кто пришёл по редкому
+     * запросу из поиска.
+     */
+    '/en/styles',
+    '/en/styles/hip-hop',
+    '/en/styles/flamenco',
+  ];
+
+  for (const path of screens) {
+    for (const colorScheme of ['light', 'dark'] as const) {
+      test(`${path} — тема ${colorScheme} без нарушений WCAG`, async ({ page }) => {
+        test.slow();
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+        await page.goto(path);
+        await audit(page);
+      });
+    }
+  }
+});
+
+
+/**
  * Экраны покупки: корзина, бронирование, оформление.
  *
  * Здесь появляются пары, которых на лендинге нет вовсе: поля ввода с подписями
@@ -216,6 +269,87 @@ test.describe('экраны покупки', () => {
       });
     }
   }
+});
+
+/**
+ * Контентные и правовые страницы.
+ *
+ * Здесь появляются пары и роли, которых нет ни в каталоге, ни на шагах покупки:
+ * раскрывающиеся вопросы (`<details>`), таблица сравнения тарифов с `<th scope>`,
+ * оглавление документа, форма обращения с полями и подписями, карточки-ссылки
+ * целиком. Правовые документы — самый длинный текст на сайте: если контраст
+ * основного абзаца не проходит, видно это именно здесь.
+ */
+test.describe('контентные страницы', () => {
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== AUDIT_PROJECT,
+      'Контраст и роли не зависят от ширины окна — аудит идёт на одном проекте',
+    );
+  });
+
+  const screens = [
+    '/en/about',
+    '/en/contact',
+    '/en/faq',
+    '/en/help',
+    '/en/pricing',
+    '/en/become-instructor',
+    '/en/gift-cards',
+    '/en/legal/terms',
+  ];
+
+  for (const path of screens) {
+    for (const colorScheme of ['light', 'dark'] as const) {
+      test(`${path} — тема ${colorScheme} без нарушений WCAG`, async ({ page }) => {
+        test.slow();
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+        await page.goto(path);
+        await audit(page);
+      });
+    }
+  }
+});
+
+/**
+ * Открытый поиск — состояние с самым плотным набором ролей на всём сайте.
+ *
+ * В одном диалоге сходятся поле поиска, группа переключателей с `aria-pressed`,
+ * список ссылок с подсветкой части названия (`<mark>`) и вежливое объявление
+ * числа найденного. Проверяется состояние С РЕЗУЛЬТАТАМИ: в пустом нет ни
+ * подсветки, ни выдачи, то есть ровно того, что здесь ново.
+ *
+ * Тема одна: оверлей кинематографичный в обеих (`surface-cinema` — это не тема,
+ * а роль подложки), поэтому набор пар «текст — фон» от `colorScheme` не зависит.
+ */
+test.describe('поиск', () => {
+  test('открытый оверлей с результатами без нарушений WCAG', async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== AUDIT_PROJECT,
+      'Контраст и роли не зависят от ширины окна — аудит идёт на одном проекте',
+    );
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/en');
+
+    await page.getByRole('banner').getByRole('link', { name: en.nav.openSearch }).click();
+    const overlay = page.getByRole('dialog');
+    await expect(overlay).toBeVisible();
+
+    const answered = page.waitForResponse(
+      (response) => response.url().includes('/api/search') && response.status() === 200,
+    );
+    await overlay.getByRole('searchbox').fill('salsa');
+    await answered;
+    await expect(overlay.getByRole('listitem').getByRole('link').first()).toBeVisible();
+
+    const results = await new AxeBuilder({ page }).withTags(WCAG).analyze();
+    const violations = withoutAcceptedContrast(results.violations);
+    expect(
+      violations.map((violation) => violation.id),
+      `Нарушения WCAG в открытом поиске:\n${describeViolations(violations)}`,
+    ).toEqual([]);
+  });
 });
 
 /**

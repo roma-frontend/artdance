@@ -17,9 +17,10 @@ import { notFound } from 'next/navigation';
 
 import { BookingScreen } from '@/components/booking/booking-screen';
 import { SiteFooter } from '@/components/layout/site-footer';
-import { site } from '@/config';
+import { routes, site } from '@/config';
 import { getInstructorBookingContent } from '@/server/content/booking';
 import type { Locale } from '@/i18n/config';
+import { buildMetadata } from '@/lib/seo/metadata';
 
 /** Слоты живут секундами: ни ISR, ни CDN-кеш здесь недопустимы. */
 export const dynamic = 'force-dynamic';
@@ -29,13 +30,15 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { locale } = await params;
+  const { locale, slug } = await params;
   const t = await getTranslations({ locale: locale as Locale, namespace: 'booking' });
 
-  return {
+  return buildMetadata({
+    locale: locale as Locale,
+    path: routes.instructorBooking(slug),
     title: t('title'),
-    robots: { index: false, follow: false },
-  };
+    noIndex: true,
+  });
 }
 
 export default async function InstructorBookingPage({ params }: PageProps) {

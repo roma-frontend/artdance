@@ -43,6 +43,8 @@ export const catalogPaths = [
   '/discover',
   '/classes',
   '/classes/:slug*',
+  '/styles',
+  '/styles/:slug*',
   '/instructors',
   '/instructors/:slug*',
   '/studios',
@@ -69,6 +71,20 @@ export const contentPaths = [
 ] as const;
 
 export const legalPaths = ['/legal/:path*'] as const;
+
+/**
+ * Карточки ссылок для соцсетей.
+ *
+ * Отдельное правило, потому что иначе карточка занятия получает каталожные 180
+ * секунд от `/classes/:slug*` — а мессенджеры и поисковики перезапрашивают
+ * превью часто, и каждый такой запрос попадал бы в функцию мимо CDN. Меняться
+ * карточка без нового адреса не может: Next подписывает его отпечатком
+ * содержимого. Срок тот же, что у медиа из бакета, — по той же причине.
+ *
+ * Правило должно идти ПОСЛЕ каталожных и контентных: при совпадении нескольких
+ * шаблонов значение ставит последнее.
+ */
+export const openGraphImagePaths = ['/:path*/opengraph-image', '/opengraph-image'] as const;
 
 /**
  * Приватные маршруты. Ведётся явно: ошибка в эту сторону означает утечку
@@ -135,6 +151,7 @@ export function buildCacheHeaderRules(): HeaderRule[] {
     ...withLocales(legalPaths, cacheControl.legal),
     ...withLocales(contentPaths, cacheControl.content),
     ...withLocales(catalogPaths, cacheControl.catalog),
+    ...withLocales(openGraphImagePaths, cacheControl.media),
     {
       // API по умолчанию не кешируется. Прокси медиа ставит свой заголовок сам.
       source: '/api/((?!media).*)',

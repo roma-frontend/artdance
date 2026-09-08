@@ -7,7 +7,8 @@
  *   1. лишние/недостающие ключи относительно `en` (эталон);
  *   2. пустые строки — «ключ есть, перевода нет»;
  *   3. расхождение ICU-плейсхолдеров между языками ({price} есть в en, нет в ru);
- *   4. строки, оставшиеся на английском в неанглийском каталоге (эвристика).
+ *   4. расхождение или незакрытость тегов разметки (<terms>…</terms> для `t.rich`);
+ *   5. строки, оставшиеся на английском в неанглийском каталоге (эвристика).
  */
 
 import { locales, type Locale } from '../src/i18n/config.ts';
@@ -32,6 +33,18 @@ const REFERENCE: Locale = 'en';
  */
 const PLACEHOLDER = /\{\s*([A-Za-z_]\w*)\s*(?=[,}])/g;
 
+/**
+ * Открывающий тег разметки для `t.rich`: `<terms>Условия</terms>`.
+ *
+ * Ссылка внутри фразы задаётся тегом, а не аргументом `{termsLink}`: подпись
+ * склоняется вместе с текстом, а `t.rich` подставляет функции только в теги.
+ * Аргумент с функцией в значении React отрисовать не может — он падает в
+ * рантайме «Functions are not valid as a React child», причём только на той
+ * локали, где переводчик тег потерял. Поэтому набор тегов сверяется так же
+ * строго, как набор плейсхолдеров.
+ */
+const OPEN_TAG = /<([A-Za-z][\w-]*)>/g;
+
 function flatten(tree: Tree, prefix = '', out = new Map<string, string>()): Map<string, string> {
   for (const [key, value] of Object.entries(tree)) {
     const path = prefix ? `${prefix}.${key}` : key;
@@ -45,6 +58,14 @@ function flatten(tree: Tree, prefix = '', out = new Map<string, string>()): Map<
 function placeholders(value: string): Set<string> {
   const found = new Set<string>();
   for (const match of value.matchAll(PLACEHOLDER)) {
+    if (match[1]) found.add(match[1]);
+  }
+  return found;
+}
+
+function tags(value: string): Set<string> {
+  const found = new Set<string>();
+  for (const match of value.matchAll(OPEN_TAG)) {
     if (match[1]) found.add(match[1]);
   }
   return found;
@@ -81,6 +102,26 @@ for (const locale of locales) {
     for (const p of curPh) {
       if (!refPh.has(p)) problems.push(`[${locale}] лишний плейсхолдер {${p}} в ${key}`);
     }
+
+    const refTags = tags(refValue);
+    const curTags = tags(value);
+    for (const tag of refTags) {
+      if (!curTags.has(tag)) problems.push(`[${locale}] потерян тег <${tag}> в ${key}`);
+    }
+    for (const tag of curTags) {
+      if (!refTags.has(tag)) problems.push(`[${locale}] лишний тег <${tag}> в ${key}`);
+    }
+  }
+}
+
+/** Незакрытый тег — фраза без ссылки; проверяется и в эталоне. */
+for (const locale of locales) {
+  for (const [key, value] of flatten(catalogs[locale])) {
+    for (const tag of tags(value)) {
+      if (!value.includes(`</${tag}>`)) {
+        problems.push(`[${locale}] тег <${tag}> не закрыт в ${key}`);
+      }
+    }
   }
 }
 
@@ -100,6 +141,7 @@ const ALLOWED_IDENTICAL = [
   /^auth\.signIn\.emailLabel$/,
   /^checkout\.contact\.email$/,
   /^.*\.timeRange$/,
+  /^instructor\.experienceRange$/,
   /^.*\.priceNote$/,
   /^.*\.areaNote$/,
   /^.*\.calendarTitle$/,

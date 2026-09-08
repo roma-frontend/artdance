@@ -42,6 +42,14 @@ export function Price({
   const format = useFormatter();
   const t = useTranslations('common.labels');
 
+  /*
+   * Приписки («от», «за занятие») приглушены относительно суммы, но на тёмной
+   * плоскости приглушать нужно в другую сторону: `content-tertiary` рассчитан на
+   * светлую подложку и на кинематографичной секции почти сливается с фоном.
+   */
+  const asideColor =
+    emphasis === 'onCinema' ? 'text-content-on-cinema-muted' : 'text-content-tertiary';
+
   return (
     <span
       className={cn(
@@ -52,12 +60,12 @@ export function Price({
         className,
       )}
     >
-      {from && <span className="text-caption font-normal text-content-tertiary">{t('from')}</span>}
+      {from && <span className={cn('text-caption font-normal', asideColor)}>{t('from')}</span>}
 
       {format.number(amount, 'price')}
 
       {unit !== 'plain' && (
-        <span className="text-caption font-normal text-content-tertiary">{t(unit)}</span>
+        <span className={cn('text-caption font-normal', asideColor)}>{t(unit)}</span>
       )}
     </span>
   );

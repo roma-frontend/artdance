@@ -61,10 +61,22 @@ interface RevealProps {
   variant?: RevealVariant;
   /** Тег обёртки: секции нужен `section`, элементу списка — `li`. */
   as?: ElementType;
+  /**
+   * Якорь блока. Нужен разделам длинных страниц (правовые документы, справка):
+   * оглавление ссылается на `#id`, и этот id обязан стоять на том элементе,
+   * который появляется, а не на дополнительной обёртке вокруг него.
+   */
+  id?: string;
   className?: string;
 }
 
-export function Reveal({ children, variant = 'up', as: Component = 'div', className }: RevealProps) {
+export function Reveal({
+  children,
+  variant = 'up',
+  as: Component = 'div',
+  id,
+  className,
+}: RevealProps) {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -91,7 +103,7 @@ export function Reveal({ children, variant = 'up', as: Component = 'div', classN
     variant === 'stagger' ? { 'data-stagger': '' } : { 'data-reveal': variant };
 
   const element = (
-    <Component ref={ref} className={cn(className)} {...attributes}>
+    <Component ref={ref} id={id} className={cn(className)} {...attributes}>
       {children}
     </Component>
   );

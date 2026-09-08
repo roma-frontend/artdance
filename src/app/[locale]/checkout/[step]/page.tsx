@@ -21,9 +21,10 @@ import { notFound } from 'next/navigation';
 import { CheckoutScreen } from '@/components/checkout/checkout-screen';
 import { CheckoutStepper } from '@/components/checkout/checkout-stepper';
 import { SiteFooter } from '@/components/layout/site-footer';
-import { checkoutSteps, site, type CheckoutStep } from '@/config';
+import { checkoutSteps, routes, site, type CheckoutStep } from '@/config';
 import { getCheckoutContent } from '@/server/content/checkout';
 import type { Locale } from '@/i18n/config';
+import { buildMetadata } from '@/lib/seo/metadata';
 
 interface PageProps {
   params: Promise<{ locale: string; step: string }>;
@@ -41,14 +42,16 @@ function toStep(value: string): CheckoutStep | null {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, step } = await params;
   const resolved = toStep(step);
-  if (!resolved) return { title: undefined, robots: { index: false, follow: false } };
 
   const t = await getTranslations({ locale: locale as Locale, namespace: 'checkout' });
 
-  return {
-    title: `${t('title')} — ${t(`steps.${resolved}`)}`,
-    robots: { index: false, follow: false },
-  };
+  /** Неизвестный шаг всё равно закрывается от индексации: страница отдаст 404. */
+  return buildMetadata({
+    locale: locale as Locale,
+    path: resolved ? routes.checkoutStep(resolved) : routes.checkout(),
+    title: resolved ? `${t('title')} — ${t(`steps.${resolved}`)}` : t('title'),
+    noIndex: true,
+  });
 }
 
 export default async function CheckoutStepPage({ params }: PageProps) {

@@ -14,11 +14,12 @@ import { MapPinIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
+import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
 import { RatingStars } from '@/components/ui/rating-stars';
 import { routes } from '@/config';
-import { resolveMedia, type HomeVenueCard } from '@/domain/content';
+import { resolveMedia, type VenueCardItem } from '@/domain/content';
 import { venueAmenityLabelKey } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
@@ -28,7 +29,7 @@ import { cn } from '@/lib/utils';
 const VISIBLE_AMENITIES = 3;
 
 interface VenueCardProps {
-  item: HomeVenueCard;
+  item: VenueCardItem;
   locale: Locale;
   className?: string;
 }
@@ -49,12 +50,22 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
         className,
       )}
     >
-      <Media
-        {...resolveMedia(item.image, locale)}
-        preset="studioCard"
-        fallback="studio"
-        imageClassName="media-zoom group-hover:scale-105"
-      />
+      <div className="relative">
+        <Media
+          {...resolveMedia(item.image, locale)}
+          preset="studioCard"
+          fallback="studio"
+          imageClassName="media-zoom group-hover:scale-105"
+        />
+
+        <FavoriteButton
+          target="venue"
+          slug={item.slug}
+          name={item.name}
+          onMedia
+          className="absolute top-2.5 right-2.5 z-10"
+        />
+      </div>
 
       <div className="flex flex-1 flex-col p-5">
         <p className="text-caption flex items-center gap-1.5 text-content-tertiary">
@@ -77,7 +88,7 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
           {visible.map((amenity) => (
             <li key={amenity}>
               <Badge size="sm">
-                {t(venueAmenityLabelKey(amenity as never) as 'studio.amenities.mirrors')}
+                {t(venueAmenityLabelKey(amenity as never))}
               </Badge>
             </li>
           ))}

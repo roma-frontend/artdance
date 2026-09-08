@@ -155,7 +155,7 @@ export function PaymentMethodPicker({
                 <RadioGroupItem value={method} className="sr-only" />
                 <Icon className="size-5 shrink-0" aria-hidden />
                 <span className={cn('text-caption', checked && 'font-semibold')}>
-                  {t(paymentMethodLabelKey(method) as 'checkout.payment.methodArca')}
+                  {t(paymentMethodLabelKey(method))}
                 </span>
               </label>
             );

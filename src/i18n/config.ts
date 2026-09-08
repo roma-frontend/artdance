@@ -96,6 +96,11 @@ export const formats = {
     priceCompact: { style: 'currency', currency: 'AMD', notation: 'compact', maximumFractionDigits: 0 },
     plain: { maximumFractionDigits: 0 },
     rating: { minimumFractionDigits: 1, maximumFractionDigits: 1 },
+    /**
+     * Год: без разделителя разрядов. `format.number(2019)` в русской локали даёт
+     * «2 019» — в биографии инструктора это выглядит как опечатка, а не как год.
+     */
+    year: { useGrouping: false, maximumFractionDigits: 0 },
     percent: { style: 'percent', maximumFractionDigits: 0 },
     compact: { notation: 'compact', maximumFractionDigits: 1 },
   },

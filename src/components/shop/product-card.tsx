@@ -22,13 +22,13 @@ import { Badge } from '@/components/ui/badge';
 import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
 import { commerce, routes } from '@/config';
-import { resolveMedia, type HomeProductCard } from '@/domain/content';
+import { resolveMedia, type ProductCardItem } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
-  item: HomeProductCard;
+  item: ProductCardItem;
   locale: Locale;
   className?: string;
 }

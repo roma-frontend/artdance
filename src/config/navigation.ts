@@ -90,7 +90,14 @@ const iconActions: readonly NavIconItem[] = [
   {
     id: 'search',
     icon: 'search',
-    labelKey: 'common.actions.search',
+    /*
+     * Подпись называет ДЕЙСТВИЕ, а не раздел: с включённым JavaScript иконка
+     * открывает диалог (`aria-haspopup="dialog"`), и «Поиск» рядом с этим
+     * атрибутом звучит как название страницы, на которую перейдут. Без
+     * JavaScript переход ведёт в каталог с той же поисковой строкой, поэтому
+     * подпись остаётся верной в обоих случаях.
+     */
+    labelKey: 'nav.openSearch',
     href: routes.discover(),
     compact: true,
     opensSearch: true,
@@ -213,6 +220,13 @@ const footerGroups: readonly NavGroup[] = [
     items: [
       { id: 'discover', labelKey: 'nav.discover', href: routes.discover() },
       { id: 'classes', labelKey: 'nav.classes', href: routes.classes() },
+      /*
+       * Перечень направлений. В подвале, а не в шапке: это точка входа для
+       * поисковика и для того, кто ещё выбирает, а не раздел, куда ходят каждый
+       * день. Без этой ссылки тринадцать хабов из восемнадцати не имеют на себя
+       * ни одной внутренней ссылки — на главной плиток пять.
+       */
+      { id: 'styles', labelKey: 'nav.styles', href: routes.styles() },
       { id: 'instructors', labelKey: 'nav.instructors', href: routes.instructors() },
       { id: 'studios', labelKey: 'nav.studios', href: routes.studios() },
       { id: 'events', labelKey: 'nav.events', href: routes.events(), feature: 'events' },
@@ -224,7 +238,14 @@ const footerGroups: readonly NavGroup[] = [
     titleKey: 'footer.companyTitle',
     items: [
       { id: 'about', labelKey: 'footer.about', href: routes.about() },
-      { id: 'blog', labelKey: 'footer.blog', href: routes.blog() },
+      /*
+       * Блога в подвале нет, и это решение, а не пропуск. Ни в утверждённом
+       * макете, ни в схеме базы (59 моделей) записей блога не существует:
+       * публикации — часть CMS-lite (A-17 в бэклоге). Ссылка на несуществующий
+       * раздел с каждой страницы сайта — прямой путь к 404 в выдаче, поэтому
+       * маршрут `routes.blog()` остаётся объявленным, а ссылка появится вместе с
+       * первой записью.
+       */
       { id: 'contact', labelKey: 'footer.contact', href: routes.contact() },
     ],
   },

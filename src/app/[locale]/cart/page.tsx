@@ -18,10 +18,11 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { CartScreen } from '@/components/cart/cart-screen';
 import { SiteFooter } from '@/components/layout/site-footer';
-import { site } from '@/config';
+import { routes, site } from '@/config';
 import { availablePaymentMethods } from '@/lib/payments';
 import { getCartContent } from '@/server/content/cart';
 import type { Locale } from '@/i18n/config';
+import { buildMetadata } from '@/lib/seo/metadata';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -31,10 +32,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale } = await params;
   const t = await getTranslations({ locale: locale as Locale, namespace: 'cart' });
 
-  return {
+  return buildMetadata({
+    locale: locale as Locale,
+    path: routes.cart(),
     title: t('title'),
-    robots: { index: false, follow: false },
-  };
+    noIndex: true,
+  });
 }
 
 export default async function CartPage({ params }: PageProps) {

@@ -5,6 +5,14 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      /*
+       * `server-only` — маркер, который бросает при импорте вне серверного
+       * окружения; в Next его подменяет условие экспорта `react-server`. Vitest
+       * такого условия не ставит, поэтому подменяем сами — иначе модули
+       * `src/server/**` в принципе нельзя покрыть тестами, а именно там живут
+       * поиск, цены и правила бронирования.
+       */
+      'server-only': fileURLToPath(new URL('./node_modules/server-only/empty.js', import.meta.url)),
     },
   },
   test: {

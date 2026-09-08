@@ -31,7 +31,7 @@ import {
 } from '../../../prisma/fixtures/demo';
 import type { TimeSlot } from '@/components/booking/time-slot-picker';
 import { booking } from '@/config';
-import type { HomeInstructorCard } from '@/domain/content';
+import type { InstructorCardItem } from '@/domain/content';
 import type { Money } from '@/domain/money';
 
 import { mediaRef } from './media';
@@ -104,7 +104,7 @@ export function getInstructorBookingContent(slug: string): BookingContent | null
 }
 
 /** Инструкторы, к которым открыто бронирование: для страницы входа в поток. */
-export function getBookableInstructors(): readonly HomeInstructorCard[] {
+export function getBookableInstructors(): readonly InstructorCardItem[] {
   /* Только те, у кого есть занятие: ссылка на бронирование обязана открываться. */
   return demoInstructors
     .filter((instructor) => demoClasses.some((item) => item.instructorSlug === instructor.slug))

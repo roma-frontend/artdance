@@ -5,9 +5,15 @@
  *
  * **1. Плитка — это ссылка, а не `div` с `onclick`.** В прототипе по плитке
  * нельзя перейти с клавиатуры, нельзя открыть в новой вкладке и нельзя увидеть
- * адрес в статусной строке. Здесь это `<a>` с фильтром в URL
- * (`routes.discover({ style })`), поэтому подборка направления — шарящаяся и
+ * адрес в статусной строке. Здесь это `<a>` на хаб направления
+ * (`routes.style(slug)`), поэтому подборка направления — шарящаяся и
  * индексируемая ссылка.
+ *
+ * Адрес ведёт на хаб, а не на каталог с фильтром (`/discover?style=salsa`), и это
+ * решение появилось вместе с самим хабом (A-01): плитка спрашивает «что такое
+ * сальса», а не «покажи занятия по сальсе», и хаб отвечает на первый вопрос,
+ * содержа ответ на второй. Побочно это убирает второй адрес одного и того же
+ * фильтра: чипы фасетов дают `?style=salsa`, а плитка давала `?style=SALSA`.
  *
  * **2. Плитка НЕ поднимается при наведении.** В макете у `.cat` нет
  * `translateY`: меняется только фотография (приближение и затемнение) и подписи.
@@ -38,6 +44,7 @@ import type { Locale } from '@/i18n/config';
 
 export interface StyleTile {
   style: string;
+  slug: string;
   image: MediaRef;
   classCount: number;
 }
@@ -56,7 +63,7 @@ export function StyleTileGrid({ tiles, locale }: StyleTileGridProps) {
       {tiles.map((tile) => (
         <li key={tile.style}>
           <Link
-            href={routes.discover({ style: tile.style })}
+            href={routes.style(tile.slug)}
             className="card-surface group relative flex aspect-square items-end overflow-hidden rounded-lg border border-border-default hover:border-accent sm:aspect-portrait"
           >
             <Media
@@ -88,7 +95,7 @@ export function StyleTileGrid({ tiles, locale }: StyleTileGridProps) {
 
             <span className="relative z-10 p-5">
               <span className="tile-title block text-card-title text-content-on-cinema">
-                {t(danceStyleLabelKey(tile.style as never) as 'danceStyles.hipHop')}
+                {t(danceStyleLabelKey(tile.style as never))}
               </span>
               <span className="tile-count text-caption mt-1 block text-content-on-cinema-muted">
                 {tCommon('counts.classes', { count: tile.classCount })}

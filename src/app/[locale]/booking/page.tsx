@@ -25,6 +25,7 @@ import { routes, site } from '@/config';
 import { getBookableInstructors } from '@/server/content/booking';
 import { Link } from '@/i18n/routing';
 import type { Locale } from '@/i18n/config';
+import { buildMetadata } from '@/lib/seo/metadata';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -34,10 +35,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale } = await params;
   const t = await getTranslations({ locale: locale as Locale, namespace: 'booking' });
 
-  return {
+  return buildMetadata({
+    locale: locale as Locale,
+    path: routes.booking(),
     title: t('startTitle'),
-    robots: { index: false, follow: false },
-  };
+    noIndex: true,
+  });
 }
 
 export default async function BookingStartPage({ params }: PageProps) {

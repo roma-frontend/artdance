@@ -25,7 +25,20 @@
 import type { ImagePresetKey } from '@/config/media';
 
 /** Очередь реализации. Совпадает с фазами в `docs/06-implementation-plan.md`. */
-export const buildWaves = ['foundation', 'catalog', 'booking', 'commerce', 'account', 'admin'] as const;
+export const buildWaves = [
+  'foundation',
+  'catalog',
+  /**
+   * Контентные и правовые страницы. Отдельная волна, а не часть каталога: в
+   * прототипе этих экранов нет вовсе, а ссылки на них есть в подвале — то есть
+   * пока волна не закрыта, каждая страница сайта ведёт в 404.
+   */
+  'content',
+  'booking',
+  'commerce',
+  'account',
+  'admin',
+] as const;
 export type BuildWave = (typeof buildWaves)[number];
 
 export interface ComponentSpec {
@@ -80,24 +93,6 @@ export const componentManifest: readonly ComponentSpec[] = [
       'она сплошная сразу (config/navigation.ts: hasCinemaHero) — иначе тёмный текст лёг бы ' +
       'на светлый фон. Состояние authenticated придёт с волной auth отдельным клиентским ' +
       'островком: чтение сессии в шапке отключило бы SSG у всех страниц сайта.',
-  },
-  {
-    name: 'MobileNavDrawer',
-    path: 'components/layout/mobile-nav-drawer.tsx',
-    role: 'Выезжающее справа мобильное меню с затемнением',
-    wave: 'foundation',
-    prototypeClasses: ['mobile-menu', 'mobile-overlay', 'mobile-close'],
-    screens: ['all'],
-    i18n: ['nav', 'common.actions', 'a11y'],
-    states: ['closed', 'open', 'closing'],
-    notes:
-      'Появился в версии 02.09.2026. Ширина 280px (layout.drawerWidth), выезд справа, ' +
-      'затемнение с backdrop-filter. В макете это toggle класса .open через inline-onclick — ' +
-      'в продукте построен на Sheet (Radix Dialog), который даёт ловушку фокуса, Esc, клик по ' +
-      'оверлею, возврат фокуса на бургер, блокировку скролла body и aria-modal. z-index — из ' +
-      'zIndex.drawer, а не 9999 (правило для [data-slot=sheet-*] в globals.css). Бургер НЕ ' +
-      'превращается в крестик, как в макете: при открытом меню он лежит под затемнением, и ' +
-      'анимации никто не увидит — закрытие круглой кнопкой .mobile-close внутри панели.',
   },
   {
     name: 'BrandMark',
@@ -228,10 +223,15 @@ export const componentManifest: readonly ComponentSpec[] = [
     prototypeClasses: ['searchOverlay'],
     screens: ['all'],
     i18n: ['search'],
-    states: ['closed', 'open-empty', 'typing', 'results', 'no-results'],
+    states: ['closed', 'open-empty', 'typing', 'loading', 'results', 'no-results', 'failed'],
     notes:
       'В прототипе — inline-стили и без логики. Открытие по клику на иконку и по Cmd/Ctrl+K. ' +
-      'Debounce из limits.search.debounceMs.',
+      'Debounce из limits.search.debounceMs, запрос в /api/search с отменой через AbortController: ' +
+      'без отмены ответ на «сал» приходит после ответа на «сальса» и перезаписывает выдачу. ' +
+      'Чипы разделов — переключатели области (aria-pressed), а не ссылки: в макете это <span> ' +
+      'с cursor: pointer, то есть фильтр, у которого не было реализации. Совпадение подсвечивается ' +
+      'весом и яркостью, а не цветом — акцент бренда на тёмном фоне не проходит контраст как текст. ' +
+      'Миниатюр у строк нет намеренно: изображения показывает страница результатов.',
   },
   {
     name: 'ThemeToggle',
@@ -351,21 +351,82 @@ export const componentManifest: readonly ComponentSpec[] = [
     role: 'Сетка направлений 5×1 с фото и счётчиком занятий',
     wave: 'catalog',
     prototypeClasses: ['cats', 'cat', 'cat-ov', 'cat-n', 'cat-c', 'cat-a'],
-    screens: ['home'],
+    screens: ['home', 'styles'],
     i18n: ['danceStyles', 'common.counts'],
     image: 'categoryCard',
     states: ['default', 'hover', 'loading'],
     notes:
       'aspect-ratio 3/4, при 480px → 1/1. На hover: приближение и затемнение фото ' +
       '(scale 1.08, brightness .65, saturate 1.2), подъём названия на 4px, появление ' +
-      'счётчика и стрелки. ОТЛИЧИЯ ОТ МАКЕТА: (1) плитка — ссылка с фильтром в URL ' +
-      '(routes.discover({ style })), а не div с onclick: подборка направления обязана быть ' +
-      'шарящейся и индексируемой, а плитка — достижимой с клавиатуры; (2) счётчик занятий и ' +
+      'счётчика и стрелки. ОТЛИЧИЯ ОТ МАКЕТА: (1) плитка — ссылка на хаб направления ' +
+      '(routes.style(slug)), а не div с onclick: подборка направления обязана быть ' +
+      'шарящейся и индексируемой, а плитка — достижимой с клавиатуры. Адрес ведёт на хаб, а ' +
+      'не на /discover?style=: плитка спрашивает «что такое сальса», и ровно на это хаб и ' +
+      'отвечает (A-01); побочно ушёл второй адрес одного фильтра — чипы дают ?style=salsa, ' +
+      'а плитка давала ?style=SALSA; (2) счётчик занятий и ' +
       'стрелка скрыты ТОЛЬКО внутри @media (hover: hover) — в прототипе они появляются на ' +
       'hover, то есть на телефоне число занятий недостижимо; (3) плитка НЕ поднимается при ' +
       'наведении, и это соответствие макету, которое легко нарушить «для единообразия с ' +
       'карточками»: у .cat нет translateY, и сетка из десяти плиток, дрожащих под курсором, ' +
-      'выглядит сломанной. Класс card-surface на ней нужен только ради плавной границы.',
+      'выглядит сломанной. Класс card-surface на ней нужен только ради плавной границы. ' +
+      'Счётчик на главной — число из макета (demoStyleTiles), на /styles — посчитанное по ' +
+      'данным: хаб показывает занятия рядом со счётчиком, и «48» над одной карточкой было бы ' +
+      'ошибкой. В production оба считаются из базы и сходятся.',
+  },
+  {
+    name: 'StyleLinkList',
+    path: 'components/catalog/style-link-list.tsx',
+    role: 'Перечень направлений ссылками, без фотографий',
+    wave: 'catalog',
+    prototypeClasses: [],
+    screens: ['styles', 'style'],
+    i18n: ['danceStyles', 'common.counts', 'styleHub'],
+    states: ['with-classes', 'instructors-only', 'no-supply', 'hover'],
+    notes:
+      'В макете этого блока нет, и он нужен именно из-за макета: плитка (.cat) держится на ' +
+      'фотографии, а фотография есть у пяти направлений из восемнадцати. Кадр другого танца ' +
+      'вместо отсутствующего утверждает неправду, поэтому там, где перечислены ВСЕ ' +
+      'направления, работает текст. Подпись под названием — данные, а не обещание: занятия, ' +
+      'если они есть; преподаватели, если занятий нет; «ищем преподавателей», если нет ' +
+      'ничего. «0 занятий» сообщает то же самое, но читается как поломка.',
+  },
+  {
+    name: 'StyleIndexScreen',
+    path: 'app/[locale]/styles/page.tsx',
+    role: 'Перечень всех направлений: плитки с занятиями и полный список',
+    wave: 'catalog',
+    prototypeClasses: [],
+    screens: ['styles'],
+    i18n: ['styleHub.index', 'seo.styles'],
+    image: 'heroFullBleed',
+    states: ['default', 'no-featured'],
+    notes:
+      'Страницы нет ни в макете, ни в бэклоге (A-01 просит только /styles/[style]): без неё ' +
+      'тринадцать хабов из восемнадцати не имеют ни одной внутренней ссылки и живут только ' +
+      'в карте сайта. Два блока с разным смыслом, а не один список дважды: «идут сейчас» — ' +
+      'плитки направлений, на которые можно записаться; «все направления» — полный перечень ' +
+      'текстом, включая те, для которых преподавателя пока нет.',
+  },
+  {
+    name: 'StyleHubScreen',
+    path: 'app/[locale]/styles/[style]/page.tsx',
+    role: 'SEO-хаб направления: описание, занятия, преподаватели, залы, соседние направления',
+    wave: 'catalog',
+    prototypeClasses: [],
+    screens: ['style'],
+    i18n: ['styleHub', 'danceStyles', 'levels', 'common.counts'],
+    image: 'heroFullBleed',
+    states: ['full', 'instructors-only', 'no-supply', 'no-photo'],
+    notes:
+      'A-01 в бэклоге: 18 направлений × 3 локали = 54 документа под запросы вида «уроки ' +
+      'бачаты в Ереване». Отличие от /classes?style=: каталог отвечает тому, кто уже выбрал, ' +
+      'хаб — тому, кто выбирает, поэтому первым идёт собственный текст о направлении ' +
+      '(styleHub.styles.*), и только затем предложение и ссылка в каталог с фильтром. ' +
+      'Страница есть у всех восемнадцати, в индекс попадают только те, у которых есть ' +
+      'занятия или преподаватели (getStyleHubSlugs → noIndex), и это следует из данных: ' +
+      'появился преподаватель — страница вошла в индекс сама. Пустое состояние здесь не ' +
+      'заглушка, а содержание: оно ведёт к соседним направлениям и к приглашению ' +
+      'преподавать. Кадр может отсутствовать — PageHero это умеет.',
   },
   {
     name: 'ClassCard',
@@ -385,9 +446,9 @@ export const componentManifest: readonly ComponentSpec[] = [
       '(растянутый ::after у якоря): в прототипе кликается div через onclick, такая карточка ' +
       'недоступна с клавиатуры и не открывается в новой вкладке. Расписание собирается из ' +
       'номера дня и времени через форматтер локали — строка «Saturday, 18:00» из данных ' +
-      'означала бы английский день недели на армянской странице. Кнопки «в избранное» ' +
-      'намеренно нет: она требует сессии, и сердечко, которое ничего не делает, хуже её ' +
-      'отсутствия (см. FavoriteButton).',
+      'означала бы английский день недели на армянской странице. Сердечко (FavoriteButton) ' +
+      'видно всегда, а не только на hover: в макете оно появляется по наведению и на телефоне ' +
+      'недостижимо. Оно лежит поверх растянутого якоря и работает до входа.',
   },
   {
     name: 'ClassCarousel',
@@ -533,7 +594,14 @@ export const componentManifest: readonly ComponentSpec[] = [
     screens: ['home'],
     i18n: ['home.newsletter', 'validation'],
     states: ['idle', 'submitting', 'success', 'error', 'already-subscribed'],
-    notes: 'Защищается Turnstile и rateLimits.contactForm. Требует явного согласия на обработку.',
+    notes:
+      'Защищается Turnstile и rateLimits.contactForm. Требует явного согласия на обработку: ' +
+      'подписка без отмеченной галочки — нарушение ЗРА «О защите персональных данных», и ' +
+      'действие возвращает ошибку валидации. Адрес подтверждается письмом (double opt-in), ' +
+      'иначе любой может подписать чужую почту и рассылка собирает жалобы на спам. Успех ' +
+      'ЗАМЕНЯЕТ форму: оставленное поле приглашает подписаться второй раз, а вторая подписка ' +
+      'ничего не делает. Состояние «уже подписаны» отдельное — обещание «проверьте почту» в ' +
+      'этом случае было бы ложью, письма не будет.',
   },
   {
     name: 'SectionHeading',
@@ -559,11 +627,65 @@ export const componentManifest: readonly ComponentSpec[] = [
     wave: 'catalog',
     prototypeClasses: ['tags', 'tag'],
     screens: ['discover'],
-    i18n: ['discover.filters', 'discover.sort'],
+    i18n: ['catalog.filters', 'catalog.sort'],
     states: ['collapsed', 'expanded', 'applied', 'empty-result'],
     notes:
       'В прототипе только чипы направлений. Состояние фильтров живёт в URL (routes.discover), ' +
-      'а не в React-состоянии: ссылка должна быть шарящейся и индексируемой.',
+      'а не в React-состоянии: ссылка должна быть шарящейся и индексируемой. Каждый чип — ' +
+      'ссылка, а не кнопка с обработчиком: открывается в новой вкладке и работает без JS. ' +
+      'На 1024px и ниже фильтры уходят в Sheet, а НЕ исчезают, как в макете ' +
+      '(display: none !important на 360px): каталог без фильтров на телефоне бесполезен. ' +
+      'Активный чип помечается aria-current="page" — цвет как единственный признак выбора ' +
+      'не годится. Группы обёрнуты в fieldset/legend, иначе скринридер читает список ссылок ' +
+      'без назначения.',
+  },
+  {
+    name: 'CatalogShell',
+    path: 'components/catalog/catalog-shell.tsx',
+    role: 'Общая обвязка листинга: счётчик, фильтры, пустое состояние, пагинация',
+    wave: 'catalog',
+    prototypeClasses: [],
+    screens: ['discover', 'classes', 'instructors', 'studios', 'events', 'shop'],
+    i18n: ['catalog', 'common.states'],
+    states: ['results', 'empty-filtered', 'empty-unfiltered', 'single-page', 'paginated'],
+    notes:
+      'Шесть разделов каталога отличаются только карточкой и сеткой. Всё остальное — общее, ' +
+      'и держится здесь, иначе пустое состояние поправят в одном разделе из шести. Сетка ' +
+      'карточек остаётся у страницы: у товаров четыре колонки, у площадок три, у занятий ' +
+      'эластичная лента, и пропс columns={{sm:2,lg:4}} был бы переписыванием Tailwind. ' +
+      'Пустое состояние ЗАМЕНЯЕТ содержимое, а не дописывается под ним: список из нуля ' +
+      'карточек с текстом под ним читается как «загружается».',
+  },
+  {
+    name: 'CatalogPagination',
+    path: 'components/catalog/catalog-pagination.tsx',
+    role: 'Страницы листинга ссылками с сохранением фильтров',
+    wave: 'catalog',
+    prototypeClasses: [],
+    screens: ['discover', 'classes', 'instructors', 'studios', 'events', 'shop'],
+    i18n: ['catalog.pagination', 'a11y'],
+    states: ['single-page', 'first-page', 'middle-page', 'last-page', 'with-gaps'],
+    notes:
+      'Ссылки, а не кнопки: ?page=3 обязан открываться по прямому адресу и попадать в ' +
+      'индекс. Первая страница пишется БЕЗ параметра — один канонический адрес. rel=prev/next ' +
+      'сообщают поисковику, что это одна серия, а не десять похожих документов. Пропуск в одну ' +
+      'страницу показывается номером, а не многоточием (paginationWindow).',
+  },
+  {
+    name: 'FavoriteButton',
+    path: 'components/ui/favorite-button.tsx',
+    role: 'Сохранить занятие, инструктора или площадку',
+    wave: 'catalog',
+    prototypeClasses: ['cc-fav'],
+    screens: ['home', 'discover', 'class', 'instructor', 'studios', 'shop'],
+    i18n: ['favorites', 'a11y'],
+    states: ['inactive', 'active', 'on-media', 'guest', 'authenticated'],
+    notes:
+      'В макете ♡ появляется только на hover — на телефоне такая кнопка недостижима. Здесь ' +
+      'видна всегда, наведение меняет только заметность. Работает ДО входа: набор гостя живёт ' +
+      'в localStorage (lib/client/favorites.ts) и переносится в Favorite при входе, как ' +
+      'корзина гостя. Состояние передаётся aria-pressed и заливкой, а не только цветом. ' +
+      'Доступное имя включает название сущности: на странице десяток одинаковых кнопок.',
   },
   {
     name: 'ClassDetailScreen',
@@ -593,6 +715,40 @@ export const componentManifest: readonly ComponentSpec[] = [
     image: 'instructorHero',
     states: ['verified', 'unverified', 'no-availability', 'fully-booked'],
     notes: 'Аватар 90px с обводкой 3px цветом surface-card, наезжает на обложку.',
+  },
+  {
+    name: 'StudioDetailScreen',
+    path: 'app/[locale]/studios/[slug]/page.tsx',
+    role: 'Страница зала: описание, оснащение, занятия и афиша, как добраться',
+    wave: 'catalog',
+    prototypeClasses: ['detail-grid', 'sidebar-card', 'tag'],
+    screens: ['studio'],
+    i18n: ['studio', 'reviews'],
+    image: 'studioCard',
+    states: ['available', 'no-classes', 'rent-unavailable'],
+    notes:
+      'Главное действие — «занятия здесь», а не аренда: аренда зала приходит с движком ' +
+      'доступности (фаза 3), и ссылка на несуществующий маршрут была бы 404 в каталоге. ' +
+      'Кнопка аренды выключена и объяснена рядом (common.states.comingSoon) — тем же ' +
+      'приёмом, что недоступный способ оплаты. Залов внутри площадки нет: в данных одна ' +
+      'площадь и одна вместимость, поле придёт с VenueRoom. Карта — ссылка по координатам ' +
+      '(site.maps), встроенная карта требует ключа и стоит отдельной задачей.',
+  },
+  {
+    name: 'EventDetailScreen',
+    path: 'app/[locale]/events/[slug]/page.tsx',
+    role: 'Страница события: когда, где, места, регистрация',
+    wave: 'catalog',
+    prototypeClasses: ['detail-grid', 'sidebar-card', 'event-type'],
+    screens: ['event'],
+    i18n: ['events'],
+    image: 'studioCard',
+    states: ['upcoming', 'free-entry', 'open-entry', 'few-spots', 'registration-unavailable'],
+    notes:
+      'Ноль в цене — «вход свободный» словом, а не «0 ֏». У события с открытым входом ' +
+      'счётчик мест не показывается: «осталось 200 из 200» на площади не информация. ' +
+      'Регистрация выключена до появления движка брони, кнопка объяснена рядом. Место — ' +
+      'ссылка, если это площадка каталога, и текст, если внешняя площадь.',
   },
 
   /* ───────────────────────── Бронирование ───────────────────────── */
@@ -889,17 +1045,6 @@ export const componentManifest: readonly ComponentSpec[] = [
       'останавливается. aria-live намеренно нет: секунды вслух перекрывают всё остальное.',
   },
   {
-    name: 'FavoriteButton',
-    path: 'components/ui/favorite-button.tsx',
-    role: 'Кнопка добавления в избранное',
-    wave: 'catalog',
-    prototypeClasses: ['cc-fav'],
-    screens: ['home', 'discover', 'class', 'shop'],
-    i18n: ['common.actions', 'a11y'],
-    states: ['inactive', 'active', 'pending', 'requires-auth'],
-    notes: 'Анонимному пользователю показывается приглашение войти, а не молчаливый отказ.',
-  },
-  {
     name: 'Media',
     path: 'components/ui/media.tsx',
     role: 'Обёртка next/image с presets и fallback',
@@ -1071,6 +1216,120 @@ export const componentManifest: readonly ComponentSpec[] = [
       'скоростей: «параллакс», в котором двигается только фон, читается как съехавшая ' +
       'картинка. Кадр увеличен на 20% — без запаса ход открывает полосу у кромки. ' +
       'Отключён до 768px и при prefers-reduced-motion.',
+  },
+
+  /* ───────────────────── Контентные и правовые страницы ─────────────────────
+   *
+   * Ни одного из этих блоков в прототипе нет: макет заканчивается каталогом и
+   * оформлением заказа. Классы прототипа у них пустые, и это правда, а не
+   * недоработка — `design:status` учитывает их в плане волны, но не ждёт от них
+   * покрытия классов макета.
+   */
+  {
+    name: 'ContentSection',
+    path: 'components/content/content-section.tsx',
+    role: 'Полоса контентной страницы: фон, контейнер, заголовок, содержимое',
+    wave: 'content',
+    prototypeClasses: [],
+    screens: ['about', 'help', 'faq', 'pricing', 'gift-cards', 'become-instructor', 'list-your-studio'],
+    i18n: [],
+    states: ['canvas', 'raised', 'cinema', 'tight', 'prose', 'anchored'],
+    notes:
+      'Восемь страниц собраны из одного каркаса, иначе ритм секций расходится между ними ' +
+      'на одну ступень отступа — и это видно только когда страницы стоят рядом на приёмке. ' +
+      'Якорь (id) получает scroll-margin в высоту шапки: без этого переход из оглавления ' +
+      'ставит заголовок под прилипшую шапку.',
+  },
+  {
+    name: 'ValueGrid',
+    path: 'components/content/value-grid.tsx',
+    role: 'Сетка карточек «заголовок + абзац», опционально ссылкой',
+    wave: 'content',
+    prototypeClasses: [],
+    screens: ['about', 'help', 'become-instructor', 'list-your-studio'],
+    states: ['static', 'link', 'on-cinema', '2-col', '3-col', '4-col'],
+    notes:
+      'Иконки из lucide-react и всегда декоративные: эмодзи из прототипа скринридер читает ' +
+      'вслух посреди делового текста. Карточка-ссылка кликается целиком, а не подписью.',
+  },
+  {
+    name: 'StepList',
+    path: 'components/content/step-list.tsx',
+    role: 'Нумерованные шаги «как это работает»',
+    wave: 'content',
+    prototypeClasses: [],
+    screens: ['become-instructor', 'list-your-studio', 'gift-cards'],
+    states: ['row', 'column', 'on-cinema'],
+    notes:
+      'Разметка <ol>: порядок здесь смысловой, и скринридер объявляет номер сам — ' +
+      'нарисованная цифра остаётся декоративной (aria-hidden).',
+  },
+  {
+    name: 'FactList',
+    path: 'components/content/fact-list.tsx',
+    role: 'Список утверждений с отметкой: условия, требования, правила',
+    wave: 'content',
+    prototypeClasses: [],
+    screens: ['become-instructor', 'list-your-studio', 'gift-cards'],
+    states: ['check', 'info', 'neutral', '2-col'],
+  },
+  {
+    name: 'FaqAccordion',
+    path: 'components/content/faq-accordion.tsx',
+    role: 'Вопросы и ответы группами + разметка FAQPage',
+    wave: 'content',
+    prototypeClasses: [],
+    screens: ['faq'],
+    i18n: ['faq'],
+    states: ['collapsed', 'expanded', 'no-javascript'],
+    notes:
+      'На <details>, а не на вендорном Accordion: Radix размонтирует закрытое содержимое, ' +
+      'и в HTML страницы остаются вопросы без ответов — для страницы, которая живёт с ' +
+      'выдачи, это исключает главное. Схема FAQPage собирается из того же массива, что и ' +
+      'список: расхождение Google трактует как обман и снимает сниппет целиком.',
+  },
+  {
+    name: 'PlanComparisonTable',
+    path: 'components/content/plan-comparison-table.tsx',
+    role: 'Сравнение тарифов по квотам',
+    wave: 'content',
+    prototypeClasses: [],
+    screens: ['pricing'],
+    i18n: ['pricing'],
+    states: ['default', 'highlighted-plan', 'boolean-cell', 'unlimited-cell'],
+    notes:
+      'Настоящая <table> с <th scope>: сетка из div читается скринридером как поток ' +
+      'значений без связи со строкой и колонкой. Значения — из PlanQuota, а не текстом: ' +
+      'иначе «2 занятия» в карточке разойдётся с «2» в таблице на первой правке квоты.',
+  },
+  {
+    name: 'LegalDocument',
+    path: 'components/content/legal-document.tsx',
+    role: 'Правовой документ: оглавление, разделы, версия, статус черновика',
+    wave: 'content',
+    prototypeClasses: [],
+    screens: ['legal'],
+    i18n: ['legal'],
+    states: ['draft', 'active', 'with-toc'],
+    notes:
+      'Числа документа (окно отмены, ставка удержания, комиссия, НДС, сроки хранения) ' +
+      'подставляются из бизнес-правил: иначе правка окна отмены оставляет в политике ' +
+      'возврата старую цифру, по которой клиент прав в споре. Статус draft виден на ' +
+      'странице до проверки юристом (задача 8.2 плана).',
+  },
+  {
+    name: 'ContactForm',
+    path: 'components/content/contact-form.tsx',
+    role: 'Обращение в поддержку с капчей и честным результатом отправки',
+    wave: 'content',
+    prototypeClasses: [],
+    screens: ['contact'],
+    i18n: ['contact'],
+    states: ['idle', 'submitting', 'delivered', 'not-delivered', 'invalid-field', 'failed'],
+    notes:
+      'Недоставленное письмо не выдаётся за успех: действие возвращает delivered, и при ' +
+      'отказе провайдера человек видит прямой адрес поддержки. Ошибка адресуется полю, ' +
+      'которое назвал сервер, а не общим сообщением над формой.',
   },
 ];
 

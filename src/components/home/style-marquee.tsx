@@ -31,7 +31,7 @@ export function StyleMarquee({ className }: { className?: string }) {
     <ul aria-hidden={duplicate} className="marquee-row">
       {items.map((style) => (
         <li key={style} className="text-eyebrow flex items-center gap-3 text-content-on-accent">
-          {t(danceStyleLabelKey(style) as 'danceStyles.hipHop')}
+          {t(danceStyleLabelKey(style))}
           <i aria-hidden className="size-1 shrink-0 rounded-full bg-metal" />
         </li>
       ))}

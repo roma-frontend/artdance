@@ -28,7 +28,26 @@ const EXPECTATIONS = [
   ['/hy', 'x-powered-by', (v) => v === undefined, 'x-powered-by удалён'],
   ['/hy', 'cache-control', (v) => v?.includes('s-maxage=180'), 'каталог кешируется CDN'],
   ['/hy/account', 'cache-control', (v) => v?.includes('no-store'), 'приватный раздел не кешируется'],
+  ['/hy/about', 'cache-control', (v) => v?.includes('s-maxage=3600'), 'контентные страницы'],
   ['/hy/legal/terms', 'cache-control', (v) => v?.includes('s-maxage=86400'), 'правовые страницы'],
+  ['/api/search?q=salsa', 'cache-control', (v) => v?.includes('no-store'), 'поиск не кешируется'],
+  /*
+   * Карточка для соцсетей не должна получать каталожные 180 секунд от
+   * `/classes/:slug*`: её адрес подписан отпечатком содержимого, а превью
+   * перезапрашивают часто.
+   */
+  [
+    '/hy/classes/latin-fusion/opengraph-image',
+    'cache-control',
+    (v) => v?.includes('max-age=2592000'),
+    'карточка для соцсетей кешируется надолго',
+  ],
+  [
+    '/hy/classes/latin-fusion/opengraph-image',
+    'content-type',
+    (v) => v?.includes('image/png'),
+    'карточка отдаётся картинкой',
+  ],
   ['/api/health', 'cache-control', (v) => v?.includes('no-store'), 'health не кешируется'],
   ['/api/health', 'content-security-policy', (v) => typeof v === 'string', 'CSP и на API'],
 ];
