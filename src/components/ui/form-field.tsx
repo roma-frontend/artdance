@@ -51,6 +51,13 @@ interface FormFieldProps {
   name: string;
   /** Ключ i18n, не текст. */
   labelKey: MessageKey;
+  /**
+   * Готовая подпись вместо перевода ключа. Нужна там, где к подписи добавляется
+   * значение: поле перевода печатается как «Название (Русский)». Ключ при этом
+   * остаётся обязательным — он описывает поле и используется, когда готовой
+   * подписи нет.
+   */
+  labelText?: string;
   /** Пояснение под полем: формат, ограничение, назначение. */
   hintKey?: MessageKey;
   /** Ключ из namespace `validation` или `errors`. Наличие = поле невалидно. */
@@ -71,6 +78,7 @@ interface FormFieldProps {
 export function FormField({
   name,
   labelKey,
+  labelText,
   hintKey,
   errorKey,
   values,
@@ -103,7 +111,7 @@ export function FormField({
           labelHidden && 'sr-only',
         )}
       >
-        {t(labelKey, values)}
+        {labelText ?? t(labelKey, values)}
         {/*
           Необязательность помечается словом, а не отсутствием звёздочки:
           звёздочка требует легенды «* — обязательно», которой в макете нет, и

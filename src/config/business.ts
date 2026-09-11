@@ -9,6 +9,7 @@
  * финального подтверждения заказчиком — отмечены `@confirm`.
  */
 
+import { clientEnv } from './env';
 import { site } from './site';
 
 /* ────────────────────────────── ВАЛЮТА ────────────────────────────── */
@@ -353,12 +354,34 @@ export const rateLimits = {
   contactForm: { requests: 3, windowSeconds: 3_600 },
   search: { requests: 120, windowSeconds: 60 },
   mediaUpload: { requests: 30, windowSeconds: 600 },
+  /**
+   * Мутация в админке. Лимит существует не против администратора, а против
+   * украденной сессии: у server action нет интерфейса, и скрипт с чужой cookie
+   * способен переписать каталог за секунды. Число выбрано выше ручной скорости
+   * работы (сохранить форму, переключить статус) и ниже машинной.
+   */
+  adminMutation: { requests: 120, windowSeconds: 300 },
+  /**
+   * Выгрузка отчёта. Отдельный ключ: экспорт читает тысячи строк и стоит на
+   * порядок дороже сохранения формы, поэтому его нельзя мерить тем же счётчиком.
+   */
+  adminExport: { requests: 10, windowSeconds: 600 },
   webhook: { requests: 600, windowSeconds: 60 },
   /** Грубый backstop на весь /api: ловит флуд, а не целевую атаку. */
   apiFlood: { requests: 600, windowSeconds: 600 },
 } as const;
 
 export type RateLimitKey = keyof typeof rateLimits;
+
+/**
+ * Cookie сессии: базовое имя и признак secure.
+ *
+ * Вынесены отдельными константами, потому что от них зависят три разных
+ * значения ниже, и вычислять признак дважды означало бы однажды поправить одно
+ * место из двух.
+ */
+const sessionCookieBaseName = 'artdance.session_token';
+const sessionCookieIsSecure = clientEnv.NEXT_PUBLIC_APP_URL.startsWith('https://');
 
 export const security = {
   password: {
@@ -389,7 +412,35 @@ export const security = {
     maxConcurrent: 10,
     /** Как часто обновлять `lastActiveAt`: иначе запись в БД на каждый запрос. */
     presenceThrottleSeconds: 60,
-    cookieName: 'artdance.session_token',
+    /**
+     * Имя, которым cookie сессии НАСТРАИВАЕТСЯ в Better Auth.
+     * Не то же самое, что имя, которым она приходит в запросе — см.
+     * `requestCookieName`.
+     */
+    cookieName: sessionCookieBaseName,
+    /**
+     * Cookie сессии только по HTTPS. Признак — адрес приложения, а не название
+     * окружения: демонстрационный стенд объявлен как `preview`, но работает по
+     * HTTPS и заслуживает `Secure` ровно так же, как продакшен.
+     */
+    secureCookies: sessionCookieIsSecure,
+    /**
+     * Имя, под которым cookie ПРИХОДИТ в запросе, — его и должен искать
+     * `proxy.ts`.
+     *
+     * Better Auth сам добавляет префикс `__Secure-`, когда помечает cookie
+     * `Secure`, и не добавляет, когда нет. Пока признак secure был привязан к
+     * `NEXT_PUBLIC_APP_ENV === 'production'`, расхождение не проявлялось: стенды
+     * работали как `preview`, cookie шла без префикса, и `proxy.ts` находил её.
+     * В продакшене тот же код перекидывал бы пользователя с валидной сессией на
+     * страницу входа — бесконечно и без единой ошибки в логах.
+     *
+     * Поймано на демонстрационном стенде: вход возвращал 200 и ставил
+     * `__Secure-artdance.session_token`, а `/account` отвечал 307 на `/sign-in`.
+     */
+    requestCookieName: sessionCookieIsSecure
+      ? `__Secure-${sessionCookieBaseName}`
+      : sessionCookieBaseName,
   },
   otp: {
     length: 6,
@@ -415,6 +466,12 @@ export const security = {
     /** Изменение цены сверх этого процента помечается для ревью. */
     priceChangeFlagPercent: 50,
     maxManualRefund: 200_000,
+    /**
+     * Срок жизни заявки на согласование. Просроченная заявка не выполняется:
+     * «одобрить возврат, о котором просили три недели назад» — это решение по
+     * обстоятельствам, которых уже нет.
+     */
+    approvalTtlHours: 48,
   },
   /** Turnstile обязателен на этих операциях. */
   captchaProtectedActions: [

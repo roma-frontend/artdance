@@ -49,7 +49,7 @@ import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 
 import { security, type RateLimitKey } from '@/config/business';
-import { clientEnv, getServerEnv, isProduction } from '@/config/env';
+import { clientEnv, getServerEnv } from '@/config/env';
 import { lockoutErrorCode } from '@/domain/auth';
 import { locales } from '@/i18n/config';
 import { db } from '@/lib/db';
@@ -293,11 +293,19 @@ export const auth = betterAuth({
       /*
        * Имя целиком, а не префикс: `proxy.ts` и гварды знают его из
        * `security.session.cookieName`, и оно обязано совпадать буквально.
+       *
+       * Здесь именно БАЗОВОЕ имя, без `__Secure-`: префикс библиотека добавляет
+       * сама, когда помечает cookie `Secure`. Имя, которое в итоге приходит в
+       * запросе, объявлено рядом — `security.session.requestCookieName`.
        */
       session_token: { name: security.session.cookieName },
     },
-    /** В production cookie только по HTTPS. Локально это сломало бы вход. */
-    useSecureCookies: isProduction,
+    /**
+     * Cookie только по HTTPS. Признак — адрес приложения, а не название
+     * окружения; объявлен в `security.session.secureCookies` вместе с именем
+     * cookie, потому что от одного признака зависит и флаг, и префикс имени.
+     */
+    useSecureCookies: security.session.secureCookies,
     database: {
       /** id генерирует Prisma (cuid): один способ на всю схему. */
       generateId: false,

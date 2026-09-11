@@ -40,9 +40,10 @@ import type {
 import { db } from '@/lib/db';
 import { defineQuery } from '@/server/query';
 
-import { galleryRefs, firstMediaRef, mediaSelect, type MediaRow } from './media';
+import { galleryRefs, firstMediaRef, type MediaRow } from './media';
+import { activeVariantsRelation, mediaRelation, notTrashed } from './relations';
 
-const productSelect = {
+export const productSelect = {
   slug: true,
   title: true,
   description: true,
@@ -50,11 +51,9 @@ const productSelect = {
   basePrice: true,
   createdAt: true,
   category: { select: { slug: true } },
-  media: { select: mediaSelect },
-  variants: {
-    where: { isActive: true },
-    select: { sku: true, size: true, color: true, price: true, stock: true, reserved: true },
-  },
+  media: mediaRelation,
+  variants: activeVariantsRelation,
+
 } as const;
 
 interface VariantRow {
@@ -66,7 +65,7 @@ interface VariantRow {
   reserved: number;
 }
 
-interface ProductRow {
+export interface ProductRow {
   slug: string;
   title: string;
   description: string;
@@ -78,7 +77,7 @@ interface ProductRow {
   variants: VariantRow[];
 }
 
-const publicProductWhere = { isActive: true };
+export const publicProductWhere = { isActive: true };
 
 /** Свободный остаток варианта: резерв уже обещан другому покупателю. */
 function available(variant: VariantRow): number {
@@ -126,6 +125,7 @@ function productWhere(query: CatalogQuery) {
       ? {
           variants: {
             some: {
+              ...notTrashed,
               isActive: true,
               price: {
                 ...(query.priceMin !== undefined ? { gte: query.priceMin } : {}),

@@ -8,6 +8,82 @@
  * Локаль подставляется middleware next-intl, поэтому пути указаны без префикса.
  */
 
+/* ───────────────────────── Ресурсы админки ─────────────────────────
+ *
+ * Сегмент пути и идентификатор ресурса — одно и то же значение: это позволяет
+ * одной динамической странице обслуживать все разделы, а реестру — находить
+ * обработчик по адресу. Порядок влияет только на отчёты; в навигации разделы
+ * группируются отдельно (`src/config/admin.ts`).
+ *
+ * Вложенные сущности (проведения, залы, варианты, уроки) — полноценные ресурсы
+ * с фильтром по родителю (`?parent=<id>`), а не подстраницы: список проведений
+ * занятия и список всех проведений — один и тот же экран с разным фильтром.
+ */
+export const adminResources = [
+  'classes',
+  'sessions',
+  'instructors',
+  'venues',
+  'rooms',
+  'products',
+  'categories',
+  'variants',
+  'events',
+  'courses',
+  'lessons',
+  'promo-codes',
+  'gift-cards',
+  'media',
+] as const;
+
+export type AdminResource = (typeof adminResources)[number];
+
+const adminResourceSet = new Set<string>(adminResources);
+
+export function isAdminResource(value: string): value is AdminResource {
+  return adminResourceSet.has(value);
+}
+
+/**
+ * Параметры списка админки. Те же соображения, что у `ListingParams`: состояние
+ * таблицы живёт в URL, иначе ссылку на «отклонённые отзывы за март» нельзя
+ * переслать коллеге, а кнопка «назад» теряет фильтр.
+ */
+export interface AdminListParams {
+  q?: string;
+  status?: string;
+  sort?: string;
+  page?: number;
+  /** Идентификатор родительской записи для вложенных ресурсов. */
+  parent?: string;
+  /** Раздел экрана с несколькими очередями (модерация, промо). */
+  tab?: string;
+  /** Диапазон отчёта. */
+  range?: string;
+}
+
+/** Корень админки. Отсюда выводятся и адреса разделов, и признак `isAdminPath`. */
+const adminRoot = '/admin';
+
+function adminPath(segment: string): string {
+  return `${adminRoot}/${segment}`;
+}
+
+/**
+ * Путь ведёт в админку.
+ *
+ * Нужен раме сайта: публичная шапка, мобильный док и декоративные слои в
+ * инструменте лишние, а layout админки убрать их не может — он вложен в общий
+ * layout локали, и родительская разметка ребёнку недоступна. Признак объявлен
+ * здесь, рядом с адресами, а не строкой `startsWith('/admin')` в компоненте:
+ * переименование раздела не должно оставлять шапку висеть над сайдбаром.
+ *
+ * Путь ожидается БЕЗ префикса локали — таким его отдаёт `usePathname` next-intl.
+ */
+export function isAdminPath(pathWithoutLocale: string): boolean {
+  return pathWithoutLocale === adminRoot || pathWithoutLocale.startsWith(`${adminRoot}/`);
+}
+
 export const routes = {
   /* Публичная часть */
   home: () => '/',
@@ -98,20 +174,44 @@ export const routes = {
   venueCalendar: () => '/venue/calendar',
   venueEarnings: () => '/venue/earnings',
 
-  /* Админ-панель */
-  admin: () => '/admin',
-  adminOrders: () => '/admin/orders',
-  adminBookings: () => '/admin/bookings',
-  adminCatalog: () => '/admin/catalog',
-  adminInstructors: () => '/admin/instructors',
-  adminVenues: () => '/admin/venues',
-  adminUsers: () => '/admin/users',
-  adminPayouts: () => '/admin/payouts',
-  adminPromotions: () => '/admin/promotions',
-  adminModeration: () => '/admin/moderation',
-  adminReports: () => '/admin/reports',
-  adminAuditLog: () => '/admin/audit-log',
-  adminSettings: () => '/admin/settings',
+  /* ─────────────────────────── Админ-панель ───────────────────────────
+   *
+   * Разделы админки описываются `adminResources`, а не двадцатью строками
+   * вида `adminClasses: () => '/admin/classes'`. Причина не в экономии строк:
+   * каждый раздел обслуживают ОДНИ И ТЕ ЖЕ три страницы
+   * (`/admin/[resource]`, `/admin/[resource]/new`, `/admin/[resource]/[id]`),
+   * и список сегментов — это и список маршрутов, и список ресурсов реестра.
+   * Добавить раздел = добавить сегмент здесь и обработчик в реестре.
+   *
+   * Экраны со своей логикой (заказы, брони, модерация, права, аудит, отчёты)
+   * остаются отдельными маршрутами: их нельзя свести к «список + форма».
+   */
+  admin: () => adminRoot,
+  adminResource: (resource: AdminResource, params?: AdminListParams) =>
+    withQuery(adminPath(resource), params),
+  adminResourceNew: (resource: AdminResource, parent?: string) =>
+    withQuery(`${adminPath(resource)}/new`, parent ? { parent } : undefined),
+  adminResourceEdit: (resource: AdminResource, id: string) => `${adminPath(resource)}/${id}`,
+
+  adminCatalog: () => adminPath('catalog'),
+  adminOrders: (params?: AdminListParams) => withQuery(adminPath('orders'), params),
+  adminOrder: (id: string) => `${adminPath('orders')}/${id}`,
+  adminBookings: (params?: AdminListParams) => withQuery(adminPath('bookings'), params),
+  adminBooking: (id: string) => `${adminPath('bookings')}/${id}`,
+  adminUsers: (params?: AdminListParams) => withQuery(adminPath('users'), params),
+  adminUser: (id: string) => `${adminPath('users')}/${id}`,
+  adminPayouts: (params?: AdminListParams) => withQuery(adminPath('payouts'), params),
+  adminPromotions: () => adminPath('promotions'),
+  adminModeration: (params?: AdminListParams) => withQuery(adminPath('moderation'), params),
+  adminReports: (params?: AdminListParams) => withQuery(adminPath('reports'), params),
+  adminAuditLog: (params?: AdminListParams) => withQuery(adminPath('audit-log'), params),
+  adminApprovals: () => adminPath('approvals'),
+  adminSettings: () => adminPath('settings'),
+  adminTrash: (params?: AdminListParams) => withQuery(adminPath('trash'), params),
+
+  /* Совместимость с ранее объявленными адресами разделов каталога. */
+  adminInstructors: (params?: AdminListParams) => withQuery(adminPath('instructors'), params),
+  adminVenues: (params?: AdminListParams) => withQuery(adminPath('venues'), params),
 
   /* Контент и правовые страницы */
   about: () => '/about',
@@ -150,9 +250,19 @@ export const apiRoutes = {
   paymentIntent: () => '/api/payments/intent',
   paymentWebhook: (provider: string) => `/api/webhooks/payments/${provider}`,
   emailWebhook: () => '/api/webhooks/email',
+  /**
+   * Загрузка изображения. Route handler, а не server action: файл идёт
+   * `multipart/form-data`, и это его родной канал (см. шапку обработчика).
+   */
+  mediaUpload: () => '/api/media/upload',
   uploadSignature: () => '/api/media/signature',
   vitals: () => '/api/vitals',
   cron: (job: string) => `/api/cron/${job}`,
+  /**
+   * Задачи по расписанию. Имена объявлены здесь, а не строками в `vercel.json` и
+   * в проверках: опечатка в имени даёт 404 у планировщика, а не ошибку сборки.
+   */
+  cronJobs: { purgeTrash: 'purge-trash' } as const,
 } as const;
 
 /* ─────────────────────── Типы параметров ─────────────────────── */

@@ -34,7 +34,8 @@ import { formatClock } from '@/lib/time/clock';
 import { zonedParts } from '@/lib/time/schedule';
 import { defineQuery } from '@/server/query';
 
-import { firstMediaRef, mediaSelect, type MediaRow } from './media';
+import { firstMediaRef, type MediaRow } from './media';
+import { mediaRelation } from './relations';
 
 const eventSelect = {
   slug: true,
@@ -48,7 +49,7 @@ const eventSelect = {
   capacity: true,
   bookedCount: true,
   createdAt: true,
-  media: { select: mediaSelect },
+  media: mediaRelation,
   venue: {
     select: { slug: true, name: true, district: true, latitude: true, longitude: true },
   },

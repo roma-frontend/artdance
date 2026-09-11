@@ -45,6 +45,7 @@ Prisma 7 + PostgreSQL · Zod 4 · Vitest 3. Хостинг Vercel, медиа Cl
 ```
 npm run verify          # токены, переводы, медиа, типы, линтер, тесты — перед каждым коммитом
 npm run verify:headers  # CSP, security-заголовки, кеш, CSRF на живой сборке
+npm run verify:admin    # запись админки на живой базе: делегаты Prisma, переводы
 npm run design:status   # какие компоненты готовы, какие классы макета не покрыты
 npm run media:optimize  # пережать ассеты сида тем же конвейером, что и загрузки
 npm run perf:budget     # бюджет веса: JS + изображения (после build)

@@ -1400,6 +1400,394 @@ export const componentManifest: readonly ComponentSpec[] = [
       'отказе провайдера человек видит прямой адрес поддержки. Ошибка адресуется полю, ' +
       'которое назвал сервер, а не общим сообщением над формой.',
   },
+
+  /* ─────────────────────────── Волна admin (фаза 7) ───────────────────────────
+   *
+   * Ни одного из этих блоков в утверждённом прототипе нет: в нём нет ни таблицы,
+   * ни формы, ни диалога, ни админки. Поэтому `prototypeClasses` пуст у всех —
+   * переносить нечего, стили собираются из токенов и компонентных классов
+   * (`.form-input`, `.card-surface`).
+   *
+   * Ключевое решение волны: четырнадцать разделов каталога обслуживают ОДИН
+   * список и ОДНА форма, собранные из описания в `src/config/admin.ts`. Отсюда
+   * малое число записей при большом объёме функциональности.
+   */
+  {
+    name: 'AdminShell',
+    path: 'components/admin/admin-shell.tsx',
+    role: 'Рама админки: шапка с уровнем доступа, сайдбар, рабочая область',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['default', 'mobile-scrolled-nav'],
+    notes:
+      'Своя рама, а не SiteHeader: публичная шапка кинематографична и прозрачна над hero, ' +
+      'а инструменту нужны плотная сетка и видимая роль. Права разрешаются один раз в ' +
+      'layout и передаются рамe — иначе N запросов на страницу.',
+  },
+  {
+    name: 'AdminSidebar',
+    path: 'components/admin/admin-sidebar.tsx',
+    role: 'Навигация админки с подсветкой текущего раздела',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['default', 'active-item', 'filtered-by-capability', 'mobile-scroll'],
+    notes:
+      'Пункты приходят отфильтрованными по capability: скрытый пункт — не защита (страница ' +
+      'проверяет право сама), но показывать поддержке раздел выплат, который ответит ' +
+      'отказом, значит врать интерфейсом. Активный пункт определяется по сегментам, а не ' +
+      'startsWith — иначе /admin подсвечен всегда.',
+  },
+  {
+    name: 'AdminPageHeader',
+    path: 'components/admin/admin-page-header.tsx',
+    role: 'Шапка экрана админки: заголовок, пояснение, путь наверх, действия',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['default', 'with-parent', 'with-actions'],
+  },
+  {
+    name: 'AdminForm',
+    path: 'components/admin/admin-form.tsx',
+    role: 'Форма записи любого раздела: поля из описания, переводы вкладками',
+    wave: 'admin',
+    prototypeClasses: ['form-input', 'form-2col'],
+    screens: ['admin'],
+    i18n: ['admin', 'validation'],
+    states: ['create', 'edit', 'submitting', 'saved', 'field-error', 'server-error'],
+    notes:
+      'Одна форма на четырнадцать разделов. Поведение (целые драмы, формат даты, ' +
+      'обязательность, aria) задано один раз; двадцать написанных руками форм расходятся ' +
+      'в первый месяц. Проверка — на сервере схемой того же описания, клиент не дублирует ' +
+      'правила.',
+  },
+  {
+    name: 'DeleteRecordButton',
+    path: 'components/admin/delete-record-button.tsx',
+    role: 'Удаление записи с подтверждением и названием последствий',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['idle', 'confirming', 'deleting', 'refused'],
+    notes:
+      'Диалог не закрывается сам: ответ сервера может быть отказом (нет права, есть ' +
+      'связанные записи), и человек должен узнать это там, где нажал.',
+  },
+  {
+    name: 'MediaSection',
+    path: 'components/admin/media-section.tsx',
+    role: 'Фотографии записи: галерея загруженного и загрузчик',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    image: 'thumbnail',
+    states: ['empty', 'items', 'read-only'],
+    notes:
+      'Только на экране правки: пока у записи нет идентификатора, привязывать файл некуда, ' +
+      'а «загрузим и привяжем позже» — осиротевшие объекты в хранилище.',
+  },
+  {
+    name: 'StatusActions',
+    path: 'components/admin/status-actions.tsx',
+    role: 'Переходы состояний заказа, брони и выплаты',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin', 'status'],
+    variants: ['order', 'booking', 'payout'],
+    states: ['idle', 'pending', 'confirming', 'error'],
+    notes:
+      'Отмена брони требует причину: она попадает в журнал и в письмо клиенту. Удержание и ' +
+      'возврат считаются по условиям, зафиксированным в самой броне, а не по текущему конфигу.',
+  },
+  {
+    name: 'RefundForm',
+    path: 'components/admin/refund-form.tsx',
+    role: 'Ручной возврат по заказу с пределом и порогом согласования',
+    wave: 'admin',
+    prototypeClasses: ['form-input'],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['idle', 'submitting', 'registered', 'requires-approval', 'nothing-to-refund'],
+    notes:
+      'Предел возврата считает сервер (оплачено минус возвращённое). Возврат выше порога ' +
+      'уходит в очередь второму администратору. Статус записи — PENDING: деньги возвращает ' +
+      'провайдер, и «возвращено» до подтверждения банка — ложь клиенту.',
+  },
+  {
+    name: 'ModerationActions',
+    path: 'components/admin/moderation-actions.tsx',
+    role: 'Решение по элементу очереди модерации',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['idle', 'rejecting', 'submitting', 'error'],
+    notes:
+      'Причина отклонения обязательна и видна автору: молчаливый отказ порождает второй ' +
+      'такой же отзыв и обращение в поддержку.',
+  },
+  {
+    name: 'UserAccessActions',
+    path: 'components/admin/user-access-actions.tsx',
+    role: 'Смена роли и блокировка аккаунта',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['default', 'self', 'last-admin', 'suspended', 'confirming'],
+    notes:
+      'Свой доступ менять нельзя, последнего активного администратора — тоже. Блокировка ' +
+      'обрывает активные сессии: иначе «доступ снят» на экране администратора — неправда.',
+  },
+  {
+    name: 'CapabilityMatrix',
+    path: 'components/admin/capability-matrix.tsx',
+    role: 'Матрица прав роли: что позволено',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['default', 'denied', 'granted-temporarily', 'read-only'],
+    notes:
+      'Переключатель на право, а не «сохранить всё»: одна запись аудита на тридцать ' +
+      'изменений не даёт понять, какое сломало доступ. Администратор в матрице отсутствует.',
+  },
+  {
+    name: 'GrantForm',
+    path: 'components/admin/grant-form.tsx',
+    role: 'Временный доступ на срок с причиной',
+    wave: 'admin',
+    prototypeClasses: ['form-input'],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['idle', 'submitting', 'created', 'error'],
+    notes:
+      'Права на деньги и роли в список не попадают: их выдают решением о роли, а не на два ' +
+      'часа. Срок ограничен grantLimits — дольше это смена роли.',
+  },
+  {
+    name: 'ApprovalActions',
+    path: 'components/admin/approval-actions.tsx',
+    role: 'Решение по заявке второго администратора',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['idle', 'author', 'expired', 'submitting'],
+    notes:
+      'Одобрение даёт разрешение выполнить, а не выполняет: автоматическое исполнение ' +
+      'означало бы возврат, помеченный отправленным без обращения к банку.',
+  },
+  {
+    name: 'DataTable',
+    path: 'components/data/data-table.tsx',
+    role: 'Таблица админки: колонки из описания, форматирование по виду ячейки',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin', 'status'],
+    states: ['rows', 'empty', 'empty-filtered', 'selectable', 'secondary-columns-hidden'],
+    notes:
+      'Серверный компонент: сортировка и страница в URL, значит на каждое изменение всё ' +
+      'равно запрос. Выбор строк — обычные input в форме BulkActionBar, поэтому таблица ' +
+      'остаётся серверной, а выбор сорока строк не стоит сорока перерисовок.',
+  },
+  {
+    name: 'TableFilters',
+    path: 'components/data/table-filters.tsx',
+    role: 'Поиск, статус и сортировка списка админки',
+    wave: 'admin',
+    prototypeClasses: ['form-input'],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['idle', 'applied', 'pending'],
+    notes:
+      'Состояние в URL: ссылку на отбор пересылают коллеге, а из записи возвращаются ' +
+      'кнопкой «назад». Страница сбрасывается при любом изменении фильтра.',
+  },
+  {
+    name: 'TablePagination',
+    path: 'components/data/table-pagination.tsx',
+    role: 'Страницы списка админки ссылками',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['first', 'middle', 'last', 'single'],
+  },
+  {
+    name: 'BulkActionBar',
+    path: 'components/data/bulk-action-bar.tsx',
+    role: 'Массовые действия над выбранными строками',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['no-selection', 'selected', 'over-limit', 'confirming', 'running'],
+    notes:
+      'Предел maxBulkActionItems тот же, что проверяет сервер: интерфейс объясняет ' +
+      'ограничение заранее, но защитой не является — запрос можно отправить curl.',
+  },
+  {
+    name: 'Stat',
+    path: 'components/data/stat.tsx',
+    role: 'Числовой показатель сводки и отчёта',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    variants: ['count', 'money', 'percent'],
+    states: ['value', 'no-data'],
+    notes:
+      'Пустое значение — не ноль: «ноль броней» это факт, «нет данных» — отсутствие ' +
+      'доступа, и в отчётности их нельзя путать.',
+  },
+  {
+    name: 'DiffView',
+    path: 'components/data/diff-view.tsx',
+    role: 'Изменение записи из журнала в читаемом виде',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['empty', 'entries'],
+  },
+  {
+    name: 'ExportButton',
+    path: 'components/data/export-button.tsx',
+    role: 'Выгрузка отчёта в CSV',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['idle', 'preparing', 'error'],
+    notes:
+      'Server action, а не ссылка: выгрузка — операция с правом data.export, лимитом частоты ' +
+      'и записью в журнал. Защита от formula injection уже в toCsv.',
+  },
+  {
+    name: 'PhotoUploader',
+    path: 'components/form/photo-uploader.tsx',
+    role: 'Загрузка изображений сущности с обязательным alt-текстом',
+    wave: 'admin',
+    prototypeClasses: ['form-input'],
+    screens: ['admin'],
+    i18n: ['admin', 'validation'],
+    states: ['idle', 'uploading', 'uploaded', 'failed', 'limit-reached'],
+    notes:
+      'Лимиты знает uploadPolicies, а не компонент. Alt обязателен ДО отправки: это ' +
+      'обязательное поле схемы, и «добавлю позже» означает картинку без описания в ' +
+      'каталоге. Файлы уходят последовательно — параллельные восемь мегабайт кладут канал.',
+  },
+  {
+    name: 'AccessDenied',
+    path: 'components/ui/access-denied.tsx',
+    role: '«Не хватает прав» — отдельно от «не найдено»',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin', 'account'],
+    i18n: ['errors', 'admin'],
+    states: ['default', 'with-subject'],
+    notes:
+      'Подмена одного другим уместна на публичных разделах, но внутри админки вредна: ' +
+      'сотрудник видит раздел в меню и получает «не найдено», после чего ищет ' +
+      'несуществующую ошибку.',
+  },
+
+  /* ───────────────────── Корзина и загрузочные состояния ───────────────────── */
+
+  {
+    name: 'TrashActions',
+    path: 'components/admin/trash-actions.tsx',
+    role: 'вернуть запись из корзины или стереть навсегда',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['default', 'restoring', 'purge-confirm', 'error', 'view-only'],
+    notes:
+      'Две кнопки с намеренно разным весом: у возврата есть откат (удалить снова), поэтому ' +
+      'подтверждения нет; у окончательного удаления отката нет, поэтому подтверждение ' +
+      'называет запись по имени — диалог «Удалить?» в списке из двадцати строк не говорит, какую.',
+  },
+  {
+    name: 'PhotoDeleteButton',
+    path: 'components/admin/photo-delete-button.tsx',
+    role: 'убрать кадр прямо из формы владельца',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['admin'],
+    i18n: ['admin'],
+    states: ['default', 'confirm', 'deleting', 'error'],
+    notes:
+      'Не уводит со страницы: кадр уходит в корзину, список обновляется refresh, а форма ' +
+      'остаётся заполненной. До этого удалить фото можно было только из отдельного раздела — ' +
+      'то есть потеряв несохранённые правки.',
+  },
+  {
+    name: 'Spinner',
+    path: 'components/ui/spinner.tsx',
+    role: 'ожидание короче секунды',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['all'],
+    i18n: ['a11y'],
+    states: ['default', 'reduced-motion'],
+    notes:
+      'Граница со скелетом проведена намеренно: спиннер отвечает «нажатие принято», скелет — ' +
+      '«вот форма содержимого». `currentColor` и размер в `em`: внутри кнопки не требует настройки. ' +
+      'При prefers-reduced-motion вращение останавливается, а знак остаётся.',
+  },
+  {
+    name: 'SkeletonCard, SkeletonCardGrid, SkeletonList, SkeletonTable',
+    path: 'components/ui/skeleton-card.tsx',
+    role: 'форма содержимого, которое сейчас появится',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['catalog', 'account', 'admin'],
+    i18n: ['a11y'],
+    states: ['card', 'grid', 'list', 'table', 'reduced-motion'],
+    notes:
+      'Геометрия повторяет финальный блок: медиа 4:3 у карточки каталога, высота строки ' +
+      'таблицы админки. Скелет «на глаз» даёт скачок вёрстки при подмене и портит CLS ' +
+      'сильнее, чем его отсутствие. Один aria-busy на группу, а не на каждую плитку.',
+  },
+  {
+    name: 'LinkPending',
+    path: 'components/ui/link-pending.tsx',
+    role: 'обратная связь на нажатую ссылку',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['all'],
+    i18n: ['a11y'],
+    states: ['idle', 'pending'],
+    notes:
+      'Ставится внутрь Link: useLinkStatus работает только у потомка ссылки. Не оверлей и не ' +
+      'полоса вверху — переходы в основном мгновенные из-за префетча, и оверлей мигал бы на ' +
+      'каждом щелчке, а полоса вверху занята прогрессом чтения. Задержка появления — CSS-анимацией.',
+  },
+  {
+    name: 'SiteChrome',
+    path: 'components/layout/site-chrome.tsx',
+    role: 'публичное обрамление страницы, знающее про админку',
+    wave: 'admin',
+    prototypeClasses: [],
+    screens: ['all'],
+    i18n: [],
+    states: ['public', 'admin'],
+    notes:
+      'Шапка сайта фиксированная и объявлена в layout локали, поэтому админка получала её ' +
+      'поверх своей рамы. Убрать родительскую разметку из вложенного layout нельзя — решение ' +
+      'принимается по адресу через isAdminPath.',
+  },
 ];
 
 /** Компонентов на волну — для планирования. */

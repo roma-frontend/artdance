@@ -42,7 +42,7 @@ const buttonVariants = cva(
         destructive: 'bg-danger text-content-on-accent hover:opacity-90 shadow-md',
       },
       size: {
-        sm: 'px-4 py-2 text-2xs',
+        sm: 'px-4 py-2 text-xs',
         md: 'px-7 py-3 text-xs',
         lg: 'px-10 py-4 text-sm',
         /**

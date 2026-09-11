@@ -139,6 +139,7 @@ export type MediaFallbackKind = (typeof mediaFallbackKinds)[number];
 export const mediaPaths = {
   instructorPhoto: (instructorId: string, fileId: string) => `instructors/${instructorId}/${fileId}`,
   studioPhoto: (studioId: string, fileId: string) => `studios/${studioId}/${fileId}`,
+  classPhoto: (classId: string, fileId: string) => `classes/${classId}/${fileId}`,
   productImage: (productId: string, fileId: string) => `products/${productId}/${fileId}`,
   eventCover: (eventId: string, fileId: string) => `events/${eventId}/${fileId}`,
   courseCover: (courseId: string, fileId: string) => `courses/${courseId}/${fileId}`,

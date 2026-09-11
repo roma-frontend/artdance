@@ -28,6 +28,19 @@ export default defineConfig({
       NEXT_PUBLIC_FEATURE_EVENTS: 'true',
       NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS: 'true',
       NEXT_PUBLIC_FEATURE_VIDEO: 'false',
+      /*
+       * Серверные переменные тоже объявлены здесь, и это не про подключение к
+       * базе. Модули `src/server/**` импортируют `src/lib/db.ts`, а тот создаёт
+       * клиент Prisma при загрузке модуля — то есть требует `DATABASE_URL` даже
+       * от теста, который в базу не ходит. Соединение не открывается, пока не
+       * выполнится запрос, поэтому значение-заглушка достаточна.
+       *
+       * Без этих строк `npm run verify` проходил только у того, кто держит
+       * переменные экспортированными в своей оболочке, а на чистой машине падал
+       * тремя тестами — ровно то, от чего конфиг и должен защищать.
+       */
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/artdance',
+      AUTH_SECRET: 'vitest-only-secret-value-at-least-32-characters',
     },
   },
 });

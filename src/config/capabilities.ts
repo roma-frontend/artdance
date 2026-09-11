@@ -68,6 +68,15 @@ export const capabilities = [
   'audit.view',
   'action.bulk',
   'data.export',
+
+  /*
+   * Корзина. Перенос В корзину отдельного права не требует — это то же
+   * удаление, что и раньше, с правом раздела. А вот вернуть чужое решение и
+   * стереть запись навсегда — два разных полномочия, и второе необратимо.
+   */
+  'trash.view',
+  'trash.restore',
+  'trash.purge',
 ] as const;
 
 export type Capability = (typeof capabilities)[number];
@@ -97,6 +106,11 @@ export const defaultRoleCapabilities: Record<string, readonly Capability[]> = {
     'reviews.moderate',
     'content.moderate',
     'audit.view',
+    /*
+     * Поддержка видит корзину, но не трогает её: «кто и что удалил» — обычный
+     * вопрос обращения, а решение вернуть или стереть принимает администратор.
+     */
+    'trash.view',
   ],
   INSTRUCTOR: [],
   VENUE_OWNER: [],
@@ -119,4 +133,6 @@ export const nonGrantableCapabilities: readonly Capability[] = [
   'users.impersonate',
   'payouts.release',
   'settings.edit',
+  /* Стереть запись навсегда нельзя «на два часа»: отката у этой операции нет. */
+  'trash.purge',
 ];

@@ -154,9 +154,10 @@ interface FormFieldProps {
 |---|---|---|
 | `EmptyState` | `components/ui/empty-state.tsx` | Уже в манифесте. Нужны варианты: `no-results` (сбросить фильтры), `nothing-yet` (создать), `not-available` (альтернативы) |
 | `ErrorState` | `components/ui/error-state.tsx` | Текст из `errors.*`, кнопка «повторить», код инцидента Sentry для поддержки |
-| `Skeleton` | `components/ui/skeleton.tsx` | Повторяет геометрию финального блока, иначе после загрузки прыгает вёрстка |
-| `SkeletonCard`, `SkeletonList`, `SkeletonTable` | `components/ui/skeleton-*.tsx` | По одному на каждый тип карточки |
-| `Spinner` | `components/ui/spinner.tsx` | Только для действий короче секунды, для остального — skeleton |
+| `Skeleton` | `components/ui/skeleton.tsx` | ✅ Повторяет геометрию финального блока, иначе после загрузки прыгает вёрстка |
+| `SkeletonCard`, `SkeletonCardGrid`, `SkeletonList`, `SkeletonTable` | `components/ui/skeleton-card.tsx` | ✅ Один файл, а не четыре: у них общий контейнер `aria-busy` (скринридер должен услышать «загружается список», а не двенадцать раз «загружается») и общий источник числа строк — `motion.loading.skeletonRows` |
+| `Spinner` | `components/ui/spinner.tsx` | ✅ Только для действий короче секунды, для остального — skeleton. `currentColor` и размер в `em`: внутри кнопки не требует настройки |
+| `LinkPending` | `components/ui/link-pending.tsx` | ✅ Обратная связь на нажатую ссылку (`useLinkStatus`). Ставится внутрь `Link`. Не оверлей и не полоса вверху: переходы в основном мгновенные из-за префетча, а полоса вверху занята прогрессом чтения |
 | `AccessDenied` | `components/ui/access-denied.tsx` | «Не хватает прав» ≠ «не найдено»: разные тексты, разные действия |
 | `MaintenanceNotice` | `components/ui/maintenance-notice.tsx` | Платежи недоступны — сказать заранее, а не на шаге оплаты |
 | `SlotConflictNotice` | `components/booking/slot-conflict-notice.tsx` | «Слот только что заняли» + 3 альтернативы. Самая частая ошибка в бронировании, и она должна быть не тупиком |

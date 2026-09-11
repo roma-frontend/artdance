@@ -16,7 +16,8 @@ import 'server-only';
 import { reviews as reviewRules } from '@/config/business';
 import type { RatingSummary, ReviewItem } from '@/domain/content';
 
-import { firstMediaRef, mediaSelect, type MediaRow } from './media';
+import { firstMediaRef, type MediaRow } from './media';
+import { mediaRelation } from './relations';
 
 export const approvedReviewsWhere = { moderation: 'APPROVED' as const };
 
@@ -35,10 +36,10 @@ export const reviewSelect = {
    * кабинета). В макете рядом с отзывом стоит фотография; когда её нет, компонент
    * `Media` рисует заглушку роли, а не пустое место.
    */
-  instructor: { select: { media: { select: mediaSelect } } },
-  danceClass: { select: { media: { select: mediaSelect } } },
-  venue: { select: { media: { select: mediaSelect } } },
-  product: { select: { media: { select: mediaSelect } } },
+  instructor: { select: { media: mediaRelation } },
+  danceClass: { select: { media: mediaRelation } },
+  venue: { select: { media: mediaRelation } },
+  product: { select: { media: mediaRelation } },
 } as const;
 
 export interface ReviewRow {

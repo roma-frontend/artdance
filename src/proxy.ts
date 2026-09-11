@@ -131,7 +131,10 @@ export default async function proxy(request: NextRequest) {
 
   const pathWithoutLocale = stripLocale(pathname);
 
-  if (isProtectedPath(pathWithoutLocale) && !request.cookies.has(security.session.cookieName)) {
+  if (
+    isProtectedPath(pathWithoutLocale) &&
+    !request.cookies.has(security.session.requestCookieName)
+  ) {
     /*
      * Путь запоминается БЕЗ префикса локали. Локаль вернёт навигация next-intl
      * после входа: сохранив `/en/account`, мы получили бы `/en/en/account` —

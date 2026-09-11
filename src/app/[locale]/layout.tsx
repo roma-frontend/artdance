@@ -5,14 +5,10 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { absoluteUrl, routes, seo, site } from '@/config';
-import { PointerGlow } from '@/components/fx/pointer-glow';
-import { ScrollProgress } from '@/components/fx/scroll-progress';
-import { MobileDock } from '@/components/layout/mobile-dock';
-import { SiteHeader } from '@/components/layout/site-header';
+import { SiteChrome } from '@/components/layout/site-chrome';
 import { SkipToContent } from '@/components/layout/skip-to-content';
 import { ThemeColorSync } from '@/components/layout/theme-color-sync';
 import { ThemeProvider } from '@/components/layout/theme-provider';
-import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { fontVariables } from '@/design/fonts';
 import { SearchOverlayProvider } from '@/components/search/search-overlay';
 import { JsonLdScript } from '@/components/seo/json-ld';
@@ -155,12 +151,11 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             */}
             <SearchOverlayProvider>
               <SkipToContent />
-              <ScrollProgress />
-              <PointerGlow />
-              <SiteHeader />
-              {children}
-              <MobileDock />
-              <ThemeToggle />
+              {/*
+                Публичное обрамление решает по адресу, показывать себя или нет:
+                у админки своя рама, и фиксированная шапка сайта накрывала её.
+              */}
+              <SiteChrome>{children}</SiteChrome>
             </SearchOverlayProvider>
           </NextIntlClientProvider>
         </ThemeProvider>

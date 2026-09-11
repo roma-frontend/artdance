@@ -40,6 +40,7 @@ import { classCardsBy } from './classes';
 import { firstMediaRef, mediaSelect, type MediaRow } from './media';
 import { toInstructorCard } from './instructors';
 import { toVenueCard } from './venues';
+import { activeRoomsRelation, mediaRelation, notTrashed } from './relations';
 
 /**
  * Сводка по каждому направлению одним проходом.
@@ -111,7 +112,7 @@ export const getStyleHub = defineQuery({
 
     const publicClass = {
       isActive: true,
-      instructor: { moderation: 'APPROVED' as const, publishedAt: { not: null } },
+      instructor: { ...notTrashed, moderation: 'APPROVED' as const, publishedAt: { not: null } },
       style,
     };
 
@@ -136,7 +137,7 @@ export const getStyleHub = defineQuery({
           ratingAverage: true,
           ratingCount: true,
           user: { select: { name: true } },
-          media: { select: mediaSelect },
+          media: mediaRelation,
         },
       }),
       /* Залы, где этому учат: связь только через занятия. */
@@ -144,7 +145,7 @@ export const getStyleHub = defineQuery({
         where: {
           moderation: 'APPROVED',
           publishedAt: { not: null },
-          classes: { some: publicClass },
+          classes: { some: { ...publicClass, ...notTrashed } },
         },
         take: limits.styleHub.venues,
         select: {
@@ -155,11 +156,8 @@ export const getStyleHub = defineQuery({
           amenities: true,
           ratingAverage: true,
           ratingCount: true,
-          media: { select: mediaSelect },
-          rooms: {
-            where: { isActive: true },
-            select: { areaSqm: true, capacity: true, pricePerHour: true, amenities: true },
-          },
+          media: mediaRelation,
+          rooms: activeRoomsRelation,
         },
       }),
       /* Минимальная цена занятия: «от» в шапке хаба. */

@@ -80,7 +80,7 @@
 | 404 | `app/[locale]/not-found.tsx` | ✅ |
 | Ошибка раздела | `app/[locale]/error.tsx` | ✅ |
 | Критическая ошибка | `app/global-error.tsx` | ✅ |
-| Skeleton | `app/[locale]/loading.tsx` | — переход между разделами пока держит предыдущий экран до готовности нового |
+| Загрузочные состояния | `app/[locale]/admin/loading.tsx`, `app/[locale]/account/loading.tsx`, `<Suspense>` в `/discover` | ✅ Скелеты повторяют геометрию финального блока (`SkeletonCard/List/Table`), обратная связь на нажатую ссылку — `LinkPending` через `useLinkStatus`. В корне локали `loading.tsx` НЕ ставится: он обернул бы Suspense'ом статически пререндеренные маршруты, и первым кадром главной стал бы скелет (§2e конвенций) |
 
 ---
 

@@ -55,9 +55,9 @@ import { defineQuery } from '@/server/query';
 
 import { classCardsBy } from './classes';
 import { ratingFrom, reviewSelect, type ReviewRow } from './reviews';
-import { firstMediaRef, mediaSelect, type MediaRow } from './media';
-
-const instructorSelect = {
+import { firstMediaRef, type MediaRow } from './media';
+import { mediaRelation, notTrashed } from './relations';
+export const instructorSelect = {
   slug: true,
   headline: true,
   bio: true,
@@ -72,7 +72,7 @@ const instructorSelect = {
   studentCount: true,
   createdAt: true,
   user: { select: { name: true } },
-  media: { select: mediaSelect },
+  media: mediaRelation,
 } as const;
 
 /**
@@ -82,13 +82,13 @@ const instructorSelect = {
  * — тот, что не прошёл проверку. Ни один из них не должен встречаться в каталоге,
  * и условие вынесено в константу, чтобы это нельзя было забыть в одном запросе.
  */
-const publicInstructorWhere = {
+export const publicInstructorWhere = {
   moderation: 'APPROVED' as const,
   publishedAt: { not: null },
   user: { isActive: true },
 };
 
-interface InstructorRow {
+export interface InstructorRow {
   slug: string;
   headline: string;
   bio: string;
@@ -262,7 +262,7 @@ export const getInstructorDetail = defineQuery({
         },
         /* Площадки — через занятия: у инструктора нет своего зала. */
         classes: {
-          where: { isActive: true, venue: { isNot: null } },
+          where: { ...notTrashed, isActive: true, venue: { isNot: null } },
           select: { venue: { select: { slug: true, name: true } } },
         },
       },
@@ -336,7 +336,7 @@ export const getInstructorFacets = defineQuery({
       select: {
         styles: true,
         hourlyRateFrom: true,
-        classes: { select: { venue: { select: { district: true } } } },
+        classes: { where: notTrashed, select: { venue: { select: { district: true } } } },
       },
       take: limits.query.maxRows,
     });

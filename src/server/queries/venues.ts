@@ -39,15 +39,16 @@ import { defineQuery } from '@/server/query';
 
 import { classCardsBy } from './classes';
 import { eventCardsBy } from './events';
-import { firstMediaRef, mediaSelect, type MediaRow } from './media';
+import { firstMediaRef, type MediaRow } from './media';
 import { approvedReviewsWhere, ratingFrom, reviewSelect, type ReviewRow } from './reviews';
+import { activeRoomsRelation, mediaRelation, notTrashed, roomPricesRelation } from './relations';
 
-const publicVenueWhere = {
+export const publicVenueWhere = {
   moderation: 'APPROVED' as const,
   publishedAt: { not: null },
 };
 
-const venueSelect = {
+export const venueSelect = {
   slug: true,
   name: true,
   description: true,
@@ -58,11 +59,9 @@ const venueSelect = {
   ratingAverage: true,
   ratingCount: true,
   createdAt: true,
-  media: { select: mediaSelect },
-  rooms: {
-    where: { isActive: true },
-    select: { areaSqm: true, capacity: true, pricePerHour: true, amenities: true },
-  },
+  media: mediaRelation,
+  rooms: activeRoomsRelation,
+
 } as const;
 
 interface RoomRow {
@@ -72,7 +71,7 @@ interface RoomRow {
   amenities: string[];
 }
 
-interface VenueRow {
+export interface VenueRow {
   slug: string;
   name: string;
   description: string;
@@ -135,6 +134,7 @@ function venueWhere(query: CatalogQuery) {
       ? {
           rooms: {
             some: {
+              ...notTrashed,
               isActive: true,
               pricePerHour: {
                 ...(query.priceMin !== undefined ? { gte: query.priceMin } : {}),
@@ -236,7 +236,7 @@ export const getVenueFacets = defineQuery({
       where: publicVenueWhere,
       select: {
         district: true,
-        rooms: { where: { isActive: true }, select: { pricePerHour: true } },
+        rooms: roomPricesRelation,
       },
       take: limits.query.maxRows,
     });

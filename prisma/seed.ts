@@ -102,6 +102,65 @@ const MS_PER_WEEK = 7 * 24 * 60 * MS_PER_MINUTE;
 /** Точка отсчёта: одна на весь запуск, иначе строки разъезжаются по времени. */
 const now = new Date();
 
+/* ─────────────────────── Идемпотентность ─────────────────────── */
+
+/**
+ * Минимальный контракт делегата Prisma, которого достаточно `upsertLive`.
+ *
+ * `args: never` — не небрежность. Методы делегатов обобщённые
+ * (`<T extends VenueCreateArgs>(args: SelectSubset<T, …>)`), и аргумент вида
+ * `{ data: Record<string, unknown> }` к ним не присваивается ни при каком
+ * описании. Контравариантность параметров делает любую функцию присваиваемой к
+ * функции с параметром `never`, поэтому проверка остаётся там, где она приносит
+ * пользу — на возвращаемом значении, — а аргументы приводятся один раз внутри
+ * `upsertLive`, на данных, которые он сам же и собирает.
+ */
+interface LiveDelegate {
+  findFirst(args: never): Promise<{ id: string } | null>;
+  update(args: never): Promise<{ id: string }>;
+  create(args: never): Promise<{ id: string }>;
+}
+
+/**
+ * Идемпотентная запись по естественному ключу — замена `delegate.upsert`.
+ *
+ * `prisma.*.upsert` компилируется в `INSERT … ON CONFLICT (<ключ>)`, а корзина
+ * объявила уникальность слагов, SKU и кодов ЧАСТИЧНОЙ:
+ * `@@unique([slug], where: raw("\"deletedAt\" IS NULL"))`. Postgres не считает
+ * частичный индекс подходящей целью для `ON CONFLICT` без такого же предиката и
+ * отвечает `42P10: there is no unique or exclusion constraint matching the ON
+ * CONFLICT specification`. Prisma предикат не генерирует, поэтому upsert по этим
+ * ключам сломан целиком — не «на Supabase», а на любом Postgres.
+ *
+ * Явный поиск заодно даёт правильную семантику, которой у upsert быть не могло:
+ * запись, лежащую в корзине, повторный сид не оживляет — он создаёт рядом новую,
+ * потому что частичный индекс это разрешает. Восстановление удалённого — решение
+ * администратора, а не побочный эффект `npm run db:seed`.
+ *
+ * `createOnly` — поля, которые ставятся при создании и не переписываются при
+ * обновлении: владелец профиля, родительский товар, тип промокода.
+ */
+async function upsertLive(
+  delegate: LiveDelegate,
+  key: Record<string, unknown>,
+  data: Record<string, unknown>,
+  createOnly: Record<string, unknown> = {},
+): Promise<string> {
+  const existing = await delegate.findFirst({
+    where: { ...key, deletedAt: null },
+    select: { id: true },
+  } as never);
+
+  const row = existing
+    ? await delegate.update({ where: { id: existing.id }, data, select: { id: true } } as never)
+    : await delegate.create({
+        data: { ...data, ...key, ...createOnly },
+        select: { id: true },
+      } as never);
+
+  return row.id;
+}
+
 /* ─────────────────────────── Медиа ─────────────────────────── */
 
 /**
@@ -155,7 +214,14 @@ async function attachMedia(
 
   const asset = await prisma.mediaAsset.upsert({
     where: { storageKey },
-    update: { ...data, storageKey, ...owner },
+    /*
+     * `deletedAt: null` — единственное место, где сид возвращает запись из
+     * корзины. У `MediaAsset` уникальность `storageKey` полная, а не частичная
+     * (две записи на один файл означали бы, что окончательное удаление одной
+     * уносит картинку у другой), поэтому создать вторую рядом нельзя. Выбор — либо
+     * вернуть демо-ассет, либо оставить карточки макета без изображений.
+     */
+    update: { ...data, storageKey, ...owner, deletedAt: null },
     create: { ...data, storageKey, ...owner },
     select: { id: true },
   });
@@ -337,23 +403,20 @@ async function seedInstructors(): Promise<Map<string, string>> {
       publishedAt: now,
     };
 
-    const profile = await prisma.instructorProfile.upsert({
-      where: { slug: item.slug },
-      update: data,
-      create: { ...data, userId },
-      select: { id: true },
+    const profileId = await upsertLive(prisma.instructorProfile, { slug: item.slug }, data, {
+      userId,
     });
-    ids.set(item.slug, profile.id);
+    ids.set(item.slug, profileId);
 
     /*
      * Опыт и тарифы естественного ключа не имеют — пересоздаются в границах
      * своего профиля. Так правка фикстуры не оставляет сирот.
      */
-    await prisma.instructorExperience.deleteMany({ where: { instructorId: profile.id } });
+    await prisma.instructorExperience.deleteMany({ where: { instructorId: profileId } });
     if (item.experience) {
       await prisma.instructorExperience.createMany({
         data: item.experience.map((entry, index) => ({
-          instructorId: profile.id,
+          instructorId: profileId,
           title: entry.title,
           organization: entry.organization ?? null,
           location: entry.location ?? null,
@@ -368,10 +431,10 @@ async function seedInstructors(): Promise<Map<string, string>> {
      * Тарифные опции: длительности из бизнес-правил, цена — базовая ставка,
      * пересчитанная на длительность. Ни одной цифры своей.
      */
-    await prisma.priceOption.deleteMany({ where: { instructorId: profile.id } });
+    await prisma.priceOption.deleteMany({ where: { instructorId: profileId } });
     await prisma.priceOption.createMany({
       data: booking.durationsMinutes.map((duration) => ({
-        instructorId: profile.id,
+        instructorId: profileId,
         label: `${duration}`,
         durationMinutes: duration,
         price: Math.round((item.hourlyRateFrom * duration) / 60),
@@ -379,7 +442,7 @@ async function seedInstructors(): Promise<Map<string, string>> {
       })),
     });
 
-    await attachMedia(item.asset, { instructorId: profile.id }, `instructor:${item.slug}`);
+    await attachMedia(item.asset, { instructorId: profileId }, `instructor:${item.slug}`);
   }
 
   console.log(`  инструкторы: ${ids.size}`);
@@ -415,13 +478,8 @@ async function seedVenues(): Promise<{
       publishedAt: now,
     };
 
-    const venue = await prisma.venue.upsert({
-      where: { slug: item.slug },
-      update: data,
-      create: { ...data, slug: item.slug },
-      select: { id: true },
-    });
-    venueIds.set(item.slug, venue.id);
+    const venueId = await upsertLive(prisma.venue, { slug: item.slug }, data);
+    venueIds.set(item.slug, venueId);
 
     /* Владелец площадки: без него не открыть кабинет площадки (задача 6.3). */
     const ownerId = await upsertUser({
@@ -431,9 +489,9 @@ async function seedVenues(): Promise<{
       locale: 'en',
     });
     await prisma.venueMember.upsert({
-      where: { venueId_userId: { venueId: venue.id, userId: ownerId } },
+      where: { venueId_userId: { venueId, userId: ownerId } },
       update: { isOwner: true },
-      create: { venueId: venue.id, userId: ownerId, isOwner: true },
+      create: { venueId, userId: ownerId, isOwner: true },
     });
 
     /*
@@ -449,15 +507,15 @@ async function seedVenues(): Promise<{
       pricePerHour: item.pricePerHour,
     };
     const existingRoom = await prisma.room.findFirst({
-      where: { venueId: venue.id },
+      where: { venueId, deletedAt: null },
       select: { id: true },
     });
     const room = existingRoom
       ? await prisma.room.update({ where: { id: existingRoom.id }, data: roomData, select: { id: true } })
-      : await prisma.room.create({ data: { ...roomData, venueId: venue.id }, select: { id: true } });
+      : await prisma.room.create({ data: { ...roomData, venueId }, select: { id: true } });
     roomIds.set(item.slug, room.id);
 
-    await attachMedia(item.asset, { venueId: venue.id }, `venue:${item.slug}`);
+    await attachMedia(item.asset, { venueId }, `venue:${item.slug}`);
   }
 
   console.log(`  площадки: ${venueIds.size} (по залу на каждую)`);
@@ -519,12 +577,7 @@ async function seedClasses(
       isTrending: item.isTrending,
     };
 
-    const danceClass = await prisma.danceClass.upsert({
-      where: { slug: item.slug },
-      update: data,
-      create: { ...data, slug: item.slug },
-      select: { id: true },
-    });
+    const classId = await upsertLive(prisma.danceClass, { slug: item.slug }, data);
 
     /*
      * Проведения: ближайшие `SESSIONS_PER_CLASS` от текущего момента. Время
@@ -542,15 +595,15 @@ async function seedClasses(
       const endsAt = new Date(startsAt.getTime() + item.durationMinutes * MS_PER_MINUTE);
       const bookedCount = index === 0 ? Math.max(0, item.capacity - item.spotsLeft) : 0;
 
-      await prisma.classSession.upsert({
-        where: { classId_startsAt: { classId: danceClass.id, startsAt } },
-        update: { endsAt, capacity: item.capacity, bookedCount, roomId },
-        create: { classId: danceClass.id, startsAt, endsAt, capacity: item.capacity, bookedCount, roomId },
-      });
+      await upsertLive(
+        prisma.classSession,
+        { classId, startsAt },
+        { endsAt, capacity: item.capacity, bookedCount, roomId },
+      );
       sessions += 1;
     }
 
-    await attachMedia(item.coverAsset ?? item.asset, { classId: danceClass.id }, `class:${item.slug}`);
+    await attachMedia(item.coverAsset ?? item.asset, { classId }, `class:${item.slug}`);
   }
 
   console.log(`  занятия: ${demoClasses.length}, проведений: ${sessions}`);
@@ -562,13 +615,12 @@ async function seedProducts(): Promise<void> {
   const categoryIds = new Map<string, string>();
 
   for (const category of demoProductCategories) {
-    const row = await prisma.productCategory.upsert({
-      where: { slug: category.slug },
-      update: { name: category.name, sortOrder: category.order },
-      create: { slug: category.slug, name: category.name, sortOrder: category.order },
-      select: { id: true },
-    });
-    categoryIds.set(category.slug, row.id);
+    const id = await upsertLive(
+      prisma.productCategory,
+      { slug: category.slug },
+      { name: category.name, sortOrder: category.order },
+    );
+    categoryIds.set(category.slug, id);
   }
 
   let variants = 0;
@@ -585,36 +637,25 @@ async function seedProducts(): Promise<void> {
       basePrice: item.price,
     };
 
-    const product = await prisma.product.upsert({
-      where: { slug: item.slug },
-      update: data,
-      create: { ...data, slug: item.slug },
-      select: { id: true },
-    });
+    const productId = await upsertLive(prisma.product, { slug: item.slug }, data);
 
     /* Варианты обновляются по SKU, а не пересоздаются: на них ссылаются корзины. */
     for (const variant of item.variants) {
-      await prisma.productVariant.upsert({
-        where: { sku: variant.sku },
-        update: {
+      await upsertLive(
+        prisma.productVariant,
+        { sku: variant.sku },
+        {
           size: variant.size ?? null,
           color: variant.color ?? null,
           price: variant.price,
           stock: variant.stock,
         },
-        create: {
-          productId: product.id,
-          sku: variant.sku,
-          size: variant.size ?? null,
-          color: variant.color ?? null,
-          price: variant.price,
-          stock: variant.stock,
-        },
-      });
+        { productId },
+      );
       variants += 1;
     }
 
-    await attachMedia(item.asset, { productId: product.id }, `product:${item.slug}`);
+    await attachMedia(item.asset, { productId }, `product:${item.slug}`);
   }
 
   console.log(`  товары: ${demoProducts.length}, вариантов: ${variants}`);
@@ -658,14 +699,9 @@ async function seedEvents(venueIds: Map<string, string>): Promise<void> {
       isPublished: true,
     };
 
-    const event = await prisma.event.upsert({
-      where: { slug: item.slug },
-      update: data,
-      create: { ...data, slug: item.slug },
-      select: { id: true },
-    });
+    const eventId = await upsertLive(prisma.event, { slug: item.slug }, data);
 
-    await attachMedia(item.asset, { eventId: event.id }, `event:${item.slug}`);
+    await attachMedia(item.asset, { eventId }, `event:${item.slug}`);
   }
 
   console.log(`  события: ${demoEvents.length}`);
@@ -721,17 +757,12 @@ async function seedReviews(
 
 async function seedPromoCodes(): Promise<void> {
   const { code, percentOff } = promotions.welcomeCode;
-  await prisma.promoCode.upsert({
-    where: { code },
-    update: { value: percentOff },
-    create: {
-      code,
-      type: 'PERCENT',
-      value: percentOff,
-      perUserLimit: 1,
-      isActive: true,
-    },
-  });
+  await upsertLive(
+    prisma.promoCode,
+    { code },
+    { value: percentOff },
+    { type: 'PERCENT', perUserLimit: 1, isActive: true },
+  );
   console.log(`  промокод ${code} (-${percentOff}%)`);
 }
 
@@ -748,7 +779,10 @@ async function main(): Promise<void> {
   await seedAvailability(instructorIds);
   await seedClasses(instructorIds, venueIds, roomIds);
 
-  const classRows = await prisma.danceClass.findMany({ select: { id: true, slug: true } });
+  const classRows = await prisma.danceClass.findMany({
+    where: { deletedAt: null },
+    select: { id: true, slug: true },
+  });
   const classSlugToId = new Map(classRows.map((row) => [row.slug, row.id]));
 
   await seedProducts();

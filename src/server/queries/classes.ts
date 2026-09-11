@@ -75,8 +75,9 @@ import { formatClock } from '@/lib/time/clock';
 import { zonedParts } from '@/lib/time/schedule';
 import { defineQuery } from '@/server/query';
 
-import { firstMediaRef, mediaSelect, type MediaRow } from './media';
+import { firstMediaRef, type MediaRow } from './media';
 import { approvedReviewsWhere, ratingFrom, reviewSelect, type ReviewRow } from './reviews';
+import { mediaRelation, notTrashed, upcomingSessionsRelation } from './relations';
 
 /**
  * Сколько ближайших проведений тянуть.
@@ -94,12 +95,17 @@ const UPCOMING_SESSIONS = 8;
  * месте — значит показать в поиске занятие, снятое модератором. Отдельная
  * константа делает это невозможным по невнимательности.
  */
-const publicClassWhere = {
+export const publicClassWhere = {
   isActive: true,
-  instructor: { moderation: 'APPROVED' as const, publishedAt: { not: null } },
+  /*
+   * Инструктор в корзине — тоже причина не показывать занятие: расширение
+   * клиента отсекает удалённое на верхнем уровне запроса, но условие на СВЯЗЬ
+   * пишется здесь, иначе занятие удалённого инструктора остаётся в каталоге.
+   */
+  instructor: { ...notTrashed, moderation: 'APPROVED' as const, publishedAt: { not: null } },
 };
 
-const classSelect = {
+export const classSelect = {
   slug: true,
   title: true,
   description: true,
@@ -111,7 +117,7 @@ const classSelect = {
   learningPoints: true,
   isTrending: true,
   createdAt: true,
-  media: { select: mediaSelect },
+  media: mediaRelation,
   instructor: {
     select: {
       slug: true,
@@ -120,7 +126,7 @@ const classSelect = {
       ratingCount: true,
       isVerified: true,
       user: { select: { name: true } },
-      media: { select: mediaSelect },
+      media: mediaRelation,
     },
   },
   venue: { select: { slug: true, name: true, district: true } },
@@ -133,7 +139,7 @@ interface SessionRow {
   bookedCount: number;
 }
 
-interface ClassRow {
+export interface ClassRow {
   slug: string;
   title: string;
   description: string;
@@ -262,12 +268,8 @@ async function loadClasses(query: CatalogQuery): Promise<ClassRow[]> {
     where: classWhere(query),
     select: {
       ...classSelect,
-      sessions: {
-        where: { startsAt: { gte: now }, isCancelled: false },
-        orderBy: { startsAt: 'asc' },
-        take: UPCOMING_SESSIONS,
-        select: { startsAt: true, endsAt: true, capacity: true, bookedCount: true },
-      },
+      sessions: upcomingSessionsRelation(now, UPCOMING_SESSIONS),
+
     },
     take: limits.query.maxRows,
   });
@@ -344,12 +346,7 @@ export const getClassDetail = defineQuery({
       where: { slug, ...publicClassWhere },
       select: {
         ...classSelect,
-        sessions: {
-          where: { startsAt: { gte: now }, isCancelled: false },
-          orderBy: { startsAt: 'asc' },
-          take: UPCOMING_SESSIONS,
-          select: { startsAt: true, endsAt: true, capacity: true, bookedCount: true },
-        },
+        sessions: upcomingSessionsRelation(now, UPCOMING_SESSIONS),
         reviews: {
           where: approvedReviewsWhere,
           orderBy: { createdAt: 'desc' },
@@ -368,12 +365,7 @@ export const getClassDetail = defineQuery({
       where: { ...publicClassWhere, style: row.style, slug: { not: slug } },
       select: {
         ...classSelect,
-        sessions: {
-          where: { startsAt: { gte: now }, isCancelled: false },
-          orderBy: { startsAt: 'asc' },
-          take: 1,
-          select: { startsAt: true, endsAt: true, capacity: true, bookedCount: true },
-        },
+        sessions: upcomingSessionsRelation(now, 1),
       },
       take: limits.styleHub.classes,
     })) as unknown as ClassRow[];
@@ -430,12 +422,8 @@ export async function classCardsBy(
     where: { ...publicClassWhere, ...where },
     select: {
       ...classSelect,
-      sessions: {
-        where: { startsAt: { gte: now }, isCancelled: false },
-        orderBy: { startsAt: 'asc' },
-        take: 1,
-        select: { startsAt: true, endsAt: true, capacity: true, bookedCount: true },
-      },
+      sessions: upcomingSessionsRelation(now, 1),
+
     },
     take,
   })) as unknown as ClassRow[];

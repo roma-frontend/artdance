@@ -40,6 +40,7 @@
     "verify:quick": "npm run typecheck && npm run lint",
     "verify:headers": "node scripts/verify-headers.mjs",
     "verify:auth": "tsx scripts/verify-auth.mjs",
+    "verify:admin": "node --conditions=react-server --import tsx scripts/verify-admin-write.ts",
     "perf:budget": "tsx scripts/check-performance-budget.ts"
   },
   "prisma": {

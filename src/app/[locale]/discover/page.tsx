@@ -22,6 +22,7 @@
 
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import { Suspense } from 'react';
 
 import { ClassCard } from '@/components/catalog/class-card';
 import { ClassCarousel } from '@/components/catalog/class-carousel';
@@ -39,6 +40,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
 import { SectionHeading } from '@/components/ui/section-heading';
+import { SkeletonCardGrid } from '@/components/ui/skeleton-card';
 import { limits, routes, site } from '@/config';
 import { parseCatalogQuery, type RawSearchParams } from '@/domain/catalog';
 import { danceStyles } from '@/domain/enums';
@@ -50,6 +52,7 @@ import {
   type SearchScope,
 } from '@/domain/search';
 import type { Locale } from '@/i18n/config';
+import { getRootTranslate } from '@/i18n/translate';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
@@ -89,6 +92,7 @@ export default async function DiscoverPage({ params, searchParams }: PageProps) 
 
   const t = await getTranslations('catalog');
   const tNav = await getTranslations('nav');
+  const tRoot = await getRootTranslate();
 
   const term = query.q ?? '';
   const hasQuery = term.length >= limits.search.minQueryLength;
@@ -107,11 +111,24 @@ export default async function DiscoverPage({ params, searchParams }: PageProps) 
         <HeroSearchBar initialQuery={term} className="px-0" />
       </PageHero>
 
-      {hasQuery ? (
-        <SearchResults term={term} scope={scope} />
-      ) : (
-        <ExploreSections locale={locale as Locale} />
-      )}
+      {/*
+        Баннер отдаётся сразу, результаты — потоком. `loading.tsx` здесь был бы
+        грубее: он заменяет скелетом весь экран, включая шапку раздела и строку
+        поиска, которые готовы мгновенно и от запроса не зависят.
+      */}
+      <Suspense
+        fallback={
+          <div className="page-container py-12 md:py-16">
+            <SkeletonCardGrid label={tRoot('a11y.loading')} />
+          </div>
+        }
+      >
+        {hasQuery ? (
+          <SearchResults term={term} scope={scope} />
+        ) : (
+          <ExploreSections locale={locale as Locale} />
+        )}
+      </Suspense>
 
       <SiteFooter />
     </main>

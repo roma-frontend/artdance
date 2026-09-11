@@ -87,6 +87,21 @@ export const domainErrors = {
 
   notFound: () => new DomainError({ code: 'NOT_FOUND', messageKey: 'errors.notFound.description' }),
 
+  /**
+   * Поле формы не прошло проверку на сервере.
+   *
+   * Существует ради админки, где форма собирается из описания полей: сервер
+   * обязан назвать поле, а не ответить общей ошибкой, иначе человек, заполнивший
+   * форму из двадцати полей, ищет виноватое сам. `field` попадает в `ActionError`
+   * и подсвечивает конкретный ввод.
+   */
+  validationFailed: (field?: string) =>
+    new DomainError({
+      code: 'VALIDATION_FAILED',
+      messageKey: 'validation.required',
+      ...(field ? { field } : {}),
+    }),
+
   rateLimited: (retryAfterSeconds: number) =>
     new DomainError({
       code: 'RATE_LIMITED',

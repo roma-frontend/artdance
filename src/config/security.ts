@@ -104,7 +104,15 @@ export const originExemptPathPrefixes = ['/api/webhooks/'] as const;
 
 /* ───────────────────────────── Загрузки ───────────────────────────── */
 
-export const uploadKinds = ['avatar', 'instructorPhoto', 'venuePhoto', 'productImage', 'courseVideo'] as const;
+export const uploadKinds = [
+  'avatar',
+  'instructorPhoto',
+  'venuePhoto',
+  'classPhoto',
+  'eventPhoto',
+  'productImage',
+  'courseVideo',
+] as const;
 export type UploadKind = (typeof uploadKinds)[number];
 
 export interface UploadPolicy {
@@ -123,6 +131,13 @@ export const uploadPolicies: Record<UploadKind, UploadPolicy> = {
   avatar: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 2 * MB, maxPerEntity: 1 },
   instructorPhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 8 * MB, maxPerEntity: 12 },
   venuePhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 8 * MB, maxPerEntity: 12 },
+  /**
+   * Кадры занятия и события. Отдельные роли, а не «фотография вообще»: предел на
+   * сущность у них разный по смыслу — у занятия это галерея, у события обычно
+   * одна афиша, и сваливать их в одну политику значит потерять это различие.
+   */
+  classPhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 8 * MB, maxPerEntity: 8 },
+  eventPhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 8 * MB, maxPerEntity: 4 },
   productImage: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 8 * MB, maxPerEntity: 12 },
   courseVideo: {
     mimeTypes: ['video/mp4', 'video/quicktime'],

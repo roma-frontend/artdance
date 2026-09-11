@@ -510,3 +510,64 @@ export function problemFromDomainError(error: DomainError): Response;
 `domain/ranking.ts`, `search/normalize.ts`, `format/phone.ts`, `url/cursor.ts`,
 `files/qr.ts`. Это функции, ошибка в которых стоит денег или ломает бронирование,
 и все они чистые — тест на них дешёвый.
+
+
+---
+
+## 16. Корзина (мягкое удаление) — уже написано
+
+Перечислено здесь по назначению этого документа: чтобы вторая функция «спрятать
+удалённое» не появилась рядом с первой. Всё ниже существует и покрыто тестами.
+
+```ts
+// src/config/trash.ts — что вообще участвует в корзине
+export const trashedModels: readonly string[];        // 13 моделей, единственный список
+export function isTrashedModel(model: string): boolean;
+export function modelDelegateKey(model: string): string;   // DanceClass → danceClass
+export const trash: { retentionDays: 30; purgeBatchSize: 200; pageSize: 25 };
+```
+
+```ts
+// src/domain/trash.ts — чистые правила, без Prisma
+export const notTrashed: { deletedAt: null };
+export const onlyTrashed: { deletedAt: { not: null } };
+/** Подмешивает фильтр в аргументы чтения. Вызывается расширением клиента. */
+export function readArgsWithoutTrashed(model: string, operation: string, args: unknown): unknown;
+export function purgeCutoff(now: Date): Date;
+export function daysLeftInTrash(deletedAt: Date, now: Date): number;
+```
+
+```ts
+// src/server/queries/relations.ts — вложенные связи с фильтром
+export const mediaRelation;            // media: mediaRelation
+export function upcomingSessionsRelation(now: Date, take: number);
+export const activeRoomsRelation;
+export const roomPricesRelation;
+export const activeVariantsRelation;
+```
+
+```ts
+// src/server/admin/trash.ts — операции над удалённым
+export const trashableResources: readonly AdminResource[];
+export function isTrashableResource(resource: AdminResource): boolean;
+export function listTrash(resource: AdminResource, page: number): Promise<TrashPage>;
+export function trashCounts(): Promise<TrashCounts>;
+export function trashedSnapshot(resource: AdminResource, id: string): Promise<… | null>;
+export function restoreFromTrash(resource: AdminResource, id: string): Promise<void>;
+export function purgeFromTrash(resource: AdminResource, id: string): Promise<void>;
+export function purgeExpiredTrash(now: Date): Promise<PurgeReport>;
+```
+
+Два правила, которые стоит знать до того, как писать запрос:
+
+1. **Фильтр ставится сам.** Расширение клиента (`src/lib/db.ts`) добавляет
+   `deletedAt: null` в любое чтение верхнего уровня. Писать его руками не нужно и
+   не следует — лишнее упоминание `deletedAt` в `where` ОТКЛЮЧАЕТ подмешивание.
+   Именно так и работает раздел корзины: он передаёт `onlyTrashed` явно.
+2. **Вложенная связь — исключение.** До `select: { media: … }` расширения Prisma
+   не доходят. Такие связи берутся из `queries/relations.ts` или несут
+   `notTrashed` явно, и это проверяет `queries/relations.test.ts`, читая исходники.
+
+Тесты обязательны: `domain/trash.ts` (подмешивание фильтра и срок хранения),
+`config/trash.ts` против `schema.prisma` (колонка, индекс, частичность уникальных
+ограничений). Ошибка здесь означает удалённую запись в публичном каталоге.

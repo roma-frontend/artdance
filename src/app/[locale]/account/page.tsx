@@ -25,12 +25,11 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { SiteFooter } from '@/components/layout/site-footer';
-import { SiteHeader } from '@/components/layout/site-header';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { routes, site } from '@/config';
-import { userRoleLabelKey } from '@/domain/enums';
+import { hasAtLeastRole, userRoleLabelKey } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
 import { Link, redirect } from '@/i18n/routing';
 import { getCaller } from '@/lib/auth/guards';
@@ -82,10 +81,8 @@ export default async function AccountPage({ params }: PageProps) {
 
   return (
     <>
-      <SiteHeader />
-
-      <main id={site.mainContentId} className="page-container py-12 md:py-16">
-        <header className="flex flex-wrap items-start justify-between gap-6">
+      <main id={site.mainContentId} className="page-container inner-page">
+        <header className="flex flex-wrap items-start justify-between gap-6 my-4">
           <div>
             <p className="text-eyebrow uppercase text-content-tertiary">{tNav('account')}</p>
             <h1 className="text-heading-2 mt-2">{user.name}</h1>
@@ -96,6 +93,17 @@ export default async function AccountPage({ params }: PageProps) {
             <Badge variant="metal" size="md">
               {tRoot(userRoleLabelKey(user.role))}
             </Badge>
+            {/*
+              Вход в админку. Без него раздел достижим только вводом адреса
+              руками: значок в шапке ведёт в кабинет всем одинаково, а бейдж
+              роли — надпись, а не ссылка. Порог тот же, что у layout админки
+              (`SUPPORT`), иначе ссылка вела бы на экран отказа.
+            */}
+            {hasAtLeastRole(user.role, 'SUPPORT') && (
+              <Button asChild variant="outline">
+                <Link href={routes.admin()}>{t('staffCta')}</Link>
+              </Button>
+            )}
             <SignOutButton />
           </div>
         </header>
