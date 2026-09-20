@@ -108,7 +108,7 @@ src/
   styles/             globals.css + генерируемый tokens.css
   proxy.ts            весь edge-слой безопасности: CSP, CSRF, rate limit, локали
 instrumentation.ts    startup-хуки, ветвление по рантайму
-prisma/               schema.prisma (59 моделей) + миграции + seed
+prisma/               schema.prisma (60 моделей) + миграции + seed
 scripts/               генератор токенов, проверка переводов, оптимизация медиа,
                       бюджет веса, проверка заголовков на живом сервере
 docs/                 решения, смета, бренд, конвенции, безопасность
