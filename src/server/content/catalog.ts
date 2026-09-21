@@ -348,6 +348,30 @@ const listingHeroAssets: Record<ListingSection, string> = {
   shop: 'product-dance-shoes',
 };
 
+/**
+ * Кадры DanceSport-разделов (требование заказчика от 21.09.2026).
+ *
+ * Отдельная карта, а не расширение `listingHeroAssets`: эти страницы — не
+ * листинги с фильтрами, у них другой `ListingSection` не появляется. Кадры
+ * намеренно переиспользуют существующие ассеты: смена фотографии — правка
+ * данных, а не генерация нового файла.
+ */
+const dancesportHeroAssets = {
+  competitions: 'style-ballroom',
+  socialEvents: 'style-salsa',
+  athletes: 'instructor-anna-mkrtchyan',
+  federations: 'style-ballroom',
+  partners: 'studio-rhythm-space',
+  sponsors: 'product-gift-card',
+  advertise: 'studio-flow-studio',
+} as const;
+
+export type DancesportHeroKey = keyof typeof dancesportHeroAssets;
+
+export function getDancesportHero(key: DancesportHeroKey): MediaRef {
+  return mediaRef(dancesportHeroAssets[key]);
+}
+
 export function getListingHero(section: ListingSection): MediaRef {
   return mediaRef(listingHeroAssets[section]);
 }

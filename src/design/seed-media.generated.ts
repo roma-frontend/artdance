@@ -173,6 +173,15 @@ export const seedMedia = {
     blurDataUrl:
       'data:image/webp;base64,UklGRmYAAABXRUJQVlA4IFoAAADQAQCdASoMABAAAwBSJYgCdADZdVfBgAD+kXuj6OIAhf2QoVIU6tGRT9UDXj7KuGlNtCD5D/isP/KlgYi3z7lRcj4Z4cE8jVMOB+Z9vyhG2tYYTByIm+jvAAA=',
   },
+  'style-ballroom': {
+    file: 'style-ballroom.a3abb381.webp',
+    width: 765,
+    height: 1024,
+    bytes: 31208,
+    fingerprint: 'a3abb381',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRmYAAABXRUJQVlA4IFoAAADQAQCdASoMABAAAwBSJYgCdADZdVfBgAD+kXuj6OIAhf2QoVIU6tGRT9UDXj7KuGlNtCD5D/isP/KlgYi3z7lRcj4Z4cE8jVMOB+Z9vyhG2tYYTByIm+jvAAA=',
+  },
   'style-contemporary': {
     file: 'style-contemporary.6c64c3ed.webp',
     width: 1024,
@@ -209,9 +218,18 @@ export const seedMedia = {
     blurDataUrl:
       'data:image/webp;base64,UklGRngAAABXRUJQVlA4IGwAAAAQAgCdASoMABAAAwBSJaACdAEQ+mQNDyAYAP71m0BM1N5lr7ErabKje2ImE6lpk3WVR2rE3OqOjDtveAaq9wn8qqq6su7Ml/iSh3zLEpxL1YJbi9H0su7sjIhzbx4RvIi02uY87cmbJAkgAAA=',
   },
+  'style-tango': {
+    file: 'style-tango.ba306342.webp',
+    width: 765,
+    height: 1024,
+    bytes: 51178,
+    fingerprint: 'ba306342',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRngAAABXRUJQVlA4IGwAAAAQAgCdASoMABAAAwBSJaACdAEQ+mQNDyAYAP71m0BM1N5lr7ErabKje2ImE6lpk3WVR2rE3OqOjDtveAaq9wn8qqq6su7Ml/iSh3zLEpxL1YJbi9H0su7sjIhzbx4RvIi02uY87cmbJAkgAAA=',
+  },
 } as const satisfies Record<string, SeedMediaEntry>;
 
 export type SeedMediaName = keyof typeof seedMedia;
 
 /** Суммарный вес папки сид-медиа, байт. Сверяется с `mediaProcessing.budgetBytes.seedTotal`. */
-export const seedMediaTotalBytes = 1050482;
+export const seedMediaTotalBytes = 1132868;

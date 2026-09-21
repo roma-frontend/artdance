@@ -81,6 +81,7 @@ export const danceStyles = [
   'WEDDING_DANCE',
   'KIDS',
   'STRETCHING',
+  'KIZOMBA',
 ] as const;
 export type DanceStyle = (typeof danceStyles)[number];
 
@@ -103,6 +104,7 @@ const danceStyleI18nKeys = {
   WEDDING_DANCE: 'weddingDance',
   KIDS: 'kids',
   STRETCHING: 'stretching',
+  KIZOMBA: 'kizomba',
 } as const satisfies Record<DanceStyle, string>;
 
 export function danceStyleLabelKey(style: DanceStyle): MessageKey {
@@ -180,6 +182,7 @@ const danceStyleSearchTerms = {
     'Ձգում',
     'ֆիզ պատրաստություն',
   ],
+  KIZOMBA: ['kizomba', 'кизомба', 'Կիզոմբա'],
 } as const satisfies Record<DanceStyle, readonly string[]>;
 
 /**
@@ -284,6 +287,7 @@ const relatedStyleMap = {
   WEDDING_DANCE: ['BALLROOM', 'TANGO', 'ARMENIAN_FOLK'],
   KIDS: ['ARMENIAN_FOLK', 'HIP_HOP', 'BALLET'],
   STRETCHING: ['BALLET', 'CONTEMPORARY', 'BREAKING'],
+  KIZOMBA: ['BACHATA', 'SALSA', 'AFRO'],
 } as const satisfies Record<DanceStyle, readonly DanceStyle[]>;
 
 export function relatedDanceStyles(style: DanceStyle): readonly DanceStyle[] {
@@ -436,6 +440,11 @@ export function moderationStatusLabelKey(status: ModerationStatus): MessageKey {
 
 /* ──────────────────────── Типы сущностей ──────────────────────── */
 
+/**
+ * CONCERT добавлен по требованию заказчика от 21.09.2026: гала-концерты и
+ * показательные выступления — отдельный формат афиши DanceSport-платформы,
+ * не сводимый ни к showcases студий, ни к соревнованиям.
+ */
 export const eventTypes = [
   'WORKSHOP',
   'BATTLE',
@@ -443,6 +452,7 @@ export const eventTypes = [
   'SHOWCASE',
   'SOCIAL',
   'COMPETITION',
+  'CONCERT',
 ] as const;
 export type EventType = (typeof eventTypes)[number];
 
@@ -454,6 +464,7 @@ export function eventTypeLabelKey(type: EventType): MessageKey {
     SHOWCASE: 'typeShowcase',
     SOCIAL: 'typeSocial',
     COMPETITION: 'typeCompetition',
+    CONCERT: 'typeConcert',
   } as const satisfies Record<EventType, string>;
   return `events.${keys[type]}`;
 }

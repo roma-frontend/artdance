@@ -163,6 +163,8 @@ const en = {
     instructors: 'Instructors',
     studios: 'Studios',
     events: 'Events',
+    competitions: 'Competitions',
+    socialEvents: 'Social events',
     shop: 'Shop',
     calendar: 'Calendar',
     pricing: 'Pricing',
@@ -250,6 +252,19 @@ const en = {
       eyebrow: 'Upcoming events',
       title: 'Workshops, battles & more.',
       subtitle: "What's happening on the Yerevan dance scene.",
+    },
+    /* DanceSport-блоки лендинга (заказчик, 21.09.2026): DS-02, DS-05, DS-09. */
+    competitions: {
+      eyebrow: 'DanceSport',
+      title: 'Two programs. Ten disciplines.',
+      subtitle:
+        'Standard and Latine — the competitive path our athletes train for, following the WDSF calendar.',
+      videoCta: 'Watch recent competitions',
+    },
+    federationsStrip: {
+      eyebrow: 'Federations',
+      title: 'WDSF and WDC — both present in Armenia.',
+      cta: 'Meet the federations',
     },
     testimonials: {
       eyebrow: 'Testimonials',
@@ -439,6 +454,7 @@ const en = {
     typeShowcase: 'Showcase',
     typeSocial: 'Social',
     typeCompetition: 'Competition',
+    typeConcert: 'Concert',
     freeEntry: 'Free entry',
     openEntry: 'Open',
     timeRange: '{start}–{end}',
@@ -854,6 +870,7 @@ const en = {
     weddingDance: 'Wedding Dance',
     kids: 'Kids',
     stretching: 'Stretching & Conditioning',
+    kizomba: 'Kizomba',
   },
 
   levels: {
@@ -1017,6 +1034,12 @@ const en = {
           'This is the class that makes the other classes possible: hips and shoulders open, the spine articulates, the centre holds. Sessions mix active stretching with strength work, because range without strength is what injures dancers rather than what protects them.',
         gear: 'A mat if you have one, fitted clothes, socks, and a belt or towel for holds.',
       },
+      kizomba: {
+        lede: 'The close, calm partner dance of Angola — slow steps, smooth leads, no rush.',
+        about:
+          'Kizomba lives in the connection: a soft close hold, grounded steps and musicality that rewards patience. Classes start with weight transfer and lead-follow conversation, then build into saidas, tarraxinha dynamics and urban-kiz styling for those who want it.',
+        gear: 'Comfortable clothes and clean indoor shoes with smooth soles — the dance is led through the frame, and the floor should let you glide.',
+      },
     },
   },
 
@@ -1070,6 +1093,7 @@ const en = {
       "Armenia's premium dance marketplace. Connecting dancers, instructors and studios — and everything you need to move.",
     exploreTitle: 'Explore',
     companyTitle: 'Company',
+    communityTitle: 'Community',
     supportTitle: 'Support',
     businessTitle: 'Business',
     legalTitle: 'Legal',
@@ -1087,6 +1111,11 @@ const en = {
     cancellationPolicy: 'Cancellation policy',
     cookies: 'Cookie policy',
     communityGuidelines: 'Community guidelines',
+    athletes: 'Athletes',
+    federations: 'Federations',
+    partners: 'Partners',
+    sponsors: 'Donations & sponsors',
+    advertise: 'Advertising',
     copyright: '© {year} {brand}. All rights reserved.',
     paymentMethodsLabel: 'We accept',
   },
@@ -1216,6 +1245,16 @@ const en = {
       title: 'Dance events, workshops and battles',
       description: "What's on in Yerevan's dance scene — workshops, masterclasses, battles and socials.",
     },
+    competitions: {
+      title: 'DanceSport competitions in Armenia',
+      description:
+        'National and international DanceSport competitions following the WDSF calendar: cups, championships, open tournaments.',
+    },
+    socialEvents: {
+      title: 'Social dance events in Yerevan',
+      description:
+        'Bachata, salsa, kizomba and Argentine tango socials — weekly nights, guest DJs and warm-up classes.',
+    },
     pricing: {
       title: 'Membership plans',
       description: 'Monthly plans for group classes, private sessions and studio discounts.',
@@ -1224,6 +1263,31 @@ const en = {
       title: 'About ArtDance',
       description:
         "Who we are and why we built Armenia's dance marketplace: verified instructors, transparent prices, booking in one minute.",
+    },
+    athletes: {
+      title: 'DanceSport athletes',
+      description:
+        'Competitors of the Armenian DanceSport scene who teach on ArtDance: disciplines, results, booking a lesson.',
+    },
+    federations: {
+      title: 'DanceSport federations: WDSF and WDC',
+      description:
+        'The two world governing bodies of DanceSport, both present in Armenia. Our competition calendar follows WDSF.',
+    },
+    partners: {
+      title: 'Partners of ArtDance',
+      description:
+        'Studios, federations and brands that make DanceSport and social dance happen in Armenia — and how to join them.',
+    },
+    sponsors: {
+      title: 'Donations and sponsorship',
+      description:
+        'Sponsor a competition, a couple or a scholarship. Season reports show where every dram goes.',
+    },
+    advertise: {
+      title: 'Advertise on ArtDance',
+      description:
+        'Banners, featured placement and newsletters for brands that matter to dancers, parents and studios.',
     },
     contact: {
       title: 'Contact us',
@@ -1526,6 +1590,35 @@ const en = {
     },
   },
 
+  /*
+   * DANCESPORT — таксономия и разделы сообщества (требование заказчика от
+   * 21.09.2026). Официальная терминология WDSF: «Latine», «Viennese Waltz».
+   */
+  dancesport: {
+    disciplines: {
+      'slow-waltz': 'Slow Waltz',
+      'tango-standard': 'Tango',
+      'viennese-waltz': 'Viennese Waltz',
+      'slow-foxtrot': 'Slow Foxtrot',
+      quickstep: 'Quickstep',
+      samba: 'Samba',
+      chachacha: 'Cha-cha-cha',
+      rumba: 'Rumba',
+      pasodoble: 'Paso Doble',
+      jive: 'Jive',
+    },
+    standardTitle: 'Standard',
+    standardNote: 'Five disciplines, one silhouette: elegance, swing and closed hold.',
+    latineTitle: 'Latine',
+    latineNote: 'Five disciplines of rhythm, rotation and athletic footwork.',
+    viewSchedule: 'Schedule',
+    federations: {
+      WDSF:
+        'The world governing body for DanceSport. ArtDance follows the WDSF calendar and competition rules; the Armenian federation is a WDSF member.',
+      WDC: 'The professional world council. Its Armenian branch hosts its own competition circuit alongside the WDSF one.',
+    },
+  },
+
   about: {
     eyebrow: 'About us',
     title: 'We are building the shortest path from wanting to dance to dancing.',
@@ -1564,6 +1657,116 @@ const en = {
       primary: 'Explore classes',
       secondary: 'Work with us',
     },
+  },
+
+  /* ——— Разделы сообщества DanceSport (заказчик, 21.09.2026) ——— */
+
+  competitions: {
+    title: 'DanceSport competitions',
+    subtitle: 'National and international events following the WDSF calendar.',
+  },
+
+  socialEvents: {
+    title: 'Social events',
+    subtitle: 'Bachata, salsa, kizomba and tango — every week, no partner needed.',
+  },
+
+  athletes: {
+    eyebrow: 'Athletes',
+    title: 'The competitors of our platform.',
+    subtitle:
+      'DanceSport athletes who teach and train here — their disciplines, results and schedules.',
+    disciplinesTitle: 'Disciplines',
+    experienceTitle: 'Competition record',
+    resultGold: 'Gold',
+    resultSilver: 'Silver',
+    resultBronze: 'Bronze',
+    resultFinalist: 'Finalist',
+    resultParticipant: 'Competitor',
+    years: '{count, plural, one {# year on the floor} other {# years on the floor}}',
+    bookLesson: 'Book a lesson',
+    empty: 'Athlete profiles are being prepared.',
+  },
+
+  federations: {
+    eyebrow: 'Federations',
+    title: 'Two world bodies, one dance floor.',
+    subtitle:
+      'DanceSport is governed by two international federations. Both are present in Armenia — we follow the WDSF calendar.',
+    preferredBadge: 'Our calendar',
+    visitSite: 'Official website',
+    nationalTitle: 'In Armenia',
+    nationalBody:
+      'The national federation members represent both world bodies. National and international sections of the season calendar follow the official WDSF schedule — national cups, world and other open competitions.',
+  },
+
+  partners: {
+    eyebrow: 'Partners',
+    title: 'Companies that move with us.',
+    subtitle:
+      'Studios, schools and brands that make DanceSport and social dance happen in Armenia.',
+    becomeCta: 'Become a partner',
+    tiersTitle: 'How partnership works',
+    tierStudio: {
+      title: 'Studios and schools',
+      body: 'Your venue and classes on the platform, joint season events, cross-promotion of socials.',
+    },
+    tierFederation: {
+      title: 'Federations and clubs',
+      body: 'Calendar and registration support for competitions, athlete profiles, results coverage.',
+    },
+    tierBrand: {
+      title: 'Brands',
+      body: 'Co-branded events, community projects, content collaborations.',
+    },
+  },
+
+  sponsors: {
+    eyebrow: 'Donations & sponsors',
+    title: 'Back the season.',
+    subtitle:
+      'Sponsorship keeps competitions affordable and helps young athletes reach international floors.',
+    supportCta: 'Support the community',
+    packagesTitle: 'Sponsorship packages',
+    packageEvent: {
+      title: 'Event sponsor',
+      body: 'Named support of one competition: branding on the floor, banners and announcements.',
+    },
+    packageTeam: {
+      title: 'Team sponsor',
+      body: 'Support a specific couple or age group through the season — costume, travel, entry fees.',
+    },
+    packageScholarship: {
+      title: 'Scholarship',
+      body: 'A training grant for a talented athlete selected with the coaches.',
+    },
+    transparencyTitle: 'Where the money goes',
+    transparencyBody:
+      'Every sponsored program publishes a season report: what was funded and what it achieved.',
+  },
+
+  advertise: {
+    eyebrow: 'Advertising',
+    title: 'Reach people who dance.',
+    subtitle:
+      'Banners, featured placement and newsletters for brands that matter to our audience.',
+    formatsTitle: 'Formats',
+    formatBanner: {
+      title: 'Site banner',
+      body: 'Home and catalog placements, desktop and mobile, weekly reports.',
+    },
+    formatFeatured: {
+      title: 'Featured placement',
+      body: 'Highlighted cards in chosen sections — classes, events or shop.',
+    },
+    formatNewsletter: {
+      title: 'Newsletter',
+      body: 'A dedicated block in our weekly email to subscribers.',
+    },
+    audienceTitle: 'Who sees it',
+    audienceBody:
+      'Dancers, parents of young athletes, instructors and studio owners — an audience that buys shoes, apparel, travel and training.',
+    contactCta: 'Request a media kit',
   },
 
   contact: {

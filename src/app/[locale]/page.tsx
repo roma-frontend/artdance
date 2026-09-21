@@ -21,6 +21,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { HeroSection } from '@/components/home/hero-section';
 import { HeroSearchBar } from '@/components/home/hero-search-bar';
 import { EditorialStatement } from '@/components/home/editorial-statement';
+import { CompetitionSection } from '@/components/home/competition-section';
+import { DisciplineSections } from '@/components/home/discipline-sections';
 import { NewsletterSection } from '@/components/home/newsletter-section';
 import { StyleMarquee } from '@/components/home/style-marquee';
 import { TestimonialCard } from '@/components/home/testimonial-card';
@@ -130,6 +132,15 @@ export default async function HomePage({ params }: PageProps) {
       <EditorialStatement
         video={content.editorial.video}
         image={content.editorial.image}
+        locale={locale as Locale}
+      />
+
+      {/* ── DANCESPORT: дисциплины Standard/Latine + видео соревнований ── */}
+      <DisciplineSections locale={locale as Locale} />
+
+      <CompetitionSection
+        video={content.competition.video}
+        image={content.competition.image}
         locale={locale as Locale}
       />
 

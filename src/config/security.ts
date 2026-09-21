@@ -24,6 +24,13 @@ const externalOrigins = {
   mapsStatic: 'https://maps.gstatic.com',
   analytics: 'https://eu.i.posthog.com',
   vercelInsights: 'https://va.vercel-scripts.com',
+  /**
+   * Встраивание видео соревнований (требование заказчика от 21.09.2026).
+   * `youtube-nocookie` — официальный privacy-enhanced режим: до нажатия «play»
+   * YouTube не ставит свои куки, что и позволяет держать его во `frame-src`,
+   * а не ослаблять политику всего сайта.
+   */
+  youtube: 'https://www.youtube-nocookie.com',
 } as const;
 
 const isProduction = clientEnv.NEXT_PUBLIC_APP_ENV === 'production';
@@ -42,7 +49,7 @@ function buildCsp(extraScriptSrc = ''): string {
     "font-src 'self' data:",
     `img-src 'self' data: blob: https: ${externalOrigins.mapsStatic}`,
     `connect-src 'self' https: ${externalOrigins.analytics}${devConnect}`,
-    `frame-src 'self' ${externalOrigins.turnstile}`,
+    `frame-src 'self' ${externalOrigins.turnstile} ${externalOrigins.youtube}`,
     "media-src 'self' blob: https:",
     "worker-src 'self' blob:",
     "manifest-src 'self'",

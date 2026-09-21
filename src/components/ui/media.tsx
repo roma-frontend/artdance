@@ -112,7 +112,7 @@ interface ResolvedSource {
 function resolve(
   src: string,
   fromData: { width?: number; height?: number; blurDataUrl?: string },
-): ResolvedSource {
+): ResolvedSource | null {
   if (fromData.width !== undefined && fromData.height !== undefined) {
     return {
       url: src,
@@ -126,6 +126,12 @@ function resolve(
   if (seed) {
     return { url: seed.src, width: seed.width, height: seed.height, blur: seed.blurDataUrl };
   }
+
+  // Invalid semantic name (doesn't exist in manifest and not a valid path/URL)
+  if (!src.startsWith('/') && !src.startsWith('http://') && !src.startsWith('https://')) {
+    return null;
+  }
+
   return { url: src, blur: fromData.blurDataUrl ?? blurDataUrl };
 }
 
@@ -181,7 +187,29 @@ export function Media({
     );
   }
 
-  const resolved = resolve(src, { width, height, blurDataUrl: blurFromData });
+const resolved = resolve(src, { width, height, blurDataUrl: blurFromData });
+
+// Treat unresolved semantic names the same as missing src
+if (!resolved) {
+    if (!fallback) return null;
+    
+    const Icon = fallbackIcons[fallback];
+    return (
+      <div
+        className={cn(
+          'relative flex items-center justify-center overflow-hidden bg-surface-sunken',
+          className,
+        )}
+        style={fill ? undefined : { aspectRatio: spec.aspectRatio }}
+        {...(alt.length > 0 ? { role: 'img', 'aria-label': alt } : {})}
+      >
+        <Icon
+          className="size-1/3 max-h-12 max-w-12 text-content-tertiary"
+          aria-hidden="true"
+        />
+      </div>
+    );
+  }
   const isPriority = priority ?? spec.priority;
 
   /**

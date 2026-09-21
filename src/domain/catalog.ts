@@ -20,7 +20,15 @@ import { limits } from '@/config/business';
 import type { ShopParams } from '@/config/routes';
 import type { MessageKey } from '@/i18n/types';
 import { keyIncludes, searchKey } from '@/lib/search/normalize';
-import { danceStyleFromSlug, danceStyleSlug, skillLevels, type DanceStyle, type SkillLevel } from './enums';
+import {
+  danceStyleFromSlug,
+  danceStyleSlug,
+  eventTypes,
+  skillLevels,
+  type DanceStyle,
+  type EventType,
+  type SkillLevel,
+} from './enums';
 import type { CatalogPage, FacetOption } from './content';
 
 /* ──────────────────────────── Сортировка ──────────────────────────── */
@@ -148,6 +156,12 @@ export interface CatalogQuery {
   q?: string;
   style?: DanceStyle;
   level?: SkillLevel;
+  /**
+   * Тип события (афиша). Нужен разделам DanceSport-навигации: «соревнования» и
+   * «социальные вечера» — это ссылки на афишу с предзаданным типом, а не
+   * отдельные сущности.
+   */
+  type?: EventType;
   district?: string;
   /** Категория товара. Свободная строка: категории — контент, а не словарь домена. */
   category?: string;
@@ -194,6 +208,8 @@ export function parseCatalogQuery(params: RawSearchParams): CatalogQuery {
   const rawSort = first(params.sort);
   const rawStyle = first(params.style);
   const rawLevel = first(params.level)?.toUpperCase().replace(/-/g, '_');
+  /** Мусор в URL отбрасывается молча: раздел с битым `type` — это афиша без фильтра. */
+  const rawType = first(params.type)?.toUpperCase().replace(/-/g, '_');
   const rawQuery = first(params.q)?.trim();
 
   const priceMin = positiveInteger(first(params.priceMin));
@@ -221,6 +237,9 @@ export function parseCatalogQuery(params: RawSearchParams): CatalogQuery {
     ...(rawStyle ? withStyle(rawStyle) : {}),
     ...(rawLevel && (skillLevels as readonly string[]).includes(rawLevel)
       ? { level: rawLevel as SkillLevel }
+      : {}),
+    ...(rawType && (eventTypes as readonly string[]).includes(rawType)
+      ? { type: rawType as EventType }
       : {}),
     ...(first(params.district)?.trim() ? { district: first(params.district)!.trim() } : {}),
     ...(first(params.category)?.trim() ? { category: first(params.category)!.trim() } : {}),

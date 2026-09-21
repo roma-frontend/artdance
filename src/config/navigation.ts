@@ -29,6 +29,7 @@ export const navIconNames = [
   'studios',
   'calendar',
   'events',
+  'competitions',
   'pricing',
   'search',
   'cart',
@@ -77,6 +78,11 @@ const primaryNav: readonly NavItem[] = [
   { id: 'classes', labelKey: 'nav.classes', href: routes.classes(), icon: 'classes' },
   { id: 'instructors', labelKey: 'nav.instructors', href: routes.instructors(), icon: 'instructors' },
   { id: 'studios', labelKey: 'nav.studios', href: routes.studios(), icon: 'studios' },
+  /*
+   * Соревнования — главный месседж DanceSport-платформы (заказчик, 21.09.2026):
+   * в шапке он виден с каждой страницы, а не только в подвале.
+   */
+  { id: 'competitions', labelKey: 'nav.competitions', href: routes.competitions(), icon: 'competitions' },
   { id: 'shop', labelKey: 'nav.shop', href: routes.shop(), feature: 'shop', icon: 'shop' },
   { id: 'calendar', labelKey: 'nav.calendar', href: routes.booking(), icon: 'calendar' },
 ];
@@ -247,6 +253,25 @@ const footerGroups: readonly NavGroup[] = [
        * первой записью.
        */
       { id: 'contact', labelKey: 'footer.contact', href: routes.contact() },
+    ],
+  },
+  /*
+   * Сообщество DanceSport (заказчик, 21.09.2026). Отдельная колонка, потому что
+   * у этих страниц один читатель — человек внутри сцены: атлет, родитель
+   * атлета, студия, спонсор. Смешивать их с «Explore» значило бы спрятать
+   * коммерческие предложения (Partners, Advertise) в общем списке каталога.
+   */
+  {
+    id: 'community',
+    titleKey: 'footer.communityTitle',
+    items: [
+      { id: 'competitions', labelKey: 'nav.competitions', href: routes.competitions() },
+      { id: 'socialEvents', labelKey: 'nav.socialEvents', href: routes.socialEvents() },
+      { id: 'athletes', labelKey: 'footer.athletes', href: routes.athletes() },
+      { id: 'federations', labelKey: 'footer.federations', href: routes.federations() },
+      { id: 'partners', labelKey: 'footer.partners', href: routes.partners() },
+      { id: 'sponsors', labelKey: 'footer.sponsors', href: routes.sponsors() },
+      { id: 'advertise', labelKey: 'footer.advertise', href: routes.advertise() },
     ],
   },
   {

@@ -273,6 +273,8 @@ export interface HomeContent {
   hero: HomeHeroContent;
   styleTiles: readonly StyleTileItem[];
   editorial: HomeEditorialContent;
+  /** Фоновая петля секции соревнований (DS-09, заказчик 21.09.2026). */
+  competition: HomeEditorialContent;
   popularClasses: readonly ClassCardItem[];
   instructors: readonly InstructorCardItem[];
   venues: readonly VenueCardItem[];

@@ -136,6 +136,11 @@ const ALLOWED_IDENTICAL = [
   /^studio\.amenities\.wifi$/,
   /^status\.payment\.chargeback$/,
   /^events\.typeShowcase$/,
+  /* DanceSport — официальное название дисциплины (WDSF), не переводится. */
+  /^home\.competitions\.eyebrow$/,
+  /^dancesport\.federations\.(WDSF|WDC)$/,
+  /^events\.typeConcert$/,
+  /^nav\.competitions$/,
   /^home\.newsletter\.emailPlaceholder$/,
   /^pricing\.plans\.\w+\.name$/,
   /^auth\.signIn\.emailLabel$/,

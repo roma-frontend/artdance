@@ -127,6 +127,8 @@ export async function eventCardsBy(
 function eventWhere(query: CatalogQuery, now: Date) {
   return {
     ...publicEventWhere(now),
+    /** Тип приходит из DanceSport-разделов навигации: `/events?type=COMPETITION`. */
+    ...(query.type ? { type: query.type } : {}),
     ...(query.district ? { venue: { district: query.district } } : {}),
     ...(query.priceMin !== undefined || query.priceMax !== undefined
       ? {

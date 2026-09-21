@@ -214,6 +214,29 @@ export const designAssets: readonly DesignAsset[] = [
     subject: 'Heels: каблуки, силуэт',
     usedFor: [{ entity: 'danceStyle', id: 'HEELS' }],
   },
+  /*
+   * Ассеты DanceSport-разделов (заказчик, 21.09.2026). Отдельного фото с
+   * турнира пока нет, поэтому оба имени ссылаются на существующий источник —
+   * при появлении соревновательных кадров меняется только `source` здесь, а
+   * ссылки в контент-слое остаются.
+   */
+  {
+    name: 'style-ballroom',
+    source: '377aa17c-8217-4aee-8874-831ab6ecb04a.png',
+    preset: 'categoryCard',
+    subject: 'Спортивные бальные: пара в стандартной программе',
+    usedFor: [
+      { entity: 'danceStyle', id: 'BALLROOM' },
+      { entity: 'event', id: 'yerevan-dancesport-cup', placeholder: true },
+    ],
+  },
+  {
+    name: 'style-tango',
+    source: '5c2a57f4-b8e2-440d-bfb2-09359d2411ab.png',
+    preset: 'categoryCard',
+    subject: 'Аргентинское танго: пара в объятии',
+    usedFor: [{ entity: 'danceStyle', id: 'TANGO' }],
+  },
 
   /* Инструкторы */
   {

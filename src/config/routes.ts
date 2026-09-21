@@ -119,6 +119,24 @@ export const routes = {
   events: (params?: ListingParams) => withQuery('/events', params),
   event: (slug: string) => `/events/${slug}`,
 
+  /*
+   * Разделы сообщества DanceSport (требование заказчика от 21.09.2026).
+   *
+   * Соревнования и социальные вечера — отдельные страницы, которые внутри
+   * предзадают афише тип (`COMPETITION` / `SOCIAL`): у раздела чистый адрес
+   * для навигации и индексации, а вся фильтрация и сортировка переиспользуют
+   * инфраструктуру каталога. Остальные — контентные страницы: сущности
+   * (Athlete, Partner) в схеме появятся вместе с админкой для них, а до тех
+   * пор честнее статическая страница, чем каталог из пустых состояний.
+   */
+  competitions: (params?: ListingParams) => withQuery('/competitions', params),
+  socialEvents: (params?: ListingParams) => withQuery('/social-events', params),
+  athletes: () => '/athletes',
+  federations: () => '/federations',
+  partners: () => '/partners',
+  sponsors: () => '/sponsors',
+  advertise: () => '/advertise',
+
   shop: (params?: ShopParams) => withQuery('/shop', params),
   product: (slug: string) => `/shop/${slug}`,
   cart: () => '/cart',

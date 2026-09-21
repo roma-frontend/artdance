@@ -60,6 +60,7 @@ enum DanceStyle {
   WEDDING_DANCE
   KIDS
   STRETCHING
+  KIZOMBA
 }
 
 enum SkillLevel {
@@ -159,7 +160,9 @@ enum EventType {
   SHOWCASE
   SOCIAL
   COMPETITION
+  CONCERT
 }
+
 
 enum VenueAmenity {
   MIRRORS

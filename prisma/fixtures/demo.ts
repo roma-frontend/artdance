@@ -666,6 +666,44 @@ export const demoEvents: readonly DemoEvent[] = [
     spotsLeft: 8,
     asset: 'style-contemporary',
   },
+  /*
+   * Соревнование и социальный вечер — демо-контент DanceSport-разделов
+   * (требование заказчика от 21.09.2026): разделы «Competitions» и «Social
+   * events» ведут на афишу с предзаданным типом, и без этих записей оба
+   * открывались бы пустыми.
+   */
+  {
+    slug: 'yerevan-dancesport-cup',
+    title: 'Yerevan DanceSport Cup',
+    description:
+      'Open WDSF-format competition: Standard and Latine programs, all age categories. ' +
+      'Spectator tickets include the evening gala.',
+    type: 'COMPETITION',
+    monthDay: '11-14',
+    startTime: '10:00',
+    endTime: '21:00',
+    locationName: 'Karen Demirchyan Complex',
+    price: 5_000,
+    capacity: 800,
+    spotsLeft: 350,
+    asset: 'style-ballroom',
+  },
+  {
+    slug: 'friday-bachata-social',
+    title: 'Friday Bachata Social',
+    description:
+      'Weekly social night: bachata and kizomba sets, 30 minutes of footwork warm-up ' +
+      'for newcomers. No partner needed.',
+    type: 'SOCIAL',
+    monthDay: '10-09',
+    startTime: '20:00',
+    endTime: '23:30',
+    venueSlug: 'pulse-dance-studio',
+    price: 2_000,
+    capacity: 60,
+    spotsLeft: 22,
+    asset: 'style-salsa',
+  },
 ];
 
 /* ─────────────────────────── Отзывы ─────────────────────────── */
@@ -787,6 +825,21 @@ export const demoMediaAlt: Record<string, { hy: string; ru: string; en: string }
     hy: 'Heels ոճի պարուհի բարձրակոշիկներով',
     ru: 'Танцовщица в стиле heels на каблуках',
     en: 'A heels-style dancer in high heels',
+  },
+  /*
+   * Ассеты DanceSport-разделов (требование заказчика от 21.09.2026).
+   * Файл в seed общий с ballet — смена кадра не меняет слаг: alt описывает
+   * содержимое, а не дисциплину.
+   */
+  'style-ballroom': {
+    hy: 'Զույգը ստանդարտ ծրագրում մրցաշարի պարետահարթակին',
+    ru: 'Пара в стандартной программе на турнирном паркете',
+    en: 'A couple dancing Standard program on a competition floor',
+  },
+  'style-tango': {
+    hy: 'Զույգը արգենտինական տանգո է պարում',
+    ru: 'Пара танцует аргентинское танго',
+    en: 'A couple dancing Argentine tango',
   },
   'instructor-anna-mkrtchyan': {
     hy: 'Աննա Մկրտչյան, պարուսույց',

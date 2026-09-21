@@ -218,6 +218,19 @@ function contentSpecs(): SitemapSpec[] {
     spec(routes.help()),
     spec(routes.becomeInstructor()),
     spec(routes.listYourStudio()),
+    /*
+     * Разделы сообщества DanceSport (заказчик, 21.09.2026). Афиша-срезы
+     * (`/competitions`, `/social-events`) — целевые страницы органики
+     * («соревнования по танцам в Ереване»), поэтому индексируются наравне с
+     * листингами; слэш-адрес `/events?type=…` при этом остаётся рабочим фильтром.
+     */
+    spec(routes.competitions()),
+    spec(routes.socialEvents()),
+    spec(routes.athletes()),
+    spec(routes.federations()),
+    spec(routes.partners()),
+    spec(routes.sponsors()),
+    spec(routes.advertise()),
   ];
 
   if (isEnabled('subscriptions')) specs.push(spec(routes.pricing()));

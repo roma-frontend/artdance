@@ -58,7 +58,14 @@ export type SectionOgKey =
   | 'pricing'
   | 'becomeInstructor'
   | 'listYourStudio'
-  | 'giftCards';
+  | 'giftCards'
+  | 'athletes'
+  | 'federations'
+  | 'partners'
+  | 'sponsors'
+  | 'advertise'
+  | 'competitions'
+  | 'socialEvents';
 
 interface SectionImageProps {
   params: Promise<{ locale: string }>;
