@@ -16,7 +16,6 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { Button } from "@/components/ui/button";
 import { routes, site } from "@/config";
 import type { Locale } from "@/i18n/config";
-import { Link } from "@/i18n/routing";
 import type { Crumb } from "@/lib/seo/jsonld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getDancesportHero } from "@/server/content/catalog";

@@ -66,7 +66,13 @@ export default async function CompetitionsPage({
 
   const t = await getTranslations("competitions");
   const tNav = await getTranslations("nav");
-  void tNav;
+
+  /*
+   * Видео недавних соревнований (DS-09) — id ролика заказчика на YouTube.
+   * Хостинг и кадр — у YouTube, платформа платит ноль байтов; CSP заранее
+   * разрешает youtube-nocookie.com во frame-src.
+   */
+  const competitionVideoId = "PypXcb8qfk4";
 
   return (
     <main id={site.mainContentId}>
@@ -79,10 +85,27 @@ export default async function CompetitionsPage({
         breadcrumbs={[{ label: tNav("competitions") }]}
       />
 
+      {/* Встраивание видео недавних соревнований: нулевой вес для платформы —
+          кадр и хостинг у YouTube, CSP заранее разрешает youtube-nocookie. */}
+      <section className="section-y bg-surface-raised">
+        <div className="page-container">
+          <div className="mx-auto aspect-video w-full max-w-4xl overflow-hidden rounded-xl border border-border-default shadow-lg">
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${competitionVideoId}?rel=0`}
+              title={t("videoTitle")}
+              className="size-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              referrerPolicy="strict-origin-when-cross-origin"
+            />
+          </div>
+        </div>
+      </section>
+
       <CatalogShell
         query={query}
         result={result}
-        facets={{}}
+        facets={{ districts: (await getVenueFacets()).districts }}
         sorts={eventSortOptions}
         section="events"
       >

@@ -1642,6 +1642,7 @@ const ru: Messages = {
   competitions: {
     title: 'Соревнования DanceSport',
     subtitle: 'Национальные и международные события по календарю WDSF.',
+    videoTitle: 'Недавние соревнования',
   },
 
   socialEvents: {

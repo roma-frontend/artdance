@@ -23,7 +23,6 @@ import {
   eventSortOptions,
   getDancesportHero,
   getEventList,
-  getVenueFacets,
 } from "@/server/content/catalog";
 
 interface PageProps {

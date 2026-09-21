@@ -1664,6 +1664,7 @@ const en = {
   competitions: {
     title: 'DanceSport competitions',
     subtitle: 'National and international events following the WDSF calendar.',
+    videoTitle: 'Recent competitions',
   },
 
   socialEvents: {

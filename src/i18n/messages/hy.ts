@@ -1654,6 +1654,7 @@ const hy: Messages = {
   competitions: {
     title: "DanceSport-ի մրցույթներ",
     subtitle: "Ազգային և միջազգային միջոցառումներ՝ WDSF օրացույցով։",
+    videoTitle: "Վերջին մրցույթները",
   },
 
   socialEvents: {

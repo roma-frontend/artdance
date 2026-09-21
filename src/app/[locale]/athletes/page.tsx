@@ -58,7 +58,6 @@ export default async function AthletesPage({ params }: PageProps) {
   setRequestLocale(locale as Locale);
 
   const t = await getTranslations("athletes");
-  const tRoot = await getTranslations();
   const athletes = getAthletes();
 
   const trail: Crumb[] = [{ name: t("eyebrow"), path: routes.athletes() }];
