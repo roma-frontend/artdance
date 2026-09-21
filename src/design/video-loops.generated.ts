@@ -27,14 +27,14 @@ export interface VideoLoopManifest {
 export const videoLoops: Record<VideoLoopKey, VideoLoopManifest> = {
   hero: {
     sources: [
-      { format: 'av1', width: 1280, file: 'hero-loop-1280-a44a1835.av1.mp4', bytes: 653691 },
-      { format: 'vp9', width: 1280, file: 'hero-loop-1280-5d9a435e.webm', bytes: 1347706 },
-      { format: 'h264', width: 1280, file: 'hero-loop-1280-bbd88caf.mp4', bytes: 1520346 },
-      { format: 'av1', width: 1920, file: 'hero-loop-1920-d8d237b3.av1.mp4', bytes: 803748 },
-      { format: 'vp9', width: 1920, file: 'hero-loop-1920-ef40dbe8.webm', bytes: 2002938 },
-      { format: 'h264', width: 1920, file: 'hero-loop-1920-2f45ca55.mp4', bytes: 2322420 },
+      { format: 'av1', width: 1280, file: 'hero-loop-1280-29c94ab6.av1.mp4', bytes: 779956 },
+      { format: 'vp9', width: 1280, file: 'hero-loop-1280-15cce295.webm', bytes: 933440 },
+      { format: 'h264', width: 1280, file: 'hero-loop-1280-e09c02b6.mp4', bytes: 1206326 },
+      { format: 'av1', width: 1920, file: 'hero-loop-1920-9fa2d346.av1.mp4', bytes: 1288246 },
+      { format: 'vp9', width: 1920, file: 'hero-loop-1920-790c3985.webm', bytes: 1470603 },
+      { format: 'h264', width: 1920, file: 'hero-loop-1920-da285ae8.mp4', bytes: 1860234 },
     ],
-    durationSeconds: 10,
+    durationSeconds: 9,
   },
   editorial: {
     sources: [
