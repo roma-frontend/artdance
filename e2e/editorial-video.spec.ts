@@ -35,8 +35,15 @@ const LOOP_URL = `/media/video/${videoProcessing.editorialLoop.baseName}`;
 const editorialSection = (page: Page) =>
   page.locator('section', { has: page.getByRole('heading', { name: en.home.editorial.titleAccent }) });
 
-const editorialVideo = (page: Page) => page.locator('.editorial-video');
-const editorialPoster = (page: Page) => page.locator('[data-slot="editorial-backdrop"] img');
+/*
+ * Локаторы ограничены editorial-секцией: с 21.09.2026 на главной есть вторая
+ * видео-секция (соревнования, `CompetitionSection`), которая переиспользует тот
+ * же компонент `EditorialVideo` с теми же `data-slot` и классом. Без сужения
+ * строгое ожидание (toBeVisible) ловит оба элемента и падает в strict mode.
+ */
+const editorialVideo = (page: Page) => editorialSection(page).locator('.editorial-video');
+const editorialPoster = (page: Page) =>
+  editorialSection(page).locator('[data-slot="editorial-backdrop"] img');
 
 /**
  * Прокрутить к секции и дождаться, пока петля пойдёт.
