@@ -18,20 +18,20 @@
 Версия от 02.09.2026 добавила движения втрое больше, чем было. Числа — в
 `src/design/motion.ts`, не по месту.
 
-| Эффект                           | Параметры                                                             | Где                        |
-| -------------------------------- | --------------------------------------------------------------------- | -------------------------- |
-| Медленный зум фона               | `duration.kenBurns` (12s)                                             | editorial                  |
-| Бегущая строка                   | `duration.marquee` (40s)                                              | `StyleMarquee`             |
-| Счётчики показателей от нуля     | `motion.counter`                                                      | `HeroSection`              |
-| Параллакс ухода hero             | `motion.heroParallax`: фон 0.3 вниз, контент −0.6 вверх, гаснет к 55% | `HeroSection`              |
-| Появление секций                 | `motion.reveal`: threshold 0.15, rootMargin −60px, 900ms              | `Reveal`                   |
-| Поочерёдное появление            | `motion.stagger`: шаг 70ms, до 8 детей                                | `Reveal` вариант `stagger` |
-| Параллакс изображений в секциях  | `motion.sectionParallax`: до 24px, от 768px                           | карточки, editorial        |
-| Свечение под курсором            | `motion.pointerGlow`: 300px, opacity .08                              | `PointerGlow`              |
-| Полоса прогресса чтения          | `motion.scrollProgress`                                               | `ScrollProgress`           |
-| Прокрутка карусели кнопками      | `motion.carousel`: шаг 340px, гашение на краях                        | `ClassCarousel`            |
-| Подъём карточки на hover         | `duration.normal` + `easing.brand`                                    | все карточки               |
-| Смена фона навигации при скролле | `duration.fast`, порог 40px                                           | `SiteHeader`               |
+| Эффект                           | Параметры                                                     | Где                        |
+| -------------------------------- | ------------------------------------------------------------- | -------------------------- |
+| Медленный зум фона               | `duration.kenBurns` (12s)                                     | editorial                  |
+| Бегущая строка                   | `duration.marquee` (40s)                                      | `StyleMarquee`             |
+| Счётчики показателей от нуля     | `motion.counter`                                              | `HeroSection`              |
+| Живая петля первого экрана       | `videoProcessing.heroLoop`, управление — `useBackgroundVideo` | `HeroVideo`                |
+| Появление секций                 | `motion.reveal`: threshold 0.15, rootMargin −60px, 900ms      | `Reveal`                   |
+| Поочерёдное появление            | `motion.stagger`: шаг 70ms, до 8 детей                        | `Reveal` вариант `stagger` |
+| Параллакс изображений в секциях  | `motion.sectionParallax`: до 24px, от 768px                   | карточки, editorial        |
+| Свечение под курсором            | `motion.pointerGlow`: 300px, opacity .08                      | `PointerGlow`              |
+| Полоса прогресса чтения          | `motion.scrollProgress`                                       | `ScrollProgress`           |
+| Прокрутка карусели кнопками      | `motion.carousel`: шаг 340px, гашение на краях                | `ClassCarousel`            |
+| Подъём карточки на hover         | `duration.normal` + `easing.brand`                            | все карточки               |
+| Смена фона навигации при скролле | `duration.fast`, порог 40px                                   | `SiteHeader`               |
 
 ### Что стоит добавить
 

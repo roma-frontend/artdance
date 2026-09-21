@@ -34,17 +34,17 @@ test.describe('SiteHeader', () => {
 
     /*
      * Прокрутка внутри первого экрана состояние НЕ меняет, и это главное свойство
-     * проверки. Прежде шапка становилась сплошной после 60 пикселей; с приколотым
-     * первым экраном это давало светлую полосу поверх тёмного театра на две
-     * высоты окна вперёд.
+     * проверки. Прежде шапка становилась сплошной после 60 пикселей; у первого
+     * экрана высотой в окно это давало бы светлую полосу поверх ещё видимого
+     * тёмного кадра.
      */
-    await page.mouse.wheel(0, 200);
+    await page.evaluate(() => window.scrollTo({ top: 200, behavior: 'instant' }));
     await expect(header(page)).toHaveAttribute('data-state', 'top');
 
-    /* За обёрткой первого экрана — сплошная. */
+    /* За первым экраном — сплошная. */
     await page.evaluate(() => {
-      const stage = document.querySelector<HTMLElement>('[data-hero-stage]');
-      const end = stage ? stage.offsetTop + stage.getBoundingClientRect().height : 0;
+      const hero = document.querySelector<HTMLElement>('.hero-viewport');
+      const end = hero ? hero.offsetTop + hero.getBoundingClientRect().height : 0;
       window.scrollTo({ top: end + 200, behavior: 'instant' });
     });
     await expect(header(page)).toHaveAttribute('data-state', 'scrolled');

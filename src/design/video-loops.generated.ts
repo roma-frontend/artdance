@@ -36,17 +36,6 @@ export const videoLoops: Record<VideoLoopKey, VideoLoopManifest> = {
     ],
     durationSeconds: 10,
   },
-  heroReverse: {
-    sources: [
-      { format: 'av1', width: 1280, file: 'hero-loop-reverse-1280-2181cb93.av1.mp4', bytes: 823010 },
-      { format: 'vp9', width: 1280, file: 'hero-loop-reverse-1280-0756c841.webm', bytes: 1184117 },
-      { format: 'h264', width: 1280, file: 'hero-loop-reverse-1280-1f043d80.mp4', bytes: 1329887 },
-      { format: 'av1', width: 1920, file: 'hero-loop-reverse-1920-a162b20f.av1.mp4', bytes: 1356149 },
-      { format: 'vp9', width: 1920, file: 'hero-loop-reverse-1920-4a2b41e0.webm', bytes: 1858355 },
-      { format: 'h264', width: 1920, file: 'hero-loop-reverse-1920-98043d40.mp4', bytes: 2057397 },
-    ],
-    durationSeconds: 10,
-  },
   editorial: {
     sources: [
       { format: 'av1', width: 720, file: 'editorial-loop-720-a5f2bf8b.av1.mp4', bytes: 521731 },

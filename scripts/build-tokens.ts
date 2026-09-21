@@ -282,16 +282,11 @@ function buildMotionBlock(): string {
     ['card-tilt-lift', `${motion.cardTilt.liftPx}px`],
     ['card-tilt-scale', String(motion.cardTilt.scale)],
     /**
-     * Полоса разгона первого экрана в высотах окна: геометрия задаётся в CSS,
-     * а число живёт в `motion.heroParallax` вместе с остальным раскрытием.
+     * Постоянная плотность вуали под текстом первого экрана. Живёт в CSS,
+     * потому что обязана стоять в первом кадре разметки: у вуали нет динамики,
+     * но до гидратации она должна уже закрывать текст.
      */
-    ['hero-reveal-runway', String(motion.heroParallax.revealRunwayViewports)],
-    /**
-     * Плотность вуали под текстом в начале раскрытия. Живёт в CSS, потому что
-     * это значение обязано быть в первом кадре разметки: вуаль густеет из
-     * браузера, а до гидратации она должна уже стоять на своём месте.
-     */
-    ['hero-scrim-start', String(motion.heroParallax.overlayOpacityAtStart)],
+    ['hero-scrim', String(motion.heroScrim.opacity)],
   ];
   return block(':root', entries);
 }
