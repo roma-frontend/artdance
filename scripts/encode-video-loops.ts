@@ -730,17 +730,18 @@ function checkOnly(): void {
     }
 
     /*
-     * Версий должно быть столько, сколько объявлено в политике. Сравнение по
-     * ЧИСЛУ различных ширин, а не по конкретным значениям: закодированная ширина
-     * равна `min(ширина исходника, ширина версии)`, и у исходника уже 720p версия
-     * в 1920 законно окажется файлом 1280. Требовать точных значений значило бы
-     * падать на нормальном исходнике.
+     * Версий кадра может быть МЕНЬШЕ, чем в политике, и это законно: закодированная
+     * ширина равна `min(ширина исходника, ширина версии)`, и у исходника 720p обе
+     * версии политики дают один файл 1280 — кодер дедуплицирует их по фактической
+     * ширине. Проверить это здесь невозможно: ширину исходника папка не знает.
+     * Поэтому несовпадение счёта — не ошибка, а заметка; ошибкой остаётся только
+     * дубль одного формата на одной ширине (проверен выше) и перерасход бюджета.
      */
     const widths = new Set(own.map((name) => identify(loop.baseName, name)!.width));
     if (widths.size < loop.renditions.length) {
-      problems.push(
-        `${key}: версий кадра ${widths.size} (${[...widths].sort((a, b) => a - b).join(', ')}px), ` +
-          `а в политике ${loop.renditions.length} — перекодируйте петлю целиком`,
+      console.log(
+        `  ${key}: версий кадра ${widths.size} (${[...widths].sort((a, b) => a - b).join(', ')}px) ` +
+          `при ${loop.renditions.length} в политике — исходник уже самой широкой версии`,
       );
     }
 
@@ -839,7 +840,31 @@ function main(): void {
   const duration = Math.min(source.duration, loop.maxDurationSeconds);
   const encoded: Encoded[] = [];
 
-  for (const rendition of loop.renditions) {
+  /*
+   * Рендиции, у которых на ЭТОМ исходнике совпала фактическая ширина, дают
+   * одинаковый файл с разными битрейтами: `min(ширина исходника, ширина
+   * версии)` схлопывает их в один размер, отпечатки различаются только весом,
+   * и в папке появляются два файла одного формата — `video:check` честно
+   * падает на дублях, которые создал сам кодер. Поэтому версии дедуплицируются
+   * по фактической ширине ДО кодирования: у исходника 720p вторая версия
+   * 1920→1280 не кодируется вовсе — она не добавила бы ни одного пикселя.
+   */
+  const seenWidths = new Set<number>();
+  const effectiveRenditions = loop.renditions.filter((rendition) => {
+    const width = Math.min(source.width, rendition.width);
+    if (seenWidths.has(width)) return false;
+    seenWidths.add(width);
+    return true;
+  });
+
+  if (effectiveRenditions.length < loop.renditions.length) {
+    console.log(
+      `  исходник ${source.width}px: рендиций ${effectiveRenditions.length} ` +
+        `из ${loop.renditions.length} — остальные совпали бы по ширине с уже закодированными`,
+    );
+  }
+
+  for (const rendition of effectiveRenditions) {
     for (const format of loop.formats) {
       try {
         const result = encode(loop, rendition, format, input, source, duration);

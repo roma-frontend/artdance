@@ -20,9 +20,10 @@
  */
 
 import { getTranslations } from 'next-intl/server';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import { HeroVideo } from '@/components/home/hero-video';
+import { HeroParallaxFX } from '@/components/home/hero-parallax-fx';
 import { Counter } from '@/components/fx/counter';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/config';
@@ -30,6 +31,19 @@ import type { HomeContent } from '@/domain/content';
 import { Link } from '@/i18n/routing';
 import type { Locale } from '@/i18n/config';
 import { cn } from '@/lib/utils';
+
+/**
+ * Порядок появления контента первого экрана, 0.12 с ступень — темп Enter-а
+ * задаёт `--hero-enter-stagger` в `globals.css`. Порядок драматургии: имя на
+ * афише → имя пьесы → аннотация → действия → цифры.
+ */
+const HERO_ENTER_ORDER = ['badge', 'title', 'subtitle', 'actions', 'stats'] as const;
+
+/** Индекс элемента в порядке появления — CSS-переменная для `animation-delay`. */
+function heroEnterOrder(name: (typeof HERO_ENTER_ORDER)[number]): CSSProperties {
+  const index = HERO_ENTER_ORDER.indexOf(name);
+  return { '--hero-enter-index': index } as CSSProperties;
+}
 
 interface HeroSectionProps {
   hero: HomeContent['hero'];
@@ -44,6 +58,13 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
 
   return (
     <section className={cn('hero-viewport cinema-surface relative overflow-hidden', className)}>
+      {/*
+        Движок глубины: пишет `--hero-parallax-*` и `--hero-exit-progress` на
+        секцию. Сам невидим (`display: contents`) и стоит первым, чтобы переменные
+        были объявлены до первого кадра отрисовки секции.
+      */}
+      <HeroParallaxFX />
+
       <HeroVideo video={hero.video} poster={hero.image} locale={locale} />
 
       {/*
@@ -53,27 +74,39 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
       */}
       <div aria-hidden className="hero-scrim absolute inset-0 z-[1]" />
 
-      <div className="page-container relative z-10 flex flex-1 flex-col items-start justify-center pt-24 pb-8 md:pt-28">
-        <p className="text-eyebrow text-metal mb-6 inline-flex items-center gap-2 rounded-full border border-metal-soft px-4 py-1.5 md:mb-8">
+      {/*
+        Золотой световой проход по кадру (см. `.hero-light-sweep` в `globals.css`):
+        раз в 9 с по сцене проходит тёплая волна света — в такт блику на
+        заголовке. Лежит над затемнением, но под контентом; при
+        `prefers-reduced-motion` не показывается вовсе.
+      */}
+      <div aria-hidden data-slot="hero-light-sweep" className="hero-light-sweep" />
+
+      <div className="hero-content page-container relative z-10 flex flex-1 flex-col items-start justify-center pt-24 pb-8 md:pt-28">
+        <p style={heroEnterOrder('badge')} className="text-eyebrow text-metal mb-6 inline-flex items-center gap-2 rounded-full border border-metal-soft px-4 py-1.5 md:mb-8">
           {t('badge')}
         </p>
 
-        <h1 className="text-display-hero mb-4 max-w-3xl text-content-on-cinema md:mb-6">
+        <h1 style={heroEnterOrder('title')} className="text-display-hero mb-4 max-w-3xl text-content-on-cinema md:mb-6">
           {t('titleLine1')}
           <br />
           {/*
             Акцентный курсив — отдельный ключ перевода, а не HTML внутри
             строки: переводчик не должен редактировать разметку, а в армянском
             выделяется другое слово.
+
+            `data-hero-shine` — золотой блик, идущий по слову раз в 7 с
+            (см. `.hero-shine` в `globals.css`): главная страница встречает
+            движением кадра, и заголовок отвечает ему тем же приёмом.
           */}
-          <em className="text-accent-on-cinema italic">{t('titleAccent')}</em>
+          <em data-hero-shine className="hero-shine text-accent-on-cinema italic">{t('titleAccent')}</em>
         </h1>
 
-        <p className="text-body md:text-body-lg mb-8 max-w-lg text-content-on-cinema-muted md:mb-10">
+        <p style={heroEnterOrder('subtitle')} className="text-body md:text-body-lg mb-8 max-w-lg text-content-on-cinema-muted md:mb-10">
           {t('subtitle')}
         </p>
 
-        <div className="flex flex-wrap gap-4">
+        <div style={heroEnterOrder('actions')} className="flex flex-wrap gap-4">
           <Button asChild size="lg" variant="accent">
             <Link href={routes.discover()}>{t('primaryCta')}</Link>
           </Button>
@@ -87,7 +120,7 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
           себе ничего не значит, значение имеет пара «число — подпись», и
           скринридер читает её именно парой.
         */}
-        <dl className="mt-8 flex flex-wrap gap-x-8 gap-y-4 border-t border-border-on-cinema pt-5 md:mt-10 md:gap-12 md:pt-6">
+        <dl style={heroEnterOrder('stats')} className="mt-8 flex flex-wrap gap-x-8 gap-y-4 border-t border-border-on-cinema pt-5 md:mt-10 md:gap-12 md:pt-6">
           {hero.stats.map((stat) => (
             <div key={stat.id}>
               <dd className="text-heading-4 md:text-heading-3 text-content-on-cinema">

@@ -440,6 +440,7 @@
   }
 
 
+
   /*
    * Полосы разгона и приколотой секции больше нет: занавес, раскрываемый
    * прокруткой, удалён 21.09.2026 (решение заказчика — спортивный образ;
@@ -1346,4 +1347,301 @@ html:has(body[data-scroll-locked]) {
  */
 [data-slot='drawer-content'] > div:not([data-slot]):first-child {
   display: none;
+}
+
+/*
+ * HERO FX — три эффекта первого экрана, 21.09.2026.
+ *
+ * Все три читают CSS-переменные, которые пишет `HeroParallaxFX` (rAF, без
+ * рендеров React); значения по умолчанию — 0, поэтому до гидратации и при
+ * `prefers-reduced-motion` секция стоит в базовой геометрии.
+ *
+ * Блок объявлен ВНЕ `@layer` по той же причине, что компактный режим ниже:
+ * он переопределяет утилиты (`object-cover` на кадре) и должен побеждать.
+ */
+
+/* --- 1. Параллакс за курсором + scroll-exit глубина ----------------------- */
+
+.hero-viewport {
+  /* Параллакс: до ±0.18 единиц кадра, сглажено lerp-ом в HeroParallaxFX. */
+  --hero-parallax-x: 0;
+  --hero-parallax-y: 0;
+  /* Прогресс ухода секции при прокрутке, 0…1. */
+  --hero-exit-progress: 0;
+  /* Ступень входа контента (заполняется инлайн-стилем на детях). */
+  --hero-enter-index: 0;
+  --hero-enter-stagger: 120ms;
+}
+
+.hero-viewport .hero-video-main {
+  /*
+   * Кадр уходит от курсора на 18px — максимальный сдвиг при ±0.5 края. Финал —
+   * обратный знак параллаксу текста, плюс рост кадра при прокрутке (до +8%):
+   * страница уходит «вглубь», а не обрывается швом секций.
+   *
+   * `translate3d` и `scale` — композитные свойства: эффект не вызывает
+   * пересчёт раскладки и держит 60 fps на слабых машинах.
+   */
+  transform: translate3d(
+      calc(var(--hero-parallax-x) * -36px),
+      calc(var(--hero-parallax-y) * -36px),
+      0
+    )
+    scale(calc(1 + var(--hero-exit-progress) * 0.08));
+  will-change: transform;
+}
+
+.hero-viewport .hero-content {
+  transform: translate3d(
+    calc(var(--hero-parallax-x) * 20px),
+    calc(var(--hero-parallax-y) * 14px - var(--hero-exit-progress) * 40px),
+    0
+  );
+  opacity: calc(1 - var(--hero-exit-progress) * 0.7);
+  will-change: transform, opacity;
+}
+
+/*
+ * Плавный возврат величин в покой: когда пользователь перестаёт двигать мышь
+ * или прокрутка доходит до конца, transition доводит значения мягко, без ступени.
+ */
+/*
+ * Transition на этих элементах нет намеренно: переменные обновляются каждый
+ * кадр из rAF-цикла, и переход только добавил бы «резину» поверх уже плавного
+ * lerp-движения. Смягчение входа делает анимация детей ниже, не transition.
+ */
+
+/* --- 2. Вход контента со ступенями ---------------------------------------- */
+
+/*
+ * Каждый ребёнок колонки (`badge → title → subtitle → actions → stats`)
+ * появляется с задержкой своего индекса. `animation-fill-mode: both` держит
+ * элемент невидимым до своего хода и не даёт ему мигнуть после анимации.
+ */
+.hero-viewport .hero-content > * {
+  animation: hero-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--hero-enter-index, 0) * var(--hero-enter-stagger));
+}
+
+@keyframes hero-enter {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- 3. Золотой блик на акцентном слове ----------------------------------- */
+
+/*
+ * Блик идёт по слову раз в 7 с: 1.4 с пробег — 5.6 с тишины.
+ *
+ * `background-clip: text` требует прозрачного цвета текста, иначе градиент
+ * за глифами не виден вовсе. Поэтому цвета здесь — два слоя фона: нижний
+ * держит слово в базовом акценте (заменяет `color`), верхний — бегущая
+ * золотая полоса. `color: transparent` открывает глифы обоим слоям.
+ */
+.hero-shine {
+  background-image:
+    linear-gradient(
+      115deg,
+      transparent 40%,
+      rgba(212, 175, 55, 0.35) 46%,
+      rgba(255, 226, 152, 0.85) 50%,
+      rgba(212, 175, 55, 0.35) 54%,
+      transparent 60%
+    ),
+    linear-gradient(var(--accent-on-cinema), var(--accent-on-cinema));
+  background-size:
+    250% 100%,
+    100% 100%;
+  background-position:
+    100% 0,
+    0 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: hero-shine 7s cubic-bezier(0.4, 0, 0.2, 1) 1.2s infinite;
+}
+
+@keyframes hero-shine {
+  0% {
+    background-position: 100% 0;
+  }
+
+  20% {
+    background-position: -50% 0;
+  }
+
+  100% {
+    background-position: -50% 0;
+  }
+}
+
+/*
+ * Три порога компактного режима выше (height <= 800/700/640px) продолжают
+ * действовать: эффекты не меняют раскладку, только композитинг.
+ */
+
+/* --- 4. Золотой световой проход по кадру --------------------------------- */
+
+/*
+ * Раз в 9 с по сцене снизу-справа налево-вверх проходит тёплая волна света:
+ * диагональная полоса с мягкими краями, в противофазе к блюку заголовка
+ * (1.4 с там — 2.4 с здесь, ходы не синхронны, и глаз не находит повторяющийся
+ * ритм). Лежит между затемнением (z-1) и контентом (z-10), кадр не перекрывает.
+ */
+.hero-light-sweep {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(212, 175, 55, 0.1) 48%,
+    rgba(255, 226, 152, 0.16) 52%,
+    rgba(212, 175, 55, 0.1) 56%,
+    transparent 62%
+  );
+  background-size: 300% 300%;
+  background-position: 110% 110%;
+  animation: hero-light-sweep 9s cubic-bezier(0.4, 0, 0.2, 1) 2.5s infinite;
+}
+
+@keyframes hero-light-sweep {
+  0% {
+    background-position: 110% 110%;
+  }
+
+  22% {
+    background-position: -10% -10%;
+  }
+
+  100% {
+    background-position: -10% -10%;
+  }
+}
+
+/*
+ * Уважение к системной просьбе убрать движение: выключается ВСЁ — параллакс,
+ * scroll-exit, вход со ступенями, блик и световой проход. Кадр остаётся живым
+ * (его ставит на паузу `useBackgroundVideo` по `usePrefersStillImage`), а
+ * контент стоит в финальном состоянии без анимаций.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .hero-viewport .hero-video-main,
+  .hero-viewport .hero-content {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+
+  .hero-viewport .hero-content > * {
+    animation: none;
+  }
+
+  /*
+   * Анимацию убрать, но базовый слой оставить: цвет текста прозрачный, и без
+   * нижнего слоя слово исчезло бы со страницы целиком.
+   */
+  .hero-shine {
+    animation: none;
+  }
+
+  .hero-light-sweep {
+    display: none;
+  }
+}
+
+/*
+ * Компактный режим первого экрана для невысоких окон.
+ *
+ * Проблема: контент hero при полной типографике занимает ~700px, а эффективная
+ * высота окна ноутбука — 640–700px. `min-height: 100dvh` выше минимума не
+ * растягивает содержимое, и поисковая строка у нижней кромки упиралась в складку
+ * окна и резалась пополам.
+ *
+ * Решение — деградация вместо обрезки: на высотах ниже 800px первый экран
+ * отдаёт вертикаль там, где она не стоит целиком — но НЕ типографикой.
+ * Заголовок опускается только на одну ступень (5xl → 4xl) и дальше не идёт:
+ * заголовок первого экрана обязан оставаться крупнее кнопок, иначе иерархия
+ * «что главное» разваливается (на скриншоте заказчика 3xl проигрывал кнопкам).
+ * Вертикаль добирается компрессией отступов и статов.
+ *
+ * Пороги: 800px ловит большинство ноутбуков, 700px — ноутбуки с прижатой
+ * панелью браузера, 640px — ландшафтный телефон (там сжимается только сетка
+ * статов, не текст). Мобильный док учтён в `padding-bottom` самой
+ * `.hero-viewport`.
+ *
+ * Правила объявлены ВНЕ `@layer` по той же причине, что `.mobile-menu-sheet`
+ * выше: семантические классы в `tokens.css` (`.text-display-hero` и другие)
+ * лежат вне слоёв, и любое правило внутри слоя им проигрывает независимо от
+ * специфичности и порядка.
+ *
+ * Селекторы `[class*="…"]`, а не `.text-body-lg`: в разметке используются
+ * и литеральные (`md:text-heading-3` на статах), и обычные классы — substring-
+ * селектор берёт оба.
+ */
+@media (height <= 800px) {
+  .hero-content {
+    /* Верхний отступ не опускаем ниже высоты фиксированной шапки (~64px). */
+    padding-top: var(--space-16);
+  }
+
+  .hero-content .text-display-hero {
+    font-size: var(--text-4xl);
+    margin-bottom: var(--space-4);
+  }
+
+  .hero-content [class*='text-heading-3'] {
+    font-size: var(--text-xl);
+  }
+
+  .hero-content dl {
+    margin-top: var(--space-8);
+  }
+}
+
+@media (height <= 700px) {
+  .hero-content {
+    padding-bottom: var(--space-4);
+  }
+
+  /*
+   * Компрессия вертикали без жертвы размером текста: бейдж и подзаголовок
+   * поджимаются к соседям, статы — к границе. Заголовок остаётся 4xl.
+   */
+  .hero-content [class*='text-eyebrow'] {
+    margin-bottom: var(--space-4);
+  }
+
+  /* Подзаголовок идёт сразу за заголовком. */
+  .hero-content h1 + p {
+    margin-bottom: var(--space-6);
+  }
+
+  .hero-content dl {
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+  }
+
+  /* Цифры статов компактнее, но по-прежнему крупнее подписей. */
+  .hero-content dd[class*='text-heading'] {
+    font-size: var(--text-xl);
+  }
+}
+
+@media (height <= 640px) {
+  /*
+   * Показатели в один ряд на ландшафтном телефоне не помещаются: flex-wrap уже
+   * разрешает перенос, компактный gap делает его предсказуемым.
+   */
+  .hero-content dl {
+    gap: var(--space-4);
+  }
 }

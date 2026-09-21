@@ -27,12 +27,9 @@ export interface VideoLoopManifest {
 export const videoLoops: Record<VideoLoopKey, VideoLoopManifest> = {
   hero: {
     sources: [
-      { format: 'av1', width: 1280, file: 'hero-loop-1280-29c94ab6.av1.mp4', bytes: 779956 },
-      { format: 'vp9', width: 1280, file: 'hero-loop-1280-15cce295.webm', bytes: 933440 },
-      { format: 'h264', width: 1280, file: 'hero-loop-1280-e09c02b6.mp4', bytes: 1206326 },
-      { format: 'av1', width: 1920, file: 'hero-loop-1920-9fa2d346.av1.mp4', bytes: 1288246 },
-      { format: 'vp9', width: 1920, file: 'hero-loop-1920-790c3985.webm', bytes: 1470603 },
-      { format: 'h264', width: 1920, file: 'hero-loop-1920-da285ae8.mp4', bytes: 1860234 },
+      { format: 'av1', width: 1280, file: 'hero-loop-1280-0c050bf9.av1.mp4', bytes: 778180 },
+      { format: 'vp9', width: 1280, file: 'hero-loop-1280-10b6b370.webm', bytes: 884525 },
+      { format: 'h264', width: 1280, file: 'hero-loop-1280-73e477b6.mp4', bytes: 1253703 },
     ],
     durationSeconds: 9,
   },

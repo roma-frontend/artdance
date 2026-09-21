@@ -66,13 +66,13 @@ export const seedMedia = {
       'data:image/webp;base64,UklGRkAAAABXRUJQVlA4IDQAAADwAQCdASoMAAcAAwBSJZwC7ADp9GvssQAA/vplO8TFyX77+gIgM17ARGU4qymbPtZVcAAA',
   },
   'hero-loop-poster': {
-    file: 'hero-loop-poster.265d6b19.webp',
-    width: 1920,
-    height: 1080,
-    bytes: 28814,
-    fingerprint: '265d6b19',
+    file: 'hero-loop-poster.6b83ebb1.webp',
+    width: 1280,
+    height: 720,
+    bytes: 18580,
+    fingerprint: '6b83ebb1',
     blurDataUrl:
-      'data:image/webp;base64,UklGRkQAAABXRUJQVlA4IDgAAADwAQCdASoMAAcAAwBSJYwC7ADcYssXwUgA/vrv+tF1aCRq3citbbcgEt5NmUBKilpXx1EpzaAAAA==',
+      'data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADwAQCdASoMAAcAAwBSJZQCdADdpnj7AAAA/viMUlQg83PbTmJGI7w7vALKOpvLAAA=',
   },
   'instructor-anna-mkrtchyan': {
     file: 'instructor-anna-mkrtchyan.9c857022.webp',
@@ -232,4 +232,4 @@ export const seedMedia = {
 export type SeedMediaName = keyof typeof seedMedia;
 
 /** Суммарный вес папки сид-медиа, байт. Сверяется с `mediaProcessing.budgetBytes.seedTotal`. */
-export const seedMediaTotalBytes = 1133450;
+export const seedMediaTotalBytes = 1123216;
