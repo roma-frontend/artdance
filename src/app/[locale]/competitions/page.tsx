@@ -68,11 +68,11 @@ export default async function CompetitionsPage({
   const tNav = await getTranslations("nav");
 
   /*
-   * Видео недавних соревнований (DS-09) — id ролика заказчика на YouTube.
+   * Видео недавних соревнований (DS-09) — id роликов заказчика на YouTube.
    * Хостинг и кадр — у YouTube, платформа платит ноль байтов; CSP заранее
    * разрешает youtube-nocookie.com во frame-src.
    */
-  const competitionVideoId = "PypXcb8qfk4";
+  const competitionVideoIds = ["PypXcb8qfk4", "mdycpxXCLRE"];
 
   return (
     <main id={site.mainContentId}>
@@ -89,15 +89,23 @@ export default async function CompetitionsPage({
           кадр и хостинг у YouTube, CSP заранее разрешает youtube-nocookie. */}
       <section className="section-y bg-surface-raised">
         <div className="page-container">
-          <div className="mx-auto aspect-video w-full max-w-4xl overflow-hidden rounded-xl border border-border-default shadow-lg">
-            <iframe
-              src={`https://www.youtube-nocookie.com/embed/${competitionVideoId}?rel=0`}
-              title={t("videoTitle")}
-              className="size-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowFullScreen
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
+          <div className="mx-auto grid w-full max-w-6xl gap-6 lg:grid-cols-2">
+            {competitionVideoIds.map((videoId, index) => (
+              <CardTilt
+                key={videoId}
+                index={index}
+                className="aspect-video h-auto w-full overflow-hidden rounded-xl border border-border-default shadow-lg"
+              >
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${videoId}?rel=0`}
+                  title={`${t("videoTitle")} ${index + 1}`}
+                  className="size-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  referrerPolicy="strict-origin-when-cross-origin"
+                />
+              </CardTilt>
+            ))}
           </div>
         </div>
       </section>
@@ -110,9 +118,9 @@ export default async function CompetitionsPage({
         section="events"
       >
         <ul className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {result.items.map((item) => (
+          {result.items.map((item, index) => (
             <li key={item.slug}>
-              <CardTilt>
+              <CardTilt index={index}>
                 <EventCard item={item} locale={locale as Locale} />
               </CardTilt>
             </li>

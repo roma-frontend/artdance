@@ -18,95 +18,76 @@
 
 'use client';
 
+import { motion as animated, useAnimationControls, useInView, useTransform } from 'framer-motion';
 import { useEffect, useRef, type ReactNode } from 'react';
 
 import { motion } from '@/design/motion';
-import { useFinePointer } from '@/lib/hooks/use-media-query';
-import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
+import { useCursorFollow } from '@/hooks/use-cursor-follow';
+import { useScrollAnimation } from '@/hooks/use-scroll-animation';
+import { revealTransition } from '@/lib/animations/scroll-reveal';
 import { cn } from '@/lib/utils';
 
 interface CardTiltProps {
   children: ReactNode;
   className?: string;
+  index?: number;
 }
 
-export function CardTilt({ children, className }: CardTiltProps) {
-  const finePointer = useFinePointer();
-  const reducedMotion = usePrefersReducedMotion();
-  const enabled = finePointer && !reducedMotion;
-
+export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const { rotate, enabled, reducedMotion } = useScrollAnimation(ref);
+  const cursor = useCursorFollow(ref);
+  const rotateX = useTransform(cursor.y, (value) => -value * motion.cardTilt.maxRotateDeg);
+  const rotateY = useTransform(cursor.x, (value) => value * motion.cardTilt.maxRotateDeg);
+  const x = useTransform(cursor.x, (value) => value * 6);
+  const y = useTransform(cursor.y, (value) => value * 6);
+  const inView = useInView(ref, { once: true, amount: 0.1 });
+  const controls = useAnimationControls();
+  const revealed = useRef(false);
 
   useEffect(() => {
+    if (reducedMotion) {
+      controls.stop();
+      controls.set({ opacity: 1, scale: 1 });
+      return;
+    }
+    if (revealed.current) return;
     const node = ref.current;
-    if (!node || !enabled) return;
-
-    const { perspectivePx, maxRotateDeg, scale } = motion.cardTilt;
-    let frame = 0;
-    let rotateX = 0;
-    let rotateY = 0;
-
-    const paint = () => {
-      frame = 0;
-      /*
-       * `scale` в конце — не украшение, а необходимость. Поворот вокруг центра
-       * отодвигает дальний край назад, и если курсор стоит у самого края, край
-       * уходит из-под него: срабатывает `pointerleave`, наклон снимается, курсор
-       * снова попадает на карточку — эффект мерцает. Едва заметное увеличение
-       * компенсирует этот сдвиг. В макете это значение тоже есть, и, судя по
-       * всему, по той же причине.
-       */
-      node.style.transform =
-        `perspective(${perspectivePx}px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) scale(${scale})`;
-    };
-
-    const onMove = (event: PointerEvent) => {
-      const rect = node.getBoundingClientRect();
-      /** Смещение курсора от центра в долях от −0.5 до 0.5. */
-      const offsetX = (event.clientX - rect.left) / rect.width - 0.5;
-      const offsetY = (event.clientY - rect.top) / rect.height - 0.5;
-
-      rotateY = offsetX * maxRotateDeg;
-      /** Знак обратный: курсор ниже центра наклоняет карточку от зрителя. */
-      rotateX = -offsetY * maxRotateDeg;
-
-      /*
-       * Пока курсор ведёт наклон, переход короткий (см. `[data-tilting]` в
-       * globals.css): длинный превращает слежение в запаздывание, а его полное
-       * отсутствие заставляет цель клика убегать от курсора.
-       */
-      node.setAttribute('data-tilting', '');
-      if (frame === 0) frame = window.requestAnimationFrame(paint);
-    };
-
-    const onLeave = () => {
-      if (frame !== 0) {
-        window.cancelAnimationFrame(frame);
-        frame = 0;
-      }
-      /* Возврат — единственный шаг, который анимируется. */
-      node.removeAttribute('data-tilting');
-      /** Пустая строка, а не `none`: возвращаем управление CSS-переходу. */
-      node.style.transform = '';
-    };
-
-    node.addEventListener('pointermove', onMove, { passive: true });
-    node.addEventListener('pointerleave', onLeave);
-
-    return () => {
-      node.removeEventListener('pointermove', onMove);
-      node.removeEventListener('pointerleave', onLeave);
-      if (frame !== 0) window.cancelAnimationFrame(frame);
-    };
-  }, [enabled]);
+    if (!node) return;
+    if (inView || node.getBoundingClientRect().top < window.innerHeight) {
+      revealed.current = true;
+      node.setAttribute('data-card-entering', '');
+      void controls.start({ opacity: 1, scale: 1, transition: revealTransition(index) }).then(() => {
+        node.removeAttribute('data-card-entering');
+      });
+    } else {
+      controls.set({ opacity: 0, scale: 0.94 });
+    }
+  }, [controls, inView, reducedMotion, index]);
 
   return (
-    <div
+    <animated.div
       ref={ref}
       data-slot="card-tilt"
-      className={cn('h-full', enabled && 'will-change-transform', className)}
+      data-animation-card=""
+      className={cn('h-full', className)}
+      initial={false}
+      animate={controls}
+      onFocusCapture={() => {
+        revealed.current = true;
+        controls.stop();
+        controls.set({ opacity: 1, scale: 1 });
+      }}
+      style={{
+        rotate: enabled ? rotate : 0,
+        rotateX: cursor.enabled ? rotateX : 0,
+        rotateY: cursor.enabled ? rotateY : 0,
+        x: cursor.enabled ? x : 0,
+        y: cursor.enabled ? y : 0,
+        transformPerspective: cursor.enabled ? motion.cardTilt.perspectivePx : undefined,
+      }}
     >
       {children}
-    </div>
+    </animated.div>
   );
 }

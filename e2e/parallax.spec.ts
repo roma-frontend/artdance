@@ -34,13 +34,13 @@ async function declaredTranslateY(page: Page, selector: string): Promise<number>
   return page.evaluate((sel) => {
     const node = document.querySelector<HTMLElement>(sel);
     if (!node) return Number.NaN;
-    const match = /translateY\((-?[\d.]+)px\)/.exec(node.style.transform);
-    return match ? Number.parseFloat(match[1]!) : 0;
+    return new DOMMatrixReadOnly(getComputedStyle(node).transform).m42;
   }, selector);
 }
 
 test.describe('параллакс editorial-секции', () => {
-  test('три слоя идут с разной скоростью, пока секция проходит через экран', async ({ page }) => {
+  test('три слоя идут с разной скоростью в невысоком окне без stacking', async ({ page }) => {
+    await page.setViewportSize({ width: page.viewportSize()?.width ?? 1440, height: 500 });
     await page.goto(HOME);
 
     const heading = page.getByRole('heading', { level: 2 }).filter({

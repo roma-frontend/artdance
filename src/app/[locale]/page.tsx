@@ -28,6 +28,8 @@ import { StyleMarquee } from '@/components/home/style-marquee';
 import { TestimonialCard } from '@/components/home/testimonial-card';
 import { CardTilt } from '@/components/fx/card-tilt';
 import { Reveal } from '@/components/fx/reveal';
+import { TextReveal } from '@/components/fx/text-reveal';
+import { StackShowcase } from '@/components/fx/stack-showcase';
 import { ClassCard } from '@/components/catalog/class-card';
 import { ClassCarousel } from '@/components/catalog/class-carousel';
 import { EventCard } from '@/components/catalog/event-card';
@@ -129,6 +131,7 @@ export default async function HomePage({ params }: PageProps) {
       </section>
 
       {/* ── EDITORIAL: цитата брендгайда как полноэкранное заявление ── */}
+      <StackShowcase>
       <EditorialStatement
         video={content.editorial.video}
         image={content.editorial.image}
@@ -143,6 +146,7 @@ export default async function HomePage({ params }: PageProps) {
         image={content.competition.image}
         locale={locale as Locale}
       />
+      </StackShowcase>
 
       {/* ── INSTRUCTORS ── */}
       <section className="section-y">
@@ -162,9 +166,9 @@ export default async function HomePage({ params }: PageProps) {
             variant="stagger"
             className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
           >
-            {content.instructors.slice(0, 4).map((item) => (
+            {content.instructors.slice(0, 4).map((item, index) => (
               <li key={item.slug}>
-                <CardTilt>
+                <CardTilt index={index}>
                   <InstructorCard item={item} locale={locale as Locale} />
                 </CardTilt>
               </li>
@@ -193,9 +197,9 @@ export default async function HomePage({ params }: PageProps) {
           </Reveal>
 
           <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {content.venues.map((item) => (
+            {content.venues.map((item, index) => (
               <li key={item.slug}>
-                <CardTilt>
+                <CardTilt index={index}>
                   <VenueCard item={item} locale={locale as Locale} />
                 </CardTilt>
               </li>
@@ -224,9 +228,9 @@ export default async function HomePage({ params }: PageProps) {
             </Reveal>
 
             <Reveal as="ul" variant="stagger" className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {content.products.slice(0, 4).map((item) => (
+              {content.products.slice(0, 4).map((item, index) => (
                 <li key={item.slug}>
-                  <CardTilt>
+                  <CardTilt index={index}>
                     <ProductCard item={item} locale={locale as Locale} />
                   </CardTilt>
                 </li>
@@ -256,9 +260,9 @@ export default async function HomePage({ params }: PageProps) {
             </Reveal>
 
             <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-3">
-              {content.events.map((item) => (
+              {content.events.map((item, index) => (
                 <li key={item.slug}>
-                  <CardTilt>
+                  <CardTilt index={index}>
                     <EventCard item={item} locale={locale as Locale} />
                   </CardTilt>
                 </li>
@@ -300,7 +304,7 @@ export default async function HomePage({ params }: PageProps) {
       {/* ── FINAL CTA: последнее предложение перед подвалом ── */}
       <section className="cinema-surface section-y text-center">
         <Reveal variant="scale" className="page-container">
-          <h2 className="text-heading-1 text-content-on-cinema">{t('finalCta.title')}</h2>
+          <h2 className="text-heading-1 text-content-on-cinema"><TextReveal>{t('finalCta.title')}</TextReveal></h2>
           <p className="text-body-lg mt-3 text-content-on-cinema-muted">{t('finalCta.subtitle')}</p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Button asChild size="lg" variant="accent">

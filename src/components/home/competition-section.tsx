@@ -60,6 +60,7 @@ export function CompetitionSection({
 
         <Reveal variant="scale" className="page-container relative">
           <SectionHeading
+            parallax
             align="center"
             eyebrow={t("eyebrow")}
             title={t("title")}
@@ -71,7 +72,7 @@ export function CompetitionSection({
             <Button asChild size="lg" variant="accent">
               <Link href={routes.competitions()}>{t("videoCta")}</Link>
             </Button>
-            <Button asChild size="lg" variant="onCinema">
+            <Button asChild size="lg" variant="onCinema" className="liquid-glass">
               <Link href={routes.federations()}>
                 {tRoot("footer.federations")}
               </Link>

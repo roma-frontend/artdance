@@ -22,6 +22,7 @@
 
 'use client';
 
+import { useScroll } from 'framer-motion';
 import { useEffect, useRef, type ReactNode } from 'react';
 
 import { motion } from '@/design/motion';
@@ -39,6 +40,7 @@ interface SectionParallaxProps {
 
 export function SectionParallax({ children, className }: SectionParallaxProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
   const reducedMotion = usePrefersReducedMotion();
   const wideEnough = useMediaQuery(`(min-width: ${motion.sectionParallax.minViewportWidth}px)`);
 
@@ -66,6 +68,10 @@ export function SectionParallax({ children, className }: SectionParallaxProps) {
 
     const read = () => {
       frame = 0;
+      if (root.hasAttribute('data-stack-ready')) {
+        for (const element of all) element.style.transform = '';
+        return;
+      }
       const rect = root.getBoundingClientRect();
       const viewport = window.innerHeight;
 
@@ -80,16 +86,16 @@ export function SectionParallax({ children, className }: SectionParallaxProps) {
 
       for (const element of backgrounds) {
         element.style.transform =
-          `translateY(${phase * -backgroundTravelPx}px) scale(${backgroundZoom})`;
+          `translate3d(0, ${phase * -backgroundTravelPx}px, 0) scale(${backgroundZoom})`;
       }
 
       for (const element of contents) {
-        element.style.transform = `translateY(${phase * -contentTravelPx}px)`;
+        element.style.transform = `translate3d(0, ${phase * -contentTravelPx}px, 0)`;
       }
 
       for (const element of headings) {
         element.style.transform =
-          `translateY(${phase * -headingTravelPx}px) scale(${1 + phase * headingScaleRange})`;
+          `translate3d(0, ${phase * -headingTravelPx}px, 0) scale(${1 + phase * headingScaleRange})`;
       }
     };
 
@@ -99,18 +105,18 @@ export function SectionParallax({ children, className }: SectionParallaxProps) {
     };
 
     read();
-    window.addEventListener('scroll', schedule, { passive: true });
+    const unsubscribe = scrollY.on('change', schedule);
     window.addEventListener('resize', schedule, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', schedule);
+      unsubscribe();
       window.removeEventListener('resize', schedule);
       if (frame !== 0) window.cancelAnimationFrame(frame);
 
       /* Возврат в исходное: следующий монтаж начинает с чистого состояния. */
       for (const element of all) element.style.transform = '';
     };
-  }, [reducedMotion, wideEnough]);
+  }, [reducedMotion, scrollY, wideEnough]);
 
   return (
     <div ref={rootRef} data-slot="section-parallax" className={cn(className)}>

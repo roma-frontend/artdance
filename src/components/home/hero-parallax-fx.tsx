@@ -25,22 +25,29 @@
 
 'use client';
 
+import { useScroll } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 
-import { useFinePointer } from '@/lib/hooks/use-media-query';
+import { layerOffset } from '@/lib/animations/parallax';
+import { useFinePointer, useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 
 export function HeroParallaxFX() {
   const anchorRef = useRef<HTMLDivElement>(null);
   const finePointer = useFinePointer();
   const reducedMotion = usePrefersReducedMotion();
+  const wide = useMediaQuery('(min-width: 768px)');
+  const { scrollY } = useScroll();
 
   useEffect(() => {
     const anchor = anchorRef.current;
-    if (!anchor || reducedMotion) return;
+    if (!anchor || reducedMotion || !wide) return;
 
     const root = anchor.parentElement;
     if (!root) return;
+    const background = root.querySelector<HTMLElement>('[data-hero-background]');
+    const content = root.querySelector<HTMLElement>('.hero-content');
+    const foreground = root.querySelector<HTMLElement>('.hero-light-sweep');
 
     let frame = 0;
     let raf = 0;
@@ -51,8 +58,17 @@ export function HeroParallaxFX() {
     let targetY = 0;
     let currentX = 0;
     let currentY = 0;
+    let pointer: { x: number; y: number } | null = null;
 
     const paintPointer = () => {
+      if (pointer) {
+        const rect = root.getBoundingClientRect();
+        if (rect.width && rect.height) {
+          targetX = Math.max(-0.5, Math.min(0.5, (pointer.x - rect.left) / rect.width - 0.5));
+          targetY = Math.max(-0.5, Math.min(0.5, (pointer.y - rect.top) / rect.height - 0.5));
+        }
+        pointer = null;
+      }
       /*
        * lerp 0.12: движение доезжает за ~150ms и не дрожит. Цикл живёт, пока
        * есть ненулевая разница — в покое ни кадра работы.
@@ -70,14 +86,13 @@ export function HeroParallaxFX() {
     };
 
     const onPointerMove = (event: PointerEvent) => {
-      const rect = root.getBoundingClientRect();
-      if (rect.height === 0) return;
-      targetX = (event.clientX - rect.left) / rect.width - 0.5;
-      targetY = (event.clientY - rect.top) / rect.height - 0.5;
+      if (event.pointerType !== 'mouse' || root.matches(':focus-within')) return;
+      pointer = { x: event.clientX, y: event.clientY };
       if (raf === 0) raf = window.requestAnimationFrame(paintPointer);
     };
 
     const onPointerLeave = () => {
+      pointer = null;
       targetX = 0;
       targetY = 0;
       if (raf === 0) raf = window.requestAnimationFrame(paintPointer);
@@ -87,9 +102,12 @@ export function HeroParallaxFX() {
 
     const paintScroll = () => {
       frame = 0;
-      const viewportHeight = window.innerHeight || 1;
-      const progress = Math.min(Math.max(window.scrollY / (viewportHeight * 0.9), 0), 1);
-      root.style.setProperty('--hero-exit-progress', progress.toFixed(4));
+      const rect = root.getBoundingClientRect();
+      const progress = Math.min(Math.max(-rect.top / (rect.height || 1), 0), 1);
+      const focused = root.matches(':focus-within');
+      if (background) background.style.transform = `translate3d(0, ${layerOffset(progress, 'background')}px, 0) scale(1.08)`;
+      if (content) content.style.translate = `0 ${focused ? 0 : layerOffset(progress, 'midground')}px`;
+      if (foreground) foreground.style.transform = `translate3d(0, ${layerOffset(progress, 'foreground')}px, 0) rotate(${progress * 5}deg)`;
     };
 
     const onScroll = () => {
@@ -100,7 +118,9 @@ export function HeroParallaxFX() {
       root.addEventListener('pointermove', onPointerMove, { passive: true });
       root.addEventListener('pointerleave', onPointerLeave, { passive: true });
     }
-    window.addEventListener('scroll', onScroll, { passive: true });
+    const unsubscribe = scrollY.on('change', onScroll);
+    root.addEventListener('focusin', onScroll);
+    root.addEventListener('focusout', onScroll);
     window.addEventListener('resize', onScroll, { passive: true });
     paintScroll();
 
@@ -109,7 +129,12 @@ export function HeroParallaxFX() {
         root.removeEventListener('pointermove', onPointerMove);
         root.removeEventListener('pointerleave', onPointerLeave);
       }
-      window.removeEventListener('scroll', onScroll);
+      unsubscribe();
+      root.removeEventListener('focusin', onScroll);
+      root.removeEventListener('focusout', onScroll);
+      if (background) background.style.transform = '';
+      if (content) content.style.translate = '';
+      if (foreground) foreground.style.transform = '';
       window.removeEventListener('resize', onScroll);
       if (frame !== 0) window.cancelAnimationFrame(frame);
       if (raf !== 0) window.cancelAnimationFrame(raf);
@@ -117,7 +142,7 @@ export function HeroParallaxFX() {
       root.style.removeProperty('--hero-parallax-y');
       root.style.removeProperty('--hero-exit-progress');
     };
-  }, [finePointer, reducedMotion]);
+  }, [finePointer, reducedMotion, scrollY, wide]);
 
   if (reducedMotion) return null;
 

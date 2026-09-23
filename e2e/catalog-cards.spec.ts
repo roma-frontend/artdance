@@ -248,14 +248,19 @@ test.describe('CardTilt', () => {
       .poll(async () => {
         await page.mouse.move(point.x, point.y + 1);
         await page.mouse.move(point.x, point.y);
-        return tilt.evaluate((node) => (node as HTMLElement).style.transform);
+        return tilt.evaluate((node) => {
+          const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform);
+          return Math.abs(matrix.m13) + Math.abs(matrix.m23);
+        });
       })
-      .toContain('rotate');
+      .toBeGreaterThan(0.001);
 
-    /* Курсор ушёл с карточки — наклон снимается, управление возвращается CSS. */
     await page.mouse.move(0, 0);
     await expect
-      .poll(() => tilt.evaluate((node) => (node as HTMLElement).style.transform))
-      .toBe('');
+      .poll(() => tilt.evaluate((node) => {
+        const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform);
+        return Math.abs(matrix.m13) + Math.abs(matrix.m23) + Math.abs(matrix.m41) + Math.abs(matrix.m42);
+      }))
+      .toBeLessThan(0.001);
   });
 });

@@ -28,6 +28,7 @@
 
 import type { ReactNode } from 'react';
 
+import { Magnetic } from '@/components/fx/magnetic';
 import { PointerGlow } from '@/components/fx/pointer-glow';
 import { ScrollProgress } from '@/components/fx/scroll-progress';
 import { MobileDock } from '@/components/layout/mobile-dock';
@@ -44,6 +45,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
     <>
       {!isAdmin && <ScrollProgress />}
       {!isAdmin && <PointerGlow />}
+      {!isAdmin && <Magnetic />}
       {!isAdmin && <SiteHeader />}
       {children}
       {!isAdmin && <MobileDock />}

@@ -18,6 +18,7 @@ import { useTranslations } from 'next-intl';
 
 import { EditorialVideo } from '@/components/home/editorial-video';
 import { Reveal } from '@/components/fx/reveal';
+import { TextReveal } from '@/components/fx/text-reveal';
 import { SectionParallax } from '@/components/fx/section-parallax';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/config';
@@ -74,8 +75,8 @@ export function EditorialStatement({ video, image, locale }: EditorialStatementP
         <div data-parallax="content" className="relative">
           <Reveal variant="scale" className="page-container">
             <h2 data-parallax="heading" className="text-display-editorial uppercase">
-              {t('titleLine1')} {t('titleLine2')}{' '}
-              <span className="editorial-accent text-accent-on-cinema">{t('titleAccent')}</span>
+              <TextReveal>{`${t('titleLine1')} ${t('titleLine2')}`}</TextReveal>{' '}
+              <span className="editorial-accent text-accent-on-cinema"><TextReveal>{t('titleAccent')}</TextReveal></span>
             </h2>
             {/*
               Подзаголовок в ПОЛНУЮ силу, а не приглушённый.

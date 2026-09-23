@@ -25,6 +25,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { HeroVideo } from '@/components/home/hero-video';
 import { HeroParallaxFX } from '@/components/home/hero-parallax-fx';
 import { Counter } from '@/components/fx/counter';
+import { TextReveal } from '@/components/fx/text-reveal';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/config';
 import type { HomeContent } from '@/domain/content';
@@ -88,7 +89,7 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
         </p>
 
         <h1 style={heroEnterOrder('title')} className="text-display-hero mb-4 max-w-3xl text-content-on-cinema md:mb-6">
-          {t('titleLine1')}
+          <TextReveal>{t('titleLine1')}</TextReveal>
           <br />
           {/*
             Акцентный курсив — отдельный ключ перевода, а не HTML внутри
@@ -99,18 +100,18 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
             (см. `.hero-shine` в `globals.css`): главная страница встречает
             движением кадра, и заголовок отвечает ему тем же приёмом.
           */}
-          <em data-hero-shine className="hero-shine text-accent-on-cinema italic">{t('titleAccent')}</em>
+          <em data-hero-shine className="hero-shine text-accent-on-cinema italic"><TextReveal>{t('titleAccent')}</TextReveal></em>
         </h1>
 
         <p style={heroEnterOrder('subtitle')} className="text-body md:text-body-lg mb-8 max-w-lg text-content-on-cinema-muted md:mb-10">
-          {t('subtitle')}
+          <TextReveal>{t('subtitle')}</TextReveal>
         </p>
 
         <div style={heroEnterOrder('actions')} className="flex flex-wrap gap-4">
           <Button asChild size="lg" variant="accent">
             <Link href={routes.discover()}>{t('primaryCta')}</Link>
           </Button>
-          <Button asChild size="lg" variant="onCinema">
+          <Button asChild size="lg" variant="onCinema" className="liquid-glass">
             <Link href={routes.instructors()}>{t('secondaryCta')}</Link>
           </Button>
         </div>

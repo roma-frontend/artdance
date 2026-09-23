@@ -18,6 +18,7 @@
 
 import type { ReactNode } from 'react';
 
+import { TextReveal } from '@/components/fx/text-reveal';
 import { cn } from '@/lib/utils';
 
 interface SectionHeadingProps {
@@ -31,6 +32,7 @@ interface SectionHeadingProps {
   /** Тёмная кинематографичная секция: цвета контента меняются на светлые. */
   onCinema?: boolean;
   className?: string;
+  parallax?: boolean;
 }
 
 export function SectionHeading({
@@ -41,11 +43,13 @@ export function SectionHeading({
   align = 'left',
   onCinema = false,
   className,
+  parallax = false,
 }: SectionHeadingProps) {
   const Title = `h${level}` as 'h2' | 'h3' | 'h4';
 
   return (
     <header
+      data-parallax={parallax ? 'content' : undefined}
       className={cn(
         'mb-12 max-w-(--layout-content-max-width)',
         align === 'center' && 'mx-auto text-center',
@@ -64,7 +68,9 @@ export function SectionHeading({
         </p>
       )}
 
-      <Title className={cn('text-heading-2', onCinema && 'text-content-on-cinema')}>{title}</Title>
+      <Title data-parallax={parallax ? 'heading' : undefined} className={cn('text-heading-2', onCinema && 'text-content-on-cinema')}>
+        {typeof title === 'string' ? <TextReveal>{title}</TextReveal> : title}
+      </Title>
 
       {subtitle !== undefined && (
         <p

@@ -35,6 +35,7 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Media } from '@/components/ui/media';
+import { TextReveal } from '@/components/fx/text-reveal';
 import { routes } from '@/config';
 import { resolveMedia, type MediaRef } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
@@ -167,7 +168,7 @@ export function PageHero({
         )}
 
         <h1 className="text-heading-1 max-w-(--layout-content-max-width) text-content-on-cinema">
-          {title}
+          {typeof title === 'string' ? <TextReveal>{title}</TextReveal> : title}
         </h1>
 
         {subtitle !== undefined && (

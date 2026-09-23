@@ -102,7 +102,7 @@ export function HeroVideo({ video, poster, locale }: HeroVideoProps) {
   const posterProps = resolveMedia(poster, locale);
 
   return (
-    <div ref={containerRef} className="absolute inset-0 z-0 overflow-hidden">
+    <div ref={containerRef} data-hero-background="" className="absolute inset-0 z-0 overflow-hidden">
       {/*
         Постер лежит под кадром и остаётся видимым, пока браузер не отдал кадр
         клипа. Это же изображение — единственное содержимое экрана при экономии

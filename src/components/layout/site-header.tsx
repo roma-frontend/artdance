@@ -107,6 +107,7 @@ export function SiteHeader() {
               <Link
                 key={item.id}
                 href={item.href}
+                data-magnetic=""
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'nav-link text-label transition-colors duration-normal ease-brand',
@@ -165,7 +166,7 @@ export function SiteHeader() {
           })}
 
           <Button asChild size="sm" className="max-lg:hidden text-sm">
-            <Link href={headerCta.href}>{t(headerCta.labelKey)}</Link>
+            <Link data-magnetic="" href={headerCta.href}>{t(headerCta.labelKey)}</Link>
           </Button>
         </div>
       </div>
