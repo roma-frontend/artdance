@@ -26,6 +26,7 @@
     "media:check": "tsx scripts/optimize-media.ts --check",
     "video:encode": "tsx scripts/encode-video-loops.ts",
     "video:check": "tsx scripts/encode-video-loops.ts --check",
+    "video:generate:seedance": "tsx index.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
@@ -65,6 +66,7 @@
   },
   "dependencies": {
     "@date-fns/tz": "1.5.0",
+    "@higgsfield/client": "^0.2.6",
     "@hookform/resolvers": "5.9.1",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7.10.0",

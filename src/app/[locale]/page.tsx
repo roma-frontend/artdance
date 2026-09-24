@@ -30,6 +30,7 @@ import { CardTilt } from '@/components/fx/card-tilt';
 import { Reveal } from '@/components/fx/reveal';
 import { TextReveal } from '@/components/fx/text-reveal';
 import { StackShowcase } from '@/components/fx/stack-showcase';
+import { ScrollSeal } from '@/components/fx/scroll-seal';
 import { ClassCard } from '@/components/catalog/class-card';
 import { ClassCarousel } from '@/components/catalog/class-carousel';
 import { EventCard } from '@/components/catalog/event-card';
@@ -302,7 +303,12 @@ export default async function HomePage({ params }: PageProps) {
       </section>
 
       {/* ── FINAL CTA: последнее предложение перед подвалом ── */}
-      <section className="cinema-surface section-y text-center">
+      <section className="cinema-surface section-y relative text-center">
+        {/*
+          Scroll-driven rotation (перенесён с карточек — решение заказчика):
+          вращается декоративная печать, содержание не крутится никогда.
+        */}
+        <ScrollSeal />
         <Reveal variant="scale" className="page-container">
           <h2 className="text-heading-1 text-content-on-cinema"><TextReveal>{t('finalCta.title')}</TextReveal></h2>
           <p className="text-body-lg mt-3 text-content-on-cinema-muted">{t('finalCta.subtitle')}</p>

@@ -1660,7 +1660,6 @@ html:has(body[data-scroll-locked]) {
 }
 
 .hero-shine [data-text-reveal],
-.hero-shine [data-text-reveal] > [aria-hidden],
 .hero-shine [data-reveal-word] {
   background-image: inherit;
   background-size: inherit;
@@ -1715,6 +1714,15 @@ html:has(body[data-scroll-locked]) {
     mask: linear-gradient(var(--content-on-cinema) 0 0) content-box, linear-gradient(var(--content-on-cinema) 0 0);
     mask-composite: exclude;
   }
+}
+
+/*
+ * SCROLL SEAL — печать финального CTA, вращающаяся от прокрутки.
+ * Угол пишет сам компонент; здесь только цвет и толщина литер по кругу.
+ */
+.scroll-seal svg text {
+  font-family: var(--font-display, inherit);
+  font-weight: 600;
 }
 
 [data-stack-showcase] {

@@ -8,6 +8,10 @@
  * карточка либо не поднимается, либо не наклоняется, в зависимости от порядка
  * событий. Обёртка отвечает за поворот, карточка — за подъём, и они складываются.
  *
+ * Вращение от прокрутки убрано (решение заказчика): поворотом от скролла
+ * отвечает декоративная печать в финальном CTA (ScrollSeal), тексту карточки
+ * вращение мешает читать.
+ *
  * Включается только при точном указателе: без курсора наклон не воспроизводится
  * вообще, а слушатель `pointermove` на десятке карточек стоит кадров. При
  * `prefers-reduced-motion` эффекта нет.
@@ -23,7 +27,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 
 import { motion } from '@/design/motion';
 import { useCursorFollow } from '@/hooks/use-cursor-follow';
-import { useScrollAnimation } from '@/hooks/use-scroll-animation';
+import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { revealTransition } from '@/lib/animations/scroll-reveal';
 import { cn } from '@/lib/utils';
 
@@ -35,8 +39,8 @@ interface CardTiltProps {
 
 export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const { rotate, enabled, reducedMotion } = useScrollAnimation(ref);
   const cursor = useCursorFollow(ref);
+  const reducedMotion = usePrefersReducedMotion();
   const rotateX = useTransform(cursor.y, (value) => -value * motion.cardTilt.maxRotateDeg);
   const rotateY = useTransform(cursor.x, (value) => value * motion.cardTilt.maxRotateDeg);
   const x = useTransform(cursor.x, (value) => value * 6);
@@ -63,7 +67,7 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
     } else {
       controls.set({ opacity: 0, scale: 0.94 });
     }
-  }, [controls, inView, reducedMotion, index]);
+  }, [controls, inView, index, reducedMotion]);
 
   return (
     <animated.div
@@ -79,7 +83,6 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
         controls.set({ opacity: 1, scale: 1 });
       }}
       style={{
-        rotate: enabled ? rotate : 0,
         rotateX: cursor.enabled ? rotateX : 0,
         rotateY: cursor.enabled ? rotateY : 0,
         x: cursor.enabled ? x : 0,

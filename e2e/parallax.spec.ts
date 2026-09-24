@@ -52,28 +52,36 @@ test.describe('параллакс editorial-секции', () => {
     test.skip(!wide, 'На узком экране параллакс секции выключен намеренно');
 
     /*
-     * Селекторы вложены в обёртку секции: имена ролей те же, что у первого
-     * экрана, и без этого уточнения `[data-parallax="background"]` нашёл бы hero.
+     * Три слоя читаются ОДНИМ evaluate: между тремя отдельными вызовами
+     * проходит кадр rAF, transform успевает обновиться, и разности скоростей
+     * перемешиваются — именно так здесь появился флак «content 12.6 < heading
+     * 13.1» на ретрае, прошедшем через секунду после первого замера.
      */
-    const scope = '[data-slot="section-parallax"] ';
-    const background = `${scope}[data-parallax="background"]`;
-    const content = `${scope}[data-parallax="content"]`;
-    const headingLayer = `${scope}[data-parallax="heading"]`;
+    const readLayers = () =>
+      page.evaluate(() => {
+        const shift = (selector: string): number => {
+          const node = document.querySelector<HTMLElement>(selector);
+          if (!node) return Number.NaN;
+          return new DOMMatrixReadOnly(getComputedStyle(node).transform).m42;
+        };
+        /*
+         * Селекторы вложены в обёртку секции: имена ролей те же, что у первого
+         * экрана, и без этого уточнения `[data-parallax="background"]` нашёл бы hero.
+         */
+        const scope = '[data-slot="section-parallax"] ';
+        return {
+          background: shift(`${scope}[data-parallax="background"]`),
+          content: shift(`${scope}[data-parallax="content"]`),
+          heading: shift(`${scope}[data-parallax="heading"]`),
+        };
+      });
 
-    const before = {
-      background: await declaredTranslateY(page, background),
-      content: await declaredTranslateY(page, content),
-      heading: await declaredTranslateY(page, headingLayer),
-    };
+    const before = await readLayers();
 
     await page.evaluate(() => window.scrollBy({ top: 400 }));
-    await expect.poll(() => declaredTranslateY(page, background)).not.toBeCloseTo(before.background, 1);
+    await expect.poll(async () => (await readLayers()).background).not.toBeCloseTo(before.background, 1);
 
-    const after = {
-      background: await declaredTranslateY(page, background),
-      content: await declaredTranslateY(page, content),
-      heading: await declaredTranslateY(page, headingLayer),
-    };
+    const after = await readLayers();
 
     const moved = {
       background: Math.abs(after.background - before.background),

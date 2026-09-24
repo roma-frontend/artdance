@@ -104,7 +104,7 @@ test('Reduced motion при загрузке не скрывает слова и
   await expect(page.locator('[data-animation-card]').last()).toHaveCSS('opacity', '1');
 });
 
-test('Карточки увеличиваются при входе и поворачиваются от прокрутки', async ({ page }) => {
+test('Карточки появляются с масштабом и не вращаются от прокрутки', async ({ page }) => {
   await page.goto(HOME);
   const card = page.locator('[data-animation-card]').last();
   await expect(card).toHaveCSS('opacity', '0');
@@ -116,13 +116,47 @@ test('Карточки увеличиваются при входе и пово�
   await card.scrollIntoViewIfNeeded();
   await expect(card).toHaveCSS('opacity', '1');
   await expect.poll(async () => (await matrix()).scale).toBeCloseTo(1, 2);
-  if ((page.viewportSize()?.width ?? 0) >= 768) {
-    const before = (await matrix()).angle;
-    await page.evaluate(() => window.scrollBy({ top: 120, behavior: 'instant' }));
-    await expect.poll(async () => (await matrix()).angle).not.toBeCloseTo(before, 1);
-  } else {
-    expect((await matrix()).angle).toBe(0);
-  }
+  /*
+   * Вращение от прокрутки убрано с карточек (решение заказчика): текст должен
+   * стоять ровно. Теперь оно живёт на печати финального CTA (см. ScrollSeal).
+   */
+  expect((await matrix()).angle).toBe(0);
+  await page.evaluate(() => window.scrollBy({ top: 120, behavior: 'instant' }));
+  expect((await matrix()).angle).toBe(0);
+});
+
+test('Печать финального CTA вращается от прокрутки, а не от таймера', async ({ page }) => {
+  await page.goto(HOME);
+  const seal = page.locator('[data-slot="scroll-seal"]');
+  await expect(seal).toBeAttached();
+
+  const angle = () =>
+    seal.evaluate((node) => {
+      const transform = node.style.transform;
+      const match = /rotate\((-?[\d.]+)deg\)/.exec(transform);
+      return match ? Number.parseFloat(match[1]!) : 0;
+    });
+
+  /*
+   * Каждый угол ждётся через expect.poll: transform пишет rAF после события
+   * скролла, и чтение сразу после scrollTo ловит прошлое значение.
+   */
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect.poll(() => angle()).toBeCloseTo(0, 1);
+
+  await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight / 2, behavior: 'instant' }));
+  await expect.poll(() => angle()).not.toBeCloseTo(0, 1);
+  const half = await angle();
+
+  await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
+  await expect.poll(() => angle()).toBeCloseTo(45, 1);
+
+  /* Угол — функция высоты прокрутки: назад страница крутит печать обратно.
+   * Допуск полградуса: ленивый контент чуть меняет высоту страницы между
+   * проходами, и угловая разница от этого — доли градуса, не больше.
+   */
+  await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight / 2, behavior: 'instant' }));
+  await expect.poll(() => angle()).toBeCloseTo(half, 0);
 });
 
 test('Соревнования сохраняют два видео и исходные пропорции', async ({ page }) => {

@@ -337,7 +337,14 @@ export const limits = {
  * а не URL, чтобы лимит выживал рефакторинг роутов.
  */
 export const rateLimits = {
-  signIn: { requests: 8, windowSeconds: 300 },
+  /*
+   * Двадцать за пять минут, а не восемь: NAT-офис и e2e-прогон проходят вход
+   * с одного адреса, и восемь они выбирают сами собой. Против перебора адрес
+   * защищает не этот лимит, а блокировка после пяти неудач (security.login),
+   * которая считается по адресу — IP-лимит здесь страхует частоту, а не
+   * заменяет её.
+   */
+  signIn: { requests: 20, windowSeconds: 300 },
   signUp: { requests: 5, windowSeconds: 3_600 },
   passwordReset: { requests: 3, windowSeconds: 3_600 },
   otpRequest: { requests: 5, windowSeconds: 900 },

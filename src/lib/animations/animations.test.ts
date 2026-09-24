@@ -1,18 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import { cursorOffset, lerp } from './cursor-tracking';
-import { animationConfig, layerOffset, scrollRotation } from './parallax';
+import { animationConfig, layerOffset } from './parallax';
 import { revealTransition, splitWords } from './scroll-reveal';
 
 describe('Параметры анимации', () => {
-  it('сохраняет заданные скорости слоёв и ограничивает поворот', () => {
+  it('сохраняет заданные скорости слоёв и ход печати', () => {
     expect(animationConfig.duration).toEqual({ fast: 0.2, normal: 0.4, slow: 0.6 });
     expect(layerOffset(1, 'foreground')).toBe(-48);
     expect(layerOffset(1, 'midground')).toBe(-32);
     expect(layerOffset(1, 'background')).toBe(-16);
-    expect(scrollRotation(-1)).toBe(5);
-    expect(scrollRotation(0.5)).toBe(0);
-    expect(scrollRotation(2)).toBe(-5);
+    expect(animationConfig.sealRotation.maxDegrees).toBe(45);
   });
 
   it('не меняет текст и ограничивает задержку длинных заголовков', () => {

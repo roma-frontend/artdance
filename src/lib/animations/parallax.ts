@@ -5,11 +5,13 @@ export const animationConfig = {
     bounce: [0.68, -0.55, 0.265, 1.55],
   },
   parallax: { foreground: 1.2, midground: 0.8, background: 0.4 },
+  /**
+   * Вращение печати от прокрутки (ScrollSeal): не полуоборота на экран, а
+   * ленивый дрейф, читаемый только боковым зрением. Взад-наперёд при обратной
+   * прокрутке крутится обратно — это свойство скролл-драйвена, а не таймера.
+   */
+  sealRotation: { maxDegrees: 45 },
 } as const;
-
-export function scrollRotation(progress: number): number {
-  return 5 - Math.min(1, Math.max(0, progress)) * 10;
-}
 
 export function layerOffset(progress: number, layer: keyof typeof animationConfig.parallax): number {
   return -Math.min(1, Math.max(0, progress)) * 40 * animationConfig.parallax[layer];

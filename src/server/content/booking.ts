@@ -230,10 +230,13 @@ export function getInstructorBookingContent(
   const input = availabilityInputFor(slug, classItem.durationMinutes, now);
 
   /*
-   * Сетка дня — тот же расчёт без занятого времени. Без него занятые времена
-   * просто исчезали бы, и день выглядел бы менее рабочим, чем он есть.
+   * Сетка дня — тот же расчёт, но БЕЗ лид-тайма: без этого утренние слоты
+   * сегодняшнего рабочего дня исчезают из сетки целиком, и день выглядит менее
+   * рабочим, чем он есть. Слишком раннее для брони время остаётся в сетке
+   * недоступным: доступность берётся из полного расчёта (с лид-таймом и занятым
+   * временем), а сетка отвечает только за состав дня.
    */
-  const grid = computeFreeSlots({ ...input, busy: [], bufferMinutes: 0 });
+  const grid = computeFreeSlots({ ...input, minLeadMinutes: 0, busy: [], bufferMinutes: 0 });
   const free = new Set(computeFreeSlots(input).map((slot) => slot.start.getTime()));
 
   const days: BookingDay[] = groupSlotsByDay(grid, site.timeZone).map((day) => ({

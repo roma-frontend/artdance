@@ -201,9 +201,17 @@ export default async function ClassDetailPage({ params }: PageProps) {
             <section className="mb-12">
               <h2 className="text-heading-3 mb-4">{t('scheduleTitle')}</h2>
               <ul className="divide-y divide-border-default rounded-lg border border-border-default bg-surface-card">
-                {item.schedule.map((entry) => (
+                {item.schedule.map((entry, index) => (
                   <li
-                    key={`${entry.weekday}-${entry.startTime}`}
+                    /*
+                     * Индекс в ключе обязателен: расписание — еженедельные
+                     * проведения одного занятия, у всех тот же день и время
+                     * начала, и пара «день+время» дублирует ключ на каждой
+                     * строке после первой (предупреждение React в консоли).
+                     * Список серверный и не переставляется, так что индекс
+                     * здесь стабилен.
+                     */
+                    key={`${entry.weekday}-${entry.startTime}-${index}`}
                     className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"
                   >
                     <span className="text-body font-semibold text-content-primary">
