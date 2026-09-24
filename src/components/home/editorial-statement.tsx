@@ -41,6 +41,8 @@ export function EditorialStatement({ video, image, locale }: EditorialStatementP
     /*
      * Обёртка параллакса охватывает всю секцию: ход слоёв считается от её
      * положения в окне, а роли раздаются атрибутом `data-parallax`.
+     * Подъём занавеса делает сама обёртка (`data-curtain` внутри
+     * SectionParallax).
      */
     <SectionParallax>
       <section className="cinema-surface section-y-wide relative overflow-hidden text-center">

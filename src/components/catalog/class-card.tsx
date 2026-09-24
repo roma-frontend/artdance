@@ -125,28 +125,24 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
         </p>
 
         <div className="mt-auto">
-          <div className="flex items-center justify-between gap-3 border-t border-border-default pt-3">
-            <Price amount={item.price} unit="perClass" />
-            <SpotsLeft spots={item.spotsLeft} waitlistOpen={item.waitlistOpen} />
-          </div>
-
           {/*
-            CTA-полоса карточки. На десктопе прячется и проявляется при наведении
-            («показать, что внутри»), на touch и без hover — видна всегда: скрыть
-            на телефоне кнопку брони значит спрятать саму карточку. Отвечает за
-            это CSS, а не условие в JSX — состояние одно, поведение разное.
+            Подвал карточки: цена и «Записаться» в одном слоте, крестфейдом.
+            Высота карточки от hover не меняется — соседи по сетке не прыгают.
           */}
-          <div className="card-cta">
-            <div className="card-cta-row min-h-0 overflow-hidden">
-              <div className="flex items-center justify-between gap-3 border-t border-border-default pt-3">
-                <span className="text-label font-semibold text-content-accent">
-                  {t('common.actions.book')}
-                </span>
-                <ChevronRightIcon
-                  aria-hidden
-                  className="card-cta-chevron size-4 text-content-accent"
-                />
-              </div>
+          <div className="card-foot border-t border-border-default pt-3">
+            <div className="card-foot-line flex items-center justify-between gap-3">
+              <Price amount={item.price} unit="perClass" />
+              <SpotsLeft spots={item.spotsLeft} waitlistOpen={item.waitlistOpen} />
+            </div>
+
+            <div className="card-foot-line card-cta flex items-center justify-between gap-3" aria-hidden="true">
+              <span className="text-label font-semibold text-content-accent">
+                {t('common.actions.book')}
+              </span>
+              <ChevronRightIcon
+                aria-hidden
+                className="card-cta-chevron size-4 text-content-accent"
+              />
             </div>
           </div>
         </div>

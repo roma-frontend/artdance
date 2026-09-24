@@ -192,32 +192,34 @@ test.describe('InstructorCard', () => {
   });
 
   /*
-   * CTA-полоса появляется при наведении и показывает «что внутри» карточки.
+   * «Записаться» меняется с ценой крестфейдом в слоте постоянной высоты.
    *
-   * Проверяется именно РАСКРЫТИЕ (высота строки грида), а не только
-   * прозрачность: регресс, при котором полоса раскрывалась в нулевую высоту
-   * и «Book» не появлялся, выглядит в opacity-проверке зелёным.
+   * Проверяются обе стороны: полоса действительно видна при наведении И
+   * высота карточки не меняется — раньше раскрытие дёргало сетку, и соседи
+   * по строке прыгали. Высота меряется до, во время и после наведения.
    */
-  test('CTA-полоса раскрывается при наведении и уходит с курсором', async ({ page }) => {
-    test.skip((page.viewportSize()?.width ?? 0) < 768, 'Показ на touch: полоса видна всегда');
+  test('CTA меняется с ценой крестфейдом, высота карточки не прыгает', async ({ page }) => {
+    test.skip((page.viewportSize()?.width ?? 0) < 768, 'На touch цена видна всегда');
 
     const first = demoInstructors[0]!;
     const card = page
       .getByRole('link', { name: first.name, exact: true })
       .locator('xpath=ancestor::article');
     const cta = card.locator('.card-cta');
+    const foot = card.locator('.card-foot');
 
     await settleAndHover(card);
+    const heightBefore = await foot.evaluate((node) => node.getBoundingClientRect().height);
+    expect(heightBefore).toBeGreaterThan(20);
+
     await expect(cta).toHaveCSS('opacity', '1');
-    await expect
-      .poll(() => cta.evaluate((node) => node.getBoundingClientRect().height))
-      .toBeGreaterThan(20);
+    const heightHovered = await foot.evaluate((node) => node.getBoundingClientRect().height);
+    expect(heightHovered).toBeCloseTo(heightBefore, 0);
 
     await page.mouse.move(10, 10);
     await expect(cta).toHaveCSS('opacity', '0');
-    await expect
-      .poll(() => cta.evaluate((node) => node.getBoundingClientRect().height))
-      .toBeLessThan(2);
+    const heightAfter = await foot.evaluate((node) => node.getBoundingClientRect().height);
+    expect(heightAfter).toBeCloseTo(heightBefore, 0);
   });
 });
 

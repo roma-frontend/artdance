@@ -102,26 +102,24 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
         </ul>
 
         <div className="mt-auto">
-          <div className="flex items-center justify-between gap-3 border-t border-border-default pt-3">
-            <Price amount={item.pricePerHour} unit="perHour" emphasis="total" />
-            <RatingStars rating={item.ratingAverage} count={item.ratingCount} hideCount />
-          </div>
-
           {/*
-            CTA-полоса карточки. На десктопе прячется и проявляется при наведении,
-            на touch и без hover — видна всегда. См. комментарий в class-card.tsx.
+            Подвал карточки: цена с рейтингом и «Записаться» в одном слоте,
+            крестфейдом (см. class-card.tsx). Высота от hover не меняется.
           */}
-          <div className="card-cta mt-3">
-            <div className="card-cta-row min-h-0 overflow-hidden">
-              <div className="flex items-center justify-between gap-3 border-t border-border-default pt-3">
-                <span className="text-label font-semibold text-content-accent">
-                  {t('common.actions.book')}
-                </span>
-                <ChevronRightIcon
-                  aria-hidden
-                  className="card-cta-chevron size-4 text-content-accent"
-                />
-              </div>
+          <div className="card-foot border-t border-border-default pt-3">
+            <div className="card-foot-line flex items-center justify-between gap-3">
+              <Price amount={item.pricePerHour} unit="perHour" emphasis="total" />
+              <RatingStars rating={item.ratingAverage} count={item.ratingCount} hideCount />
+            </div>
+
+            <div className="card-foot-line card-cta flex items-center justify-between gap-3" aria-hidden="true">
+              <span className="text-label font-semibold text-content-accent">
+                {t('common.actions.book')}
+              </span>
+              <ChevronRightIcon
+                aria-hidden
+                className="card-cta-chevron size-4 text-content-accent"
+              />
             </div>
           </div>
         </div>

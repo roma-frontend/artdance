@@ -37,7 +37,12 @@ const REVEALED = 'data-revealed';
 
 let sharedObserver: IntersectionObserver | null = null;
 
-function getObserver(): IntersectionObserver {
+/**
+ * Общий наблюдатель появления. Экспортирован для эффектов, чей узел — обёртка
+ * секции (SectionParallax поднимает её занавесом): один наблюдатель на страницу,
+ * а не по одному на эффект.
+ */
+export function getObserver(): IntersectionObserver {
   sharedObserver ??= new IntersectionObserver(
     (entries, observer) => {
       for (const entry of entries) {

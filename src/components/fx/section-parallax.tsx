@@ -44,6 +44,36 @@ export function SectionParallax({ children, className }: SectionParallaxProps) {
   const reducedMotion = usePrefersReducedMotion();
   const wideEnough = useMediaQuery(`(min-width: ${motion.sectionParallax.minViewportWidth}px)`);
 
+  /*
+   * Подъём занавеса. Свой наблюдатель, а не общий reveal-овский: тот ждёт
+   * 15% видимой высоты, и для секции выше экрана эта доля недостижима —
+   * занавес не открылся бы никогда. Здесь порог нулевой: край секции коснулся
+   * экрана — занавес поехал. Отдельный наблюдатель на две секции страницы —
+   * не та цена, ради которой стоит ослаблять порог всем reveal-блокам.
+   */
+  useEffect(() => {
+    const node = rootRef.current;
+    if (!node) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      node.setAttribute('data-revealed', '');
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          entry.target.setAttribute('data-revealed', '');
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0 },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     const root = rootRef.current;
     if (!root || reducedMotion || !wideEnough) return;
@@ -119,7 +149,7 @@ export function SectionParallax({ children, className }: SectionParallaxProps) {
   }, [reducedMotion, scrollY, wideEnough]);
 
   return (
-    <div ref={rootRef} data-slot="section-parallax" className={cn(className)}>
+    <div ref={rootRef} data-slot="section-parallax" data-curtain="" className={cn(className)}>
       {children}
     </div>
   );

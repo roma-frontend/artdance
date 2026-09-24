@@ -119,4 +119,38 @@ test.describe('параллакс editorial-секции', () => {
     const background = '[data-slot="section-parallax"] [data-parallax="background"]';
     expect(await declaredTranslateY(page, background)).toBeCloseTo(0, 0);
   });
+
+  /*
+   * Подъём занавеса. Секция-заявление открывается снизу вверх при входе в
+   * экран — фирменный мотив бренда, продолженный в скролле. Проверяется
+   * клип-маска до и после: закрыта под границей экрана, открыта после
+   * входа. Без JS занавес не закрывается вовсе — разметка отдаёт секцию
+   * сразу открытой, атрибуты расставляет сервер, маску включает CSS.
+   */
+  test('editorial-секция поднимается занавесом при входе в экран', async ({ page }) => {
+    await page.goto(HOME);
+
+    const wrap = page.locator('[data-slot="section-parallax"][data-curtain]').first();
+    const clip = () =>
+      wrap.evaluate((node) => getComputedStyle(node).clipPath);
+
+    /*
+     * Скролл к самой секции, а не к первому h2: выше editorial стоят секции со
+     * своими заголовками, и на их фоне наблюдатель мог сработать раньше замера.
+     */
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    const before = await clip();
+
+    await wrap.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() => clip(), { timeout: 5_000 })
+      .not.toBe(before);
+
+    /* Открытый занавес не режет секцию. Poll мог поймать середину перехода —
+     * ждём конца анимации (reveal-duration 900ms) перед финальной проверкой.
+     * Chrome вычисляет открытую маску в сокращённой форме `inset(0px)`. */
+    await page.waitForTimeout(1_200);
+    const open = await clip();
+    expect(open === 'none' || /^inset\(0px( 0px){0,3}\)$/.test(open)).toBe(true);
+  });
 });

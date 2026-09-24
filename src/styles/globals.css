@@ -807,24 +807,30 @@
   }
 
   /*
-   * CTA-полоса карточек каталога (занятие, инструктор, зал).
+   * Подвал карточки каталога: цена и «Записаться» живут в ОДНОМ слоте грида
+   * и меняются крестфейдом.
    *
-   * По умолчанию (touch, no-hover, reduced-motion) — развёрнута и видима: это
-   * кнопка брони, и прятать её там, где наведения нет, значит прятать саму
-   * карточку. Схлопывание живёт в тройном условии — наведение есть, курсор
-   * точный, движение разрешено. Высота анимируется парой `grid-template-rows:
-   * 0fr → 1fr`: у `height: auto` перехода не существует, а ряд грида сжимается
-   * честно, вместе с отступом и линией. Отступ полосы стоит ВНУТРИ строки с
-   * `overflow: hidden` — иначе при схлопывании оставался бы его след.
+   * Прежняя версия схлопывала полосу по высоте — и это дёргало сетку: карточки
+   * одной строки растягиваются по самой высокой, раскрытие на одной карточке
+   * меняло высоту строки, и соседи прыгали. Слот постоянной высоты делает
+   * высоту карточки независимой от hover — прыгать нечему.
+   *
+   * По умолчанию видна цена: факт важнее призыва. «Записаться» проявляется
+   * при наведении или фокусе; там, где наведения нет (touch), цена видна
+   * всегда, а призыв лежит в том же слоте прозрачным и места не занимает —
+   * карточка целиком и есть ссылка на бронирование.
    */
-  .card-cta {
+  .card-foot {
     display: grid;
-    grid-template-rows: 1fr;
   }
 
-  .card-cta-row {
-    min-height: 0;
-    overflow: hidden;
+  .card-foot-line {
+    grid-area: 1 / 1;
+    transition: opacity var(--duration-normal) var(--ease-brand);
+  }
+
+  .card-cta {
+    opacity: 0;
   }
 
   .card-cta-chevron {
@@ -832,38 +838,19 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    @media (prefers-reduced-motion: no-preference) {
-      .card-cta {
-        transition:
-          grid-template-rows var(--duration-normal) var(--ease-brand),
-          opacity var(--duration-normal) var(--ease-brand);
-      }
+    .card-surface:hover .card-foot-line:not(.card-cta),
+    .card-surface:focus-within .card-foot-line:not(.card-cta) {
+      opacity: 0;
+    }
 
-      .card-surface:not(:focus-within) .card-cta {
-        grid-template-rows: 0fr;
-        opacity: 0;
-      }
+    .card-surface:hover .card-cta,
+    .card-surface:focus-within .card-cta {
+      opacity: 1;
+    }
 
-      /*
-       * Цена уходит сразу, полоса приходит с задержкой: одновременная смена
-       * обеих строк читается мерцанием, а не появлением.
-       */
-      /*
-       * ОБЯЗАТЕЛЬНО вернуть 1fr: без этого правила полоса раскрывалась
-       * только по прозрачности, а высота оставалась нулевой — по клику
-       * срабатывал переход по ссылке вместо появления нижней части.
-       */
-      .card-surface:hover .card-cta,
-      .card-surface:focus-within .card-cta {
-        grid-template-rows: 1fr;
-        opacity: 1;
-        transition-delay: var(--duration-fast);
-      }
-
-      .card-surface:hover .card-cta-chevron,
-      .card-surface:focus-within .card-cta-chevron {
-        translate: var(--space-2) 0;
-      }
+    .card-surface:hover .card-cta-chevron,
+    .card-surface:focus-within .card-cta-chevron {
+      translate: var(--space-2) 0;
     }
   }
 
@@ -1048,6 +1035,31 @@
     [data-slot='card-tilt'] {
       transition: none;
     }
+  }
+}
+
+/*
+ * CURTAIN LIFT — подъём занавеса на кинематографичных секциях.
+ *
+ * Фирменный мотив бренда (первый экран — «занавес»), продолженный в скролле:
+ * секция-заявление открывается снизу вверх, как театральный занавес, когда
+ * доезжает до экрана. Реализация на clip-path, а не на transform: секция
+ * занимает своё место в потоке с первого кадра (раскладка не прыгает, ленивая
+ * загрузка не сдвигается), и движется только маска открытия.
+ *
+ * Условия те же, что у reveal-системы: scripting + no-preference. Без JS или
+ * при reduced-motion занавес сразу поднят — контент доступен, движения нет.
+ * Состояние ставит тот же наблюдатель `Reveal` (data-revealed), отдельной
+ * подписки не нужно.
+ */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-curtain] {
+    clip-path: inset(0 0 100% 0);
+    transition: clip-path var(--reveal-duration) var(--reveal-easing);
+  }
+
+  [data-curtain][data-revealed] {
+    clip-path: inset(0 0 0 0);
   }
 }
 
