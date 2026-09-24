@@ -100,6 +100,17 @@ export function StyleTileGrid({ tiles, locale }: StyleTileGridProps) {
               <span className="tile-count text-caption mt-1 block text-content-on-cinema-muted">
                 {tCommon('counts.classes', { count: tile.classCount })}
               </span>
+
+              {/*
+                Cutaway-строка: призыв к действию, живущий в hover-состоянии
+                плитки. На touch и без hover наведения нет, и строка остаётся
+                видимой — скрыть на телефоне выход из плитки значило бы сделать
+                её тупиковой. Правила показа — в `.tile-cta` (globals.css).
+              */}
+              <span className="tile-cta text-caption mt-3 flex items-center gap-1.5 font-semibold text-accent-on-cinema">
+                {tCommon('actions.book')}
+                <ArrowUpRight className="size-3.5" aria-hidden />
+              </span>
             </span>
           </Link>
         </li>

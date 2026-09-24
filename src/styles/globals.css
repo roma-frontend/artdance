@@ -746,6 +746,27 @@
    * же причине, что у `.card-surface` (см. выше).
    */
   @media (hover: hover) and (pointer: fine) {
+    /*
+     * Cutaway-строка плитки направления: призыв «Записаться →» живёт в
+     * hover-состоянии и проявляется вслед за счётчиком (та же волна, что у
+     * `.tile-count`). Вне наведения прячется мягко — прозрачностью, без
+     * схлопывания высоты, чтобы подписи выше не прыгали.
+     */
+    .tile-cta {
+      opacity: 0;
+      translate: 0 var(--space-1);
+      transition:
+        opacity var(--duration-normal) var(--ease-brand),
+        translate var(--duration-normal) var(--ease-brand);
+      transition-delay: calc(2 * var(--duration-instant));
+    }
+
+    .group:hover .tile-cta,
+    .group:focus-visible .tile-cta {
+      opacity: 1;
+      translate: 0 0;
+    }
+
     .tile-count,
     .tile-arrow {
       opacity: 0;
@@ -827,8 +848,14 @@
        * Цена уходит сразу, полоса приходит с задержкой: одновременная смена
        * обеих строк читается мерцанием, а не появлением.
        */
+      /*
+       * ОБЯЗАТЕЛЬНО вернуть 1fr: без этого правила полоса раскрывалась
+       * только по прозрачности, а высота оставалась нулевой — по клику
+       * срабатывал переход по ссылке вместо появления нижней части.
+       */
       .card-surface:hover .card-cta,
       .card-surface:focus-within .card-cta {
+        grid-template-rows: 1fr;
         opacity: 1;
         transition-delay: var(--duration-fast);
       }

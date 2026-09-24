@@ -194,11 +194,11 @@ test.describe('InstructorCard', () => {
   /*
    * CTA-полоса появляется при наведении и показывает «что внутри» карточки.
    *
-   * Проверяется только поведение и видимость: схлопнутая полоса остаётся в
-   * DOM с opacity 0 — текст в ней невидим, но ни кнопка, ни ссылка там не
-   * живут, так что для интеракции скрытие безопасно.
+   * Проверяется именно РАСКРЫТИЕ (высота строки грида), а не только
+   * прозрачность: регресс, при котором полоса раскрывалась в нулевую высоту
+   * и «Book» не появлялся, выглядит в opacity-проверке зелёным.
    */
-  test('CTA-полоса проявляется при наведении и уходит с курсором', async ({ page }) => {
+  test('CTA-полоса раскрывается при наведении и уходит с курсором', async ({ page }) => {
     test.skip((page.viewportSize()?.width ?? 0) < 768, 'Показ на touch: полоса видна всегда');
 
     const first = demoInstructors[0]!;
@@ -209,9 +209,15 @@ test.describe('InstructorCard', () => {
 
     await settleAndHover(card);
     await expect(cta).toHaveCSS('opacity', '1');
+    await expect
+      .poll(() => cta.evaluate((node) => node.getBoundingClientRect().height))
+      .toBeGreaterThan(20);
 
     await page.mouse.move(10, 10);
     await expect(cta).toHaveCSS('opacity', '0');
+    await expect
+      .poll(() => cta.evaluate((node) => node.getBoundingClientRect().height))
+      .toBeLessThan(2);
   });
 });
 
