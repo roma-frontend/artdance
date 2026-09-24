@@ -94,7 +94,12 @@ test.describe('Бронирование', () => {
     await expect(page.getByRole('button', { name: new RegExp(`^${taken}`) })).toBeDisabled();
 
     const free = page.getByRole('button', { name: new RegExp(`^${demoSelectedSlot}`) });
-    await expect(free).toHaveAttribute('aria-pressed', 'true');
+    // Вечером время макета уже внутри лид-тайма — тогда выбран первый свободный слот дня.
+    const selected = (await free.count()) > 0 && (await free.isEnabled())
+      ? free
+      : page.getByRole('button', { name: /^\d{2}:\d{2}/, pressed: true });
+    await expect(selected).toHaveAttribute('aria-pressed', 'true');
+    await expect(selected).toBeEnabled();
 
     /* Сводка знает, что бронируется, и кнопка активна. */
     await expect(page.getByText(firstClass.title).first()).toBeVisible();

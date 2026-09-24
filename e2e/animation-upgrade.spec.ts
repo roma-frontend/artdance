@@ -146,17 +146,25 @@ test('Печать финального CTA вращается от прокру
 
   await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight / 2, behavior: 'instant' }));
   await expect.poll(() => angle()).not.toBeCloseTo(0, 1);
-  const half = await angle();
 
   await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
   await expect.poll(() => angle()).toBeCloseTo(45, 1);
 
-  /* Угол — функция высоты прокрутки: назад страница крутит печать обратно.
-   * Допуск полградуса: ленивый контент чуть меняет высоту страницы между
-   * проходами, и угловая разница от этого — доли градуса, не больше.
+  /*
+   * Угол — функция положения прокрутки: назад страница крутит печать обратно.
+   * Сравниваем с формулой на текущей высоте, а не с прошлым замером: ленивый
+   * контент меняет высоту страницы между проходами.
    */
   await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight / 2, behavior: 'instant' }));
-  await expect.poll(() => angle()).toBeCloseTo(half, 0);
+  const expectedAngle = () =>
+    page.evaluate(() => {
+      const travel = document.documentElement.scrollHeight - window.innerHeight;
+      return travel > 0 ? (window.scrollY / travel) * 45 : 0;
+    });
+  await expect
+    .poll(async () => Math.abs((await angle()) - (await expectedAngle())))
+    .toBeLessThan(0.5);
+  expect(await angle()).toBeGreaterThan(1);
 });
 
 /*
@@ -167,6 +175,7 @@ test('Печать финального CTA вращается от прокру
  * sticky и запас высоты не включаются, это проверяет reduced-motion-тест ниже.
  */
 test('Лента направлений едет вбок при вертикальном скролле', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) < 1024, 'Лента включается только от 1024px, ниже — обычная сетка');
   await page.goto(HOME);
   const rail = page.locator('[data-slot="style-rail"]');
   await expect(rail).toBeAttached();

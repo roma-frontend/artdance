@@ -44,7 +44,11 @@ export function ScrollSeal({ text = 'ARTDANCE · YEREVAN · ' }: { text?: string
     paint();
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule, { passive: true });
+    // Ленивые секции меняют высоту страницы без скролла — угол обязан пересчитаться.
+    const observer = new ResizeObserver(schedule);
+    observer.observe(document.body);
     return () => {
+      observer.disconnect();
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
       if (frame !== 0) window.cancelAnimationFrame(frame);
