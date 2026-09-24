@@ -786,6 +786,61 @@
   }
 
   /*
+   * CTA-полоса карточек каталога (занятие, инструктор, зал).
+   *
+   * По умолчанию (touch, no-hover, reduced-motion) — развёрнута и видима: это
+   * кнопка брони, и прятать её там, где наведения нет, значит прятать саму
+   * карточку. Схлопывание живёт в тройном условии — наведение есть, курсор
+   * точный, движение разрешено. Высота анимируется парой `grid-template-rows:
+   * 0fr → 1fr`: у `height: auto` перехода не существует, а ряд грида сжимается
+   * честно, вместе с отступом и линией. Отступ полосы стоит ВНУТРИ строки с
+   * `overflow: hidden` — иначе при схлопывании оставался бы его след.
+   */
+  .card-cta {
+    display: grid;
+    grid-template-rows: 1fr;
+  }
+
+  .card-cta-row {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .card-cta-chevron {
+    transition: translate var(--duration-normal) var(--ease-brand);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    @media (prefers-reduced-motion: no-preference) {
+      .card-cta {
+        transition:
+          grid-template-rows var(--duration-normal) var(--ease-brand),
+          opacity var(--duration-normal) var(--ease-brand);
+      }
+
+      .card-surface:not(:focus-within) .card-cta {
+        grid-template-rows: 0fr;
+        opacity: 0;
+      }
+
+      /*
+       * Цена уходит сразу, полоса приходит с задержкой: одновременная смена
+       * обеих строк читается мерцанием, а не появлением.
+       */
+      .card-surface:hover .card-cta,
+      .card-surface:focus-within .card-cta {
+        opacity: 1;
+        transition-delay: var(--duration-fast);
+      }
+
+      .card-surface:hover .card-cta-chevron,
+      .card-surface:focus-within .card-cta-chevron {
+        translate: var(--space-2) 0;
+      }
+    }
+  }
+
+  /*
    * Подчёркивание активной вкладки дока.
    *
    * Оно объявлено здесь, а не утилитами: 3px — это толщина, которой в шкале

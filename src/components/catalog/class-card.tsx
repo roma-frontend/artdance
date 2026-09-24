@@ -21,6 +21,7 @@
  * без входа: набор гостя живёт в браузере и переносится в аккаунт при входе.
  */
 
+import { ChevronRightIcon } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
@@ -123,9 +124,31 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
           {item.startTime}
         </p>
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-border-default pt-3">
-          <Price amount={item.price} unit="perClass" />
-          <SpotsLeft spots={item.spotsLeft} waitlistOpen={item.waitlistOpen} />
+        <div className="mt-auto">
+          <div className="flex items-center justify-between gap-3 border-t border-border-default pt-3">
+            <Price amount={item.price} unit="perClass" />
+            <SpotsLeft spots={item.spotsLeft} waitlistOpen={item.waitlistOpen} />
+          </div>
+
+          {/*
+            CTA-полоса карточки. На десктопе прячется и проявляется при наведении
+            («показать, что внутри»), на touch и без hover — видна всегда: скрыть
+            на телефоне кнопку брони значит спрятать саму карточку. Отвечает за
+            это CSS, а не условие в JSX — состояние одно, поведение разное.
+          */}
+          <div className="card-cta">
+            <div className="card-cta-row min-h-0 overflow-hidden">
+              <div className="flex items-center justify-between gap-3 border-t border-border-default pt-3">
+                <span className="text-label font-semibold text-content-accent">
+                  {t('common.actions.book')}
+                </span>
+                <ChevronRightIcon
+                  aria-hidden
+                  className="card-cta-chevron size-4 text-content-accent"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </article>

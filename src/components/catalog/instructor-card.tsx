@@ -12,7 +12,7 @@
  * Цена — «от», а не точная: ставка зависит от длительности и места занятия.
  */
 
-import { BadgeCheckIcon } from 'lucide-react';
+import { BadgeCheckIcon, ChevronRightIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Media } from '@/components/ui/media';
@@ -98,8 +98,28 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
           <span>{t('common.units.yearsExperience', { count: item.yearsExperience })}</span>
         </div>
 
-        <div className="mt-auto pt-4">
-          <Price amount={item.hourlyRateFrom} unit="perHour" from emphasis="total" />
+        <div className="mt-auto">
+          <div className="pt-4">
+            <Price amount={item.hourlyRateFrom} unit="perHour" from emphasis="total" />
+          </div>
+
+          {/*
+            CTA-полоса карточки. На десктопе прячется и проявляется при наведении,
+            на touch и без hover — видна всегда. См. комментарий в class-card.tsx.
+          */}
+          <div className="card-cta mt-3">
+            <div className="card-cta-row min-h-0 overflow-hidden">
+              <div className="flex items-center justify-between gap-3 border-t border-border-default pt-3">
+                <span className="text-label font-semibold text-content-accent">
+                  {t('common.actions.book')}
+                </span>
+                <ChevronRightIcon
+                  aria-hidden
+                  className="card-cta-chevron size-4 text-content-accent"
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </article>

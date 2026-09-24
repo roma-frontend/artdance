@@ -190,6 +190,29 @@ test.describe('InstructorCard', () => {
     await expect(card.getByText(en.common.labels.from, { exact: true })).toBeVisible();
     await expect(card.getByText(en.common.labels.perHour, { exact: true })).toBeVisible();
   });
+
+  /*
+   * CTA-полоса появляется при наведении и показывает «что внутри» карточки.
+   *
+   * Проверяется только поведение и видимость: схлопнутая полоса остаётся в
+   * DOM с opacity 0 — текст в ней невидим, но ни кнопка, ни ссылка там не
+   * живут, так что для интеракции скрытие безопасно.
+   */
+  test('CTA-полоса проявляется при наведении и уходит с курсором', async ({ page }) => {
+    test.skip((page.viewportSize()?.width ?? 0) < 768, 'Показ на touch: полоса видна всегда');
+
+    const first = demoInstructors[0]!;
+    const card = page
+      .getByRole('link', { name: first.name, exact: true })
+      .locator('xpath=ancestor::article');
+    const cta = card.locator('.card-cta');
+
+    await settleAndHover(card);
+    await expect(cta).toHaveCSS('opacity', '1');
+
+    await page.mouse.move(10, 10);
+    await expect(cta).toHaveCSS('opacity', '0');
+  });
 });
 
 test.describe('VenueCard', () => {
