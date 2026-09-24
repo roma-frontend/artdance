@@ -48,7 +48,7 @@ import {
 } from '@/domain/availability/compute';
 import type { InstructorCardItem } from '@/domain/content';
 import type { Money } from '@/domain/money';
-import { publicHolidaysBetween } from '@/domain/holidays';
+import { publicHolidaysBetween, startOfZonedDay } from '@/domain/holidays';
 import { formatClock, parseClock } from '@/lib/time/clock';
 import type { Interval } from '@/lib/time/interval';
 import { fromZonedParts, zonedParts } from '@/lib/time/schedule';
@@ -230,13 +230,23 @@ export function getInstructorBookingContent(
   const input = availabilityInputFor(slug, classItem.durationMinutes, now);
 
   /*
-   * Сетка дня — тот же расчёт, но БЕЗ лид-тайма: без этого утренние слоты
-   * сегодняшнего рабочего дня исчезают из сетки целиком, и день выглядит менее
-   * рабочим, чем он есть. Слишком раннее для брони время остаётся в сетке
-   * недоступным: доступность берётся из полного расчёта (с лид-таймом и занятым
-   * временем), а сетка отвечает только за состав дня.
+   * Сетка дня — тот же расчёт, но якорённый к НАЧАЛУ СУТОК и без лид-тайма:
+   * без этого утренние слоты сегодняшнего рабочего дня исчезают из сетки
+   * целиком — и до наступления лид-тайма (сейчас), и после (10:04 уже «позже
+   * 10:00»), и день выглядит менее рабочим, чем он есть. Слишком раннее для
+   * брони время остаётся в сетке недоступным: доступность берётся из полного
+   * расчёта (с лид-таймом и занятым временем), а сетка отвечает только за
+   * состав дня.
    */
-  const grid = computeFreeSlots({ ...input, minLeadMinutes: 0, busy: [], bufferMinutes: 0 });
+  const dayStart = startOfZonedDay(now, site.timeZone);
+  const grid = computeFreeSlots({
+    ...input,
+    now: dayStart,
+    range: { start: dayStart, end: input.range.end },
+    minLeadMinutes: 0,
+    busy: [],
+    bufferMinutes: 0,
+  });
   const free = new Set(computeFreeSlots(input).map((slot) => slot.start.getTime()));
 
   const days: BookingDay[] = groupSlotsByDay(grid, site.timeZone).map((day) => ({
