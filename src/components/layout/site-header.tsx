@@ -32,7 +32,6 @@ import { BrandMark } from '@/components/brand/brand-mark';
 import { navIcons } from '@/components/layout/nav-icons';
 import { useSearchOverlay } from '@/components/search/search-overlay';
 import { Button } from '@/components/ui/button';
-import { LinkPending } from '@/components/ui/link-pending';
 import {
   hasCinemaHero,
   headerCta,
@@ -121,7 +120,6 @@ export function SiteHeader() {
                 )}
               >
                 {t(item.labelKey)}
-                <LinkPending />
               </Link>
             );
           })}
