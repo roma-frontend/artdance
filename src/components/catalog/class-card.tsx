@@ -21,7 +21,7 @@
  * без входа: набор гостя живёт в браузере и переносится в аккаунт при входе.
  */
 
-import { ChevronRightIcon } from 'lucide-react';
+import { ChevronRightIcon, GraduationCapIcon } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
@@ -64,8 +64,27 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
           {...resolveMedia(item.image, locale)}
           preset="classCard"
           fallback="classCard"
-          imageClassName="media-zoom group-hover:scale-105"
+          imageClassName="card-media media-zoom group-hover:scale-105"
         />
+        {/* При наведении обложка сменяется портретом ведущего; имя уже есть текстом ниже. */}
+        {item.instructorImage && (
+          <div aria-hidden className="card-swap absolute inset-0">
+            <Media
+              {...resolveMedia(item.instructorImage, locale)}
+              alt=""
+              preset="classCard"
+              priority={false}
+              fill
+              className="size-full"
+              imageClassName="media-zoom group-hover:scale-105"
+            />
+            <span className="card-swap-caption liquid-glass text-caption absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-content-on-cinema">
+              <GraduationCapIcon aria-hidden className="size-3.5" />
+              {item.instructorName}
+            </span>
+          </div>
+        )}
+        <span aria-hidden data-cursor-light="" className="card-cursor-light" />
 
         {/* Приоритет у ограничения: заполненную группу не рекламируют. */}
         {soldOut ? (

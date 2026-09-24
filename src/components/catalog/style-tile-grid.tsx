@@ -59,7 +59,13 @@ export function StyleTileGrid({ tiles, locale }: StyleTileGridProps) {
   const tCommon = useTranslations('common');
 
   return (
-    <Reveal as="ul" variant="stagger" className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+    /*
+     * На широком экране лента живёт внутри StyleRail (pinned-секция, едет вбок
+     * от скролла): ширину колонок и трека задаёт CSS по `[data-rail-track]`,
+     * потому что резиновая сетка никогда не переполнила бы окно, и ехать было
+     * бы нечему. Вне ленты (телефон, планшет) — обычная сетка 2 колонки.
+     */
+    <Reveal as="ul" variant="stagger" className="grid grid-cols-2 gap-4">
       {tiles.map((tile) => (
         <li key={tile.style}>
           <Link
@@ -71,7 +77,7 @@ export function StyleTileGrid({ tiles, locale }: StyleTileGridProps) {
               preset="categoryCard"
               fill
               className="absolute inset-0 size-full"
-              imageClassName="media-zoom group-hover:scale-108 group-hover:brightness-65 group-hover:saturate-120"
+              imageClassName="style-tile-media media-zoom group-hover:scale-108 group-hover:brightness-65 group-hover:saturate-120"
             />
 
             {/* Затемнение снизу: без него белая подпись теряется на светлом кадре. */}

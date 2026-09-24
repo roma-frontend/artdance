@@ -172,6 +172,8 @@ export interface ClassCardItem {
   /** Бейдж «в тренде». Взаимоисключающий с «мест нет». */
   isTrending: boolean;
   image: MediaRef;
+  /** Портрет ведущего — кадр при наведении. Нет, если он уже стоит обложкой. */
+  instructorImage?: MediaRef;
 }
 
 export interface InstructorCardItem {
@@ -234,6 +236,8 @@ export interface ProductCardItem {
   /** Минимальный остаток по вариантам: определяет метку «осталось мало». */
   stock: number;
   image: MediaRef;
+  /** Второй кадр галереи — показывается при наведении. */
+  hoverImage?: MediaRef;
 }
 
 /**

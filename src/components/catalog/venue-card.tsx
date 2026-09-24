@@ -55,8 +55,25 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
           {...resolveMedia(item.image, locale)}
           preset="studioCard"
           fallback="studio"
-          imageClassName="media-zoom group-hover:scale-105"
+          imageClassName="card-media media-zoom group-hover:scale-105"
         />
+        <span aria-hidden data-cursor-light="" className="card-cursor-light" />
+
+        {/*
+          «Что внутри»: полное оснащение поверх кадра. Дубль списка ниже, поэтому
+          aria-hidden и не `<ul>`; где наведения нет, панель не рисуется вовсе.
+        */}
+        {item.amenities.length > 0 && (
+          <div
+            aria-hidden
+            className="card-inside liquid-glass absolute inset-x-3 bottom-3 rounded-md bg-surface-cinema/70 p-3 text-content-on-cinema"
+          >
+            <p className="text-eyebrow text-content-on-cinema-muted">{t('studio.amenitiesTitle')}</p>
+            <p className="text-caption mt-1">
+              {item.amenities.map((amenity) => t(venueAmenityLabelKey(amenity as never))).join(' · ')}
+            </p>
+          </div>
+        )}
 
         <FavoriteButton
           target="venue"

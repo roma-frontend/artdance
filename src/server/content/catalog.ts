@@ -177,6 +177,7 @@ export function toClassCard(item: DemoClass): ClassCardItem {
     waitlistOpen: booking.waitlistEnabled,
     isTrending: item.isTrending,
     image: mediaRef(item.coverAsset ?? item.asset),
+    instructorImage: mediaRef(instructorBySlug(item.instructorSlug).asset),
   };
 }
 

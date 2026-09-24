@@ -10,6 +10,7 @@
  * сливаются в один абзац, а связь «кто это сказал» теряется.
  */
 
+import { ScrollWords } from '@/components/fx/scroll-words';
 import { Media } from '@/components/ui/media';
 import { RatingStars } from '@/components/ui/rating-stars';
 import { reviews } from '@/config';
@@ -44,7 +45,9 @@ export function TestimonialCard({ item, locale, className }: TestimonialCardProp
         className="relative"
       />
 
-      <blockquote className="text-quote relative mt-4 text-content-primary">{item.body}</blockquote>
+      <blockquote className="text-quote relative mt-4 text-content-primary">
+        <ScrollWords>{item.body}</ScrollWords>
+      </blockquote>
 
       <figcaption className="relative mt-6 flex items-center gap-3">
         <Media

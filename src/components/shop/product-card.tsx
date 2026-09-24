@@ -56,6 +56,19 @@ export function ProductCard({ item, locale, className }: ProductCardProps) {
           fallback="product"
           imageClassName="media-zoom group-hover:scale-105"
         />
+        {item.hoverImage && (
+          <div aria-hidden className="card-swap absolute inset-0">
+            <Media
+              {...resolveMedia(item.hoverImage, locale)}
+              alt=""
+              preset="productCard"
+              priority={false}
+              fill
+              className="size-full"
+              imageClassName="media-zoom group-hover:scale-105"
+            />
+          </div>
+        )}
 
         {soldOut ? (
           <Badge variant="signal" className="absolute top-3 left-3">

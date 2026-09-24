@@ -29,6 +29,7 @@ import { TestimonialCard } from '@/components/home/testimonial-card';
 import { CardTilt } from '@/components/fx/card-tilt';
 import { Reveal } from '@/components/fx/reveal';
 import { TextReveal } from '@/components/fx/text-reveal';
+import { StyleRail } from '@/components/fx/style-rail';
 import { StackShowcase } from '@/components/fx/stack-showcase';
 import { ScrollSeal } from '@/components/fx/scroll-seal';
 import { ClassCard } from '@/components/catalog/class-card';
@@ -82,22 +83,26 @@ export default async function HomePage({ params }: PageProps) {
       {/* ── MARQUEE: направления берутся из домена, не из вёрстки ── */}
       <StyleMarquee />
 
-      {/* ── DISCOVER ── */}
-      <section className="section-y">
-        <div className="page-container">
-          <Reveal as="div" className="mb-12">
-            <SectionHeading
-              align="center"
-              eyebrow={t('discover.eyebrow')}
-              title={t('discover.title')}
-              subtitle={t('discover.subtitle', { styles: danceStyles.length })}
-              className="mb-0"
-            />
-          </Reveal>
+      {/* ── DISCOVER: на широком экране лента направлений едет вбок при скролле ── */}
+      <StyleRail>
+        <div>
+          <div className="page-container">
+            <Reveal as="div" className="mb-8">
+              <SectionHeading
+                align="center"
+                eyebrow={t('discover.eyebrow')}
+                title={t('discover.title')}
+                subtitle={t('discover.subtitle', { styles: danceStyles.length })}
+                className="mb-0"
+              />
+            </Reveal>
 
-          <StyleTileGrid tiles={content.styleTiles} locale={locale as Locale} />
+            <div data-rail-track="">
+              <StyleTileGrid tiles={content.styleTiles} locale={locale as Locale} />
+            </div>
+          </div>
         </div>
-      </section>
+      </StyleRail>
 
       {/* ── POPULAR: горизонтальная лента занятий ── */}
       <section className="section-y bg-surface-raised">

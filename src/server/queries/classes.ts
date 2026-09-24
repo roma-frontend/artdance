@@ -197,6 +197,8 @@ function toScheduleEntry(session: SessionRow): ScheduleEntry {
 export function toClassCard(row: ClassRow): ClassCardItem {
   const session = nextSession(row);
   const parts = session ? zonedParts(session.startsAt) : null;
+  const cover = firstMediaRef(row.media);
+  const portrait = firstMediaRef(row.instructor.media);
 
   return {
     slug: row.slug,
@@ -218,10 +220,11 @@ export function toClassCard(row: ClassRow): ClassCardItem {
     /** Лист ожидания включается флагом бизнес-правил, а не полем контента. */
     waitlistOpen: booking.waitlistEnabled,
     isTrending: row.isTrending,
-    image: firstMediaRef(row.media) ?? firstMediaRef(row.instructor.media) ?? {
+    image: cover ?? portrait ?? {
       key: '',
       alt: { hy: '', ru: '', en: '' },
     },
+    ...(cover && portrait ? { instructorImage: portrait } : {}),
   };
 }
 

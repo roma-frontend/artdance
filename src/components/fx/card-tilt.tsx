@@ -43,11 +43,54 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
   const reducedMotion = usePrefersReducedMotion();
   const rotateX = useTransform(cursor.y, (value) => -value * motion.cardTilt.maxRotateDeg);
   const rotateY = useTransform(cursor.x, (value) => value * motion.cardTilt.maxRotateDeg);
-  const x = useTransform(cursor.x, (value) => value * 6);
-  const y = useTransform(cursor.y, (value) => value * 6);
+  const x = useTransform(cursor.x, (value) => value * motion.cardTilt.pointerTravelPx);
+  const y = useTransform(cursor.y, (value) => value * motion.cardTilt.pointerTravelPx);
   const inView = useInView(ref, { once: true, amount: 0.1 });
   const controls = useAnimationControls();
   const revealed = useRef(false);
+
+  /*
+   * Даём внутреннему кадру независимое, чуть обратное движение. Внешняя
+   * обёртка следует за курсором, фото отстаёт на несколько пикселей — создаётся
+   * глубина, но ссылка под курсором не «убегает». CSS читает эти значения для
+   * смещения кадра и мягкого светового пятна без рендера React.
+   */
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+
+    // Пиксели, а не проценты: кадр стоит в карточке первым, и прожектор внутри него берёт те же координаты.
+    const size = { width: node.offsetWidth, height: node.offsetHeight };
+    const resize = new ResizeObserver(() => {
+      size.width = node.offsetWidth;
+      size.height = node.offsetHeight;
+    });
+    resize.observe(node);
+
+    const writeX = (value: number) => {
+      node.style.setProperty('--card-cursor-x', `${(value + 0.5) * size.width}px`);
+      node.style.setProperty('--card-media-x', `${value * -4}px`);
+    };
+    const writeY = (value: number) => {
+      node.style.setProperty('--card-cursor-y', `${(value + 0.5) * size.height}px`);
+      node.style.setProperty('--card-media-y', `${value * -4}px`);
+    };
+
+    writeX(cursor.x.get());
+    writeY(cursor.y.get());
+    const stopX = cursor.x.on('change', writeX);
+    const stopY = cursor.y.on('change', writeY);
+
+    return () => {
+      resize.disconnect();
+      stopX();
+      stopY();
+      node.style.removeProperty('--card-cursor-x');
+      node.style.removeProperty('--card-cursor-y');
+      node.style.removeProperty('--card-media-x');
+      node.style.removeProperty('--card-media-y');
+    };
+  }, [cursor.x, cursor.y]);
 
   useEffect(() => {
     if (reducedMotion) {
@@ -74,7 +117,8 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
       ref={ref}
       data-slot="card-tilt"
       data-animation-card=""
-      className={cn('h-full', className)}
+      data-cursor-depth={cursor.enabled ? '' : undefined}
+      className={cn('relative h-full', className)}
       initial={false}
       animate={controls}
       onFocusCapture={() => {

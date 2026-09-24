@@ -100,6 +100,7 @@ function isGiftCard(row: ProductRow): boolean {
 export function toProductCard(row: ProductRow): ProductCardItem {
   const prices = row.variants.map((variant) => variant.price);
   const minPrice = priceOf(row);
+  const secondFrame = galleryRefs(row.media)[1];
 
   return {
     slug: row.slug,
@@ -110,6 +111,7 @@ export function toProductCard(row: ProductRow): ProductCardItem {
     priceFrom: prices.some((price) => price !== minPrice) || isGiftCard(row),
     stock: totalStock(row),
     image: firstMediaRef(row.media) ?? { key: '', alt: { hy: '', ru: '', en: '' } },
+    ...(secondFrame ? { hoverImage: secondFrame } : {}),
   };
 }
 

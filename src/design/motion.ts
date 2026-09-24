@@ -140,6 +140,8 @@ export const pointerGlow = {
 export const cardTilt = {
   perspectivePx: 800,
   maxRotateDeg: 6,
+  /** Предел смещения кадра внутри карточки при ведении за курсором, px. */
+  pointerTravelPx: 8,
   liftPx: -4,
   scale: 1.01,
   /** На touch-устройствах наклона нет: без курсора он не воспроизводится. */

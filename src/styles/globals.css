@@ -1063,6 +1063,64 @@
   }
 }
 
+/*
+ * STYLE RAIL — горизонтальная лента направлений, сдвигаемая вертикальным
+ * скроллом (pinned section + horizontal rail).
+ *
+ * Механика: `data-rail="on"` ставит клиентский StyleRail только на широком
+ * экране без reduced-motion. Секция получает высоту-запас (1 + перепуск ленты)
+ * и sticky-внутренность; лента сдвигается на `--rail-progress`, который пишет
+ * компонент. Вне эффекта — обычная сетка: без запаса высоты sticky не
+ * включается, трансформация нулевая, разметка одна и та же.
+ *
+ * Сдвиг выражен в долях ПЕРЕПОЛНЯЕМОЙ ширины (max(0, 100% - 100vw)), поэтому
+ * число плиток и их ширина не влияют на формулу: край ленты всегда доезжает
+ * ровно до правой кромки окна при progress = 1.
+ */
+[data-slot='style-rail'][data-rail='on'] {
+  /*
+   * Прогресс горизонтального проезда, 0…1, и запас высоты в пикселях.
+   * Оба пишутся компонентом мимо React; дефолты объявлены здесь по той же
+   * конвенции, что и `--hero-parallax-*`. Запас считает JS: процент в
+   * `height` считается от высоты родителя, и CSS-формула «ширина ленты минус
+   * окно» в нём недостижима.
+   */
+  --rail-progress: 0;
+  --rail-overflow: 0px;
+  height: calc(100svh + var(--rail-overflow));
+}
+
+[data-slot='style-rail'][data-rail='on'] > * {
+  position: sticky;
+  top: 0;
+  display: flex;
+  min-height: 100svh;
+  align-items: center;
+  overflow: hidden;
+}
+
+[data-slot='style-rail'][data-rail='on'] [data-rail-track] {
+  /* Трек растянут на окно даже внутри page-container с ограниченной шириной. */
+  width: 100vw;
+  margin-inline: calc(50% - 50vw);
+  /* Прогресс сглаживается на rAF в StyleRail, лента едет строго влево. */
+  translate: calc(var(--rail-progress, 0) * var(--rail-overflow, 0px) * -1) 0;
+  will-change: translate;
+}
+
+/*
+ * В ленте первая и последняя плитки центрируются в окне. Ширина 21rem —
+ * компромисс между крупными фотографиями и обзором соседнего направления;
+ * мобильная сетка вне rail не меняется.
+ */
+[data-slot='style-rail'][data-rail='on'] [data-rail-track] ul {
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: 21rem;
+  width: max-content;
+  padding-inline: calc((100vw - 21rem) / 2);
+}
+
 @keyframes ken-burns {
   from {
     transform: scale(1);
@@ -1807,6 +1865,94 @@ html:has(body[data-scroll-locked]) {
     background: linear-gradient(135deg, var(--content-on-cinema), var(--border-on-cinema) 45%, transparent 65%, var(--content-on-cinema-muted));
     mask: linear-gradient(var(--content-on-cinema) 0 0) content-box, linear-gradient(var(--content-on-cinema) 0 0);
     mask-composite: exclude;
+  }
+}
+
+/*
+ * HOVER-СЛОИ КАРТОЧЕК: прожектор инструктора, смена кадра у занятия и товара,
+ * «что внутри» у площадки. Где наведения нет, слоёв нет вовсе — `display: none`
+ * заодно не даёт ленивому второму кадру скачаться на телефоне.
+ *
+ * Правила вне слоёв, после `.liquid-glass`: иначе её `position: relative`
+ * перебил бы утилиту `absolute` из слоя utilities.
+ */
+[data-slot='card-tilt'] {
+  --card-cursor-x: 50%;
+  --card-cursor-y: 50%;
+}
+
+.card-spotlight,
+.card-swap,
+.card-inside {
+  display: none;
+}
+
+.card-inside,
+.card-swap-caption {
+  position: absolute;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card-swap,
+  .card-inside {
+    display: block;
+    opacity: 0;
+    transition:
+      opacity var(--duration-slow) var(--ease-brand),
+      translate var(--duration-slow) var(--ease-brand);
+  }
+
+  .card-inside {
+    translate: 0 var(--space-3);
+  }
+
+  .card-swap-caption {
+    opacity: 0;
+    translate: 0 var(--space-2);
+    transition:
+      opacity var(--duration-normal) var(--ease-brand),
+      translate var(--duration-normal) var(--ease-brand);
+    transition-delay: var(--duration-fast);
+  }
+
+  .card-surface:hover .card-swap,
+  .card-surface:focus-within .card-swap,
+  .card-surface:hover .card-inside,
+  .card-surface:focus-within .card-inside,
+  .card-surface:hover .card-swap-caption,
+  .card-surface:focus-within .card-swap-caption {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* Смешение, а не backdrop-filter: маска поверх backdrop-filter в карточке с 3D-наклоном Chromium игнорирует. */
+  .card-spotlight {
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-color: var(--surface-cinema);
+    mix-blend-mode: saturation;
+    mask-image: radial-gradient(
+      circle 7rem at var(--card-cursor-x) var(--card-cursor-y),
+      transparent 55%,
+      black 100%
+    );
+    opacity: 0;
+    transition: opacity var(--duration-slow) var(--ease-brand);
+  }
+
+  .card-surface:hover .card-spotlight {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-inside,
+  .card-swap-caption {
+    translate: none;
   }
 }
 
