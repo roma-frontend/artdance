@@ -113,7 +113,7 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
               <Price amount={item.hourlyRateFrom} unit="perHour" from emphasis="total" />
             </div>
 
-            <div className="card-foot-line card-cta flex items-center justify-between gap-3 border-t border-border-default pt-3" aria-hidden="true">
+            <div className="card-foot-line card-cta flex items-center justify-between gap-3 border-t border-border-default pt-3 relative z-10" aria-hidden="true">
               <span className="text-label font-semibold text-content-accent">
                 {t('common.actions.book')}
               </span>

@@ -28,6 +28,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 
 import { motion } from '@/design/motion';
 import { usePathname, useRouter } from '@/i18n/routing';
+import { playTactileClick } from '@/lib/audio/tactile-click';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 
 type Phase = 'idle' | 'flight' | 'hold' | 'reveal';
@@ -113,6 +114,7 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
     }
 
     try {
+      playTactileClick();
       navigator.vibrate?.(18);
     } catch {
       // Браузер может запретить вибрацию без жеста — не важно.
