@@ -203,7 +203,7 @@ const en = {
     hero: {
       badge: "Yerevan's #1 Dance Platform",
       titleLine1: 'Move',
-      titleAccent: 'Different.',
+      titleAccent: 'Different',
       subtitle:
         "Discover classes, instructors, studios and everything you need to move. Armenia's premium dance marketplace.",
       primaryCta: 'Explore Classes',
@@ -288,6 +288,35 @@ const en = {
       subtitle: 'Your first class is on us.',
       primaryCta: 'Book a free trial',
       secondaryCta: 'View schedule',
+    },
+    manifesto: {
+      eyebrow: 'Manifesto',
+      text: 'Dance is not a timetable or a membership. It is the moment the music reaches your body and you stop thinking about how you look. We brought everything into one place so that moment happens more often.',
+    },
+    journey: {
+      eyebrow: 'How it works',
+      title: 'Four steps to the floor.',
+      subtitle: 'From first curiosity to first performance — on one platform.',
+      style: {
+        title: 'Pick a style',
+        body: 'Salsa, hip-hop, ballroom, contemporary — see how they look live and find the one that clicks.',
+        cta: 'All styles',
+      },
+      master: {
+        title: 'Find your teacher',
+        body: 'Verified profiles, real reviews and class footage. Choose someone you will want to come back to.',
+        cta: 'Instructors',
+      },
+      book: {
+        title: 'Book in two clicks',
+        body: 'Group class, private lesson or a studio by the hour — schedule and payment in one place.',
+        cta: 'Schedule',
+      },
+      stage: {
+        title: 'Take the floor',
+        body: 'Socials, battles and WDSF-calendar competitions — dance does not end in the studio.',
+        cta: 'Competitions',
+      },
     },
   },
 

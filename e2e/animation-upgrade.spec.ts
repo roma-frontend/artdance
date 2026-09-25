@@ -18,27 +18,32 @@ test('Слова видимы, заголовок доступен, перепо
   expect(errors).toEqual([]);
 });
 
-test('Параллакс имеет три скорости и выключается на телефоне', async ({ page }) => {
+/**
+ * Глубина hero при прокрутке (25.09.2026): дальние планы отстают от прокрутки,
+ * передний обгоняет. Работает на всех ширинах — на узком экране ход вдвое
+ * меньше (`heroDepth.narrowFactor`), порядок планов тот же.
+ */
+test('Слои hero уходят с разной скоростью: кадр → слово → текст, свет обгоняет', async ({ page }) => {
   await page.goto(HOME);
   const background = page.locator('[data-hero-background]');
   await expect(background).toBeVisible();
   await page.evaluate(() => window.scrollTo({ top: 250, behavior: 'instant' }));
-  if ((page.viewportSize()?.width ?? 0) < 768) {
-    await expect(background).toHaveCSS('transform', 'none');
-    await expect(page.locator('.hero-content')).toHaveCSS('translate', 'none');
-    return;
-  }
-  await expect.poll(() => background.evaluate((node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42)).toBeLessThan(0);
+  await expect.poll(() => background.evaluate((node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42)).toBeGreaterThan(0);
   const offsets = await page.evaluate(() => {
     const style = (selector: string) => getComputedStyle(document.querySelector(selector)!);
+    const translateY = (selector: string) => Number.parseFloat(style(selector).translate.split(' ')[1] ?? '0');
     return {
       back: new DOMMatrixReadOnly(style('[data-hero-background]').transform).m42,
-      middle: Number.parseFloat(style('.hero-content').translate.split(' ')[1]!),
+      word: translateY('[data-hero-depth="word"]'),
+      middle: translateY('.hero-content'),
       front: new DOMMatrixReadOnly(style('.hero-light-sweep').transform).m42,
     };
   });
-  expect(offsets.middle / offsets.back).toBeCloseTo(2, 1);
-  expect(offsets.front / offsets.back).toBeCloseTo(3, 1);
+  expect(offsets.back).toBeGreaterThan(offsets.word);
+  expect(offsets.word).toBeGreaterThan(offsets.middle);
+  expect(offsets.middle).toBeGreaterThan(0);
+  expect(offsets.front).toBeLessThan(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
 test('Карточка появляется, реагирует на курсор и сохраняет клавиатурный фокус', async ({ page }) => {

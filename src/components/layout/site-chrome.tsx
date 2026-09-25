@@ -29,7 +29,9 @@
 import type { ReactNode } from 'react';
 
 import { Magnetic } from '@/components/fx/magnetic';
+import { OrbitCursor } from '@/components/fx/orbit-cursor';
 import { PointerGlow } from '@/components/fx/pointer-glow';
+import { PortalTransitionProvider } from '@/components/fx/portal-transition';
 import { ScrollProgress } from '@/components/fx/scroll-progress';
 import { MobileDock } from '@/components/layout/mobile-dock';
 import { SiteHeader } from '@/components/layout/site-header';
@@ -42,14 +44,15 @@ export function SiteChrome({ children }: { children: ReactNode }) {
   const isAdmin = isAdminPath(usePathname());
 
   return (
-    <>
+    <PortalTransitionProvider>
       {!isAdmin && <ScrollProgress />}
       {!isAdmin && <PointerGlow />}
+      {!isAdmin && <OrbitCursor />}
       {!isAdmin && <Magnetic />}
       {!isAdmin && <SiteHeader />}
       {children}
       {!isAdmin && <MobileDock />}
       <ThemeToggle />
-    </>
+    </PortalTransitionProvider>
   );
 }

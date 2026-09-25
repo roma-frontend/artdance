@@ -39,6 +39,7 @@ export const tokens = {
   layout: primitives.layout,
   radius: primitives.radius,
   borderWidth: primitives.borderWidth,
+  blur: primitives.blur,
   easing: primitives.easing,
   duration: primitives.duration,
   zIndex: primitives.zIndex,

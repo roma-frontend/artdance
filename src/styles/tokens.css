@@ -86,6 +86,7 @@
   --border-width-hairline: 1px;
   --border-width-thin: 1.5px;
   --border-width-thick: 2px;
+  --blur-hairline: 1px;
   --ease-brand: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-entrance: cubic-bezier(0, 0, 0.2, 1);
@@ -148,8 +149,8 @@
   --scroll-progress-transition: 150ms;
   --pointer-glow-size: 300px;
   --pointer-glow-fade: 400ms;
-  --card-tilt-perspective: 800px;
-  --card-tilt-rotate: 6deg;
+  --card-tilt-perspective: 900px;
+  --card-tilt-rotate: 9deg;
   --card-tilt-lift: -4px;
   --card-tilt-scale: 1.01;
   --hero-scrim: 0.5;

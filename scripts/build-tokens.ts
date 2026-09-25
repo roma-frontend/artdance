@@ -67,6 +67,7 @@ function buildScaleBlock(): string {
   flatten('layout', tokens.layout, entries);
   flatten('radius', tokens.radius, entries);
   flatten('border-width', tokens.borderWidth, entries);
+  flatten('blur', tokens.blur, entries);
   flatten('ease', tokens.easing, entries);
   flatten('duration', tokens.duration, entries);
   flatten('z', tokens.zIndex, entries);

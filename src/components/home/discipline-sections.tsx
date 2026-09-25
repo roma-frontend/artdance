@@ -71,6 +71,7 @@ export function DisciplineSections({ locale }: DisciplineSectionsProps) {
           {groups.map((group) => (
             <div
               key={group.title}
+              data-aperture-card=""
               className="rounded-xl border border-border-default bg-surface-card p-8"
             >
               <h3 className="text-card-title">{group.title}</h3>

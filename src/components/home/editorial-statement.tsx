@@ -73,6 +73,9 @@ export function EditorialStatement({ video, image, locale }: EditorialStatementP
           style={{ background: 'var(--scrim-editorial-copy)' }}
         />
 
+        {/* Кинетическая световая волна под текстом */}
+        <div aria-hidden className="editorial-light-wave" />
+
         {/* Содержимое идёт втрое медленнее кадра, заголовок — ещё медленнее. */}
         <div data-parallax="content" className="relative">
           <Reveal variant="scale" className="page-container">

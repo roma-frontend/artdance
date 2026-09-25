@@ -14,6 +14,7 @@
 
 import { useFormatter, useTranslations } from 'next-intl';
 
+import { PortalLink } from '@/components/fx/portal-link';
 import { Badge } from '@/components/ui/badge';
 import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
@@ -22,7 +23,6 @@ import { routes } from '@/config';
 import { resolveMedia, type EventCardItem } from '@/domain/content';
 import { eventTypeLabelKey } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
-import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
 interface EventCardProps {
@@ -39,6 +39,7 @@ export function EventCard({ item, locale, className }: EventCardProps) {
 
   return (
     <article
+      data-portal-card
       className={cn(
         'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
@@ -47,7 +48,7 @@ export function EventCard({ item, locale, className }: EventCardProps) {
         className,
       )}
     >
-      <div className="relative">
+      <div data-portal-media className="relative">
         <Media
           {...resolveMedia(item.image, locale)}
           preset="studioCard"
@@ -78,12 +79,14 @@ export function EventCard({ item, locale, className }: EventCardProps) {
         </Badge>
 
         <h3 className="text-card-title mt-3">
-          <Link
+          <PortalLink
             href={routes.event(item.slug)}
+            // Растянутая ссылка накрывает карточку: подпись кольца-курсора видна над всей ней.
+            data-cursor-label={t('common.actions.explore')}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
             {item.title}
-          </Link>
+          </PortalLink>
         </h3>
 
         <p className="text-body-sm mt-1.5 text-content-secondary">

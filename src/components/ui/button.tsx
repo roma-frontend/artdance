@@ -18,28 +18,32 @@ const buttonVariants = cva(
     'inline-flex items-center justify-center gap-2 whitespace-nowrap',
     'font-semibold uppercase tracking-wide',
     'rounded-full border border-transparent',
-    'transition-all duration-300 ease-brand',
+    'transition-all duration-300 ease-brand active:scale-[0.97] active:duration-75',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
     'disabled:pointer-events-none disabled:opacity-50',
   ],
   {
     variants: {
       variant: {
-        accent: 'bg-accent text-content-on-accent hover:bg-accent-hover hover:-translate-y-px shadow-md',
-        outline: 'border-border-default text-content-primary hover:border-accent hover:text-content-accent',
-        ghost: 'border-content-accent text-content-accent hover:bg-accent hover:text-content-on-accent',
-        contrast: 'bg-surface-card text-content-primary hover:-translate-y-px shadow-md',
+        accent:
+          'bg-accent text-content-on-accent hover:bg-accent-hover hover:-translate-y-px hover:shadow-lg hover:shadow-accent/25 active:translate-y-0 active:shadow-sm shadow-md',
+        outline:
+          'border-border-default text-content-primary hover:border-accent hover:text-content-accent hover:bg-accent-soft/30 active:scale-[0.98]',
+        ghost:
+          'border-content-accent text-content-accent hover:bg-accent hover:text-content-on-accent active:scale-[0.98]',
+        contrast:
+          'bg-surface-card text-content-primary hover:-translate-y-px hover:shadow-lg active:translate-y-0 shadow-md',
         onCinema:
-          'border-border-on-cinema text-content-on-cinema hover:bg-content-on-cinema hover:text-content-inverse',
+          'border-border-on-cinema text-content-on-cinema hover:bg-content-on-cinema hover:text-content-inverse hover:-translate-y-px active:translate-y-0',
         /**
          * Псевдоним `accent` для компонентов shadcn/ui: их `alert-dialog` и
          * `calendar` передают `variant="default"`. Отдельного вида кнопки в
          * дизайн-системе нет — брендовое действие одно.
          */
         default:
-          'bg-accent text-content-on-accent hover:bg-accent-hover hover:-translate-y-px shadow-md',
+          'bg-accent text-content-on-accent hover:bg-accent-hover hover:-translate-y-px hover:shadow-lg hover:shadow-accent/25 active:translate-y-0 shadow-md',
         /** Разрушающее действие: удаление, отмена брони, возврат. */
-        destructive: 'bg-danger text-content-on-accent hover:opacity-90 shadow-md',
+        destructive: 'bg-danger text-content-on-accent hover:opacity-90 shadow-md active:scale-[0.98]',
       },
       size: {
         sm: 'px-4 py-2 text-xs',

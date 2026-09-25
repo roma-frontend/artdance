@@ -11,31 +11,32 @@ for (const width of [390, 768, 1440]) {
     const masks = await glass.evaluate((node) => getComputedStyle(node, '::before').maskComposite.split(',').map((value) => value.trim()));
     expect(masks.length).toBeGreaterThan(0);
     expect(masks.every((value) => value === 'exclude')).toBe(true);
-    const panels = page.locator('[data-stack-showcase] > *');
+    const panels = page.locator('[data-aperture] > *');
     await expect(panels).toHaveCount(3);
-    if (width >= 768) {
-      await expect(panels.first()).toHaveCSS('position', 'sticky');
-      await panels.nth(1).evaluate((node) => window.scrollTo({ top: node.getBoundingClientRect().top + window.scrollY - 250, behavior: 'instant' }));
-      await expect.poll(async () => {
-        const first = await panels.first().boundingBox();
-        const second = await panels.nth(1).boundingBox();
-        return first && second ? first.y + first.height - second.y : 0;
-      }).toBeGreaterThan(50);
-      const topmost = await panels.nth(1).evaluate((node) => {
-        const rect = node.getBoundingClientRect();
-        return node.contains(document.elementFromPoint(rect.left + rect.width / 2, rect.top + 20));
-      });
-      expect(topmost).toBe(true);
-    } else {
+    const openOf = (index: number) =>
+      panels.nth(index).evaluate((node) => Number(getComputedStyle(node).getPropertyValue('--aperture-open')));
+    if (width >= 1024) {
+      await expect(page.locator('[data-aperture]')).toHaveAttribute('data-aperture', 'on');
       await expect(panels.first()).toHaveCSS('position', 'relative');
+      // Панель у нижней кромки — экран ещё закрыт, маска с полями.
+      await panels.first().evaluate((node) => window.scrollTo({ top: node.getBoundingClientRect().top + window.scrollY - window.innerHeight + 50, behavior: 'instant' }));
+      await expect.poll(() => openOf(0)).toBeLessThan(0.1);
+      await expect(panels.first()).not.toHaveCSS('clip-path', 'none');
+      // Поднялась к верху — раскрыта на весь кадр.
+      await panels.first().evaluate((node) => window.scrollTo({ top: node.getBoundingClientRect().top + window.scrollY, behavior: 'instant' }));
+      await expect.poll(() => openOf(0)).toBe(1);
+      // Фокус внутри закрытой панели раскрывает её целиком.
+      await panels.nth(2).evaluate((node) => window.scrollTo({ top: node.getBoundingClientRect().top + window.scrollY - window.innerHeight + 50, behavior: 'instant' }));
+      const link = panels.nth(2).locator('a').first();
+      await link.focus();
+      await expect(link).toBeFocused();
+      await expect.poll(() => openOf(2)).toBe(1);
+    } else {
+      await expect(page.locator('[data-aperture]')).toHaveAttribute('data-aperture', 'off');
     }
-    const link = panels.first().locator('a').first();
-    await link.focus();
-    await expect(link).toBeFocused();
-    await expect(panels.first()).toHaveCSS('position', 'relative');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect(word).toHaveCSS('filter', 'none');
-    await expect(panels.first()).toHaveCSS('position', 'relative');
+    await expect(page.locator('[data-aperture]')).toHaveAttribute('data-aperture', 'off');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   });
 }

@@ -24,6 +24,7 @@
 import { ChevronRightIcon, GraduationCapIcon } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
+import { PortalLink } from '@/components/fx/portal-link';
 import { Badge } from '@/components/ui/badge';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Media } from '@/components/ui/media';
@@ -33,7 +34,6 @@ import { routes } from '@/config';
 import { resolveMedia, type ClassCardItem } from '@/domain/content';
 import { danceStyleLabelKey, skillLevelLabelKey } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
-import { Link } from '@/i18n/routing';
 import { dateForWeekday } from '@/lib/format/weekday';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +51,7 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
 
   return (
     <article
+      data-portal-card
       className={cn(
         'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
@@ -59,7 +60,7 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
         className,
       )}
     >
-      <div className="relative">
+      <div data-portal-media className="relative">
         <Media
           {...resolveMedia(item.image, locale)}
           preset="classCard"
@@ -127,12 +128,14 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
             только название занятия. `focus-visible` виден на всей карточке через
             `focus-within` выше.
           */}
-          <Link
+          <PortalLink
             href={routes.class(item.slug)}
+            // Растянутая ссылка накрывает карточку: подпись кольца-курсора видна над всей ней.
+            data-cursor-label={t('common.actions.explore')}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
             {item.title}
-          </Link>
+          </PortalLink>
         </h3>
 
         <p className="text-body-sm mt-1 text-content-secondary">

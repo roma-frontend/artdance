@@ -111,6 +111,9 @@
   --radius-xl: var(--radius-xl);
   --radius-full: var(--radius-full);
 
+  /* Шкала размытия: `backdrop-blur-hairline`. */
+  --blur-hairline: var(--blur-hairline);
+
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
@@ -654,7 +657,42 @@
     text-shadow: 0 0 var(--space-6) var(--accent-glow);
   }
 
+  /* Кинетическая световая волна для блока цитаты EditorialStatement */
+  .editorial-light-wave {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 65% 55% at 50% 50%,
+      rgba(212, 175, 55, 0.12),
+      rgba(155, 27, 48, 0.08) 45%,
+      transparent 75%
+    );
+    opacity: 0.65;
+    mix-blend-mode: screen;
+    animation: editorial-pulse 8s ease-in-out infinite alternate;
+  }
+
+  @keyframes editorial-pulse {
+    0% {
+      transform: scale(0.92) translate3d(-3%, -2%, 0);
+      opacity: 0.45;
+    }
+    50% {
+      transform: scale(1.08) translate3d(2%, 3%, 0);
+      opacity: 0.75;
+    }
+    100% {
+      transform: scale(0.96) translate3d(-1%, 1%, 0);
+      opacity: 0.55;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .editorial-light-wave {
+      animation: none;
+      opacity: 0.4;
+    }
     .editorial-backdrop {
       animation: none;
     }
@@ -1097,6 +1135,12 @@
   min-height: 100svh;
   align-items: center;
   overflow: hidden;
+  padding-block: var(--space-6);
+}
+
+[data-slot='style-rail'][data-rail='on'] [data-rail-seal] {
+  transform: rotate(calc(var(--rail-progress, 0) * 360deg));
+  will-change: transform;
 }
 
 [data-slot='style-rail'][data-rail='on'] [data-rail-track] {
@@ -1109,16 +1153,19 @@
 }
 
 /*
- * В ленте первая и последняя плитки центрируются в окне. Ширина 21rem —
- * компромисс между крупными фотографиями и обзором соседнего направления;
- * мобильная сетка вне rail не меняется.
+ * В ленте первая и последняя плитки центрируются в окне.
+ * Адаптивная высота и пропорции плиток предотвращают визуальную пустоту.
  */
 [data-slot='style-rail'][data-rail='on'] [data-rail-track] ul {
   grid-template-columns: none;
   grid-auto-flow: column;
-  grid-auto-columns: 21rem;
+  grid-auto-columns: clamp(21rem, 25vw, 26rem);
   width: max-content;
-  padding-inline: calc((100vw - 21rem) / 2);
+  padding-inline: calc((100vw - clamp(21rem, 25vw, 26rem)) / 2);
+}
+
+[data-slot='style-rail'][data-rail='on'] [data-rail-track] a {
+  min-height: clamp(25rem, 52svh, 32rem);
 }
 
 @keyframes ken-burns {
@@ -1518,8 +1565,6 @@ html:has(body[data-scroll-locked]) {
   /* Параллакс: до ±0.18 единиц кадра, сглажено lerp-ом в HeroParallaxFX. */
   --hero-parallax-x: 0;
   --hero-parallax-y: 0;
-  /* Прогресс ухода секции при прокрутке, 0…1. */
-  --hero-exit-progress: 0;
   /* Ступень входа контента (заполняется инлайн-стилем на детях). */
   --hero-enter-index: 0;
   --hero-enter-stagger: 120ms;
@@ -1527,9 +1572,10 @@ html:has(body[data-scroll-locked]) {
 
 .hero-viewport .hero-video-main {
   /*
-   * Кадр уходит от курсора на 18px — максимальный сдвиг при ±0.5 края. Финал —
-   * обратный знак параллаксу текста, плюс рост кадра при прокрутке (до +8%):
-   * страница уходит «вглубь», а не обрывается швом секций.
+   * Кадр уходит от курсора на 18px — максимальный сдвиг при ±0.5 края,
+   * обратный знак параллаксу текста. Ход и рост при прокрутке пишет JS на
+   * контейнер `[data-hero-background]`: два transform на разных элементах
+   * складываются, а не перебивают друг друга.
    *
    * `translate3d` и `scale` — композитные свойства: эффект не вызывает
    * пересчёт раскладки и держит 60 fps на слабых машинах.
@@ -1538,19 +1584,69 @@ html:has(body[data-scroll-locked]) {
       calc(var(--hero-parallax-x) * -36px),
       calc(var(--hero-parallax-y) * -36px),
       0
-    )
-    scale(calc(1 + var(--hero-exit-progress) * 0.08));
+    );
   will-change: transform;
 }
 
+/*
+ * Курсор — через `transform`, прокрутка — через отдельное свойство `translate`
+ * (пишет JS вместе с `opacity`). Свойства независимы и складываются.
+ */
 .hero-viewport .hero-content {
+  transform: translate3d(calc(var(--hero-parallax-x) * 20px), calc(var(--hero-parallax-y) * 14px), 0);
+  will-change: transform, translate, opacity;
+}
+
+/*
+ * Плашка показателей (HUD) имеет собственный независимый микро-параллакс:
+ * она мягко плывёт в противофазе к основному тексту и слову ARTDANCE,
+ * подчеркивая глубину сцены при движении курсора.
+ */
+.hero-stats-hud {
   transform: translate3d(
-    calc(var(--hero-parallax-x) * 20px),
-    calc(var(--hero-parallax-y) * 14px - var(--hero-exit-progress) * 40px),
+    calc(var(--hero-parallax-x) * 8px),
+    calc(var(--hero-parallax-y) * 6px),
     0
   );
-  opacity: calc(1 - var(--hero-exit-progress) * 0.7);
-  will-change: transform, opacity;
+  will-change: transform;
+  transition: box-shadow var(--duration-normal) var(--ease-brand);
+}
+
+.hero-stats-hud:hover {
+  box-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.55),
+    0 0 25px -4px var(--accent-glow);
+}
+
+/*
+ * Контурное слово — план между кадром и текстом. Огромный пустотелый кегль у
+ * нижней кромки: от курсора уходит дальше кадра, при прокрутке отстаёт меньше
+ * него (`heroDepth.scroll.word`). Декор, `aria-hidden` в разметке; под
+ * затемнением (z-1 — scrim), поэтому текст колонки не спорит с ним по контрасту.
+ */
+.hero-depth-word {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 4%;
+  z-index: 1;
+  pointer-events: none;
+  user-select: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-black);
+  font-size: clamp(4.5rem, 16vw, 20rem);
+  line-height: 0.8;
+  letter-spacing: -0.02em;
+  color: transparent;
+  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--color-content-on-cinema) 85%, transparent);
+  text-shadow:
+    0 0 30px rgba(255, 255, 255, 0.15),
+    0 0 60px var(--accent-glow);
+  opacity: 0.28;
+  transform: translate3d(calc(var(--hero-parallax-x) * -60px), calc(var(--hero-parallax-y) * -40px), 0);
+  will-change: transform, translate;
 }
 
 /*
@@ -1687,8 +1783,10 @@ html:has(body[data-scroll-locked]) {
  */
 @media (prefers-reduced-motion: reduce) {
   .hero-viewport .hero-video-main,
-  .hero-viewport .hero-content {
+  .hero-viewport .hero-content,
+  .hero-depth-word {
     transform: none;
+    translate: none;
     opacity: 1;
     transition: none;
   }
@@ -1827,7 +1925,10 @@ html:has(body[data-scroll-locked]) {
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   [data-animation-card]:hover > .card-surface {
-    box-shadow: var(--shadow-lg);
+    box-shadow:
+      0 12px 30px -10px rgba(0, 0, 0, 0.45),
+      0 0 20px -2px var(--accent-glow);
+    border-color: color-mix(in srgb, var(--accent) 65%, transparent);
   }
 }
 
@@ -1965,42 +2066,228 @@ html:has(body[data-scroll-locked]) {
   font-weight: 600;
 }
 
-[data-stack-showcase] {
-  isolation: isolate;
-  scroll-margin-top: calc(var(--layout-nav-height) + var(--space-2));
-}
-
-[data-stack-showcase] > * {
+/*
+ * CINEMA APERTURE — кино-секции раскрываются экраном (`CinemaAperture`).
+ *
+ * `--aperture-open` (0…1) и `--aperture-flare` пишет компонент; остальные
+ * `--aperture-*` — числа из `motion.cinemaAperture`. Пока атрибут не `on`
+ * (без JS, узкий экран, reduced-motion) — ни одно правило ниже не действует.
+ *
+ * Панель с кадром (обёртка `SectionParallax`, `[data-curtain]`):
+ *   • маска: поля и скругление экрана сходятся к нулю — занавес здесь
+ *     отключён, маской управляет прокрутка;
+ *   • кадр отъезжает: запас `scale` сверх параллакса уходит к 1 — отдельное
+ *     свойство `scale` не затирает `transform`, который пишет параллакс;
+ *   • ::after — лучи пролёта, разлетаются и гаснут; ::before — анаморфный
+ *     блик по горизонту, вспыхивает на середине раскрытия;
+ *   • текст наводится на резкость.
+ * Панель без кадра (дисциплины): заголовок в фокус, карточки — разворотом из
+ * глубины. Карточки двигаются `translate`/`rotate`, а не `transform`: его уже
+ * занимает stagger-появление.
+ */
+[data-aperture='on'] > * {
+  --aperture-open: 1;
+  --aperture-flare: 0;
+  --aperture-closed: calc(1 - var(--aperture-open));
+  --aperture-inset-y: 6.5%;
+  --aperture-inset-x: 7.5%;
+  --aperture-radius: 40px;
+  --aperture-zoom: 0.16;
+  --aperture-blur: 10px;
+  --aperture-rise: 36px;
+  --aperture-tilt: 4.5deg;
   position: relative;
-  top: calc(var(--layout-nav-height) + var(--space-2));
 }
 
-[data-stack-showcase] > section {
-  background-color: var(--surface-canvas);
+/* Фокус внутри панели — экран открыт целиком: ссылку не прячет маска. */
+[data-aperture='on'] > :focus-within {
+  --aperture-open: 1 !important;
+  --aperture-flare: 0 !important;
 }
 
-@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
-  [data-stack-showcase]:not([data-stack-focus]) > [data-stack-ready] {
-    position: sticky;
-  }
-
-  [data-stack-showcase] > [data-stack-ready] [data-parallax] {
-    transform: none !important;
-  }
+[data-aperture='on'] > [data-curtain],
+[data-aperture='on'] > [data-curtain][data-revealed] {
+  /* Лучи шире панели: `clip-path` не урезает прокручиваемую область, `overflow` — да. */
+  overflow: clip;
+  clip-path: inset(
+    calc(var(--aperture-closed) * var(--aperture-inset-y))
+      calc(var(--aperture-closed) * var(--aperture-inset-x))
+      round calc(var(--aperture-closed) * var(--aperture-radius))
+  );
+  transition: none;
 }
 
-[data-stack-showcase] > :not([data-stack-ready]),
-[data-stack-showcase][data-stack-focus] > * {
-  top: auto;
+[data-aperture='on'] > [data-curtain] [data-parallax='background'] {
+  scale: calc(1 + var(--aperture-closed) * var(--aperture-zoom));
+}
+
+[data-aperture='on'] > [data-curtain] .page-container,
+[data-aperture='on'] > section h2 {
+  filter: blur(calc(var(--aperture-closed) * var(--aperture-blur)));
+  translate: 0 calc(var(--aperture-closed) * 48px);
+}
+
+[data-aperture='on'] > [data-curtain]::after {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  z-index: 1;
+  pointer-events: none;
+  background: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    color-mix(in srgb, var(--content-on-cinema) 55%, transparent) 0deg 0.35deg,
+    transparent 0.35deg 4.5deg,
+    color-mix(in srgb, var(--accent) 70%, transparent) 4.5deg 5deg,
+    transparent 5deg 11deg
+  );
+  mask-image: radial-gradient(circle at 50% 50%, transparent 12%, #000 45%, transparent 78%);
+  mix-blend-mode: screen;
+  opacity: calc(var(--aperture-closed) * 0.75);
+  scale: calc(0.55 + var(--aperture-open) * 1.2);
+  rotate: calc(var(--aperture-open) * 18deg);
+}
+
+[data-aperture='on'] > [data-curtain]::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  z-index: 1;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-glow) 20%,
+    var(--content-on-cinema) 50%,
+    var(--accent-glow) 80%,
+    transparent
+  );
+  box-shadow:
+    0 0 24px 6px var(--accent-glow),
+    0 0 80px 18px color-mix(in srgb, var(--accent) 35%, transparent);
+  mix-blend-mode: screen;
+  opacity: var(--aperture-flare);
+  scale: calc(0.3 + var(--aperture-open) * 1.1) 1;
+}
+
+/* Разворот книгой: карточки раскрываются от общего корешка по центру сетки. */
+[data-aperture='on'] :has(> [data-aperture-card]) {
+  perspective: 1600px;
+}
+
+[data-aperture='on'] [data-aperture-card] {
+  --aperture-side: -1;
+  transform-origin: calc(50% - var(--aperture-side) * 50%) 50%;
+  translate: 0 calc(var(--aperture-closed) * var(--aperture-rise)) calc(var(--aperture-closed) * -160px);
+  rotate: y calc(var(--aperture-side) * var(--aperture-closed) * var(--aperture-tilt));
+  filter: brightness(calc(1 - var(--aperture-closed) * 0.6));
+}
+
+[data-aperture='on'] [data-aperture-card]:nth-child(even) {
+  --aperture-side: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
   [data-reveal-word] {
     filter: none !important;
   }
+}
 
-  [data-stack-showcase] > * {
-    position: relative;
-    top: auto;
+/*
+ * ГЛУБИНА КАРТОЧКИ: кадр идёт против наклона (`--card-media-*` пишет
+ * `CardTilt`), а за курсором по кадру скользит мягкое пятно света. Сдвиг
+ * живёт в `translate`, зум при наведении — в `scale`: свойства разные и не
+ * затирают друг друга. Запас `scale` у кадра прячет края при сдвиге.
+ */
+.card-cursor-light {
+  display: none;
+  --card-media-x: 0px;
+  --card-media-y: 0px;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  [data-cursor-depth] .card-media {
+    translate: var(--card-media-x, 0) var(--card-media-y, 0);
   }
+
+  [data-cursor-depth] .card-cursor-light {
+    display: block;
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      circle 9rem at var(--card-cursor-x) var(--card-cursor-y),
+      color-mix(in srgb, var(--content-on-cinema) 28%, transparent),
+      transparent 70%
+    );
+    mix-blend-mode: soft-light;
+    opacity: 0;
+    transition: opacity var(--duration-slow) var(--ease-brand);
+  }
+
+  [data-cursor-depth] .card-surface:hover .card-cursor-light {
+    opacity: 1;
+  }
+}
+
+/*
+ * СТЕК: накрытая карточка уходит вглубь. `--stack-cover` (0…1) пишет
+ * `StackCards`; без JS он не задан, и карточка стоит как есть.
+ * `transform-origin` верхний: при уменьшении верх карточки не сдвигается, и
+ * замер накрытия не зависит от того, что сам же рисует.
+ */
+[data-stack-cards] {
+  --stack-cover: 0;
+  --stack-scale-depth: 0.06;
+  --stack-dim-depth: 0.35;
+  --stack-index: 0;
+  --stack-step: 0px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-stack-cards] > li {
+    transform-origin: 50% 0;
+    scale: calc(1 - var(--stack-cover, 0) * var(--stack-scale-depth, 0.06));
+    filter: brightness(calc(1 - var(--stack-cover, 0) * var(--stack-dim-depth, 0.35)));
+  }
+
+  [data-stack-cards] > li {
+    position: sticky;
+    top: calc(var(--layout-nav-height) + var(--space-6) + var(--stack-index, 0) * var(--stack-step, 0px));
+  }
+}
+
+/*
+ * SCROLL WORDS: при просьбе убрать движение компонент отдаёт обычный текст, но
+ * гидратация может застать слова в промежуточном состоянии — снимаем его.
+ */
+@media (prefers-reduced-motion: reduce) {
+  [data-scroll-word] {
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+}
+
+/*
+ * PORTAL — полоса света и виньетка пролёта камеры из карточки (`PortalTransitionProvider`).
+ * Движение пишет framer-motion; здесь только живопись слоёв.
+ */
+.portal-sweep {
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: linear-gradient(
+    180deg,
+    transparent 30%,
+    rgba(255, 226, 152, 0.16) 44%,
+    rgba(255, 244, 214, 0.38) 50%,
+    rgba(255, 226, 152, 0.16) 56%,
+    transparent 70%
+  );
+}
+
+.portal-vignette {
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(11, 10, 9, 0.75) 100%);
 }

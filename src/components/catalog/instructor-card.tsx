@@ -15,6 +15,7 @@
 import { BadgeCheckIcon, ChevronRightIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { PortalLink } from '@/components/fx/portal-link';
 import { Media } from '@/components/ui/media';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Price } from '@/components/ui/price';
@@ -22,7 +23,6 @@ import { RatingStars } from '@/components/ui/rating-stars';
 import { routes } from '@/config';
 import { resolveMedia, type InstructorCardItem } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
-import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
 interface InstructorCardProps {
@@ -41,6 +41,7 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
 
   return (
     <article
+      data-portal-card
       className={cn(
         'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
@@ -49,7 +50,7 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
         className,
       )}
     >
-      <div className="relative">
+      <div data-portal-media className="relative">
         <Media
           {...resolveMedia(item.image, locale)}
           preset="instructorCard"
@@ -85,12 +86,14 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
 
       <div className="flex flex-1 flex-col p-5">
         <h3 className="text-card-title">
-          <Link
+          <PortalLink
             href={href ?? routes.instructor(item.slug)}
+            // Растянутая ссылка накрывает карточку: подпись кольца-курсора видна над всей ней.
+            data-cursor-label={t('common.actions.explore')}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
             {item.name}
-          </Link>
+          </PortalLink>
         </h3>
 
         <p className="text-eyebrow mt-1.5 text-content-metal">{item.headline}</p>

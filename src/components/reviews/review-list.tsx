@@ -74,7 +74,7 @@ export function ReviewList({ rating, items, locale, title, className }: ReviewLi
 
               <p className="text-body mt-4 text-content-secondary">{item.body}</p>
 
-              <footer className="mt-5 flex items-center gap-3">
+              <footer className="mt-5 flex flex-col gap-3">
                 <Media
                   {...resolveMedia(item.image, locale)}
                   preset="avatar"

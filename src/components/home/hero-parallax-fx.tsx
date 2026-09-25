@@ -3,21 +3,22 @@
  *
  * Два эффекта, и оба не стоят ни одного рендера React:
  *
- * **1. Параллакс за курсором** (только `fine pointer`): видео уходит от курсора
- * до 18px, текстовая колонка следует за ним до 10px — разница векторов создаёт
- * слой глубины между кадром и контентом. Величины пишутся в CSS-переменные
- * `--hero-parallax-x/y` на секции, значения сглаживаются lerp-ом в rAF-цикле:
- * прямое присваивание «за палец» дрожит, ступенчатое — читается как задержка.
+ * **1. Параллакс за курсором** (только `fine pointer` на широком экране): кадр
+ * уходит от курсора, контурное слово — ещё дальше, текстовая колонка следует
+ * за курсором. Разница векторов создаёт планы между кадром и контентом.
+ * Величины пишутся в CSS-переменные `--hero-parallax-x/y` на секции и
+ * сглаживаются lerp-ом в rAF-цикле: прямое присваивание «за палец» дрожит.
  *
- * **2. Scroll-exit глубина** (все устройства): при прокрутке первого экрана
- * кадр медленно растёт (до +8%), контент поднимается и гаснет. Страница не
- * «обрывается» швом секций, а уходит в глубину, как отъезд камеры. Величина —
- * `--hero-exit-progress` (0…1) на той же секции.
+ * **2. Глубина при прокрутке** (все устройства, на узком — ослабленная): четыре
+ * плана уходят с разной скоростью (`heroDepthFrame`, числа в
+ * `motion.heroDepth`). Кадр отстаёт от прокрутки и растёт, слово отстаёт
+ * меньше, текст почти идёт с прокруткой и гаснет, световой проход обгоняет.
+ * Страница не «обрывается» швом секций, а уходит вглубь, как отъезд камеры.
  *
  * Оба эффекта отключаются при `prefers-reduced-motion: reduce` — здесь и в CSS:
  * два источника истины защищают от гонки «стили применились, JS ещё нет».
- * Значения по умолчанию у переменных — 0, поэтому до первого события и после
- * размонтирования компонента кадр стоит в базовой геометрии.
+ * Пока фокус внутри hero, текст стоит на месте и не гаснет: клавиатурный
+ * пользователь не должен искать кнопку, уехавшую вместе с колонкой.
  *
  * DOM-якорь — `display: contents`: компонент не должен участвовать в раскладке,
  * только держать ref, по которому находится секция.
@@ -28,7 +29,8 @@
 import { useScroll } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 
-import { layerOffset } from '@/lib/animations/parallax';
+import { motion } from '@/design/motion';
+import { heroDepthFrame } from '@/lib/animations/parallax';
 import { useFinePointer, useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 
@@ -41,13 +43,16 @@ export function HeroParallaxFX() {
 
   useEffect(() => {
     const anchor = anchorRef.current;
-    if (!anchor || reducedMotion || !wide) return;
+    if (!anchor || reducedMotion) return;
 
     const root = anchor.parentElement;
     if (!root) return;
     const background = root.querySelector<HTMLElement>('[data-hero-background]');
+    const word = root.querySelector<HTMLElement>('[data-hero-depth="word"]');
     const content = root.querySelector<HTMLElement>('.hero-content');
     const foreground = root.querySelector<HTMLElement>('.hero-light-sweep');
+    const factor = wide ? 1 : motion.heroDepth.narrowFactor;
+    const pointerEnabled = finePointer && wide;
 
     let frame = 0;
     let raf = 0;
@@ -69,12 +74,9 @@ export function HeroParallaxFX() {
         }
         pointer = null;
       }
-      /*
-       * lerp 0.12: движение доезжает за ~150ms и не дрожит. Цикл живёт, пока
-       * есть ненулевая разница — в покое ни кадра работы.
-       */
-      currentX += (targetX - currentX) * 0.12;
-      currentY += (targetY - currentY) * 0.12;
+      /* Цикл живёт, пока есть ненулевая разница — в покое ни кадра работы. */
+      currentX += (targetX - currentX) * motion.heroDepth.pointerLerp;
+      currentY += (targetY - currentY) * motion.heroDepth.pointerLerp;
       root.style.setProperty('--hero-parallax-x', currentX.toFixed(4));
       root.style.setProperty('--hero-parallax-y', currentY.toFixed(4));
 
@@ -98,23 +100,28 @@ export function HeroParallaxFX() {
       if (raf === 0) raf = window.requestAnimationFrame(paintPointer);
     };
 
-    /* --- Scroll-exit глубина ---------------------------------------------- */
+    /* --- Глубина при прокрутке -------------------------------------------- */
 
     const paintScroll = () => {
       frame = 0;
       const rect = root.getBoundingClientRect();
-      const progress = Math.min(Math.max(-rect.top / (rect.height || 1), 0), 1);
+      const progress = -rect.top / (rect.height || 1);
+      const depth = heroDepthFrame(progress, rect.height, factor);
       const focused = root.matches(':focus-within');
-      if (background) background.style.transform = `translate3d(0, ${layerOffset(progress, 'background')}px, 0) scale(1.08)`;
-      if (content) content.style.translate = `0 ${focused ? 0 : layerOffset(progress, 'midground')}px`;
-      if (foreground) foreground.style.transform = `translate3d(0, ${layerOffset(progress, 'foreground')}px, 0) rotate(${progress * 5}deg)`;
+      if (background) background.style.transform = `translate3d(0, ${depth.background}px, 0) scale(${depth.zoom})`;
+      if (word) word.style.translate = `0 ${depth.word}px`;
+      if (content) {
+        content.style.translate = `0 ${focused ? 0 : depth.content}px`;
+        content.style.opacity = focused ? '' : String(depth.contentOpacity);
+      }
+      if (foreground) foreground.style.transform = `translate3d(0, ${depth.foreground}px, 0)`;
     };
 
     const onScroll = () => {
       if (frame === 0) frame = window.requestAnimationFrame(paintScroll);
     };
 
-    if (finePointer) {
+    if (pointerEnabled) {
       root.addEventListener('pointermove', onPointerMove, { passive: true });
       root.addEventListener('pointerleave', onPointerLeave, { passive: true });
     }
@@ -125,22 +132,25 @@ export function HeroParallaxFX() {
     paintScroll();
 
     return () => {
-      if (finePointer) {
+      if (pointerEnabled) {
         root.removeEventListener('pointermove', onPointerMove);
         root.removeEventListener('pointerleave', onPointerLeave);
       }
       unsubscribe();
       root.removeEventListener('focusin', onScroll);
       root.removeEventListener('focusout', onScroll);
-      if (background) background.style.transform = '';
-      if (content) content.style.translate = '';
-      if (foreground) foreground.style.transform = '';
       window.removeEventListener('resize', onScroll);
       if (frame !== 0) window.cancelAnimationFrame(frame);
       if (raf !== 0) window.cancelAnimationFrame(raf);
+      if (background) background.style.transform = '';
+      if (word) word.style.translate = '';
+      if (content) {
+        content.style.translate = '';
+        content.style.opacity = '';
+      }
+      if (foreground) foreground.style.transform = '';
       root.style.removeProperty('--hero-parallax-x');
       root.style.removeProperty('--hero-parallax-y');
-      root.style.removeProperty('--hero-exit-progress');
     };
   }, [finePointer, reducedMotion, scrollY, wide]);
 

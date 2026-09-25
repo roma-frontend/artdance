@@ -13,6 +13,7 @@
 import { MapPinIcon, ChevronRightIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { PortalLink } from '@/components/fx/portal-link';
 import { Badge } from '@/components/ui/badge';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Media } from '@/components/ui/media';
@@ -22,7 +23,6 @@ import { routes } from '@/config';
 import { resolveMedia, type VenueCardItem } from '@/domain/content';
 import { venueAmenityLabelKey } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
-import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
 /** Сколько меток оснащения показывать до «ещё N». */
@@ -42,6 +42,7 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
 
   return (
     <article
+      data-portal-card
       className={cn(
         'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
@@ -50,7 +51,7 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
         className,
       )}
     >
-      <div className="relative">
+      <div data-portal-media className="relative">
         <Media
           {...resolveMedia(item.image, locale)}
           preset="studioCard"
@@ -91,12 +92,14 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
         </p>
 
         <h3 className="text-card-title mt-1.5">
-          <Link
+          <PortalLink
             href={routes.studio(item.slug)}
+            // Растянутая ссылка накрывает карточку: подпись кольца-курсора видна над всей ней.
+            data-cursor-label={t('common.actions.explore')}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
             {item.name}
-          </Link>
+          </PortalLink>
         </h3>
 
         <p className="text-body-sm mt-2 text-content-secondary">{item.description}</p>

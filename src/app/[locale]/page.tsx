@@ -20,6 +20,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { HeroSection } from '@/components/home/hero-section';
 import { HeroSearchBar } from '@/components/home/hero-search-bar';
+import { StatsBar } from '@/components/home/stats-bar';
+import { JourneySection } from '@/components/home/journey-section';
 import { EditorialStatement } from '@/components/home/editorial-statement';
 import { CompetitionSection } from '@/components/home/competition-section';
 import { DisciplineSections } from '@/components/home/discipline-sections';
@@ -30,8 +32,9 @@ import { CardTilt } from '@/components/fx/card-tilt';
 import { Reveal } from '@/components/fx/reveal';
 import { TextReveal } from '@/components/fx/text-reveal';
 import { StyleRail } from '@/components/fx/style-rail';
-import { StackShowcase } from '@/components/fx/stack-showcase';
+import { CinemaAperture } from '@/components/fx/cinema-aperture';
 import { ScrollSeal } from '@/components/fx/scroll-seal';
+import { RailSeal } from '@/components/fx/rail-seal';
 import { ClassCard } from '@/components/catalog/class-card';
 import { ClassCarousel } from '@/components/catalog/class-carousel';
 import { EventCard } from '@/components/catalog/event-card';
@@ -80,21 +83,29 @@ export default async function HomePage({ params }: PageProps) {
         <HeroSearchBar />
       </HeroSection>
 
+      {/* ── STATS: вынесены в отдельную стильную секцию ── */}
+      <StatsBar stats={content.hero.stats} />
+
       {/* ── MARQUEE: направления берутся из домена, не из вёрстки ── */}
       <StyleMarquee />
 
       {/* ── DISCOVER: на широком экране лента направлений едет вбок при скролле ── */}
       <StyleRail>
-        <div>
-          <div className="page-container">
-            <Reveal as="div" className="mb-8">
-              <SectionHeading
-                align="center"
-                eyebrow={t('discover.eyebrow')}
-                title={t('discover.title')}
-                subtitle={t('discover.subtitle', { styles: danceStyles.length })}
-                className="mb-0"
-              />
+        <div className="w-full">
+          <div className="page-container relative">
+            <Reveal as="div" className="mb-6 flex flex-col items-center justify-center text-center">
+              <div className="relative inline-flex items-center justify-center">
+                <SectionHeading
+                  align="center"
+                  eyebrow={t('discover.eyebrow')}
+                  title={t('discover.title')}
+                  subtitle={t('discover.subtitle', { styles: danceStyles.length })}
+                  className="mb-0"
+                />
+                <div data-rail-seal="" className="absolute -right-24 top-0 hidden xl:block">
+                  <RailSeal />
+                </div>
+              </div>
             </Reveal>
 
             <div data-rail-track="">
@@ -136,8 +147,9 @@ export default async function HomePage({ params }: PageProps) {
         </div>
       </section>
 
+      {/* ── Кино-секции раскрываются экраном при входе в окно (CinemaAperture) ── */}
+      <CinemaAperture>
       {/* ── EDITORIAL: цитата брендгайда как полноэкранное заявление ── */}
-      <StackShowcase>
       <EditorialStatement
         video={content.editorial.video}
         image={content.editorial.image}
@@ -152,10 +164,22 @@ export default async function HomePage({ params }: PageProps) {
         image={content.competition.image}
         locale={locale as Locale}
       />
-      </StackShowcase>
+      </CinemaAperture>
 
-      {/* ── INSTRUCTORS ── */}
-      <section className="section-y">
+      {/* ── JOURNEY: четыре шага стопкой наезжающих карточек ── */}
+      <JourneySection
+        images={[
+          content.styleTiles[0]?.image,
+          content.instructors[0]?.image,
+          content.popularClasses[0]?.image,
+          content.competition.image,
+        ].filter((image) => image !== undefined)}
+        locale={locale as Locale}
+      />
+
+      {/* ── INSTRUCTORS: печать крутится от прохода секции, не всей страницы ── */}
+      <section className="section-y relative">
+        <ScrollSeal scope="section" className="top-8 left-8 hidden text-content-tertiary lg:block" />
         <div className="page-container">
           <Reveal className="mb-12">
             <SectionHeading

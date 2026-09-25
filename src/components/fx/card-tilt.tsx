@@ -69,11 +69,11 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
 
     const writeX = (value: number) => {
       node.style.setProperty('--card-cursor-x', `${(value + 0.5) * size.width}px`);
-      node.style.setProperty('--card-media-x', `${value * -4}px`);
+      node.style.setProperty('--card-media-x', `${value * -motion.cardTilt.mediaTravelPx}px`);
     };
     const writeY = (value: number) => {
       node.style.setProperty('--card-cursor-y', `${(value + 0.5) * size.height}px`);
-      node.style.setProperty('--card-media-y', `${value * -4}px`);
+      node.style.setProperty('--card-media-y', `${value * -motion.cardTilt.mediaTravelPx}px`);
     };
 
     writeX(cursor.x.get());
