@@ -57,6 +57,7 @@ export function HeroSearchBar({
       {/* ── Круглая кнопка поиска в самом правом верхнем углу ── */}
       <button
         type="button"
+        data-slot="hero-search-trigger"
         onClick={() => setIsOpen(true)}
         data-cursor-label={t('common.actions.search')}
         aria-label={t('search.heroPlaceholder')}

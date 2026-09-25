@@ -53,12 +53,12 @@ export function JourneySection({ images, locale }: JourneySectionProps) {
             const image = images[index];
             return (
               <li key={step.key}>
-                <article className="grid overflow-hidden rounded-xl border border-border-default bg-surface-card shadow-lg md:grid-cols-2">
-                  <div className="flex flex-col p-8 lg:p-12">
+                <article className="grid grid-cols-1 overflow-hidden rounded-xl border border-border-default bg-surface-card shadow-lg md:grid-cols-2">
+                  <div className="flex min-w-0 flex-col p-6 sm:p-8 lg:p-12">
                     <span aria-hidden className="text-display-editorial text-content-accent">
                       {String(index + 1).padStart(2, '0')}
                     </span>
-                    <h3 className="text-heading-1 mt-6">{t(`${step.key}.title`)}</h3>
+                    <h3 className="text-heading-1 mt-6 wrap-break-word hyphens-auto">{t(`${step.key}.title`)}</h3>
                     <p className="text-body-lg mt-3 max-w-md text-content-secondary">{t(`${step.key}.body`)}</p>
                     <Link
                       href={step.href}

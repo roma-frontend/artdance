@@ -16,14 +16,43 @@
  * панелью браузера даёт окно 640–700px — там строка резалась складкой окна.
  * Размер экрана задаётся `setViewportSize` внутри теста, а не проектом конфига:
  * этот кейс — про высоту окна, а не про устройство.
+ *
+ * С переносом поиска в круглую кнопку в правом верхнем углу hero (форма
+ * раскрывается диалогом поверх экрана) проверяется то же обещание: кнопка
+ * видна целиком в первом экране, а по нажатию форма с полем поиска открыта и
+ * помещается в окно.
  */
 
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { locales } from '../src/i18n/config';
 
 /** Ноутбучные высоты — проект конфига их не покрывает, см. шапку файла. */
 const SHORT_HEIGHTS = [800, 700] as const;
+
+async function expectSearchInFirstScreen(page: Page, limit: number) {
+  const trigger = page.locator('[data-slot="hero-search-trigger"]');
+  await expect(trigger).toBeVisible();
+
+  const box = (await trigger.boundingBox())!;
+  expect(
+    Math.round(box.y + box.height),
+    `нижняя кромка кнопки поиска (${Math.round(box.y + box.height)}) должна быть выше границы ${Math.round(limit)}`,
+  ).toBeLessThanOrEqual(Math.round(limit));
+
+  await trigger.click();
+  const form = page
+    .getByRole('dialog')
+    .locator('form')
+    .filter({ has: page.locator('input[type="search"]') });
+  await expect(form).toBeVisible();
+
+  const formBox = (await form.boundingBox())!;
+  expect(
+    Math.round(formBox.y + formBox.height),
+    `нижняя кромка формы поиска (${Math.round(formBox.y + formBox.height)}) должна быть выше границы ${Math.round(limit)}`,
+  ).toBeLessThanOrEqual(Math.round(limit));
+}
 
 for (const locale of locales) {
   for (const height of SHORT_HEIGHTS) {
@@ -34,18 +63,7 @@ for (const locale of locales) {
       await test.step('замер на ноутбуке', async () => {
         await page.emulateMedia({ reducedMotion: 'reduce' });
         await page.goto(`/${locale}`);
-
-        const form = page
-          .locator('form')
-          .filter({ has: page.locator('input[type="search"]') })
-          .first();
-        await expect(form).toBeVisible();
-
-        const box = (await form.boundingBox())!;
-        expect(
-          Math.round(box.y + box.height),
-          `нижняя кромка строки поиска (${Math.round(box.y + box.height)}) должна быть выше нижней границы окна ${height}px`,
-        ).toBeLessThanOrEqual(height);
+        await expectSearchInFirstScreen(page, height);
       });
     });
   }
@@ -55,36 +73,13 @@ for (const locale of locales) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`/${locale}`);
 
-    const form = page.locator('form').filter({ has: page.locator('input[type="search"]') }).first();
-    const stats = page.locator('dl').first();
-    /*
-     * Ожидание обоих узлов до замера, а не после: на армянской версии React
-     * доводит гидратацию заметно дольше, и снимок геометрии, взятый в этот
-     * момент, приходил на уже открепленный узел.
-     */
-    await expect(form).toBeVisible();
-    await expect(stats).toBeVisible();
-
-    const box = (await form.boundingBox())!;
-    const viewportHeight = page.viewportSize()!.height;
-
     /*
      * Док фиксирован у нижней кромки и перекрывает содержимое, поэтому граница
      * доступной области — его верх, а не низ окна. На широких экранах дока нет.
      */
     const dock = await page.locator('.mobile-dock-shell').boundingBox();
-    const limit = dock ? dock.y : viewportHeight;
+    const limit = dock ? dock.y : page.viewportSize()!.height;
 
-    expect(
-      Math.round(box.y + box.height),
-      `нижняя кромка строки поиска (${Math.round(box.y + box.height)}) должна быть выше границы ${Math.round(limit)}`,
-    ).toBeLessThanOrEqual(Math.round(limit));
-
-    /* Наезд не должен закрывать показатели: они выше верхней кромки строки. */
-    const statsBox = (await stats.boundingBox())!;
-    expect(
-      Math.round(statsBox.y + statsBox.height),
-      'показатели первого экрана не закрыты строкой поиска',
-    ).toBeLessThanOrEqual(Math.round(box.y));
+    await expectSearchInFirstScreen(page, limit);
   });
 }

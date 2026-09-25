@@ -25,7 +25,7 @@ export function StatsBar({ stats }: StatsBarProps) {
                     value={stat.value}
                     decimals={stat.decimals}
                     suffix={stat.suffix}
-                    className="text-metal"
+                    className="text-content-accent"
                   />
                 </dd>
                 <dt className="text-eyebrow mt-1 text-content-secondary">

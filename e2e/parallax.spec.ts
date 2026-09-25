@@ -149,8 +149,16 @@ test.describe('параллакс editorial-секции', () => {
     /* Открытый занавес не режет секцию. Poll мог поймать середину перехода —
      * ждём конца анимации (reveal-duration 900ms) перед финальной проверкой.
      * Chrome вычисляет открытую маску в сокращённой форме `inset(0px)`. */
+    /* На широком экране маской управляет `CinemaAperture`: экран открыт целиком,
+     * когда верх секции поднялся на `openSpan` высоты окна — доводим до верха. */
+    await wrap.evaluate((node) =>
+      window.scrollBy({ top: node.getBoundingClientRect().top, behavior: 'instant' }),
+    );
     await page.waitForTimeout(1_200);
     const open = await clip();
-    expect(open === 'none' || /^inset\(0px( 0px){0,3}\)$/.test(open)).toBe(true);
+    expect(
+      open === 'none' || /^inset\(0(px|%)?( 0(px|%)?){0,3}( round 0px)?\)$/.test(open),
+      `открытая маска: ${open}`,
+    ).toBe(true);
   });
 });
