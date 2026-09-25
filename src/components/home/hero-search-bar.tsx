@@ -14,6 +14,7 @@ import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { routes, site } from '@/config';
 import { useRouter } from '@/i18n/routing';
+import { useIsHydrated } from '@/lib/hooks/use-is-hydrated';
 import { cn } from '@/lib/utils';
 
 export function HeroSearchBar({
@@ -26,13 +27,9 @@ export function HeroSearchBar({
   const t = useTranslations();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsHydrated();
   const [query, setQuery] = useState(initialQuery);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();

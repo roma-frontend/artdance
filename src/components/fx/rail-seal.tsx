@@ -28,7 +28,7 @@ export function RailSeal({
         <circle cx="50" cy="50" r="48" className="fill-none stroke-current opacity-25" strokeWidth="1" />
         <circle cx="50" cy="50" r="26" className="fill-none stroke-accent opacity-40" strokeWidth="1" />
         <polygon points="50,38 53,47 62,50 53,53 50,62 47,53 38,50 47,47" className="fill-accent opacity-75" />
-        <text className="fill-current text-[8px] font-semibold uppercase tracking-widest" style={{ letterSpacing: '0.28em' }}>
+        <text className="fill-current text-caption font-semibold uppercase tracking-widest" style={{ letterSpacing: '0.28em' }}>
           <textPath href="#rail-seal-circle">{text}</textPath>
         </text>
       </svg>
