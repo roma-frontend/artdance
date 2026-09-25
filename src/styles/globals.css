@@ -742,7 +742,14 @@
    * берут длительность из `--tw-duration`, и любая из них, добавленная рядом,
    * вернула бы её к дефолтным 150ms.
    */
+  /*
+   * Карточка каталога: вся карточка кликабельна через растянутую ссылку.
+   * Текст не выделяется как текстовый блок, курсор везде pointer.
+   */
   .card-surface {
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
     transition:
       translate var(--duration-slow) var(--ease-brand),
       scale var(--duration-slow) var(--ease-brand),
@@ -750,6 +757,10 @@
       transform var(--duration-slow) var(--ease-brand),
       box-shadow var(--duration-slow) var(--ease-brand),
       border-color var(--duration-slow) var(--ease-brand);
+  }
+
+  .card-surface * {
+    cursor: pointer;
   }
 
   /*
@@ -858,13 +869,24 @@
    * всегда, а призыв лежит в том же слоте прозрачным и места не занимает —
    * карточка целиком и есть ссылка на бронирование.
    */
+  /*
+   * Подвал карточки: цена и «Записаться» в одном слоте.
+   * Ссылка карточки лежит поверх всего через z-10, поэтому клик в любой точке
+   * подвала гарантированно активирует переход, а текст цены под «Записаться»
+   * полностью скрывается и не просвечивает.
+   */
   .card-foot {
     display: grid;
+    position: relative;
   }
 
   .card-foot-line {
     grid-area: 1 / 1;
     transition: opacity var(--duration-normal) var(--ease-brand);
+  }
+
+  .card-foot-line:not(.card-cta) {
+    opacity: 1;
   }
 
   .card-cta {
@@ -879,6 +901,7 @@
     .card-surface:hover .card-foot-line:not(.card-cta),
     .card-surface:focus-within .card-foot-line:not(.card-cta) {
       opacity: 0;
+      pointer-events: none;
     }
 
     .card-surface:hover .card-cta,

@@ -90,7 +90,7 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
             href={href ?? routes.instructor(item.slug)}
             // Растянутая ссылка накрывает карточку: подпись кольца-курсора видна над всей ней.
             data-cursor-label={t('common.actions.explore')}
-            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+            className="after:absolute after:inset-0 after:z-10 after:content-[''] focus-visible:outline-none"
           >
             {item.name}
           </PortalLink>
@@ -113,7 +113,7 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
               <Price amount={item.hourlyRateFrom} unit="perHour" from emphasis="total" />
             </div>
 
-            <div className="card-foot-line card-cta flex items-center justify-between gap-3 border-t border-border-default pt-3 relative z-10" aria-hidden="true">
+            <div className="card-foot-line card-cta flex items-center justify-between gap-3 border-t border-border-default pt-3" aria-hidden="true">
               <span className="text-label font-semibold text-content-accent">
                 {t('common.actions.book')}
               </span>
