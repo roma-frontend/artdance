@@ -62,13 +62,14 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
           {t('badge')}
         </p>
 
-        <h1 style={heroEnterOrder('title')} className="text-display-hero mb-3 max-w-3xl text-content-on-cinema md:mb-5">
-          <TextReveal>{t('titleLine1')}</TextReveal>
+        <h1 style={heroEnterOrder('title')} className="text-display-hero mb-3 max-w-3xl overflow-visible pr-[0.14em] text-content-on-cinema md:mb-5">
+          <span className="inline-block overflow-visible pr-[0.04em]"><TextReveal>{t('titleLine1')}</TextReveal></span>
           <br />
-          <em data-hero-shine className="hero-shine text-accent-on-cinema italic"><TextReveal>{t('titleAccent')}</TextReveal></em>
+          <em data-hero-shine className="hero-shine inline-block overflow-visible bg-clip-text pr-[0.10em] text-accent-on-cinema italic"><TextReveal>{t('titleAccent')}</TextReveal></em>
         </h1>
 
-        <p style={heroEnterOrder('subtitle')} className="text-body md:text-body-lg mb-6 max-w-lg text-content-on-cinema-muted md:mb-8">
+        {/* Подзаг не в h1 — отдельный блок со своим hero-enter-index, иначе margin у h1 схлопывается с inline-br в hy */}
+        <p style={heroEnterOrder('subtitle')} className="text-body md:text-body-lg mt-2 mb-6 max-w-lg overflow-visible pr-[0.10em] text-content-on-cinema-muted md:mb-8">
           <TextReveal>{t('subtitle')}</TextReveal>
         </p>
 

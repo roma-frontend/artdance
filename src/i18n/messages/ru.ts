@@ -174,6 +174,8 @@ const ru: Messages = {
     menuDescription: 'Разделы сайта и быстрые ссылки',
     openSearch: 'Открыть поиск',
     skipToContent: 'Перейти к содержимому',
+    language: 'Язык',
+    chooseLanguage: 'Выберите язык',
   },
 
   search: {

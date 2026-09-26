@@ -176,6 +176,8 @@ const en = {
     menuDescription: 'Site sections and quick links',
     openSearch: 'Open search',
     skipToContent: 'Skip to content',
+    language: 'Language',
+    chooseLanguage: 'Choose language',
   },
 
   search: {

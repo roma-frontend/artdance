@@ -29,6 +29,7 @@ import { useTranslations } from 'next-intl';
 import { useRef, type MouseEvent } from 'react';
 
 import { BrandMark } from '@/components/brand/brand-mark';
+import { LocaleSwitcher } from '@/components/layout/locale-switcher';
 import { navIcons } from '@/components/layout/nav-icons';
 import { useSearchOverlay } from '@/components/search/search-overlay';
 import { Button } from '@/components/ui/button';
@@ -162,6 +163,8 @@ export function SiteHeader() {
               </Link>
             );
           })}
+
+          <LocaleSwitcher solid={solid} />
 
           <Button asChild size="sm" className="max-lg:hidden text-sm">
             <Link data-magnetic="" href={headerCta.href}>{t(headerCta.labelKey)}</Link>

@@ -174,6 +174,8 @@ const hy: Messages = {
     menuDescription: "Կայքի բաժինները և արագ հղումները",
     openSearch: "Բացել որոնումը",
     skipToContent: "Անցնել բովանդակությանը",
+    language: "Լեզու",
+    chooseLanguage: "Ընտրեք լեզուն",
   },
 
   search: {

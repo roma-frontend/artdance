@@ -37,6 +37,7 @@
 import { useTranslations } from 'next-intl';
 
 import { navIcons } from '@/components/layout/nav-icons';
+import { LocaleSwitcher } from '@/components/layout/locale-switcher';
 import { Button } from '@/components/ui/button';
 import {
   DrawerClose,
@@ -109,8 +110,12 @@ export function MobileMenuSheetContent() {
         </ul>
       </nav>
 
+      <div className="mt-4 shrink-0">
+        <LocaleSwitcher variant="sheet" />
+      </div>
+
       <DrawerClose asChild>
-        <Button asChild block size="lg" variant="accent" className="mt-4 shrink-0">
+        <Button asChild block size="lg" variant="accent" className="mt-3 shrink-0">
           <Link href={headerCta.href}>{t(headerCta.labelKey)}</Link>
         </Button>
       </DrawerClose>

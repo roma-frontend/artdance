@@ -40,6 +40,8 @@ export function TextReveal({ children }: { children: string }) {
     }
   }, [controls, inView, reduced]);
 
+  // hy: Noto Armenian + blur(10px) + inline-block режет глиф с краю.
+  // padding уже стоит выше в hero-section, здесь только важно чтобы спан не схлопнул отступ.
   let word = 0;
   return (
     <span ref={ref} data-text-reveal="">
@@ -50,6 +52,7 @@ export function TextReveal({ children }: { children: string }) {
           key={index}
           data-reveal-word=""
           className="inline-block"
+          style={{ paddingInline: '0.02em' }}
           initial={false}
           animate={controls}
           custom={word++}
