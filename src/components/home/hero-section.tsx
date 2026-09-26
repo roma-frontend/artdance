@@ -5,6 +5,7 @@
 import { getTranslations } from 'next-intl/server';
 import type { CSSProperties, ReactNode } from 'react';
 
+import { HeroMythicDust } from '@/components/fx/hero-mythic-dust';
 import { HeroVideo } from '@/components/home/hero-video';
 import { HeroParallaxFX } from '@/components/home/hero-parallax-fx';
 import { TextReveal } from '@/components/fx/text-reveal';
@@ -33,7 +34,7 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
   const t = await getTranslations('home.hero');
 
   return (
-    <section className={cn('hero-viewport cinema-surface relative overflow-hidden', className)}>
+    <section className={cn('hero-viewport hero-mythic cinema-surface relative overflow-hidden', className)}>
       <HeroParallaxFX />
 
       <HeroVideo video={hero.video} poster={hero.image} locale={locale} />
@@ -48,6 +49,12 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
 
       <div aria-hidden className="hero-scrim absolute inset-0 z-[1]" />
       <div aria-hidden data-slot="hero-light-sweep" className="hero-light-sweep" />
+      {/* Mythic Aura — храмовый слой поверх видео: rays + vignette + grain. CSS, без JS. */}
+      <div aria-hidden className="hero-mythic-rays" />
+      <div aria-hidden className="hero-mythic-vignette" />
+      <div aria-hidden className="hero-mythic-grain" />
+      {/* Золотая пыль в луче — canvas screen-blend, уважает reduced motion. */}
+      <HeroMythicDust />
 
       {/* Кнопка поиска в самом правом верхнем углу первого экрана */}
       {children !== undefined && (

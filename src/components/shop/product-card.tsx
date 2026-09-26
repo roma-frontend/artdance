@@ -18,13 +18,13 @@
 
 import { useTranslations } from 'next-intl';
 
+import { PortalLink } from '@/components/fx/portal-link';
 import { Badge } from '@/components/ui/badge';
 import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
 import { commerce, routes } from '@/config';
 import { resolveMedia, type ProductCardItem } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
-import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
@@ -41,6 +41,7 @@ export function ProductCard({ item, locale, className }: ProductCardProps) {
 
   return (
     <article
+      data-portal-card
       className={cn(
         'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
@@ -49,12 +50,12 @@ export function ProductCard({ item, locale, className }: ProductCardProps) {
         className,
       )}
     >
-      <div className="relative">
+      <div data-portal-media className="relative">
         <Media
           {...resolveMedia(item.image, locale)}
           preset="productCard"
           fallback="product"
-          imageClassName="media-zoom group-hover:scale-105"
+          imageClassName="card-media media-zoom"
         />
         {item.hoverImage && (
           <div aria-hidden className="card-swap absolute inset-0">
@@ -65,10 +66,11 @@ export function ProductCard({ item, locale, className }: ProductCardProps) {
               priority={false}
               fill
               className="size-full"
-              imageClassName="media-zoom group-hover:scale-105"
+              imageClassName="media-zoom"
             />
           </div>
         )}
+        <span aria-hidden data-cursor-light="" className="card-cursor-light" />
 
         {soldOut ? (
           <Badge variant="signal" className="absolute top-3 left-3">
@@ -87,12 +89,13 @@ export function ProductCard({ item, locale, className }: ProductCardProps) {
         <p className="text-eyebrow text-content-tertiary">{item.brand}</p>
 
         <h3 className="text-card-title mt-1.5">
-          <Link
+          <PortalLink
             href={routes.product(item.slug)}
+            data-cursor-label={t('common.actions.explore')}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
             {item.title}
-          </Link>
+          </PortalLink>
         </h3>
 
         <div className="mt-auto pt-4">

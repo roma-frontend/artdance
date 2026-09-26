@@ -64,7 +64,7 @@ export function ReviewList({ rating, items, locale, title, className }: ReviewLi
           <span className="text-body-sm mt-1 block text-content-tertiary">{t('emptyHint')}</span>
         </p>
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
+        <ul className="grid gap-4 lg:grid-cols-2">
           {items.map((item) => (
             <li
               key={item.id}

@@ -55,7 +55,7 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
           {...resolveMedia(item.image, locale)}
           preset="instructorCard"
           fallback="instructor"
-          imageClassName="card-media media-zoom group-hover:scale-105"
+          imageClassName="card-media media-zoom"
         />
         {/* Hover cutaway: кадр уходит в монохром, цвет остаётся только в круге под курсором. */}
         <span aria-hidden className="card-spotlight" />

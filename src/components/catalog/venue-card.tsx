@@ -56,7 +56,7 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
           {...resolveMedia(item.image, locale)}
           preset="studioCard"
           fallback="studio"
-          imageClassName="card-media media-zoom group-hover:scale-105"
+          imageClassName="card-media media-zoom"
         />
         <span aria-hidden data-cursor-light="" className="card-cursor-light" />
 

@@ -756,8 +756,9 @@
       scale var(--duration-slow) var(--ease-brand),
       rotate var(--duration-slow) var(--ease-brand),
       transform var(--duration-slow) var(--ease-brand),
-      box-shadow var(--duration-slow) var(--ease-brand),
-      border-color var(--duration-slow) var(--ease-brand);
+      box-shadow 900ms cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 900ms cubic-bezier(0.16, 1, 0.3, 1),
+      filter var(--duration-slow) var(--ease-brand);
   }
 
   .card-surface * {
@@ -776,11 +777,59 @@
    * и ошибка воспроизвелась ровно в той, где список писался руками.
    */
   .media-zoom {
+    border-radius: inherit;
     transition:
-      translate var(--duration-slower) var(--ease-brand),
-      scale var(--duration-slower) var(--ease-brand),
-      rotate var(--duration-slower) var(--ease-brand),
-      filter var(--duration-slower) var(--ease-brand);
+      translate 1200ms cubic-bezier(0.16, 1, 0.3, 1),
+      scale 1200ms cubic-bezier(0.16, 1, 0.3, 1),
+      rotate 1200ms cubic-bezier(0.16, 1, 0.3, 1),
+      filter 900ms cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: scale, filter;
+  }
+
+  /* Медиа-контейнер наследует скругление карточки — при scale углы остаются мягкими */
+  .card-surface [data-portal-media] {
+    overflow: hidden;
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+  }
+
+  .card-surface [data-portal-media] > div:first-child {
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+    overflow: hidden;
+  }
+
+  /* Картинка внутри — тоже скруглена сверху, зум не даёт острых углов */
+  .card-surface [data-portal-media] img {
+    border-top-left-radius: inherit;
+    border-top-right-radius: inherit;
+  }
+
+  /*
+   * Кинематографичный долли-наезд на карточке — как «профессиональная камера»
+   * из промпта Planet Jumping: кадр не просто растёт на 5%, а отъезжает с
+   * лёгким просветлением и насыщением, будто диафрагма открылась. Длительность
+   * 1200ms — кино-темп, а не UI-щелчок.
+   */
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .card-surface:hover .media-zoom,
+    .card-surface:focus-within .media-zoom {
+      scale: 1.18;
+      filter: brightness(1.07) saturate(1.14) contrast(1.05);
+    }
+    /* Перебиваем Tailwind group-hover:scale-105 (1.05) — кино требует 1.18 */
+    .group:hover .media-zoom {
+      scale: 1.18;
+      filter: brightness(1.07) saturate(1.14) contrast(1.05);
+    }
+    .card-surface:hover,
+    .card-surface:focus-within {
+      border-color: color-mix(in srgb, var(--accent) 38%, var(--border-default));
+      box-shadow:
+        0 22px 50px -18px rgba(0, 0, 0, 0.55),
+        0 10px 24px -12px rgba(0, 0, 0, 0.4),
+        0 0 28px -6px var(--accent-glow);
+    }
   }
 
   /*
@@ -1868,6 +1917,106 @@ html:has(body[data-scroll-locked]) {
   }
 }
 
+/* ============================================================
+ * MYTHIC AURA — храмовый кинематографический слой hero
+ * Кино-грейдинг на самом видео + объёмные лучи + виньетка + плёночное зерно
+ * Лежит между scrim (z:1) и контентом (z:10), не перекрывает текст.
+ * ============================================================ */
+
+/* Кино-грейдинг: тёплый amber в светах, глубже тени, мягче хайлайты */
+.hero-mythic .hero-video-main {
+  filter: contrast(1.08) saturate(1.14) brightness(0.96) sepia(0.08) hue-rotate(-4deg);
+}
+
+/* Медленный Ken Burns — дыхание кадра как у кино-камеры на штативе */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-mythic .hero-video-main {
+    animation: hero-mythic-burn 18s ease-in-out both;
+  }
+}
+
+@keyframes hero-mythic-burn {
+  from { scale: 1.08; }
+  to   { scale: 1.18; }
+}
+
+/* God rays — объёмные косые лучи как в храме сквозь пыль */
+.hero-mythic-rays {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(112deg, transparent 38%, rgba(255, 233, 165, 0.09) 46%, rgba(255, 220, 120, 0.14) 50%, rgba(212, 175, 55, 0.07) 54%, transparent 62%),
+    linear-gradient(108deg, transparent 52%, rgba(255, 226, 152, 0.06) 60%, rgba(255, 244, 200, 0.08) 64%, transparent 70%);
+  background-size: 180% 180%, 220% 220%;
+  background-position: 30% 20%, 70% 80%;
+  mix-blend-mode: screen;
+  opacity: 0.95;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-mythic-rays {
+    animation: hero-mythic-rays 22s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes hero-mythic-rays {
+  0%   { opacity: 0.88; transform: translate3d(0, 0, 0); }
+  50%  { opacity: 1;    transform: translate3d(6px, -4px, 0); }
+  100% { opacity: 0.92; transform: translate3d(-4px, 3px, 0); }
+}
+
+/* Храмовая виньетка — темнит углы, собирает взгляд в центр где танцор */
+.hero-mythic-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 78% 68% at 50% 42%, transparent 38%, rgba(11, 10, 9, 0.22) 68%, rgba(11, 10, 9, 0.58) 100%),
+    radial-gradient(ellipse 55% 45% at 78% 22%, rgba(212, 175, 55, 0.08) 0%, transparent 55%);
+}
+
+/* Плёночное зерно — SVG turbulence как у 35mm, едва заметно, но даёт фактуру */
+.hero-mythic-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.055;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E");
+  background-size: 220px 220px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hero-mythic-grain {
+    animation: hero-mythic-grain 0.55s steps(3) infinite;
+  }
+}
+
+@keyframes hero-mythic-grain {
+  0%   { transform: translate3d(0, 0, 0); }
+  33%  { transform: translate3d(-1.5%, -1%, 0); }
+  66%  { transform: translate3d(1%, 0.8%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* Пыль — canvas screen-blend, частицы рисует JS. Размер задаёт JS через dpr. */
+.hero-mythic-dust {
+  z-index: 3;
+}
+
+/* Mythic усиливает контурное слово — оно как храмовая надпись в луче */
+.hero-mythic .hero-depth-word {
+  opacity: 0.34;
+  text-shadow:
+    0 0 32px rgba(255, 233, 165, 0.22),
+    0 0 68px var(--accent-glow),
+    0 0 120px rgba(212, 175, 55, 0.14);
+}
+
 /*
  * Уважение к системной просьбе убрать движение: выключается ВСЁ — параллакс,
  * scroll-exit, вход со ступенями, блик и световой проход. Кадр остаётся живым
@@ -1898,6 +2047,25 @@ html:has(body[data-scroll-locked]) {
 
   .hero-light-sweep {
     display: none;
+  }
+
+  .hero-mythic .hero-video-main {
+    animation: none;
+    filter: none;
+  }
+
+  .hero-mythic-rays,
+  .hero-mythic-vignette,
+  .hero-mythic-grain,
+  .hero-mythic-dust {
+    display: none;
+  }
+
+  .hero-mythic .hero-depth-word {
+    opacity: 0.28;
+    text-shadow:
+      0 0 30px rgba(255, 255, 255, 0.15),
+      0 0 60px var(--accent-glow);
   }
 }
 
@@ -2115,13 +2283,42 @@ html:has(body[data-scroll-locked]) {
     translate: 0 var(--space-3);
   }
 
-  .card-swap-caption {
+.card-swap-caption {
     opacity: 0;
     translate: 0 var(--space-2);
+    /* Храмовый скрим: блок читается и на светлом балетном кадре, и на тёмном */
+    background: linear-gradient(135deg, rgba(11,10,9,0.78) 0%, rgba(11,10,9,0.62) 100%);
+    border: 1px solid rgba(255,255,255,0.18);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.35);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    backdrop-filter: blur(12px) saturate(1.2);
     transition:
       opacity var(--duration-normal) var(--ease-brand),
       translate var(--duration-normal) var(--ease-brand);
     transition-delay: var(--duration-fast);
+  }
+
+  /* Подложка-градиент под подпись — на медиа-контейнере, не на card-swap (он display:none до hover) */
+  .card-surface [data-portal-media]::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 64px;
+    background: linear-gradient(to top, rgba(11,10,9,0.58) 0%, transparent 100%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--duration-normal) var(--ease-brand);
+    z-index: 1;
+  }
+
+  .card-surface:hover [data-portal-media]::after,
+  .card-surface:focus-within [data-portal-media]::after {
+    opacity: 1;
+  }
+
+  /* Бейдж поверх градиента */
+  .card-swap-caption {
+    z-index: 2;
   }
 
   .card-surface:hover .card-swap,
@@ -2410,17 +2607,23 @@ html:has(body[data-scroll-locked]) {
   mix-blend-mode: screen;
   background: linear-gradient(
     180deg,
-    transparent 30%,
-    rgba(255, 226, 152, 0.16) 44%,
-    rgba(255, 244, 214, 0.38) 50%,
-    rgba(255, 226, 152, 0.16) 56%,
-    transparent 70%
+    transparent 24%,
+    rgba(255, 226, 152, 0.2) 42%,
+    rgba(255, 244, 214, 0.5) 50%,
+    rgba(255, 226, 152, 0.2) 58%,
+    transparent 76%
   );
+  filter: blur(0.5px);
 }
 
 .portal-vignette {
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 45%, rgba(11, 10, 9, 0.75) 100%);
+  background: radial-gradient(ellipse at center, transparent 38%, rgba(11, 10, 9, 0.82) 100%);
+}
+
+/* Сцена в пролёте — лёгкий bloom как у кинообъектива на ярком кадре */
+[data-slot='portal-transition'] [data-portal-scene-blur] {
+  backdrop-filter: blur(12px);
 }
 
 /*
@@ -2661,10 +2864,3 @@ html:has(body[data-scroll-locked]) {
     display: none;
   }
 }
-
-
-
-
-
-
-

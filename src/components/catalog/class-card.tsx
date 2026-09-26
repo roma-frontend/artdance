@@ -65,7 +65,7 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
           {...resolveMedia(item.image, locale)}
           preset="classCard"
           fallback="classCard"
-          imageClassName="card-media media-zoom group-hover:scale-105"
+          imageClassName="card-media media-zoom"
         />
         {/* При наведении обложка сменяется портретом ведущего; имя уже есть текстом ниже. */}
         {item.instructorImage && (
@@ -77,7 +77,7 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
               priority={false}
               fill
               className="size-full"
-              imageClassName="media-zoom group-hover:scale-105"
+              imageClassName="media-zoom"
             />
             <span className="card-swap-caption liquid-glass text-caption absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-content-on-cinema">
               <GraduationCapIcon aria-hidden className="size-3.5" />

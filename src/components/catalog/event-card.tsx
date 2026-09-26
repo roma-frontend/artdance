@@ -53,8 +53,9 @@ export function EventCard({ item, locale, className }: EventCardProps) {
           {...resolveMedia(item.image, locale)}
           preset="studioCard"
           fallback="event"
-          imageClassName="media-zoom group-hover:scale-105"
+          imageClassName="card-media media-zoom"
         />
+        <span aria-hidden data-cursor-light="" className="card-cursor-light" />
 
         {/* Декоративный штамп ADMIT ONE */}
         <div
