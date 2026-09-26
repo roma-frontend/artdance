@@ -75,18 +75,22 @@ export function FooterParallaxFX() {
 
     const paintScroll = () => {
       frame = 0;
+      // Скролл на футере — почти без хода: слово уже в потоке внизу, толчок вниз выкидывает его за overflow
       const rect = root.getBoundingClientRect();
-      // 0 — подвал ещё не вошёл снизу, 1 — прошёл верх окна
-      const raw = (window.innerHeight - rect.top) / (rect.height + window.innerHeight * 0.4);
+      const vh = window.innerHeight;
+      // Прогресс только пока футер входит: 0→1 за вход, дальше 1
+      const raw = (vh - rect.top) / (rect.height * 0.85 + vh * 0.2);
       const progress = Math.min(1, Math.max(0, raw));
-      const depth = heroDepthFrame(progress, rect.height, factor);
-      // Инверсия: подвал въезжает снизу, поэтому слово идёт навстречу чуть медленнее
-      if (word) word.style.translate = `0 ${depth.word * 0.55}px`;
+      // Мягкий ход — 1/3 от hero, иначе на высоком футере слово уезжает за нижнюю границу
+      const depth = heroDepthFrame(progress, Math.min(rect.height, vh * 0.9), factor);
+      const wordShift = depth.word * 0.18;
+      const contentShift = depth.content * 0.22;
+      if (word) word.style.translate = `0 ${wordShift.toFixed(2)}px`;
       if (content) {
         const focused = root.matches(':focus-within');
-        content.style.translate = `0 ${focused ? 0 : depth.content * 0.6}px`;
+        content.style.translate = `0 ${focused ? 0 : contentShift.toFixed(2)}px`;
       }
-      if (foreground) foreground.style.transform = `translate3d(0, ${depth.foreground * 0.6}px, 0)`;
+      if (foreground) foreground.style.transform = `translate3d(0, ${(depth.foreground * 0.22).toFixed(2)}px, 0)`;
     };
 
     const onScroll = () => {

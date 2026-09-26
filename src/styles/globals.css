@@ -2586,21 +2586,22 @@ html:has(body[data-scroll-locked]) {
   overflow: hidden;
   white-space: nowrap;
   text-align: center;
-  font-size: clamp(2.4rem, 9vw, 9.5rem);
-  line-height: 1;
+  /* Уменьшен верхний предел — 13.5rem вылезал за 1280px и половина уходила за overflow */
+  font-size: clamp(2.2rem, 9vw, 8.2rem);
+  line-height: 0.9;
   letter-spacing: -0.02em;
   color: transparent;
-  -webkit-text-stroke: 1px color-mix(in srgb, var(--color-content-on-cinema) 75%, transparent);
+  -webkit-text-stroke: 1.1px color-mix(in srgb, var(--color-content-on-cinema) 75%, transparent);
   text-shadow:
-    0 0 24px rgba(255, 255, 255, 0.1),
-    0 0 48px var(--accent-glow);
-  opacity: 0.32;
-  /* безопасные внутренние поля — контур+свечение не режутся overflow:hidden */
-  padding-block: 0.14em 0.18em;
+    0 0 22px rgba(255, 255, 255, 0.1),
+    0 0 42px var(--accent-glow);
+  opacity: 0.34;
+  /* Поля под обводку/свечение — слово не режется, даже при translate */
+  padding-block: 0.12em 0.16em;
   margin: 0;
-  /* слово в потоке, не выходит за границы footer — половина не пропадает */
+  /* Только курсор через transform, скроллом рулит translate (пишет JS) — свойства складываются */
   transform: translate3d(
-    calc(var(--footer-parallax-x) * -18px),
+    calc(var(--footer-parallax-x) * -16px),
     calc(var(--footer-parallax-y) * -10px),
     0
   );
