@@ -2449,7 +2449,7 @@ html:has(body[data-scroll-locked]) {
  */
 [data-journey-step] .journey-step-number {
   color: var(--content-secondary);
-  opacity: 0.35;
+  opacity: 0.55;
   transition:
     color var(--duration-normal) var(--ease-brand),
     opacity var(--duration-normal) var(--ease-brand),

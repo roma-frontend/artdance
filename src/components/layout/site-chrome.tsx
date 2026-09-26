@@ -30,6 +30,7 @@ import type { ReactNode } from 'react';
 
 import { Magnetic } from '@/components/fx/magnetic';
 import { OrbitCursor } from '@/components/fx/orbit-cursor';
+import { PointerGlow } from '@/components/fx/pointer-glow';
 import { PortalTransitionProvider } from '@/components/fx/portal-transition';
 import { ScrollProgress } from '@/components/fx/scroll-progress';
 import { MobileDock } from '@/components/layout/mobile-dock';
@@ -45,6 +46,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
   return (
     <PortalTransitionProvider>
       {!isAdmin && <ScrollProgress />}
+      {!isAdmin && <PointerGlow />}
       {!isAdmin && <OrbitCursor />}
       {!isAdmin && <Magnetic />}
       {!isAdmin && <SiteHeader />}
