@@ -318,7 +318,7 @@ export const schemeTokens: Record<
  * Компонент пишет `text-style="heading-2"`, а не набор из шести классов.
  */
 export const textStyles = {
-  'display-hero': { size: '5xl', weight: 'black', lineHeight: 'display', tracking: 'tighter', family: 'display', wrap: 'balance' },
+  'display-hero': { size: '5xl', weight: 'black', lineHeight: 'display', tracking: 'normal', family: 'display', wrap: 'balance' },
   'display-editorial': { size: '6xl', weight: 'black', lineHeight: 'display', tracking: 'tighter', family: 'display', wrap: 'balance' },
   'heading-1': { size: '4xl', weight: 'bold', lineHeight: 'tight', tracking: 'tight', family: 'display', wrap: 'balance' },
   'heading-2': { size: '3xl', weight: 'bold', lineHeight: 'heading', tracking: 'tight', family: 'display', wrap: 'balance' },

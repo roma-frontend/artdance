@@ -348,7 +348,7 @@
   font-size: var(--text-5xl);
   font-weight: var(--font-weight-black);
   line-height: var(--leading-display);
-  letter-spacing: var(--tracking-tighter);
+  letter-spacing: var(--tracking-normal);
   text-wrap: balance;
 }
 
