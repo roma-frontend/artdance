@@ -177,7 +177,7 @@ function CarouselArrow({ direction, controls, disabled, label, onClick }: Carous
       className={cn(
         'grid size-10 place-items-center rounded-full',
         'border border-border-default bg-surface-card text-content-primary',
-        'transition-[transform,border-color,color] duration-normal ease-brand',
+        'transition-[translate,scale,rotate,transform,border-color,color] duration-normal ease-brand',
         'hover:border-accent hover:text-content-accent hover:scale-105 active:scale-95',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
         'disabled:pointer-events-none disabled:opacity-40',

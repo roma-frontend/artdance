@@ -2449,7 +2449,11 @@ html:has(body[data-scroll-locked]) {
  */
 [data-journey-step] .journey-step-number {
   color: var(--content-secondary);
-  opacity: 0.55;
+  /*
+   * Неактивный номер остаётся приглушённым, но проходит порог 3:1 для крупного
+   * текста в обеих темах. При 0.55 итоговый цвет был #a39f9b на белом (2.62:1).
+   */
+  opacity: 0.7;
   transition:
     color var(--duration-normal) var(--ease-brand),
     opacity var(--duration-normal) var(--ease-brand),
@@ -2481,7 +2485,14 @@ html:has(body[data-scroll-locked]) {
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .instructors-section[data-spotlight-active='true'] .card-surface {
     filter: grayscale(0.85) brightness(0.9);
-    transition: filter var(--duration-normal) var(--ease-brand);
+    transition:
+      translate var(--duration-slow) var(--ease-brand),
+      scale var(--duration-slow) var(--ease-brand),
+      rotate var(--duration-slow) var(--ease-brand),
+      transform var(--duration-slow) var(--ease-brand),
+      box-shadow var(--duration-slow) var(--ease-brand),
+      border-color var(--duration-slow) var(--ease-brand),
+      filter var(--duration-normal) var(--ease-brand);
   }
 
   .instructors-section[data-spotlight-active='true'] .card-surface:hover,
@@ -2557,12 +2568,94 @@ html:has(body[data-scroll-locked]) {
 }
 
 /*
- * ФУТЕР
- * Стандартное надежное позиционирование в потоке документа без sticky-наложений.
+ * ФУТЕР — кинематографичный финал, зеркальный hero.
+ * Фон — cinema (как hero), контурное ARTDANCE — дальний план.
  */
-.footer-reveal-container {
+.footer-reveal-container,
+.footer-cinema {
   position: relative;
-  overflow: hidden;
+  overflow: clip;
+  /* Переменные для ведения за курсором — как hero */
+  --footer-parallax-x: 0;
+  --footer-parallax-y: 0;
+}
+
+.footer-depth-word {
+  overflow: visible;
+  white-space: nowrap;
+  text-align: center;
+  font-size: clamp(2.8rem, 11vw, 13.5rem);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 1.2px color-mix(in srgb, var(--color-content-on-cinema) 75%, transparent);
+  text-shadow:
+    0 0 28px rgba(255, 255, 255, 0.12),
+    0 0 56px var(--accent-glow);
+  opacity: 0.28;
+  /* Резервируем место под обводку/свечение чтобы не резало сверху/снизу */
+  padding-block: 0.06em;
+  margin-block: -0.06em;
+  transform: translate3d(
+    calc(var(--footer-parallax-x) * -48px),
+    calc(var(--footer-parallax-y) * -28px),
+    0
+  );
+  will-change: transform, translate;
+}
+
+.footer-content {
+  transform: translate3d(calc(var(--footer-parallax-x) * 14px), calc(var(--footer-parallax-y) * 10px), 0);
+  will-change: transform, translate;
+}
+
+.footer-light-sweep {
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 42%,
+    rgba(212, 175, 55, 0.08) 48%,
+    rgba(255, 226, 152, 0.12) 52%,
+    rgba(212, 175, 55, 0.08) 56%,
+    transparent 62%
+  );
+  background-size: 300% 300%;
+  background-position: 110% 110%;
+  animation: hero-light-sweep 9s cubic-bezier(0.4, 0, 0.2, 1) 2.5s infinite;
+  opacity: 0.7;
+}
+
+.footer-hairline {
+  background: linear-gradient(90deg, transparent, var(--metal) 20%, var(--metal) 80%, transparent);
+  opacity: 0.55;
+}
+
+.footer-grain {
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+.footer-vignette {
+  pointer-events: none;
+  background: radial-gradient(ellipse 90% 85% at 50% 55%, transparent 45%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+.footer-credits {
+  letter-spacing: 0.18em;
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .footer-depth-word,
+  .footer-content {
+    transform: none;
+    translate: none;
+  }
+  .footer-light-sweep {
+    display: none;
+  }
 }
 
 

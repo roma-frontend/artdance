@@ -30,9 +30,9 @@ export function FinalCtaVideoText({
     >
       <span
         aria-hidden="true"
-        className="font-display font-black tracking-tighter uppercase text-center text-transparent text-5xl sm:text-6xl md:text-7xl lg:text-8xl opacity-30 select-none"
+        className="font-display font-black tracking-tighter uppercase text-center text-content-on-cinema text-5xl sm:text-6xl md:text-7xl lg:text-8xl opacity-50 select-none"
         style={{
-          WebkitTextStroke: '1.5px color-mix(in srgb, var(--color-content-on-cinema) 80%, transparent)',
+          WebkitTextStroke: '1px color-mix(in srgb, var(--color-content-on-cinema) 65%, transparent)',
           textShadow: '0 0 25px rgba(255, 255, 255, 0.1), 0 0 50px var(--accent-glow)',
         }}
       >

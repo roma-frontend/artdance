@@ -8,7 +8,6 @@
  * (акцентное свечение, смена цвета, легкая пульсация).
  */
 
-import { useScroll } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
@@ -22,20 +21,13 @@ interface JourneyTrackProps {
 export function JourneyTrack({ totalSteps = 4, className }: JourneyTrackProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const activeLineRef = useRef<HTMLDivElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
   const reducedMotion = usePrefersReducedMotion();
-  const { scrollY } = useScroll();
 
   const [activeStep, setActiveStep] = useState<number>(0);
 
   useEffect(() => {
     const container = containerRef.current;
-    const path = pathRef.current;
-    if (!container || !path || reducedMotion) return;
-
-    const pathLength = path.getTotalLength();
-    path.style.strokeDasharray = `${pathLength}`;
-    path.style.strokeDashoffset = `${pathLength}`;
+    if (!container || reducedMotion) return;
 
     let frame = 0;
     const updateProgress = () => {
@@ -77,15 +69,15 @@ export function JourneyTrack({ totalSteps = 4, className }: JourneyTrackProps) {
     };
 
     updateProgress();
-    const unsubscribe = scrollY.on('change', schedule);
+    window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule, { passive: true });
 
     return () => {
-      unsubscribe();
+      window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
       if (frame !== 0) window.cancelAnimationFrame(frame);
     };
-  }, [reducedMotion, scrollY, totalSteps]);
+  }, [reducedMotion, totalSteps]);
 
   if (reducedMotion) return null;
 

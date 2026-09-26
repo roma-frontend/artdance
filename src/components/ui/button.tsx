@@ -34,7 +34,7 @@ const buttonVariants = cva(
         contrast:
           'bg-surface-card text-content-primary hover:-translate-y-px hover:shadow-lg active:translate-y-0 shadow-md',
         onCinema:
-          'border-border-on-cinema text-content-on-cinema hover:bg-content-on-cinema hover:text-content-inverse hover:-translate-y-px active:translate-y-0',
+          'border-border-on-cinema text-content-on-cinema hover:bg-content-on-cinema hover:text-surface-cinema hover:-translate-y-px active:translate-y-0',
         /**
          * Псевдоним `accent` для компонентов shadcn/ui: их `alert-dialog` и
          * `calendar` передают `variant="default"`. Отдельного вида кнопки в

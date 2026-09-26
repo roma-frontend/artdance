@@ -173,46 +173,28 @@ test('Печать финального CTA вращается от прокру
 });
 
 /*
- * Лента направлений — 3D-барабан: pinned-секция, вертикальная прокрутка
- * вращает цилиндр. Проверяется геометрия в окне, а не CSS-переменные: плитка
- * напротив зрителя стоит по центру и крупнее соседей, к концу запаса на фронт
- * приходит последняя, обратная прокрутка возвращает первую. Вне эффекта
- * (touch, reduced-motion, без JS) секция остаётся обычной сеткой.
+ * Театральный аккордеон заменил scroll-driven ленту направлений. Проверяем
+ * пользовательское поведение: активная кулиса шире соседних, а наведение
+ * переводит активное состояние и раскрывает выбранную карточку.
  */
-test('Лента направлений вращается барабаном при вертикальном скролле', async ({ page }) => {
-  test.skip((page.viewportSize()?.width ?? 0) < 1024, 'Лента включается только от 1024px, ниже — обычная сетка');
+test('Аккордеон направлений раскрывает выбранную кулису', async ({ page }) => {
+  test.skip((page.viewportSize()?.width ?? 0) < 768, 'Ниже md аккордеон становится вертикальным списком');
   await page.goto(HOME);
-  const rail = page.locator('[data-slot="style-rail"]');
-  await expect(rail).toBeAttached();
 
-  const tile = (which: 'first' | 'last') =>
-    rail.evaluate((node, pick) => {
-      const items = node.querySelectorAll<HTMLElement>('[data-rail-track] li');
-      const item = pick === 'first' ? items[0] : items[items.length - 1];
-      if (!item) return { center: Number.NaN, width: Number.NaN };
-      const rect = item.getBoundingClientRect();
-      return { center: rect.left + rect.width / 2, width: rect.width };
-    }, which);
+  const accordion = page.locator('[data-slot="style-accordion"]');
+  const panels = accordion.locator('[data-style-panel]');
+  await accordion.scrollIntoViewIfNeeded();
+  expect(await panels.count()).toBeGreaterThan(2);
 
-  const top = await rail.evaluate((node) => node.getBoundingClientRect().top + window.scrollY);
-  const viewport = page.viewportSize()?.height ?? 900;
-  const height = await rail.evaluate((node) => (node as HTMLElement).offsetHeight);
-  const viewportWidth = await rail.evaluate(() => window.innerWidth);
+  const width = (index: number) =>
+    panels.nth(index).evaluate((node) => node.getBoundingClientRect().width);
 
-  /* Начало: первая плитка на фронте — по центру и шире развёрнутой последней. */
-  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top);
-  await expect.poll(async () => (await tile('first')).center).toBeCloseTo(viewportWidth / 2, 0);
-  const firstAtStart = await tile('first');
-  expect(firstAtStart.width).toBeGreaterThan((await tile('last')).width);
+  await expect(panels.nth(2)).toHaveAttribute('data-active', 'true');
+  expect(await width(2)).toBeGreaterThan(await width(0));
 
-  /* Конец запаса: барабан довернул последнюю плитку на фронт. */
-  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top + height - viewport);
-  await expect.poll(async () => (await tile('last')).center).toBeCloseTo(viewportWidth / 2, 0);
-  expect((await tile('first')).center).toBeLessThan(viewportWidth / 2 - 80);
-
-  /* Обратная прокрутка возвращает первую плитку на фронт. */
-  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top);
-  await expect.poll(async () => (await tile('first')).center).toBeCloseTo(viewportWidth / 2, 0);
+  await panels.first().hover();
+  await expect(panels.first()).toHaveAttribute('data-active', 'true');
+  await expect.poll(async () => (await width(0)) - (await width(2))).toBeGreaterThan(0);
 });
 
 test('Соревнования сохраняют два видео и исходные пропорции', async ({ page }) => {

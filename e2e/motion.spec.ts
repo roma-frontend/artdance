@@ -24,11 +24,12 @@ import { settleAndHover } from './support/settle';
 
 const HOME = '/en';
 
-/** Заголовок секции «Discover» — первый блок с появлением ниже первого экрана. */
+/** Заголовок секции «Discover» и его собственная reveal-обёртка. */
 const revealTarget = (page: Page): Locator =>
   page.getByRole('heading', { name: en.home.discover.title });
 
-const firstRevealContainer = (page: Page): Locator => page.locator('[data-reveal="up"]').first();
+const firstRevealContainer = (page: Page): Locator =>
+  page.locator('[data-reveal="up"]', { has: revealTarget(page) });
 const firstStagger = (page: Page): Locator => page.locator('[data-stagger]').first();
 
 test.describe('Reveal — появление при прокрутке', () => {
@@ -375,58 +376,36 @@ test.describe('Counter — показатели hero', () => {
 });
 
 /**
- * Плитка направления: подписи, живущие в состоянии наведения.
- *
- * Главное здесь — не анимация, а доступность информации. В прототипе счётчик
- * занятий и стрелка появляются только на hover, то есть на телефоне их не
- * существует вовсе, и узнать число занятий в направлении нельзя. Скрытое
- * состояние объявлено внутри `@media (hover: hover)`, и тест проверяет обе
- * стороны этого решения.
+ * Театральный аккордеон направлений, который заменил StyleTileGrid на главной.
+ * Детали активной панели должны быть доступны сразу, а мышь и клавиатурный
+ * фокус — переключать панель одним и тем же способом.
  */
-test.describe('StyleTileGrid', () => {
-  test('счётчик занятий скрыт до наведения там, где наведение есть, и виден там, где его нет', async ({
-    page,
-  }) => {
+test.describe('StyleAccordion', () => {
+  test('активная панель показывает счётчик и переключается фокусом', async ({ page }) => {
     await page.goto(HOME);
 
-    const tile = page.locator('a.card-surface').first();
-    const count = tile.locator('.tile-count');
-    await tile.scrollIntoViewIfNeeded();
-    await expect(count).toHaveCount(1);
+    const accordion = page.locator('[data-slot="style-accordion"]');
+    const panels = accordion.locator('[data-style-panel]');
+    await accordion.scrollIntoViewIfNeeded();
+    expect(await panels.count()).toBeGreaterThan(1);
 
-    const finePointer = await page.evaluate(
-      () => window.matchMedia('(hover: hover) and (pointer: fine)').matches,
-    );
+    await expect(panels.nth(2)).toHaveAttribute('data-active', 'true');
+    await expect(panels.nth(2).locator('[data-style-count]')).toBeVisible();
 
-    if (!finePointer) {
-      /* Наведения нет — информация обязана быть видна без него. */
-      await expect(count).toHaveCSS('opacity', '1');
-      return;
-    }
-
-    await expect(count).toHaveCSS('opacity', '0');
-    await settleAndHover(tile);
-    await expect(count).toHaveCSS('opacity', '1');
+    await panels.first().locator('a').focus();
+    await expect(panels.first()).toHaveAttribute('data-active', 'true');
+    await expect(panels.first().locator('[data-style-count]')).toBeVisible();
   });
 
-  test('плитка не поднимается при наведении: в макете двигается только кадр', async ({ page }) => {
+  test('панель не поднимается при наведении: меняется только ширина кулисы', async ({ page }) => {
     await page.goto(HOME);
 
     const finePointer = await page.evaluate(() => window.matchMedia('(hover: hover)').matches);
     test.skip(!finePointer, 'На touch-устройстве наведения нет');
 
-    const tile = page.locator('a.card-surface').first();
-    await settleAndHover(tile);
-
-    /*
-     * Подъём есть у карточек каталога, но не у плитки — иначе сетка дрожит.
-     * Через `poll`, а не мгновенный замер: секция въезжает в экран переходом, и
-     * попасть замером в его середину значит прочитать чужое смещение. Реальный
-     * подъём этой проверкой всё равно будет пойман — он устойчив и `none` не
-     * станет.
-     */
-    await expect
-      .poll(() => tile.evaluate((node) => getComputedStyle(node).translate))
-      .toBe('none');
+    const panel = page.locator('[data-slot="style-accordion"] [data-style-panel]').first();
+    await settleAndHover(panel);
+    await expect(panel).toHaveAttribute('data-active', 'true');
+    await expect.poll(() => panel.evaluate((node) => getComputedStyle(node).translate)).toBe('none');
   });
 });

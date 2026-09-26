@@ -1,31 +1,27 @@
 /**
- * SITE FOOTER — подвал с колонками ссылок, соцсетями и правовой строкой.
+ * SITE FOOTER — подвал: финал как у hero, только снизу.
  *
- * Состав колонок объявлен данными (`footerNavGroups`), а не разметкой: раздел
- * выключенного модуля не попадает в подвал так же, как не попадает в шапку.
- * Пустая колонка не рендерится вовсе.
+ * ARTDANCE на всю ширину — тот же контурный приём что в hero
+ * (.hero-depth-word): прозрачный текст с обводкой + свечение,
+ * глубина за курсором и при прокрутке (FooterParallaxFX).
  *
- * Год в копирайте — из системного времени, а не литерал: подвал не должен
- * устаревать первого января. Соцсети берутся из `site.social`, и пустое значение
- * означает «ссылки нет», а не «ссылка ведёт в никуда».
- *
- * Соцсети подписаны названием, а не значком: в lucide 1.x брендовых иконок нет,
- * а рисовать их по памяти — верный способ получить искажённый чужой логотип.
- * Название платформы читается однозначно, переводится не нужно и не зависит от
- * набора иконок. Это единственные внешние ссылки в подвале, поэтому у них
- * `rel="noreferrer"` и предупреждение о новой вкладке для скринридера.
+ * Креативные детали:
+ *  • grain + виньетка как у киноплёнки
+ *  • тонкая золотая нить поверху (как металлический отблеск сцены)
+ *  • световой проход как в hero (hero-light-sweep)
+ *  • madeIn как «титры» с трекингом
  */
 
 import { useFormatter, useTranslations } from 'next-intl';
 
 import { BrandMark } from '@/components/brand/brand-mark';
+import { FooterParallaxFX } from '@/components/layout/footer-parallax-fx';
 import { footerNavGroups, routes, site } from '@/config';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
 type SocialKey = keyof typeof site.social;
 
-/** Отображаемые названия платформ. Не переводятся: это имена собственные. */
 const SOCIAL_LABELS: Record<SocialKey, string> = {
   instagram: 'Instagram',
   tiktok: 'TikTok',
@@ -36,35 +32,30 @@ const SOCIAL_LABELS: Record<SocialKey, string> = {
 export function SiteFooter() {
   const t = useTranslations();
   const format = useFormatter();
-
-  const socials = (Object.keys(site.social) as SocialKey[]).filter(
-    (key) => site.social[key].length > 0,
-  );
+  const socials = (Object.keys(site.social) as SocialKey[]).filter((key) => site.social[key].length > 0);
 
   return (
-    <footer className="footer-reveal-container border-t border-border-default bg-surface-raised relative overflow-hidden">
-      {/* Огромный фоновый логотип бренда на всю ширину футера */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-10 left-1/2 -translate-x-1/2 select-none opacity-5 dark:opacity-10"
-      >
-        <span className="font-display text-[16vw] font-black tracking-tighter text-content-primary whitespace-nowrap">
-          {t('brand.name')}
-        </span>
-      </div>
+    <footer className="footer-reveal-container footer-cinema relative overflow-hidden border-t border-border-on-cinema bg-surface-cinema">
+      <FooterParallaxFX />
 
-      <div className="page-container section-y relative z-10">
+      {/* Верхняя золотая нить */}
+      <div aria-hidden className="footer-hairline absolute inset-x-0 top-0 h-px" />
+      {/* Кинозерно + виньетка */}
+      <div aria-hidden className="footer-grain absolute inset-0" />
+      <div aria-hidden className="footer-vignette absolute inset-0" />
+      {/* Световой проход как в hero, но мягче */}
+      <div aria-hidden className="footer-light-sweep absolute inset-0" />
+
+      <div className="footer-content page-container section-y relative z-10 pb-8 md:pb-10">
         <div className="grid gap-10 lg:grid-cols-[2fr_repeat(4,1fr)]">
           <div>
             <Link href={routes.home()} className="flex items-center gap-3">
-              <BrandMark className="text-content-accent" />
-              <span className="text-card-title">{t('brand.name')}</span>
+              <BrandMark className="text-accent" />
+              <span className="text-card-title text-content-on-cinema">{t('brand.name')}</span>
             </Link>
-
-            <p className="text-body-sm mt-4 max-w-(--layout-prose-max-width) text-content-secondary">
+            <p className="text-body-sm mt-4 max-w-(--layout-prose-max-width) text-content-on-cinema-muted">
               {t('footer.description')}
             </p>
-
             {socials.length > 0 && (
               <ul className="mt-6 flex flex-wrap items-center gap-2">
                 {socials.map((key) => (
@@ -75,9 +66,9 @@ export function SiteFooter() {
                       rel="noreferrer"
                       className={cn(
                         'text-caption inline-flex items-center rounded-full px-3 py-1.5',
-                        'border border-border-default text-content-secondary',
+                        'border border-border-on-cinema text-content-on-cinema-muted',
                         'transition-colors duration-normal ease-brand',
-                        'hover:border-accent hover:text-content-accent',
+                        'hover:border-accent hover:text-accent',
                       )}
                     >
                       {SOCIAL_LABELS[key]}
@@ -91,10 +82,7 @@ export function SiteFooter() {
 
           {footerNavGroups.map((group) => (
             <nav key={group.id} aria-labelledby={`footer-${group.id}`}>
-              <h2
-                id={`footer-${group.id}`}
-                className="text-eyebrow mb-4 text-content-primary"
-              >
+              <h2 id={`footer-${group.id}`} className="text-eyebrow mb-4 text-content-on-cinema">
                 {t(group.titleKey)}
               </h2>
               <ul className="flex flex-col gap-2.5">
@@ -102,7 +90,7 @@ export function SiteFooter() {
                   <li key={item.id}>
                     <Link
                       href={item.href}
-                      className="text-body-sm text-content-secondary transition-colors duration-normal ease-brand hover:text-accent"
+                      className="text-body-sm text-content-on-cinema-muted transition-colors duration-normal ease-brand hover:text-accent"
                     >
                       {t(item.labelKey)}
                     </Link>
@@ -113,15 +101,29 @@ export function SiteFooter() {
           ))}
         </div>
 
-        <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-border-default pt-6">
-          <p className="text-caption text-content-tertiary">
+        <div className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-border-on-cinema pt-6">
+          <p className="text-caption text-content-on-cinema-muted">
             {t('footer.copyright', {
               year: format.dateTime(new Date(), { year: 'numeric' }),
               brand: t('brand.name'),
             })}
           </p>
-          <p className="text-caption text-content-tertiary">{t('brand.madeIn')}</p>
+          <p className="footer-credits text-caption tracking-widest text-content-on-cinema-muted uppercase">
+            {t('brand.madeIn')}
+          </p>
         </div>
+
+      </div>
+
+      {/* Контурное ARTDANCE — на всю ширину экрана, вне page-container чтобы не резался его max-width/padding */}
+      <div
+        aria-hidden="true"
+        data-footer-word=""
+        className="footer-depth-word pointer-events-none relative z-10 select-none px-4 pb-4 md:pb-6"
+      >
+        <span className="font-display block w-full text-center font-black tracking-tighter whitespace-nowrap leading-none">
+          {t('brand.name')}
+        </span>
       </div>
     </footer>
   );

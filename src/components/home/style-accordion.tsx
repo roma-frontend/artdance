@@ -56,13 +56,16 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
           return (
             <li
               key={tile.style}
+              data-style-panel=""
+              data-active={isActive ? 'true' : 'false'}
               onMouseEnter={() => setActiveIndex(index)}
               onFocus={() => setActiveIndex(index)}
+              style={{ flex: isActive ? '3.5 1 0%' : '1 1 0%' }}
               className={cn(
-                'relative h-full overflow-hidden rounded-2xl border transition-all duration-500 ease-out cursor-pointer',
+                'relative h-full overflow-hidden rounded-2xl border cursor-pointer transition-[flex,opacity,border-color,box-shadow] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
                 isActive
-                  ? 'flex-[3.5] border-accent/80 shadow-[0_12px_40px_-10px_var(--accent-glow)]'
-                  : 'flex-[1] border-border-default/60 hover:border-accent/40 opacity-75 hover:opacity-100',
+                  ? 'border-accent/80 shadow-[0_12px_40px_-10px_var(--accent-glow)]'
+                  : 'border-border-default/60 hover:border-accent/40 opacity-75 hover:opacity-100',
               )}
             >
               <PortalLink
@@ -77,7 +80,7 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
                   fill
                   className="absolute inset-0 size-full"
                   imageClassName={cn(
-                    'size-full object-cover transition-all duration-700 ease-out',
+                    'size-full object-cover transition-[translate,scale,rotate,transform,filter] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
                     isActive ? 'scale-105 filter-none' : 'scale-100 brightness-75 grayscale-[25%]',
                   )}
                 />
@@ -86,7 +89,7 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
                 <div
                   aria-hidden="true"
                   className={cn(
-                    'absolute inset-0 transition-opacity duration-500',
+                    'absolute inset-0 transition-opacity duration-700 ease-out',
                     isActive
                       ? 'bg-gradient-to-t from-surface-cinema/95 via-surface-cinema/40 to-transparent'
                       : 'bg-gradient-to-t from-surface-cinema/90 via-surface-cinema/50 to-surface-cinema/20',
@@ -97,7 +100,7 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'absolute top-5 right-5 flex size-10 items-center justify-center rounded-full text-content-on-cinema backdrop-blur-md transition-all duration-500',
+                    'absolute top-5 right-5 flex size-10 items-center justify-center rounded-full text-content-on-cinema backdrop-blur-md transition-[opacity,translate,scale,rotate,transform,background-color] duration-500 ease-out',
                     isActive
                       ? 'bg-accent/80 opacity-100 scale-100'
                       : 'bg-surface-glass-on-cinema opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100',
@@ -108,18 +111,21 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
 
                 {/* Контентная плашка */}
                 <div className="relative z-10 flex w-full flex-col justify-end">
-                  <span className="font-display text-2xl lg:text-3xl font-bold tracking-tight text-content-on-cinema uppercase">
+                  <span className={cn(
+                    "font-display font-bold tracking-tight text-content-on-cinema uppercase transition-[font-size] duration-500 ease-out whitespace-nowrap overflow-hidden text-ellipsis",
+                    isActive ? "text-2xl lg:text-3xl" : "text-lg"
+                  )}>
                     {t(danceStyleLabelKey(tile.style as never))}
                   </span>
 
                   {/* Дополнительная информация, плавно раскрывающаяся у активной кулисы */}
                   <div
                     className={cn(
-                      'overflow-hidden transition-all duration-500 flex flex-col',
+                      'overflow-hidden flex flex-col transition-[max-height,opacity,margin] duration-500 ease-out',
                       isActive ? 'max-h-24 opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0',
                     )}
                   >
-                    <span className="text-caption text-content-on-cinema-muted">
+                    <span data-style-count="" className="text-caption text-content-on-cinema-muted">
                       {tCommon('counts.classes', { count: tile.classCount })}
                     </span>
 
