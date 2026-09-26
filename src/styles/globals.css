@@ -2574,31 +2574,34 @@ html:has(body[data-scroll-locked]) {
 .footer-reveal-container,
 .footer-cinema {
   position: relative;
-  overflow: clip;
+  overflow: hidden;
   /* Переменные для ведения за курсором — как hero */
   --footer-parallax-x: 0;
   --footer-parallax-y: 0;
+  /* footer всегда cinema-фон, даже в светлой теме — белый блок над надписью не из-за темы */
+  background-color: var(--surface-cinema);
 }
 
 .footer-depth-word {
-  overflow: visible;
+  overflow: hidden;
   white-space: nowrap;
   text-align: center;
-  font-size: clamp(2.8rem, 11vw, 13.5rem);
-  line-height: 0.85;
-  letter-spacing: -0.04em;
+  font-size: clamp(2.4rem, 9vw, 9.5rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
   color: transparent;
-  -webkit-text-stroke: 1.2px color-mix(in srgb, var(--color-content-on-cinema) 75%, transparent);
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--color-content-on-cinema) 75%, transparent);
   text-shadow:
-    0 0 28px rgba(255, 255, 255, 0.12),
-    0 0 56px var(--accent-glow);
-  opacity: 0.28;
-  /* Резервируем место под обводку/свечение чтобы не резало сверху/снизу */
-  padding-block: 0.06em;
-  margin-block: -0.06em;
+    0 0 24px rgba(255, 255, 255, 0.1),
+    0 0 48px var(--accent-glow);
+  opacity: 0.32;
+  /* безопасные внутренние поля — контур+свечение не режутся overflow:hidden */
+  padding-block: 0.14em 0.18em;
+  margin: 0;
+  /* слово в потоке, не выходит за границы footer — половина не пропадает */
   transform: translate3d(
-    calc(var(--footer-parallax-x) * -48px),
-    calc(var(--footer-parallax-y) * -28px),
+    calc(var(--footer-parallax-x) * -18px),
+    calc(var(--footer-parallax-y) * -10px),
     0
   );
   will-change: transform, translate;

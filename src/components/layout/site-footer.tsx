@@ -115,13 +115,13 @@ export function SiteFooter() {
 
       </div>
 
-      {/* Контурное ARTDANCE — на всю ширину экрана, вне page-container чтобы не резался его max-width/padding */}
+      {/* Контурное ARTDANCE — внизу, строго внутри footer, overflow:hidden не режет за счёт padding */}
       <div
         aria-hidden="true"
         data-footer-word=""
-        className="footer-depth-word pointer-events-none relative z-10 select-none px-4 pb-4 md:pb-6"
+        className="footer-depth-word pointer-events-none relative z-10 select-none px-2"
       >
-        <span className="font-display block w-full text-center font-black tracking-tighter whitespace-nowrap leading-none">
+        <span className="font-display block w-full text-center font-black tracking-normal whitespace-nowrap leading-none">
           {t('brand.name')}
         </span>
       </div>
