@@ -238,6 +238,16 @@ export const stackCards = {
  * кадра (дисциплины) раскрывается разворотом: карточки выходят из глубины.
  * Прокрутку не держит — ничего не прилипает.
  */
+/**
+ * Лента направлений на главной (`StyleRail`), 25.09.2026: 3D-барабан.
+ * Радиус и угол шага живут в globals.css рядом с геометрией; здесь — только
+ * то, что нужно JS для расчёта прокрутки.
+ */
+export const styleRail = {
+  /** Доля высоты окна прокрутки на поворот барабана к следующей плитке. */
+  stepViewports: 0.55,
+} as const;
+
 export const cinemaAperture = {
   /** Доля высоты окна, за которую экран раскрывается полностью. */
   openSpan: 0.8,
@@ -404,6 +414,7 @@ export const motion = {
   cursorRing,
   scrollWords,
   stackCards,
+  styleRail,
   cinemaAperture,
   scrollRotation,
   scrollProgress,

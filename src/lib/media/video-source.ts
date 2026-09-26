@@ -52,19 +52,40 @@ interface DecodeVerdict extends VideoSourceChoice {
 }
 
 /**
- * Версия кадра для текущего окна: последняя из политики, чей порог не превышает
- * ширину окна. Порядок в политике — по возрастанию, поэтому перебор идёт с конца.
+ * Ширина кадра в ФИЗИЧЕСКИХ пикселях, которую реально рисует экран.
  *
- * Ширина окна, а не размер самого элемента: элемент к моменту выбора может ещё не
+ * Две поправки к «ширине окна», и без обеих кадр мылится:
+ * 1. `object-fit: cover` на полноэкранной секции: на высоком окне (телефон в
+ *    портрете) кадр 16:9 растягивается по высоте, и его ширина — `высота × 16/9`,
+ *    а не ширина окна.
+ * 2. `devicePixelRatio`: на Retina и телефонах на CSS-пиксель приходится 2–3
+ *    физических, и кадр по CSS-ширине растягивался бы вдвое-втрое.
+ *
+ * DPR ограничен двумя: третий множитель на телефоне глазом не различим, а
+ * трафик и нагрузка на декодер растут.
+ */
+function requiredFrameWidth(): number {
+  const win = globalThis.window;
+  if (!win) return 0;
+  const cssWidth = Math.max(win.innerWidth, (win.innerHeight * 16) / 9);
+  return Math.round(cssWidth * Math.min(win.devicePixelRatio || 1, 2));
+}
+
+/**
+ * Версия кадра для текущего экрана: последняя из политики, чей порог не
+ * превышает требуемую физическую ширину кадра. Порядок в политике — по
+ * возрастанию, поэтому перебор идёт с конца.
+ *
+ * Размер окна, а не самого элемента: элемент к моменту выбора может ещё не
  * иметь итоговых размеров, а решение нужно до первого байта.
  */
 function renditionWidthFor(loop: VideoLoopKey): number {
   const { renditions } = videoLoopPolicy[loop];
-  const viewport = globalThis.window?.innerWidth ?? 0;
+  const required = requiredFrameWidth();
 
   const suitable = [...renditions]
     .sort((a, b) => a.minViewportWidth - b.minViewportWidth)
-    .filter((rendition) => viewport >= rendition.minViewportWidth)
+    .filter((rendition) => required >= rendition.minViewportWidth)
     .at(-1);
 
   /* Окно уже самого мелкого порога быть не может, но подстраховка дешевле сбоя. */

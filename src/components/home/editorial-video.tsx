@@ -42,7 +42,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { Media } from '@/components/ui/media';
-import { videoProcessing } from '@/config/media-processing';
+import { videoProcessing, type VideoLoopKey } from '@/config/media-processing';
 import { hasPlayableVideo, resolveMedia, type MediaRef, type VideoRef } from '@/domain/content';
 import { useBackgroundVideo } from '@/lib/hooks/use-background-video';
 import { usePrefersStillImage } from '@/lib/hooks/use-motion-preferences';
@@ -54,9 +54,11 @@ export interface EditorialVideoProps {
   /** Постер. Отдельным пропсом: показывается и без видео. */
   poster: MediaRef;
   locale: Locale;
+  /** Петля из политики: по ней выбирается версия кадра. */
+  loop?: VideoLoopKey;
 }
 
-export function EditorialVideo({ video, poster, locale }: EditorialVideoProps) {
+export function EditorialVideo({ video, poster, locale, loop = 'editorial' }: EditorialVideoProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const stillImage = usePrefersStillImage();
@@ -82,14 +84,14 @@ export function EditorialVideo({ video, poster, locale }: EditorialVideoProps) {
     if (!near || !hasPlayableVideo(video)) return;
 
     let cancelled = false;
-    void pickDecodableSource(video.sources, 'editorial').then((chosen) => {
+    void pickDecodableSource(video.sources, loop).then((chosen) => {
       if (!cancelled && chosen) setSource(chosen.url);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [near, video]);
+  }, [near, video, loop]);
 
   /**
    * Кадр показывается только когда петля действительно идёт.

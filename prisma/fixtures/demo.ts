@@ -797,9 +797,14 @@ export const demoMediaAlt: Record<string, { hy: string; ru: string; en: string }
     en: 'A cinematic frame of dance movement',
   },
   'editorial-loop-poster': {
-    hy: 'Պարուհին բորդո զգեստով պտույտի մեջ բեմում՝ կարմիր հակադիր լույսի ներքո',
-    ru: 'Танцовщица в бордовом платье в повороте на сцене, красный контровой свет',
-    en: 'A dancer in a burgundy dress mid-turn on stage under red backlight',
+    hy: 'Տարբեր ոճերի պարողներ մուգ ստուդիայում, յուրաքանչյուրն իր ռիթմով',
+    ru: 'Танцоры разных стилей в тёмной студии, каждый в своём ритме',
+    en: 'Dancers of different styles in a dark studio, each moving to their own rhythm',
+  },
+  'competition-loop-poster': {
+    hy: 'Սպորտային պարի զույգը մրցման պարկետին՝ լուսարձակների ներքո',
+    ru: 'Пара спортивного бального танца на паркете турнира в свете прожекторов',
+    en: 'A DanceSport couple on a competition floor under spotlights',
   },
   'style-hip-hop': {
     hy: 'Հիփ-հոփ պարող փողոցային ոճով',

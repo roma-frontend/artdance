@@ -31,15 +31,16 @@ import { TestimonialCard } from '@/components/home/testimonial-card';
 import { CardTilt } from '@/components/fx/card-tilt';
 import { Reveal } from '@/components/fx/reveal';
 import { TextReveal } from '@/components/fx/text-reveal';
-import { StyleRail } from '@/components/fx/style-rail';
+import { StyleAccordion } from '@/components/home/style-accordion';
 import { CinemaAperture } from '@/components/fx/cinema-aperture';
+import { FinalCtaVideoText } from '@/components/home/final-cta-video-text';
+import { InstructorsSpotlight } from '@/components/home/instructors-spotlight';
 import { ScrollSeal } from '@/components/fx/scroll-seal';
 import { RailSeal } from '@/components/fx/rail-seal';
 import { ClassCard } from '@/components/catalog/class-card';
 import { ClassCarousel } from '@/components/catalog/class-carousel';
 import { EventCard } from '@/components/catalog/event-card';
 import { InstructorCard } from '@/components/catalog/instructor-card';
-import { StyleTileGrid } from '@/components/catalog/style-tile-grid';
 import { VenueCard } from '@/components/catalog/venue-card';
 import { ProductCard } from '@/components/shop/product-card';
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -89,31 +90,27 @@ export default async function HomePage({ params }: PageProps) {
       {/* ── MARQUEE: направления берутся из домена, не из вёрстки ── */}
       <StyleMarquee />
 
-      {/* ── DISCOVER: на широком экране лента направлений едет вбок при скролле ── */}
-      <StyleRail>
-        <div className="w-full">
-          <div className="page-container relative">
-            <Reveal as="div" className="mb-6 flex flex-col items-center justify-center text-center">
-              <div className="relative inline-flex items-center justify-center">
-                <SectionHeading
-                  align="center"
-                  eyebrow={t('discover.eyebrow')}
-                  title={t('discover.title')}
-                  subtitle={t('discover.subtitle', { styles: danceStyles.length })}
-                  className="mb-0"
-                />
-                <div data-rail-seal="" className="absolute -right-24 top-0 hidden xl:block">
-                  <RailSeal />
-                </div>
+      {/* ── DISCOVER: Театральные кулисы (интерактивный аккордеон стилей) ── */}
+      <section className="section-y relative">
+        <div className="page-container relative">
+          <Reveal as="div" className="mb-8 flex flex-col items-center justify-center text-center">
+            <div className="relative inline-flex items-center justify-center">
+              <SectionHeading
+                align="center"
+                eyebrow={t('discover.eyebrow')}
+                title={t('discover.title')}
+                subtitle={t('discover.subtitle', { styles: danceStyles.length })}
+                className="mb-0"
+              />
+              <div data-rail-seal="" className="absolute -right-24 top-0 hidden xl:block">
+                <RailSeal />
               </div>
-            </Reveal>
-
-            <div data-rail-track="">
-              <StyleTileGrid tiles={content.styleTiles} locale={locale as Locale} />
             </div>
-          </div>
+          </Reveal>
+
+          <StyleAccordion tiles={content.styleTiles} locale={locale as Locale} />
         </div>
-      </StyleRail>
+      </section>
 
       {/* ── POPULAR: горизонтальная лента занятий ── */}
       <section className="section-y bg-surface-raised">
@@ -178,9 +175,10 @@ export default async function HomePage({ params }: PageProps) {
       />
 
       {/* ── INSTRUCTORS: печать крутится от прохода секции, не всей страницы ── */}
-      <section className="section-y relative">
+      <section className="section-y relative instructors-section overflow-hidden">
+        <InstructorsSpotlight />
         <ScrollSeal scope="section" className="top-8 left-8 hidden text-content-tertiary lg:block" />
-        <div className="page-container">
+        <div className="page-container relative z-10">
           <Reveal className="mb-12">
             <SectionHeading
               align="center"
@@ -339,6 +337,9 @@ export default async function HomePage({ params }: PageProps) {
         */}
         <ScrollSeal />
         <Reveal variant="scale" className="page-container">
+          {/* Видео внутри букв MOVE DIFFERENT с эффектом раскрытия на скролле */}
+          <FinalCtaVideoText video={content.editorial.video} text="MOVE DIFFERENT" />
+
           <h2 className="text-heading-1 text-content-on-cinema"><TextReveal>{t('finalCta.title')}</TextReveal></h2>
           <p className="text-body-lg mt-3 text-content-on-cinema-muted">{t('finalCta.subtitle')}</p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">

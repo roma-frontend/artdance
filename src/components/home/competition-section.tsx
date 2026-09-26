@@ -49,7 +49,7 @@ export function CompetitionSection({
           data-parallax="background"
           className="absolute inset-0"
         >
-          <EditorialVideo video={video} poster={image} locale={locale} />
+          <EditorialVideo video={video} poster={image} locale={locale} loop="competition" />
         </div>
 
         <span

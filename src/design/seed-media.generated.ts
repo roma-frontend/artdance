@@ -38,14 +38,23 @@ export const seedMedia = {
     blurDataUrl:
       'data:image/webp;base64,UklGRk4AAABXRUJQVlA4IEIAAADwAQCdASoMAAcAAwBSJYgCdAD0t81XVuAA/vlM4OM8U4UoyCRBzOFw66qzm64+TTaa/+QcN5oQQcWalgmXvBOAAAA=',
   },
-  'editorial-loop-poster': {
-    file: 'editorial-loop-poster.0b14ccd0.webp',
-    width: 1280,
-    height: 720,
-    bytes: 20914,
-    fingerprint: '0b14ccd0',
+  'competition-loop-poster': {
+    file: 'competition-loop-poster.f6c5502c.webp',
+    width: 1920,
+    height: 1080,
+    bytes: 55650,
+    fingerprint: 'f6c5502c',
     blurDataUrl:
-      'data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoMAAcAAwBSJQBOgBulqOqr3AD++ftoJ9LvRRwzSxZ/vYG6LNJOhfhAAAA=',
+      'data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAADwAQCdASoMAAcAAwBSJYwCdAD0RxiSVgAA/vNT581B+lL7oUMjcnDcvcIsY+v64c+I3IsHP7MOZeMjaFA4spjvWfMwAA==',
+  },
+  'editorial-loop-poster': {
+    file: 'editorial-loop-poster.5165a09e.webp',
+    width: 1920,
+    height: 1080,
+    bytes: 41572,
+    fingerprint: '5165a09e',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRkAAAABXRUJQVlA4IDQAAAAQAgCdASoMAAcAAwBSJZQCdAEPS9tnixAAAP70fRMS7lV+HcaaHWE3zsJU/C6qXDwAwAAA',
   },
   'editorial-rhythm': {
     file: 'editorial-rhythm.8049c5ea.webp',
@@ -66,13 +75,13 @@ export const seedMedia = {
       'data:image/webp;base64,UklGRkAAAABXRUJQVlA4IDQAAADwAQCdASoMAAcAAwBSJZwC7ADp9GvssQAA/vplO8TFyX77+gIgM17ARGU4qymbPtZVcAAA',
   },
   'hero-loop-poster': {
-    file: 'hero-loop-poster.6b83ebb1.webp',
-    width: 1280,
-    height: 720,
-    bytes: 18580,
-    fingerprint: '6b83ebb1',
+    file: 'hero-loop-poster.b7727ba7.webp',
+    width: 1920,
+    height: 1080,
+    bytes: 53800,
+    fingerprint: 'b7727ba7',
     blurDataUrl:
-      'data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADwAQCdASoMAAcAAwBSJZQCdADdpnj7AAAA/viMUlQg83PbTmJGI7w7vALKOpvLAAA=',
+      'data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAADQAQCdASoMAAcAAwBSJZACdADbMCdvAAD+9t0gy8xWWuF1jjjNdGoaPRU6RAAO1UfXWy/OsabijCLMIAA=',
   },
   'instructor-anna-mkrtchyan': {
     file: 'instructor-anna-mkrtchyan.9c857022.webp',
@@ -232,4 +241,4 @@ export const seedMedia = {
 export type SeedMediaName = keyof typeof seedMedia;
 
 /** Суммарный вес папки сид-медиа, байт. Сверяется с `mediaProcessing.budgetBytes.seedTotal`. */
-export const seedMediaTotalBytes = 1123216;
+export const seedMediaTotalBytes = 1234744;

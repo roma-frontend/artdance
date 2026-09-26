@@ -38,13 +38,21 @@ interface PortalState {
   rect: DOMRect | null;
   imageSrc: string;
   href: string;
+  /**
+   * Копия карточки для пролёта «целиком» — с рамкой, подписями и стрелкой.
+   * `null` — летит только кадр (обычный режим).
+   */
+  card: HTMLElement | null;
+  /** Размер карточки в раскладке, до перспективы и масштабов предков. */
+  cardSize: { width: number; height: number } | null;
 }
 
 interface PortalContextValue {
-  triggerPortal: (rect: DOMRect, imageSrc: string, href: string) => void;
+  /** `card` — передать, чтобы в пролёт ушла вся карточка, а не только её кадр. */
+  triggerPortal: (rect: DOMRect, imageSrc: string, href: string, card?: HTMLElement) => void;
 }
 
-const IDLE: PortalState = { phase: 'idle', rect: null, imageSrc: '', href: '' };
+const IDLE: PortalState = { phase: 'idle', rect: null, imageSrc: '', href: '', card: null, cardSize: null };
 
 const PortalContext = createContext<PortalContextValue | null>(null);
 
@@ -105,7 +113,7 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
     }, motion.portal.revealMs);
   }, [later, releaseScene]);
 
-  const triggerPortal = (rect: DOMRect, imageSrc: string, href: string) => {
+  const triggerPortal = (rect: DOMRect, imageSrc: string, href: string, source?: HTMLElement) => {
     if (portal.phase !== 'idle') return;
 
     if (reducedMotion) {
@@ -143,7 +151,24 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
       });
     }
 
-    setPortal({ phase: 'flight', rect, imageSrc, href });
+    /*
+     * Копия карточки, а не сама карточка: оригинал остаётся на месте в уплывающей
+     * сцене, а копия летит поверх. Картинки в ней уже загружены — `cloneNode`
+     * переиспользует кеш, второго запроса нет.
+     */
+    let card: HTMLElement | null = null;
+    let cardSize: PortalState['cardSize'] = null;
+    if (source) {
+      card = source.cloneNode(true) as HTMLElement;
+      card.removeAttribute('id');
+      card.setAttribute('tabindex', '-1');
+      card.style.width = '100%';
+      card.style.height = '100%';
+      card.style.minHeight = '0';
+      cardSize = { width: source.offsetWidth, height: source.offsetHeight };
+    }
+
+    setPortal({ phase: 'flight', rect, imageSrc, href, card, cardSize });
     later(() => {
       setPortal((current) => (current.phase === 'flight' ? { ...current, phase: 'hold' } : current));
       router.push(href);
@@ -160,7 +185,7 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
     return () => cancelAnimationFrame(frame);
   }, [pathname, portal.phase, portal.href, reveal]);
 
-  const { phase, rect, imageSrc } = portal;
+  const { phase, rect, imageSrc, card, cardSize } = portal;
   const config = motion.portal;
   const seconds = config.flightMs / 1000;
   const ease = [...config.ease] as Bezier;
@@ -199,7 +224,18 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
             transition={flight}
           />
 
-          {/* Окно карточки: растёт на весь экран, наклоняясь по ходу камеры с креном руки. */}
+          {card && cardSize ? (
+            <CardFlight
+              card={card}
+              rect={rect}
+              size={cardSize}
+              dir={dir}
+              flight={flight}
+              arc={arc}
+              sway={sway}
+            />
+          ) : (
+          /* Окно карточки: растёт на весь экран, наклоняясь по ходу камеры с креном руки. */
           <animated.div
             className="absolute overflow-hidden bg-surface-cinema shadow-xl"
             style={{ transformStyle: 'preserve-3d' }}
@@ -267,8 +303,87 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
               transition={arc}
             />
           </animated.div>
+          )}
         </animated.div>
       )}
     </PortalContext.Provider>
+  );
+}
+
+type Transition = Record<string, unknown>;
+
+interface CardFlightProps {
+  card: HTMLElement;
+  rect: DOMRect;
+  size: { width: number; height: number };
+  dir: number;
+  flight: Transition;
+  arc: Transition;
+  sway: Transition;
+}
+
+/**
+ * Пролёт карточки ЦЕЛИКОМ: копия карточки — с рамкой, подписью, счётчиком и
+ * стрелкой — едет к центру экрана и наезжает, пока не закроет его собой.
+ *
+ * Масштаб, а не рост ширины и высоты, как у окна-кадра: при росте размеров
+ * текст внутри переносился бы заново и прыгал, а при масштабе карточка
+ * приближается как один предмет — ровно то, что видит камера. Конечный масштаб
+ * «cover»: кадр карточки закрывает окно, и растворение ложится на hero новой
+ * страницы, где стоит тот же кадр.
+ */
+function CardFlight({ card, rect, size, dir, flight, arc, sway }: CardFlightProps) {
+  const { tilt, roll } = motion.portal.window;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  /* Карточка на экране может быть меньше своей раскладки (перспектива барабана). */
+  const from = rect.width / size.width;
+  const cover = Math.max(viewportWidth / size.width, viewportHeight / size.height) * 1.08;
+
+  const mount = useCallback(
+    (node: HTMLDivElement | null) => {
+      if (node && node.firstChild !== card) node.replaceChildren(card);
+    },
+    [card],
+  );
+
+  return (
+    <animated.div
+      className="absolute overflow-hidden rounded-lg shadow-xl"
+      style={{
+        top: centerY - size.height / 2,
+        left: centerX - size.width / 2,
+        width: size.width,
+        height: size.height,
+        transformStyle: 'preserve-3d',
+      }}
+      initial={{ x: 0, y: 0, scale: from, rotateX: 0, rotateZ: 0, filter: 'blur(0px) brightness(1)' }}
+      animate={{
+        x: viewportWidth / 2 - centerX,
+        y: viewportHeight / 2 - centerY,
+        scale: cover,
+        rotateX: [0, dir * tilt, 0],
+        rotateZ: [0, -dir * roll, dir * roll * 0.4, 0],
+        filter: [
+          'blur(0px) brightness(1)',
+          `blur(${motion.portal.motionBlur * 0.35}px) brightness(0.9)`,
+          `blur(0px) brightness(${motion.portal.landingBrightness})`,
+        ],
+      }}
+      transition={{ ...flight, rotateX: arc, rotateZ: sway, filter: arc }}
+    >
+      <div ref={mount} className="size-full" />
+
+      {/* Та же полоса света, что у пролёта кадра: единый язык перехода. */}
+      <animated.span
+        className="portal-sweep absolute inset-0"
+        initial={{ y: `${-dir * 120}%`, opacity: 0 }}
+        animate={{ y: `${dir * 120}%`, opacity: [0, 0.9, 0] }}
+        transition={flight}
+      />
+    </animated.div>
   );
 }

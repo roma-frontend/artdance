@@ -41,10 +41,10 @@ export function EventCard({ item, locale, className }: EventCardProps) {
     <article
       data-portal-card
       className={cn(
-        'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
+        'card-surface ticket-card group relative flex h-full flex-col overflow-hidden rounded-xl',
         'border border-border-default bg-surface-card',
-        'hover:-translate-y-1.5 hover:shadow-lg',
-        'focus-within:-translate-y-1.5 focus-within:shadow-lg',
+        'hover:-translate-y-1.5 hover:shadow-xl',
+        'focus-within:-translate-y-1.5 focus-within:shadow-xl',
         className,
       )}
     >
@@ -55,6 +55,14 @@ export function EventCard({ item, locale, className }: EventCardProps) {
           fallback="event"
           imageClassName="media-zoom group-hover:scale-105"
         />
+
+        {/* Декоративный штамп ADMIT ONE */}
+        <div
+          aria-hidden="true"
+          className="ticket-stamp absolute top-3 right-3 rounded border border-metal-soft bg-surface-cinema/70 px-2 py-0.5 text-3xs font-mono font-bold tracking-widest text-metal uppercase backdrop-blur-xs"
+        >
+          ADMIT ONE
+        </div>
 
         {/* Бейдж даты: число крупно, месяц под ним — как в макете. */}
         <time
@@ -93,12 +101,29 @@ export function EventCard({ item, locale, className }: EventCardProps) {
           {item.locationName} · {item.startTime}—{item.endTime}
         </p>
 
-        <div className="mt-auto flex items-center justify-between gap-3 border-t border-border-default pt-3">
+        <div className="ticket-divider relative my-3 flex items-center justify-between">
+          <div className="ticket-notch -left-6" />
+          <div className="ticket-perforation w-full border-t-2 border-dashed border-border-default" />
+          <div className="ticket-notch -right-6" />
+        </div>
+
+        <div className="mt-auto flex items-center justify-between gap-3 pt-1">
           {isFree ? (
             <span className="text-price text-content-primary">{t('events.freeEntry')}</span>
           ) : (
             <Price amount={item.price} emphasis="total" />
           )}
+
+          {/* Имитация штрих-кода билета */}
+          <div aria-hidden="true" className="ticket-barcode flex h-4 items-center gap-0.5 opacity-40">
+            <span className="h-full w-0.5 bg-current" />
+            <span className="h-full w-1 bg-current" />
+            <span className="h-full w-0.5 bg-current" />
+            <span className="h-full w-1.5 bg-current" />
+            <span className="h-full w-0.5 bg-current" />
+            <span className="h-full w-1 bg-current" />
+          </div>
+
           <SpotsLeft spots={item.spotsLeft} />
         </div>
       </div>

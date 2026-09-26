@@ -13,6 +13,7 @@ import { useTranslations } from 'next-intl';
 
 import { Reveal } from '@/components/fx/reveal';
 import { StackCards } from '@/components/fx/stack-cards';
+import { JourneyTrack } from '@/components/home/journey-track';
 import { Media } from '@/components/ui/media';
 import { SectionHeading } from '@/components/ui/section-heading';
 import { routes } from '@/config';
@@ -37,8 +38,10 @@ export function JourneySection({ images, locale }: JourneySectionProps) {
   const t = useTranslations('home.journey');
 
   return (
-    <section className="section-y">
-      <div className="page-container">
+    <section className="section-y relative">
+      <div className="page-container relative">
+        <JourneyTrack totalSteps={steps.length} />
+
         <Reveal className="mb-12">
           <SectionHeading
             eyebrow={t('eyebrow')}
@@ -52,10 +55,14 @@ export function JourneySection({ images, locale }: JourneySectionProps) {
           {steps.map((step, index) => {
             const image = images[index];
             return (
-              <li key={step.key}>
-                <article className="grid grid-cols-1 overflow-hidden rounded-xl border border-border-default bg-surface-card shadow-lg md:grid-cols-2">
+              <li key={step.key} data-journey-step="">
+                <article className="grid grid-cols-1 overflow-hidden rounded-xl border border-border-default bg-surface-card shadow-lg md:grid-cols-2 transition-colors duration-slow">
                   <div className="flex min-w-0 flex-col p-6 sm:p-8 lg:p-12">
-                    <span aria-hidden className="text-display-editorial text-content-accent">
+                    <span
+                      aria-hidden
+                      data-journey-number=""
+                      className="journey-step-number text-display-editorial text-content-accent transition-all duration-slow"
+                    >
                       {String(index + 1).padStart(2, '0')}
                     </span>
                     <h3 className="text-heading-1 mt-6 wrap-break-word hyphens-auto">{t(`${step.key}.title`)}</h3>

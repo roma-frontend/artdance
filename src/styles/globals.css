@@ -588,6 +588,7 @@
   @media (prefers-reduced-motion: reduce) {
     .marquee-track {
       animation: none;
+      transform: none;
     }
   }
 
@@ -1134,20 +1135,27 @@
  * компонент. Вне эффекта — обычная сетка: без запаса высоты sticky не
  * включается, трансформация нулевая, разметка одна и та же.
  *
- * Сдвиг выражен в долях ПЕРЕПОЛНЯЕМОЙ ширины (max(0, 100% - 100vw)), поэтому
- * число плиток и их ширина не влияют на формулу: край ленты всегда доезжает
- * ровно до правой кромки окна при progress = 1.
+ * С 25.09.2026 лента — 3D-барабан: вместо сдвига строки прокрутка вращает
+ * цилиндр, и при progress = 1 напротив зрителя стоит последняя плитка.
  */
 [data-slot='style-rail'][data-rail='on'] {
   /*
-   * Прогресс горизонтального проезда, 0…1, и запас высоты в пикселях.
-   * Оба пишутся компонентом мимо React; дефолты объявлены здесь по той же
-   * конвенции, что и `--hero-parallax-*`. Запас считает JS: процент в
-   * `height` считается от высоты родителя, и CSS-формула «ширина ленты минус
-   * окно» в нём недостижима.
+   * Поворот барабана, 0…1 (первая плитка → последняя), и запас высоты в
+   * пикселях. Оба пишутся компонентом мимо React; дефолты объявлены здесь по
+   * той же конвенции, что и `--hero-parallax-*`.
    */
   --rail-progress: 0;
   --rail-overflow: 0px;
+  /* Ширина плитки и промежуток между соседями по дуге. */
+  --rail-tile: clamp(19rem, 23vw, 25rem);
+  --rail-gap: clamp(1.75rem, 2.4vw, 2.75rem);
+  /*
+   * Шаг барабана — 30° на плитку. Радиус выведен из хорды: соседние центры
+   * расходятся на 2R·sin(15°) = ширина + промежуток, поэтому плитки на дуге
+   * никогда не слипаются и не пересекаются (1/(2·sin 15°) ≈ 1.932).
+   */
+  --rail-step: 30deg;
+  --rail-radius: calc((var(--rail-tile) + var(--rail-gap)) * 1.932);
   height: calc(100svh + var(--rail-overflow));
 }
 
@@ -1170,25 +1178,87 @@
   /* Трек растянут на окно даже внутри page-container с ограниченной шириной. */
   width: 100vw;
   margin-inline: calc(50% - 50vw);
-  /* Прогресс сглаживается на rAF в StyleRail, лента едет строго влево. */
-  translate: calc(var(--rail-progress, 0) * var(--rail-overflow, 0px) * -1) 0;
-  will-change: translate;
 }
 
 /*
- * В ленте первая и последняя плитки центрируются в окне.
- * Адаптивная высота и пропорции плиток предотвращают визуальную пустоту.
+ * 3D-БАРАБАН. Все плитки стоят в одной ячейке сетки по центру окна, а место
+ * на цилиндре каждой задаёт её расстояние до фронта:
+ *
+ *   d = номер − поворот·(n − 1)      (0 — напротив зрителя, ±1 — соседи…)
+ *
+ * Плитка уходит на радиус вглубь, поворачивается на d·шаг и возвращается на
+ * радиус вперёд — так она ложится на выпуклую дугу. Точка схода общая у
+ * списка (`perspective` + `preserve-3d`), поэтому глубину сортирует браузер,
+ * без ручных z-index.
+ *
+ * Появление-stagger здесь заменено барабаном — он и есть вход секции, поэтому
+ * `transform`/`opacity` переписаны целиком, без перехода: сглаживает JS.
  */
 [data-slot='style-rail'][data-rail='on'] [data-rail-track] ul {
-  grid-template-columns: none;
-  grid-auto-flow: column;
-  grid-auto-columns: clamp(21rem, 25vw, 26rem);
-  width: max-content;
-  padding-inline: calc((100vw - clamp(21rem, 25vw, 26rem)) / 2);
+  display: grid;
+  grid-template-columns: var(--rail-tile);
+  justify-content: center;
+}
+
+[data-slot='style-rail'][data-rail='on'] [data-rail-track] li {
+  --tile-index: 0;
+  --tile-count: 1;
+  --tile-d: calc(var(--tile-index) - var(--rail-progress) * (var(--tile-count) - 1));
+  --tile-far: max(var(--tile-d), calc(var(--tile-d) * -1));
+  position: relative;
+  grid-area: 1 / 1;
+  /*
+   * Слой по расстоянию до фронта: ближняя плитка всегда сверху. Именно z-index,
+   * а не `preserve-3d` у списка: в общем 3D-контексте Chrome отдаёт курсор по
+   * порядку в DOM, и левую треть фронтальной плитки перехватывала соседняя —
+   * наведение работало только справа. Все плитки стоят в одной ячейке, у них
+   * общая точка трансформации, поэтому `perspective()` в самом transform даёт
+   * ту же общую точку схода.
+   */
+  z-index: calc(10 - var(--tile-far) * 2);
+  opacity: clamp(0, calc(2.9 - var(--tile-far)), 1);
+  transform: perspective(1800px) translateZ(calc(var(--rail-radius) * -1))
+    rotateY(calc(var(--tile-d) * var(--rail-step))) translateZ(var(--rail-radius));
+  backface-visibility: hidden;
+  filter: brightness(calc(1 - min(var(--tile-far), 2) * 0.28)) saturate(calc(1 - min(var(--tile-far), 2) * 0.2));
+  transition: none;
+  will-change: transform, opacity, filter;
 }
 
 [data-slot='style-rail'][data-rail='on'] [data-rail-track] a {
-  min-height: clamp(25rem, 52svh, 32rem);
+  min-height: clamp(25rem, 54svh, 33rem);
+}
+
+/*
+ * Фото внутри плитки смещается навстречу повороту — кадр за «окном» барабана
+ * живёт своей глубиной. Запас масштаба прячет кромки при сдвиге; наведение
+ * добавляет свой зум поверх запаса.
+ */
+[data-slot='style-rail'][data-rail='on'] [data-rail-track] .style-tile-media {
+  scale: 1.22;
+  translate: calc(max(-1.5, min(1.5, var(--tile-d))) * -7%) 0;
+}
+
+[data-slot='style-rail'][data-rail='on'] [data-rail-track] .group:hover .style-tile-media {
+  scale: 1.3;
+}
+
+/*
+ * Плитка на фронте получает свечение брендового цвета: оно гаснет, как только
+ * барабан уводит плитку с фронта, — фокус переходит вместе с поворотом.
+ * Только тень, без кольца: рамку даёт собственная граница плитки
+ * (`hover:border-accent`), и второе кольцо рядом читалось как двойной контур.
+ */
+[data-slot='style-rail'][data-rail='on'] [data-rail-track] li::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  box-shadow:
+    0 30px 80px -20px var(--accent-glow),
+    0 0 60px -10px var(--accent-glow);
+  opacity: clamp(0, calc(1 - var(--tile-far) * 2), 1);
 }
 
 @keyframes ken-burns {
@@ -2145,68 +2215,27 @@ html:has(body[data-scroll-locked]) {
 
 [data-aperture='on'] > [data-curtain],
 [data-aperture='on'] > [data-curtain][data-revealed] {
-  /* Лучи шире панели: `clip-path` не урезает прокручиваемую область, `overflow` — да. */
   overflow: clip;
-  clip-path: inset(
-    calc(var(--aperture-closed) * var(--aperture-inset-y))
-      calc(var(--aperture-closed) * var(--aperture-inset-x))
-      round calc(var(--aperture-closed) * var(--aperture-radius))
-  );
+  clip-path: none;
   transition: none;
 }
 
 [data-aperture='on'] > [data-curtain] [data-parallax='background'] {
-  scale: calc(1 + var(--aperture-closed) * var(--aperture-zoom));
+  scale: 1;
 }
 
 [data-aperture='on'] > [data-curtain] .page-container,
 [data-aperture='on'] > section h2 {
-  filter: blur(calc(var(--aperture-closed) * var(--aperture-blur)));
-  translate: 0 calc(var(--aperture-closed) * 48px);
+  filter: none;
+  translate: none;
 }
 
 [data-aperture='on'] > [data-curtain]::after {
-  content: '';
-  position: absolute;
-  inset: -25%;
-  z-index: 1;
-  pointer-events: none;
-  background: repeating-conic-gradient(
-    from 0deg at 50% 50%,
-    color-mix(in srgb, var(--content-on-cinema) 55%, transparent) 0deg 0.35deg,
-    transparent 0.35deg 4.5deg,
-    color-mix(in srgb, var(--accent) 70%, transparent) 4.5deg 5deg,
-    transparent 5deg 11deg
-  );
-  mask-image: radial-gradient(circle at 50% 50%, transparent 12%, #000 45%, transparent 78%);
-  mix-blend-mode: screen;
-  opacity: calc(var(--aperture-closed) * 0.75);
-  scale: calc(0.55 + var(--aperture-open) * 1.2);
-  rotate: calc(var(--aperture-open) * 18deg);
+  display: none;
 }
 
 [data-aperture='on'] > [data-curtain]::before {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  top: 50%;
-  z-index: 1;
-  height: 2px;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--accent-glow) 20%,
-    var(--content-on-cinema) 50%,
-    var(--accent-glow) 80%,
-    transparent
-  );
-  box-shadow:
-    0 0 24px 6px var(--accent-glow),
-    0 0 80px 18px color-mix(in srgb, var(--accent) 35%, transparent);
-  mix-blend-mode: screen;
-  opacity: var(--aperture-flare);
-  scale: calc(0.3 + var(--aperture-open) * 1.1) 1;
+  display: none;
 }
 
 /* Разворот книгой: карточки раскрываются от общего корешка по центру сетки. */
@@ -2224,6 +2253,70 @@ html:has(body[data-scroll-locked]) {
 
 [data-aperture='on'] [data-aperture-card]:nth-child(even) {
   --aperture-side: 1;
+}
+
+/*
+ * СЦЕНЫ ПРОКРУТКИ (`data-scene` на обёртке `SectionParallax`), 25.09.2026.
+ *
+ * Два видео подряд с одним и тем же «экраном» читались как один приём дважды.
+ * У каждой секции теперь своя режиссура, выведенная из её смысла, на тех же
+ * числах `--aperture-open` / `--aperture-exit`:
+ *
+ *   • rhythm (EVERY BODY HAS A RHYTHM) — кадр открывается пятью шторками от
+ *     центра к краям, по очереди, как такты; уходя, закрывается от краёв;
+ *   • arena (DanceSport) — кадр проявляется кругом прожектора, два луча из
+ *     верхних углов сходятся на паркете, под парой загорается пятно света;
+ *     уходя, прожектор сужается и гаснет.
+ *
+ * Общий экран-маска и лучи пролёта для этих панелей выключены: сцена заменяет
+ * их целиком. Без `data-aperture='on'` (узкий экран, reduced-motion, без JS)
+ * декор скрыт, а секции стоят как есть.
+ */
+.scene-rhythm-slats,
+.scene-arena-beam,
+.scene-arena-floor {
+  display: none;
+}
+
+[data-aperture='on'] > :focus-within {
+  --aperture-exit: 0 !important;
+}
+
+[data-aperture='on'] > [data-scene] {
+  --aperture-exit: 0;
+}
+
+[data-aperture='on'] > [data-scene]::after,
+[data-aperture='on'] > [data-scene]::before {
+  content: none;
+}
+
+/* ── rhythm: шторки-такты ── */
+
+[data-aperture='on'] > [data-scene='rhythm'],
+[data-aperture='on'] > [data-scene='rhythm'][data-revealed] {
+  clip-path: none;
+}
+
+[data-aperture='on'] > [data-scene='rhythm'] .scene-rhythm-slats {
+  display: none;
+}
+
+/* Акцентное слово разгорается вместе с кадром. */
+[data-aperture='on'] > [data-scene='rhythm'] .editorial-accent {
+  text-shadow: 0 0 calc(var(--space-6) + var(--aperture-open) * 32px) var(--accent-glow);
+}
+
+/* ── arena: прожектор ── */
+
+[data-aperture='on'] > [data-scene='arena'],
+[data-aperture='on'] > [data-scene='arena'][data-revealed] {
+  clip-path: none;
+}
+
+[data-aperture='on'] > [data-scene='arena'] .scene-arena-beam,
+[data-aperture='on'] > [data-scene='arena'] .scene-arena-floor {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2329,3 +2422,152 @@ html:has(body[data-scroll-locked]) {
   pointer-events: none;
   background: radial-gradient(ellipse at center, transparent 45%, rgba(11, 10, 9, 0.75) 100%);
 }
+
+/*
+ * FINAL CTA VIDEO TEXT (MOVE DIFFERENT)
+ * Раскрытие видео-текста при прокрутке.
+ */
+.final-cta-video-container {
+  --cta-expand-progress: 0;
+  transform: scale(calc(0.88 + var(--cta-expand-progress, 0) * 0.16));
+  opacity: calc(0.3 + var(--cta-expand-progress, 0) * 0.7);
+  transition: transform var(--duration-fast) linear;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .final-cta-video-container {
+    transform: none;
+    opacity: 1;
+    transition: none;
+  }
+}
+
+/*
+ * JOURNEY TRACK & STEP NUMBERS
+ * Подсветка номеров и границы карточки при активации шага.
+ */
+[data-journey-step] .journey-step-number {
+  color: var(--content-secondary);
+  opacity: 0.35;
+  transition:
+    color var(--duration-normal) var(--ease-brand),
+    opacity var(--duration-normal) var(--ease-brand),
+    text-shadow var(--duration-normal) var(--ease-brand);
+}
+
+[data-journey-step][data-step-active='true'] .journey-step-number {
+  color: var(--accent);
+  opacity: 1;
+  text-shadow:
+    0 0 25px var(--accent-glow),
+    0 0 50px var(--accent);
+}
+
+[data-journey-step][data-step-active='true'] article {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-default));
+}
+
+/*
+ * INSTRUCTORS SPOTLIGHT (Прожектор над инструкторами)
+ * При наведении мыши вне луча карточки уходят в монохром,
+ * в зоне луча — яркие, контрастные и освещенные.
+ */
+.instructors-section {
+  --spotlight-x: 50%;
+  --spotlight-y: 50%;
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .instructors-section[data-spotlight-active='true'] .card-surface {
+    filter: grayscale(0.85) brightness(0.9);
+    transition: filter var(--duration-normal) var(--ease-brand);
+  }
+
+  .instructors-section[data-spotlight-active='true'] .card-surface:hover,
+  .instructors-section[data-spotlight-active='true'] .card-surface:focus-within {
+    filter: grayscale(0) brightness(1.05);
+  }
+
+  .instructors-spotlight-layer {
+    opacity: 0;
+    transition: opacity var(--duration-normal) var(--ease-brand);
+  }
+
+  .instructors-section[data-spotlight-active='true'] .instructors-spotlight-layer {
+    opacity: 1;
+  }
+
+  /* Конус сценического прожектора сверху секции к точке курсора */
+  .instructors-spotlight-cone {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 36rem 28rem at var(--spotlight-x) var(--spotlight-y),
+      color-mix(in srgb, var(--accent-glow) 35%, transparent),
+      transparent 75%
+    );
+    mix-blend-mode: screen;
+  }
+
+  .instructors-spotlight-beam {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(
+      circle 18rem at var(--spotlight-x) var(--spotlight-y),
+      color-mix(in srgb, var(--content-on-cinema) 15%, transparent),
+      transparent 60%
+    );
+    mix-blend-mode: soft-light;
+  }
+}
+
+/*
+ * SCROLL VELOCITY SKEW
+ * Отключен для максимальной производительности и чистоты отрисовки шрифтов.
+ */
+
+/*
+ * ПЕРЕХОД ФОНА СВЕТ ↔ СЦЕНА
+ * Плавный градиентный переход между обычными светлыми секциями и cinema-surface.
+ */
+.cinema-surface {
+  position: relative;
+  background-color: var(--surface-cinema);
+  color: var(--content-on-cinema);
+}
+
+/*
+ * АФИША СОБЫТИЙ КАК БИЛЕТЫ (Ticket Notch & Perforation)
+ */
+.ticket-card {
+  position: relative;
+}
+
+.ticket-notch {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: var(--surface-canvas);
+  border: 1px solid var(--border-default);
+  z-index: 10;
+}
+
+/*
+ * ФУТЕР
+ * Стандартное надежное позиционирование в потоке документа без sticky-наложений.
+ */
+.footer-reveal-container {
+  position: relative;
+  overflow: hidden;
+}
+
+
+
+
+
+
+

@@ -3,8 +3,9 @@
 /**
  * CINEMA APERTURE — кино-секции раскрываются «экраном» при входе в окно.
  *
- * Компонент только считает `--aperture-open` (0…1) и `--aperture-flare` каждой
- * панели по её положению в окне; вся живопись — маска экрана, отъезд кадра,
+ * Компонент только считает `--aperture-open` (0…1), `--aperture-flare` и
+ * `--aperture-exit` (уход сцены вверх, 0…1) каждой панели по её положению в окне;
+ * у панели может быть своя «сцена» (`data-scene`), которая читает те же числа; вся живопись — маска экрана, отъезд кадра,
  * лучи, блик, фокус и разворот карточек — в `globals.css` (`[data-aperture]`).
  * Ничего не прилипает и не держит прокрутку: панели идут обычным потоком.
  *
@@ -16,7 +17,7 @@ import { useScroll } from 'framer-motion';
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 
 import { motion } from '@/design/motion';
-import { apertureFlare, apertureOpen } from '@/lib/animations/aperture';
+import { apertureExit, apertureFlare, apertureOpen } from '@/lib/animations/aperture';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 
@@ -38,9 +39,11 @@ export function CinemaAperture({ children }: { children: ReactNode }) {
       frame = 0;
       const viewport = window.innerHeight;
       for (const panel of panels) {
-        const open = apertureOpen(panel.getBoundingClientRect().top, viewport, config.openSpan);
+        const rect = panel.getBoundingClientRect();
+        const open = apertureOpen(rect.top, viewport, config.openSpan);
         panel.style.setProperty('--aperture-open', open.toFixed(3));
         panel.style.setProperty('--aperture-flare', apertureFlare(open).toFixed(3));
+        panel.style.setProperty('--aperture-exit', apertureExit(rect.bottom, viewport).toFixed(3));
       }
     };
     const schedule = () => {
@@ -60,6 +63,7 @@ export function CinemaAperture({ children }: { children: ReactNode }) {
       for (const panel of panels) {
         panel.style.removeProperty('--aperture-open');
         panel.style.removeProperty('--aperture-flare');
+        panel.style.removeProperty('--aperture-exit');
       }
     };
   }, [wide, reduced, scrollY]);

@@ -10,6 +10,9 @@ export function Magnetic() {
     ref.current = document.body;
     return () => { ref.current = null; };
   }, []);
-  useCursorFollow(ref, '[data-magnetic], .hero-content a, .cinema-surface a.rounded-full');
+  useCursorFollow(
+    ref,
+    '[data-magnetic], button, .hero-content a, .cinema-surface a.rounded-full, .magnetic-button',
+  );
   return null;
 }

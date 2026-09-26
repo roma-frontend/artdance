@@ -158,8 +158,21 @@ export const designAssets: readonly DesignAsset[] = [
     name: 'editorial-loop-poster',
     source: 'Image_to_video_one_single_con.mp4',
     preset: 'editorialFullBleed',
-    subject: 'Танцовщица в бордовом платье в повороте — постер петли editorial-секции',
+    subject: 'Разные танцоры в тёмной студии, каждый в своём ритме — постер петли editorial-секции',
     usedFor: [{ entity: 'page', id: 'home.editorial' }],
+    derivedFromVideo: true,
+  },
+  {
+    /**
+     * Постер петли секции DanceSport — её первый кадр (`video:encode -- --loop
+     * competition`). Исходник `video-2.mp4` прислан заказчиком 25.09.2026 вне
+     * папки прототипа, поэтому `design:import` его не сверяет.
+     */
+    name: 'competition-loop-poster',
+    source: 'Image_to_video_one_single_con.mp4',
+    preset: 'editorialFullBleed',
+    subject: 'Пара DanceSport на паркете турнира, прожекторы — постер петли соревнований',
+    usedFor: [{ entity: 'page', id: 'home.competitions' }],
     derivedFromVideo: true,
   },
 

@@ -16,9 +16,16 @@ import type { ComponentProps, MouseEvent } from 'react';
 import { usePortalTransition } from '@/components/fx/portal-transition';
 import { Link } from '@/i18n/routing';
 
-type PortalLinkProps = Omit<ComponentProps<typeof Link>, 'href'> & { href: string };
+type PortalLinkProps = Omit<ComponentProps<typeof Link>, 'href'> & {
+  href: string;
+  /**
+   * `card` — в пролёт уходит вся карточка целиком (рамка, подписи, стрелка), а
+   * не только её кадр. Для плиток, где надпись — часть образа (лента стилей).
+   */
+  flight?: 'media' | 'card';
+};
 
-export function PortalLink({ href, onClick, ...props }: PortalLinkProps) {
+export function PortalLink({ href, onClick, flight = 'media', ...props }: PortalLinkProps) {
   const portal = usePortalTransition();
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -32,6 +39,10 @@ export function PortalLink({ href, onClick, ...props }: PortalLinkProps) {
     const img = media.querySelector('img');
 
     event.preventDefault();
+    if (flight === 'card') {
+      portal.triggerPortal(card.getBoundingClientRect(), img?.currentSrc || img?.src || '', href, card);
+      return;
+    }
     portal.triggerPortal(media.getBoundingClientRect(), img?.currentSrc || img?.src || '', href);
   };
 

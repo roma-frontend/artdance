@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { apertureFlare, apertureOpen } from './aperture';
+import { apertureExit, apertureFlare, apertureOpen } from './aperture';
 
 describe('Раскрытие киноэкрана', () => {
   it('закрыт, пока панель ниже окна, и открыт, когда поднялась на весь ход', () => {
@@ -17,6 +17,20 @@ describe('Раскрытие киноэкрана', () => {
 
   it('не делит на ноль', () => {
     expect(apertureOpen(500, 0, 0.8)).toBe(1);
+  });
+});
+
+describe('Уход сцены', () => {
+  it('ноль, пока низ панели ниже середины окна, и единица у верхней кромки', () => {
+    expect(apertureExit(900, 1000)).toBe(0);
+    expect(apertureExit(500, 1000)).toBe(0);
+    expect(apertureExit(250, 1000)).toBeCloseTo(0.5);
+    expect(apertureExit(0, 1000)).toBe(1);
+    expect(apertureExit(-300, 1000)).toBe(1);
+  });
+
+  it('не делит на ноль', () => {
+    expect(apertureExit(100, 0)).toBe(0);
   });
 });
 

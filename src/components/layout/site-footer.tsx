@@ -42,8 +42,18 @@ export function SiteFooter() {
   );
 
   return (
-    <footer className="border-t border-border-default bg-surface-raised">
-      <div className="page-container section-y">
+    <footer className="footer-reveal-container border-t border-border-default bg-surface-raised relative overflow-hidden">
+      {/* Огромный фоновый логотип бренда на всю ширину футера */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-10 left-1/2 -translate-x-1/2 select-none opacity-5 dark:opacity-10"
+      >
+        <span className="font-display text-[16vw] font-black tracking-tighter text-content-primary whitespace-nowrap">
+          {t('brand.name')}
+        </span>
+      </div>
+
+      <div className="page-container section-y relative z-10">
         <div className="grid gap-10 lg:grid-cols-[2fr_repeat(4,1fr)]">
           <div>
             <Link href={routes.home()} className="flex items-center gap-3">

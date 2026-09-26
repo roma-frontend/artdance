@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 
+import { motion } from '@/design/motion';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { cn } from '@/lib/utils';
@@ -22,11 +23,19 @@ import { cn } from '@/lib/utils';
  *   • `prefers-reduced-motion` — движение по скроллу заменяется статикой;
  *   • нет JavaScript — высота-запас не ставится, sticky не включается.
  *
+ * 3D-барабан (25.09.2026): плитки стоят по дуге цилиндра, прокрутка вращает
+ * его. Плитка напротив зрителя — ровная, крупная и яркая; соседние развёрнуты
+ * внутрь, уходят в глубину и темнеют, фото в них смещено навстречу повороту.
+ * JS пишет только `--rail-progress` (0…1); позиция каждой плитки на барабане
+ * и вся геометрия — в globals.css.
+ *
  * Сдвиг пишется в CSS-переменную мимо состояния React: событий скролла
  * десятки в секунду, рендер дерева на каждый не нужен. Счёт считается от
  * собственной прокрутки секции, а не от `scrollY` страницы — вставка секций
  * выше не сдвигает фазу эффекта.
  */
+
+const styleRail = motion.styleRail;
 
 interface StyleRailProps {
   children: ReactNode;
@@ -54,8 +63,8 @@ export function StyleRail({ children, className }: StyleRailProps) {
     let frame = 0;
     let initialized = false;
     let previousTime = 0;
-    let currentProgress = 0;
-    let targetProgress = 0;
+    let current = 0;
+    let target = 0;
     const track = root.querySelector<HTMLElement>('[data-rail-track]');
     const list = track?.querySelector<HTMLElement>('ul');
     if (!track || !list) return;
@@ -67,33 +76,38 @@ export function StyleRail({ children, className }: StyleRailProps) {
        * Лента занимает всю ширину окна, а у списка есть симметричные поля,
        * рассчитанные так, чтобы первая/последняя плитка стояла по центру.
        * Поэтому полный горизонтальный ход — scrollWidth списка минус видимое
-       * окно. Именно этот ход задаёт и запас pinned-прокрутки.
+       * окно. Складка к layout-ширине не относится (она в `translate`/`rotate`),
+       * поэтому замер не зависит от её фазы.
        */
-      const overflow = Math.max(0, list.scrollWidth - track.clientWidth);
+      const count = list.children.length;
+      /*
+       * Запас прокрутки барабана: по `stepViewports` высоты окна на каждый
+       * поворот к следующей плитке. От ширины ленты он больше не зависит —
+       * плитки стоят на цилиндре, а не едут строкой.
+       */
+      const overflow = Math.round(Math.max(0, count - 1) * window.innerHeight * styleRail.stepViewports);
       root.style.setProperty('--rail-overflow', `${overflow}px`);
 
       const rect = root.getBoundingClientRect();
-      const viewport = window.innerHeight;
-      const travel = rect.height - viewport;
-      targetProgress = travel > 0 ? Math.min(1, Math.max(0, -rect.top / travel)) : 0;
+      target = Math.min(overflow, Math.max(0, -rect.top));
 
       /* Не анимируем первый замер: в том числе корректно восстанавливаем scroll position. */
       if (!initialized) {
-        currentProgress = targetProgress;
+        current = target;
         initialized = true;
       } else {
         /* Лёгкая инерция убирает ступеньки wheel/trackpad, не превращая rail в таймер. */
         const elapsed = previousTime ? Math.min(50, time - previousTime) : 16;
-        const blend = 1 - Math.exp(-elapsed / 75);
-        currentProgress += (targetProgress - currentProgress) * blend;
-        if (Math.abs(targetProgress - currentProgress) < 0.0005) {
-          currentProgress = targetProgress;
-        }
+        const blend = 1 - Math.exp(-elapsed / 90);
+        current += (target - current) * blend;
+        if (Math.abs(target - current) < 0.5) current = target;
       }
       previousTime = time;
-      root.style.setProperty('--rail-progress', currentProgress.toFixed(5));
 
-      if (currentProgress !== targetProgress) {
+      const progress = overflow > 0 ? current / overflow : 0;
+      root.style.setProperty('--rail-progress', progress.toFixed(5));
+
+      if (current !== target) {
         frame = window.requestAnimationFrame(read);
       }
     };

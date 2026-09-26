@@ -2,6 +2,7 @@
 
 import { ArrowUpRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import type { CSSProperties } from 'react';
 
 import { Reveal } from '@/components/fx/reveal';
 import { PortalLink } from '@/components/fx/portal-link';
@@ -28,12 +29,21 @@ export function StyleTileGrid({ tiles, locale }: StyleTileGridProps) {
   const tCommon = useTranslations('common');
   return (
     <Reveal as="ul" variant="stagger" className="grid grid-cols-2 gap-4">
-      {tiles.map((tile) => {
+      {tiles.map((tile, index) => {
         const href = routes.style(tile.slug);
         return (
-          <li key={tile.style}>
+          /*
+           * Номер плитки и их число — для складки ленты на главной (`StyleRail`,
+           * `[data-rail-fold]` в globals.css): от них зависят сторона створки и
+           * сдвиг к центру. Вне ленты переменные ни на что не влияют.
+           */
+          <li
+            key={tile.style}
+            style={{ '--tile-index': index, '--tile-count': tiles.length } as CSSProperties}
+          >
             <PortalLink
               href={href}
+              flight="card"
               data-cursor-label={tCommon('actions.explore')}
               className="card-surface group relative flex aspect-square items-end overflow-hidden rounded-lg border border-border-default hover:border-accent sm:aspect-portrait"
             >

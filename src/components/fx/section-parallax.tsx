@@ -33,12 +33,20 @@ import { cn } from '@/lib/utils';
 /** Слои секции. Значение атрибута `data-parallax`. */
 export type SectionParallaxRole = 'background' | 'content' | 'heading';
 
+/**
+ * Сцена прокрутки внутри `CinemaAperture` (`data-scene`): своё раскрытие
+ * вместо общего «экрана». `rhythm` — ритм-шторки editorial, `arena` —
+ * прожектор соревнований. Вся живопись — в `globals.css`.
+ */
+export type SectionScene = 'rhythm' | 'arena';
+
 interface SectionParallaxProps {
   children: ReactNode;
   className?: string;
+  scene?: SectionScene;
 }
 
-export function SectionParallax({ children, className }: SectionParallaxProps) {
+export function SectionParallax({ children, className, scene }: SectionParallaxProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const reducedMotion = usePrefersReducedMotion();
@@ -149,7 +157,13 @@ export function SectionParallax({ children, className }: SectionParallaxProps) {
   }, [reducedMotion, scrollY, wideEnough]);
 
   return (
-    <div ref={rootRef} data-slot="section-parallax" data-curtain="" className={cn(className)}>
+    <div
+      ref={rootRef}
+      data-slot="section-parallax"
+      data-curtain=""
+      data-scene={scene}
+      className={cn(className)}
+    >
       {children}
     </div>
   );

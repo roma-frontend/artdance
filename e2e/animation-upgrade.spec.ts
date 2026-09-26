@@ -173,65 +173,46 @@ test('Печать финального CTA вращается от прокру
 });
 
 /*
- * Горизонтальная лента направлений: pinned-секция, едет вбок при вертикальном
- * скролле. Проверяются обе стороны: лента реально сдвигается по прогрессу И
- * высота секции даёт запас прокрутки, из которого прогресс считается. Вне
- * эффекта (touch, reduced-motion, без JS) секция остаётся обычной сеткой —
- * sticky и запас высоты не включаются, это проверяет reduced-motion-тест ниже.
+ * Лента направлений — 3D-барабан: pinned-секция, вертикальная прокрутка
+ * вращает цилиндр. Проверяется геометрия в окне, а не CSS-переменные: плитка
+ * напротив зрителя стоит по центру и крупнее соседей, к концу запаса на фронт
+ * приходит последняя, обратная прокрутка возвращает первую. Вне эффекта
+ * (touch, reduced-motion, без JS) секция остаётся обычной сеткой.
  */
-test('Лента направлений едет вбок при вертикальном скролле', async ({ page }) => {
+test('Лента направлений вращается барабаном при вертикальном скролле', async ({ page }) => {
   test.skip((page.viewportSize()?.width ?? 0) < 1024, 'Лента включается только от 1024px, ниже — обычная сетка');
   await page.goto(HOME);
   const rail = page.locator('[data-slot="style-rail"]');
   await expect(rail).toBeAttached();
 
-  /*
-   * Предмет проверки — сам сдвиг трека. Меряется положение плитки в окне:
-   * к концу проезда последняя плитка обязана доехать до правой кромки.
-   * Разбирать computed translate бессмысленно — он остаётся строкой calc().
-   */
-  const lastTileLeft = () =>
-    rail.evaluate((node) => {
+  const tile = (which: 'first' | 'last') =>
+    rail.evaluate((node, pick) => {
       const items = node.querySelectorAll<HTMLElement>('[data-rail-track] li');
-      const last = items[items.length - 1];
-      return last ? last.getBoundingClientRect().right : Number.NaN;
-    });
+      const item = pick === 'first' ? items[0] : items[items.length - 1];
+      if (!item) return { center: Number.NaN, width: Number.NaN };
+      const rect = item.getBoundingClientRect();
+      return { center: rect.left + rect.width / 2, width: rect.width };
+    }, which);
 
   const top = await rail.evaluate((node) => node.getBoundingClientRect().top + window.scrollY);
   const viewport = page.viewportSize()?.height ?? 900;
-
-  const firstTileCenter = () =>
-    rail.evaluate((node) => {
-      const first = node.querySelector<HTMLElement>('[data-rail-track] li');
-      return first ? first.getBoundingClientRect().left + first.getBoundingClientRect().width / 2 : Number.NaN;
-    });
-
-  /* Начало: первая плитка стоит центром окна, а последняя ещё за правой кромкой. */
-  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top);
-  const viewportWidth = await rail.evaluate(() => window.innerWidth);
-  await expect.poll(() => firstTileCenter()).toBeCloseTo(viewportWidth / 2, 0);
-  await expect.poll(() => lastTileLeft()).toBeGreaterThan(viewportWidth);
-
-  /* На середине измеряем реальное положение трека, а не только CSS-переменную. */
   const height = await rail.evaluate((node) => (node as HTMLElement).offsetHeight);
-  await page.evaluate(
-    ({ y, half }) => window.scrollTo({ top: y + half / 2, behavior: 'instant' }),
-    { y: top, half: height - viewport },
-  );
-  await expect.poll(() => firstTileCenter()).toBeLessThan(viewportWidth / 2 - 80);
+  const viewportWidth = await rail.evaluate(() => window.innerWidth);
 
-  /* Конец запаса: последняя плитка также приходит центром в центр окна. */
-  await page.evaluate(
-    (y) => window.scrollTo({ top: y, behavior: 'instant' }),
-    top + height - viewport,
-  );
-  const lastTileCenter = () =>
-    rail.evaluate((node) => {
-      const items = node.querySelectorAll<HTMLElement>('[data-rail-track] li');
-      const last = items[items.length - 1];
-      return last ? last.getBoundingClientRect().left + last.getBoundingClientRect().width / 2 : Number.NaN;
-    });
-  await expect.poll(() => lastTileCenter()).toBeCloseTo(viewportWidth / 2, 0);
+  /* Начало: первая плитка на фронте — по центру и шире развёрнутой последней. */
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top);
+  await expect.poll(async () => (await tile('first')).center).toBeCloseTo(viewportWidth / 2, 0);
+  const firstAtStart = await tile('first');
+  expect(firstAtStart.width).toBeGreaterThan((await tile('last')).width);
+
+  /* Конец запаса: барабан довернул последнюю плитку на фронт. */
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top + height - viewport);
+  await expect.poll(async () => (await tile('last')).center).toBeCloseTo(viewportWidth / 2, 0);
+  expect((await tile('first')).center).toBeLessThan(viewportWidth / 2 - 80);
+
+  /* Обратная прокрутка возвращает первую плитку на фронт. */
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top);
+  await expect.poll(async () => (await tile('first')).center).toBeCloseTo(viewportWidth / 2, 0);
 });
 
 test('Соревнования сохраняют два видео и исходные пропорции', async ({ page }) => {

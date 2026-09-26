@@ -21,7 +21,11 @@ for (const width of [390, 768, 1440]) {
       // Панель у нижней кромки — экран ещё закрыт, маска с полями.
       await panels.first().evaluate((node) => window.scrollTo({ top: node.getBoundingClientRect().top + window.scrollY - window.innerHeight + 50, behavior: 'instant' }));
       await expect.poll(() => openOf(0)).toBeLessThan(0.1);
-      await expect(panels.first()).not.toHaveCSS('clip-path', 'none');
+      // Первая панель — сцена «ритм»: кадр закрыт шторками, а не маской экрана.
+      await expect(panels.first().locator('.scene-rhythm-slats')).toHaveCSS('display', 'grid');
+      await expect(panels.first().locator('.scene-rhythm-slats > span').nth(2)).not.toHaveCSS('scale', '1 0');
+      // Третья — сцена «арена»: кадр виден кругом прожектора.
+      await expect(panels.nth(2)).toHaveCSS('clip-path', /circle/);
       // Поднялась к верху — раскрыта на весь кадр.
       await panels.first().evaluate((node) => window.scrollTo({ top: node.getBoundingClientRect().top + window.scrollY, behavior: 'instant' }));
       await expect.poll(() => openOf(0)).toBe(1);

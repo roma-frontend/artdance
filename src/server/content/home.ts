@@ -89,12 +89,8 @@ function videoLoop(loop: VideoLoopKey, poster: MediaRef): VideoRef | null {
  */
 const heroPoster = (): MediaRef => mediaRef('hero-loop-poster');
 const editorialPoster = (): MediaRef => mediaRef('editorial-loop-poster');
-/**
- * Постер секции соревнований. Пока отдельного кадра нет, используется
- * editorial-постер — сцена на тёмном фоне читается и в этой роли; замена —
- * правка одной строки, когда заказчик пришлёт материал с турнира.
- */
-const competitionPoster = (): MediaRef => mediaRef('editorial-loop-poster');
+/** Постер секции соревнований — первый кадр её собственной петли (с 25.09.2026). */
+const competitionPoster = (): MediaRef => mediaRef('competition-loop-poster');
 
 export function getHomeContent(): HomeContent {
   return {
@@ -108,15 +104,9 @@ export function getHomeContent(): HomeContent {
       video: videoLoop('editorial', editorialPoster()),
       image: editorialPoster(),
     },
-    /*
-     * Секция соревнований (DS-09). Клип заказчика ещё не закодирован, поэтому
-     * политика `competitionLoop` в `media-processing.ts` пока не объявлена:
-     * `video:check` требует файлы для каждой петли из политики, и пустая запись
-     * сломала бы CI. Здесь `video: null` — секция рендерит постер, а когда клип
-     * придёт, добавляется политика + `npm run video:encode -- --loop competition`.
-     */
+    /* Секция соревнований (DS-09): своя петля `competitionLoop`. */
     competition: {
-      video: null,
+      video: videoLoop('competition', competitionPoster()),
       image: competitionPoster(),
     },
     /**
