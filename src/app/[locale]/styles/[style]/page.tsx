@@ -280,7 +280,7 @@ export default async function StyleHubPage({ params }: PageProps) {
           title={t('studiosTitle', { style: styleLabel })}
           subtitle={hub.districts.join(' · ')}
         >
-          <ul className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <ul className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {hub.venues.map((item) => (
               <li key={item.slug}>
                 <CardTilt>

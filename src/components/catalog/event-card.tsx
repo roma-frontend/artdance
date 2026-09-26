@@ -107,7 +107,7 @@ export function EventCard({ item, locale, className }: EventCardProps) {
           <div className="ticket-notch -right-6" />
         </div>
 
-        <div className="mt-auto flex items-center justify-between gap-3 pt-1">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-1">
           {isFree ? (
             <span className="text-price text-content-primary">{t('events.freeEntry')}</span>
           ) : (

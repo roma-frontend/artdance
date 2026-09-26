@@ -82,7 +82,7 @@ export default async function SocialEventsPage({
         sorts={eventSortOptions}
         section="events"
       >
-        <ul className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {result.items.map((item) => (
             <li key={item.slug}>
               <CardTilt>

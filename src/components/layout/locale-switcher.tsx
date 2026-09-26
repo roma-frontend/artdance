@@ -55,7 +55,7 @@ export function LocaleSwitcher({
   );
 }
 
-function LocaleSwitcherFallback({ variant, solid: _solid }: { variant?: Variant; solid?: boolean }) {
+function LocaleSwitcherFallback({ variant }: { variant?: Variant; solid?: boolean }) {
   // Скелет для Suspense — пока не смонтирован searchParams
   if (variant === 'sheet') {
     return <div className="rounded-xl border border-border-default bg-surface-card p-3 h-24" aria-hidden />;

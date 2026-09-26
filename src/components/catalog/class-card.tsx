@@ -152,7 +152,7 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
             Высота карточки от hover не меняется — соседи по сетке не прыгают.
           */}
           <div className="card-foot border-t border-border-default pt-3">
-            <div className="card-foot-line flex items-center justify-between gap-3">
+            <div className="card-foot-line flex flex-wrap items-center justify-between gap-3">
               <Price amount={item.price} unit="perClass" />
               <SpotsLeft spots={item.spotsLeft} waitlistOpen={item.waitlistOpen} />
             </div>

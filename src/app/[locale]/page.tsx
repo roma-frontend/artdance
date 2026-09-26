@@ -192,7 +192,7 @@ export default async function HomePage({ params }: PageProps) {
           <Reveal
             as="ul"
             variant="stagger"
-            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"
+            className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
           >
             {content.instructors.slice(0, 4).map((item, index) => (
               <li key={item.slug}>
@@ -224,7 +224,7 @@ export default async function HomePage({ params }: PageProps) {
             />
           </Reveal>
 
-          <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <Reveal as="ul" variant="stagger" className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {content.venues.map((item, index) => (
               <li key={item.slug}>
                 <CardTilt index={index}>
@@ -255,7 +255,7 @@ export default async function HomePage({ params }: PageProps) {
               />
             </Reveal>
 
-            <Reveal as="ul" variant="stagger" className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <Reveal as="ul" variant="stagger" className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {content.products.slice(0, 4).map((item, index) => (
                 <li key={item.slug}>
                   <CardTilt index={index}>
@@ -287,7 +287,7 @@ export default async function HomePage({ params }: PageProps) {
               />
             </Reveal>
 
-            <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-3">
+            <Reveal as="ul" variant="stagger" className="grid gap-5 grid-cols-2 md:grid-cols-3">
               {content.events.map((item, index) => (
                 <li key={item.slug}>
                   <CardTilt index={index}>
@@ -319,7 +319,7 @@ export default async function HomePage({ params }: PageProps) {
             />
           </Reveal>
 
-          <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-3">
+          <Reveal as="ul" variant="stagger" className="grid gap-5 grid-cols-2 md:grid-cols-3">
             {content.testimonials.map((item) => (
               <li key={item.id}>
                 <TestimonialCard item={item} locale={locale as Locale} />

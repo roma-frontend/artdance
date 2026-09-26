@@ -80,7 +80,7 @@ export default async function StudiosPage({ params, searchParams }: PageProps) {
         sorts={venueSortOptions}
         section="studios"
       >
-        <ul className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {result.items.map((item) => (
             <li key={item.slug}>
               <CardTilt>

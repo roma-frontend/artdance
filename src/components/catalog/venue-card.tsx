@@ -127,7 +127,7 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
             крестфейдом (см. class-card.tsx). Высота от hover не меняется.
           */}
           <div className="card-foot border-t border-border-default pt-3">
-            <div className="card-foot-line flex items-center justify-between gap-3">
+            <div className="card-foot-line flex flex-wrap items-center justify-between gap-3">
               <Price amount={item.pricePerHour} unit="perHour" emphasis="total" />
               <RatingStars rating={item.ratingAverage} count={item.ratingCount} hideCount />
             </div>
