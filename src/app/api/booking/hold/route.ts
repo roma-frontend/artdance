@@ -32,10 +32,21 @@ function errorFromDomain(error: unknown) {
 }
 
 async function loadAvailabilityForInstructor(instructorId: string) {
-  const profile = await db.instructorProfile.findUnique({ where: { id: instructorId }, select: { id: true } });
-  if (!profile) return null;
-  const rules = await db.availabilityRule.findMany({ where: { instructorId, isActive: true }, select: { weekday: true, startTime: true, endTime: true, validFrom: true, validUntil: true, isActive: true } });
-  const exceptions = await db.availabilityException.findMany({ where: { instructorId }, select: { startsAt: true, endsAt: true, isAvailable: true } });
+  let profile = await db.instructorProfile.findUnique({ where: { id: instructorId }, select: { id: true } });
+  if (!profile) {
+    profile = await db.instructorProfile.findUnique({ where: { slug: instructorId }, select: { id: true } });
+  }
+  if (!profile) {
+    // Fixture preview: no DB row yet — fall back to demo rules so booking
+    // screen can still hold while migrating from fixtures to DB.
+    const { demoInstructorAvailability } = await import('../../../../../prisma/fixtures/demo');
+    const demo = (demoInstructorAvailability as Record<string, readonly { weekday: number; startTime: string; endTime: string }[]>)[instructorId];
+    if (!demo) return null;
+    return { rules: demo.map((w) => ({ weekday: w.weekday, startTime: w.startTime, endTime: w.endTime, validFrom: null, validUntil: null, isActive: true })), exceptions: [] };
+  }
+  const resolvedId = profile.id;
+  const rules = await db.availabilityRule.findMany({ where: { instructorId: resolvedId, isActive: true }, select: { weekday: true, startTime: true, endTime: true, validFrom: true, validUntil: true, isActive: true } });
+  const exceptions = await db.availabilityException.findMany({ where: { instructorId: resolvedId }, select: { startsAt: true, endsAt: true, isAvailable: true } });
   return { rules, exceptions: exceptions.map((e) => ({ start: e.startsAt, end: e.endsAt, isAvailable: e.isAvailable })) };
 }
 

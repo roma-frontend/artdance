@@ -99,6 +99,8 @@ export interface BookingContent {
   /** Инструктор выезжает к клиенту. В production — поле профиля. */
   acceptsTravel: boolean;
   acceptsOnline: boolean;
+  instructorId: string | null;
+  venueSlug: string | null;
 }
 
 /** Окна фикстур → правила движка. Форма совпадает с `AvailabilityRule` в схеме. */
@@ -273,6 +275,8 @@ export function getInstructorBookingContent(
     preselectedSlot: preselectedSlotFor(initialDay),
     acceptsTravel: true,
     acceptsOnline: true,
+    instructorId: instructor.slug,
+    venueSlug: venue?.slug ?? null,
   };
 }
 
