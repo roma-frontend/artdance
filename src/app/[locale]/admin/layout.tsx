@@ -33,6 +33,7 @@ import { Link, redirect } from '@/i18n/routing';
 import { resolveCapabilities } from '@/lib/auth/capabilities';
 import { getCaller } from '@/lib/auth/guards';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { getSidebarPendingBadges } from '@/server/admin/sidebar-badges';
 
 interface LayoutProps {
   children: ReactNode;
@@ -87,14 +88,19 @@ export default async function AdminLayout({ children, params }: LayoutProps) {
     );
   }
 
-  const capabilities = await resolveCapabilities(caller.role);
+  const [capabilities] = await Promise.all([resolveCapabilities(caller.role)]);
+  const badges = await getSidebarPendingBadges(capabilities);
 
   const groups: readonly SidebarGroup[] = adminNavigation
     .map((group) => ({
       labelKey: group.labelKey,
-      items: group.items.filter(
-        (item) => item.capability === undefined || capabilities.has(item.capability),
-      ),
+      items: group.items
+        .filter((item) => item.capability === undefined || capabilities.has(item.capability))
+        .map((item) => ({
+          labelKey: item.labelKey,
+          href: item.href,
+          badge: badges[item.href],
+        })),
     }))
     .filter((group) => group.items.length > 0);
 

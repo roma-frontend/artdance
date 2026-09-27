@@ -12,7 +12,9 @@
 import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 
+import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminSidebar, type SidebarGroup } from '@/components/admin/admin-sidebar';
+import { ScrollToTopButton } from '@/components/admin/scroll-to-top-button';
 import { SignOutButton } from '@/components/auth/sign-out-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,7 +36,7 @@ export async function AdminShell({ groups, userName, role, children }: AdminShel
 
   return (
     <div className="min-h-dvh bg-surface-canvas">
-      <header className="border-b border-border-default bg-surface-card">
+      <AdminHeader>
         <div className="page-container flex flex-wrap items-center justify-between gap-4 py-4">
           <div className="flex items-baseline gap-3">
             <Link href={routes.admin()} className="text-heading-4 text-content-primary">
@@ -54,14 +56,16 @@ export async function AdminShell({ groups, userName, role, children }: AdminShel
             <SignOutButton />
           </div>
         </div>
-      </header>
+      </AdminHeader>
 
-      <div className="page-container grid gap-8 py-8 lg:grid-cols-[var(--layout-sidebar-width)_1fr]">
+      <div className="page-container grid items-start gap-8 py-8 lg:grid-cols-[var(--layout-sidebar-width)_1fr]">
         <AdminSidebar groups={groups} />
         <main id={site.mainContentId} className="min-w-0">
           {children}
         </main>
       </div>
+
+      <ScrollToTopButton />
     </div>
   );
 }

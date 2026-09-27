@@ -36,6 +36,7 @@ import type { AdminResource } from '@/config';
 import { useRouter } from '@/i18n/routing';
 import type { Translate } from '@/i18n/translate';
 import type { MessageKey } from '@/i18n/types';
+import { cn } from '@/lib/utils';
 import { runAdminBulkAction, type AdminBulkAction } from '@/server/actions/admin/resource';
 
 interface BulkActionBarProps {
@@ -103,7 +104,11 @@ export function BulkActionBar({ resource, actions, children }: BulkActionBarProp
       {actions.length > 0 ? (
         <div
           aria-live="polite"
-          className="flex flex-wrap items-center gap-3 rounded-md border border-border-default bg-surface-raised px-4 py-3"
+          className={cn(
+            'flex flex-wrap items-center gap-3 rounded-md border border-border-default bg-surface-raised px-4 py-3 transition-all duration-normal ease-brand',
+            selected > 0 &&
+              'sticky bottom-4 z-sticky shadow-xl backdrop-blur-md bg-surface-raised/95 border-border-strong ring-1 ring-border-default/50',
+          )}
         >
           <p className="text-body-sm text-content-secondary">
             {selected === 0 ? t('selectRow') : t('selectedCount', { count: selected })}

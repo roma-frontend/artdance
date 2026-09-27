@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 export interface SidebarItem {
   labelKey: MessageKey;
   href: string;
+  badge?: number;
 }
 
 export interface SidebarGroup {
@@ -47,7 +48,10 @@ export function AdminSidebar({ groups }: AdminSidebarProps) {
   const pathname = usePathname();
 
   return (
-    <nav aria-label={t('sectionNav')} className="lg:sticky lg:top-6">
+    <nav
+      aria-label={t('sectionNav')}
+      className="scrollbar-compact lg:sticky lg:top-[calc(var(--layout-nav-height)+1.5rem)] lg:max-h-[calc(100dvh-var(--layout-nav-height)-3rem)] lg:overflow-y-auto"
+    >
       <p className="text-eyebrow mb-4 hidden uppercase text-content-tertiary lg:block">{t('title')}</p>
 
       <div className="flex gap-6 overflow-x-auto pb-2 lg:flex-col lg:gap-6 lg:overflow-visible lg:pb-0">
@@ -65,13 +69,27 @@ export function AdminSidebar({ groups }: AdminSidebarProps) {
                       href={item.href}
                       aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'text-body-sm block rounded-md px-3 py-2 whitespace-nowrap transition-colors duration-fast',
+                        'text-body-sm flex items-center justify-between gap-2 rounded-md px-3 py-2 whitespace-nowrap transition-colors duration-fast',
                         active
                           ? 'bg-accent-soft font-semibold text-content-accent'
                           : 'text-content-secondary hover:bg-interactive-hover hover:text-content-primary',
                       )}
                     >
-                      {tRoot(item.labelKey)}
+                      <span className="truncate">{tRoot(item.labelKey)}</span>
+
+                      {item.badge !== undefined && item.badge > 0 ? (
+                        <span
+                          className={cn(
+                            'text-caption inline-flex items-center justify-center rounded-full px-1.5 py-0.5 font-medium tabular-nums',
+                            active
+                              ? 'bg-accent text-content-on-accent'
+                              : 'bg-surface-raised text-content-secondary border border-border-default',
+                          )}
+                        >
+                          {item.badge > 99 ? '99+' : item.badge}
+                        </span>
+                      ) : null}
+
                       {/*
                         Обратная связь на нажатие. В админке она нужнее всего:
                         каждый раздел — динамический маршрут с запросами к базе, и
