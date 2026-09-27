@@ -6,6 +6,7 @@
  * Смена слота/даты освобождает предыдущий hold DELETE-ом — держится ровно один слот.
  * Гонку решает уникальный индекс SlotHold в БД (3.2). Истечение — уведомление, освобождает сервер.
  * Гость держит слот по anonymousId из localStorage (ARTDANCE_ANON_ID), XOR с userId.
+ * Подтверждение — POST /api/booking из hold: цена и окно отмены фиксируются на сервере (3.5).
  */
 'use client';
 
@@ -122,7 +123,17 @@ export function BookingScreen({ content }: BookingScreenProps) {
   const travelFee = location === 'CUSTOMER_LOCATION' ? booking.travelFee : 0;
   const justTaken = hold.status === 'error' ? hold.justTaken : null;
   const effectiveHoldExpiresAt = hold.status === 'holding' ? hold.expiresAt : null;
-  const handleContinue = () => { if (hold.status !== 'holding' || !hold.holdId) return; router.push(routes.bookingConfirm(hold.holdId)); };
+  const handleContinue = async () => {
+    if (hold.status !== 'holding' || !hold.holdId) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ holdId: hold.holdId, locationOption: location, anonymousId: getAnonymousId() }) });
+      if (res.status === 401) { router.push(routes.signIn(routes.bookingConfirm(hold.holdId))); return; }
+      const body = (await res.json().catch(() => null)) as { booking?: { id: string; reference: string }; error?: string } | null;
+      if (!res.ok || !body?.booking) { const taken = body?.error === 'SLOT_CONFLICT' || body?.error === 'HOLD_EXPIRED' ? startTime ?? null : null; setHold({ status: 'error', justTaken: taken }); return; }
+      router.push(routes.bookingConfirm(body.booking.reference ?? body.booking.id));
+    } finally { setSubmitting(false); }
+  };
   return (
     <div className="booking-detail-grid">
       <div className="flex flex-col gap-6">
