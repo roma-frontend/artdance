@@ -75,6 +75,8 @@ export async function cancelBooking(input: CancelBookingInput) {
   return db.$transaction(async (tx) => {
     const updated = await tx.booking.update({ where: { id: b.id }, data: { status: 'CANCELLED_BY_CUSTOMER', cancelledAt: input.now, cancellationReason: input.reason ?? (outcome.kind==='fee' ? 'LATE_FEE:'+fee : null) }, select: { id:true, reference:true, status:true, totalPrice:true } });
     if (b.sessionId) await tx.classSession.update({ where: { id: b.sessionId }, data: { bookedCount: { decrement: 1 } } }).catch(()=>{});
+    // notify waitlist if session had queue
+    if (b.sessionId) { const next = await tx.waitlistEntry.findFirst({ where:{ sessionId: b.sessionId, notifiedAt: null }, orderBy:{ position:'asc' }}); if (next) await tx.waitlistEntry.update({ where:{ id: next.id }, data:{ notifiedAt: input.now, claimUntil: new Date(input.now.getTime() + booking.waitlistClaimWindowMinutes*60_000)}}); }
     return { booking: updated, fee, refund, outcome: outcome.kind };
   });
 }
@@ -93,7 +95,6 @@ export async function rescheduleBooking(input: RescheduleBookingInput) {
     if (outcome.reason === 'SAME_TIME') throw domainErrors.validationFailed('startsAt');
     throw domainErrors.validationFailed('startsAt');
   }
-  // Re-check availability window + conflict for new slot (server truth)
   const durationMinutes = Math.round((input.newEndsAt.getTime() - input.newStartsAt.getTime())/60_000);
   let rules: { weekday:number; startTime:string; endTime:string; validFrom?: Date|null; validUntil?: Date|null; isActive?: boolean }[] = [];
   let exceptions: { start: Date; end: Date; isAvailable:boolean }[] = [];
@@ -117,4 +118,38 @@ export async function rescheduleBooking(input: RescheduleBookingInput) {
     const updated = await tx.booking.update({ where:{ id: b.id }, data:{ startsAt: input.newStartsAt, endsAt: input.newEndsAt, basePrice: newBase, totalPrice: newTotal, rescheduleCount:{ increment:1 } }, select:{ id:true, reference:true, startsAt:true, endsAt:true, totalPrice:true, rescheduleCount:true } });
     return { booking: updated, priceDifference: outcome.priceDifference, remaining: outcome.remaining, durationMinutes };
   });
+}
+export async function joinWaitlist(input: { sessionId: string; userId: string; now: Date }) {
+  if (!booking.waitlistEnabled) throw domainErrors.featureDisabled();
+  const session = await db.classSession.findUnique({ where: { id: input.sessionId }, select: { id:true, capacity:true, bookedCount:true, isCancelled:true } });
+  if (!session || session.isCancelled) throw domainErrors.notFound();
+  if (session.bookedCount < session.capacity) throw domainErrors.validationFailed('sessionId');
+  const count = await db.waitlistEntry.count({ where: { sessionId: input.sessionId } });
+  if (count >= booking.waitlistMaxSize) throw domainErrors.validationFailed('waitlist');
+  const existing = await db.waitlistEntry.findUnique({ where: { sessionId_userId: { sessionId: input.sessionId, userId: input.userId } } });
+  if (existing) throw domainErrors.validationFailed('sessionId');
+  const maxPos = await db.waitlistEntry.aggregate({ where:{ sessionId: input.sessionId }, _max:{ position:true }});
+  const position = (maxPos._max.position ?? 0) + 1;
+  return db.waitlistEntry.create({ data: { sessionId: input.sessionId, userId: input.userId, position }, select:{ id:true, position:true }});
+}
+export async function claimWaitlistSlot(input: { sessionId: string; userId: string; now: Date }) {
+  const entry = await db.waitlistEntry.findUnique({ where:{ sessionId_userId:{ sessionId: input.sessionId, userId: input.userId }}});
+  if (!entry) throw domainErrors.notFound();
+  if (!entry.notifiedAt || !entry.claimUntil) throw domainErrors.validationFailed('claimUntil');
+  if (input.now.getTime() > entry.claimUntil.getTime()) throw domainErrors.validationFailed('claimUntil');
+  const session = await db.classSession.findUnique({ where:{ id: input.sessionId }, select:{ id:true, startsAt:true, endsAt:true, classId:true, roomId:true }});
+  if (!session) throw domainErrors.notFound();
+  const danceClass = await db.danceClass.findUnique({ where:{ id: session.classId }, select:{ instructorId:true }});
+  const expiresAt = new Date(input.now.getTime() + booking.holdTtlMinutes * 60_000);
+  const hold = await db.slotHold.create({ data:{ instructorId: danceClass?.instructorId, roomId: session.roomId, sessionId: session.id, startsAt: session.startsAt, endsAt: session.endsAt, userId: input.userId, expiresAt, extensions:0 }, select:{ id:true, expiresAt:true }});
+  await db.waitlistEntry.delete({ where:{ id: entry.id }});
+  const rest = await db.waitlistEntry.findMany({ where:{ sessionId: input.sessionId }, orderBy:{ position:'asc' }, select:{ id:true }});
+  for (const [i, row] of rest.entries()) await db.waitlistEntry.update({ where:{ id: row.id }, data:{ position: i+1 }});
+  return hold;
+}
+export async function notifyNextInWaitlist(sessionId: string, now: Date) {
+  const next = await db.waitlistEntry.findFirst({ where:{ sessionId, notifiedAt: null }, orderBy:{ position:'asc' }});
+  if (!next) return null;
+  const claimUntil = new Date(now.getTime() + booking.waitlistClaimWindowMinutes * 60_000);
+  return db.waitlistEntry.update({ where:{ id: next.id }, data:{ notifiedAt: now, claimUntil }});
 }
