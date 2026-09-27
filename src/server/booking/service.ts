@@ -2,6 +2,7 @@ import 'server-only';
 import { booking } from '@/config/business';
 import { domainErrors } from '@/domain/errors';
 import { isHoldExpired } from '@/domain/slot-hold';
+import { cancellationOutcome, refundAmountFor, type BookingSnapshot } from '@/domain/booking/policy';
 import { db } from '@/lib/db';
 import { Prisma } from '@/generated/prisma/client';
 function isUniqueViolation(error: unknown): boolean { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'; }
@@ -57,4 +58,28 @@ export async function createBookingFromHold(input: CreateBookingInput) {
     });
     return result;
   } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; }
+}
+export interface CancelBookingInput { bookingId: string; userId: string; now: Date; reason?: string | null; }
+export async function cancelBooking(input: CancelBookingInput) {
+  const b = await db.booking.findUnique({ where: { id: input.bookingId } });
+  if (!b) throw domainErrors.notFound();
+  if (b.customerId !== input.userId) throw domainErrors.forbidden();
+  const snapshot: BookingSnapshot = {
+    startsAt: b.startsAt, status: b.status as BookingSnapshot['status'], totalPrice: b.totalPrice,
+    cancellationWindowHours: b.cancellationWindowHours, lateCancellationRate: Number(b.lateCancellationRate),
+    rescheduleWindowHours: b.rescheduleWindowHours, rescheduleCount: b.rescheduleCount, maxReschedules: b.maxReschedules,
+  };
+  const outcome = cancellationOutcome(snapshot, input.now);
+  if (outcome.kind === 'forbidden') {
+    if (outcome.reason === 'ALREADY_STARTED') throw domainErrors.validationFailed('startsAt');
+    throw domainErrors.cancellationWindowClosed();
+  }
+  const fee = outcome.kind === 'fee' ? outcome.amount : 0;
+  const refund = outcome.kind === 'free' ? b.totalPrice : (()=> { try { return refundAmountFor(outcome, b.totalPrice); } catch { return b.totalPrice; } })();
+  const refundAmount = outcome.kind === 'fee' ? refund : refund;
+  return db.$transaction(async (tx) => {
+    const updated = await tx.booking.update({ where: { id: b.id }, data: { status: 'CANCELLED_BY_CUSTOMER', cancelledAt: input.now, cancellationReason: input.reason ?? (outcome.kind==='fee' ? 'LATE_FEE:'+fee : null) }, select: { id:true, reference:true, status:true, totalPrice:true } });
+    if (b.sessionId) await tx.classSession.update({ where: { id: b.sessionId }, data: { bookedCount: { decrement: 1 } } }).catch(()=>{});
+    return { booking: updated, fee, refund: refundAmount, outcome: outcome.kind };
+  });
 }
