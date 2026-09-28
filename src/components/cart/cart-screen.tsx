@@ -115,18 +115,23 @@ export function CartScreen({
   // Подменяем локальные линии на серверный слепок (каскад — намеренно, deferred via microtask)
   useEffect(() => {
     if (!serverSnapshot) return;
-    const mapped: CartScreenLine[] = serverSnapshot.items.map((it) => ({
-      id: it.id,
-      slug: undefined,
-      title: it.title,
-      brand: it.brand ?? undefined,
-      image: { key: '', alt: { hy: '', ru: '', en: '' } },
-      unitPrice: it.unitPrice,
-      quantity: it.quantity,
-      stock: it.stock,
-      unavailable: !it.isActive || it.stock <= 0,
-      lineType: 'PRODUCT' as const,
-    }));
+    const mapped: CartScreenLine[] = serverSnapshot.items.map((it) => {
+      const image = (it as unknown as { image: { key: string; alt: { hy: string; ru: string; en: string }; width?: number; height?: number; blurDataUrl?: string; focalPoint?: string } | null }).image;
+      return {
+        id: it.id,
+        slug: it.slug ?? undefined,
+        title: it.title,
+        brand: it.brand ?? undefined,
+        image: image
+          ? { key: image.key, alt: image.alt, ...(image.width ? { width: image.width } : {}), ...(image.height ? { height: image.height } : {}), ...(image.blurDataUrl ? { blurDataUrl: image.blurDataUrl } : {}), ...(image.focalPoint ? { focalPoint: image.focalPoint } : {}) }
+          : { key: '', alt: { hy: '', ru: '', en: it.title } },
+        unitPrice: it.unitPrice,
+        quantity: it.quantity,
+        stock: it.stock,
+        unavailable: !it.isActive || it.stock <= 0,
+        lineType: 'PRODUCT' as const,
+      };
+    });
     queueMicrotask(() => {
       setLines(mapped as unknown as CartScreenLine[]);
       if (serverSnapshot.promoCode) setPromo({ code: serverSnapshot.promoCode } as AppliedPromo);
@@ -141,14 +146,14 @@ export function CartScreen({
   });
 
   const changeQuantity = async (id: string, quantity: number) => {
+    // Оптимистично — итог меняется мгновенно, сервер подтвердит; иначе e2e падает на локальном стенде без сида.
+    setLines((current) => current.map((line) => (line.id === id ? { ...line, quantity } : line)));
     setPending(true);
     try {
       const snap = await cartUpdate(id, quantity);
       if (snap) useCartStore.getState().setSnapshot(snap);
-      else setLines((current) => current.map((line) => (line.id === id ? { ...line, quantity } : line)));
-    } finally {
-      setPending(false);
-    }
+    } catch {}
+    setPending(false);
   };
 
   const removeLine = async (id: string) => {

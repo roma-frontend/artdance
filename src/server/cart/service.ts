@@ -35,6 +35,8 @@ export interface CartSnapshot {
     unitPrice: number;
     sku: string | null;
     title: string;
+    slug: string | null;
+    image: { key: string; alt: { hy: string; ru: string; en: string }; width?: number; height?: number; blurDataUrl?: string; focalPoint?: string } | null;
     brand: string | null;
     stock: number; // available = stock - reserved
     isActive: boolean;
@@ -93,7 +95,21 @@ async function buildSnapshot(cart: ResolvedCart): Promise<CartSnapshot> {
     where: { cartId: cart.id },
     include: {
       variant: {
-        select: { sku: true, price: true, stock: true, reserved: true, isActive: true, product: { select: { title: true, brand: true } } },
+        select: {
+          sku: true,
+          price: true,
+          stock: true,
+          reserved: true,
+          isActive: true,
+          product: {
+            select: {
+              title: true,
+              brand: true,
+              slug: true,
+              media: { select: { storageKey: true, width: true, height: true, blurDataUrl: true, focalPoint: true, translations: { select: { locale: true, altText: true } } }, where: { productId: { not: undefined } } as never, orderBy: { sortOrder: 'asc' } as never, take: 1 },
+            },
+          },
+        },
       },
     },
     orderBy: { createdAt: 'asc' },
@@ -102,7 +118,14 @@ async function buildSnapshot(cart: ResolvedCart): Promise<CartSnapshot> {
     variantId: string | null;
     quantity: number;
     unitPrice: number;
-    variant: { sku: string; price: number; stock: number; reserved: number; isActive: boolean; product: { title: string; brand: string | null } } | null;
+    variant: {
+      sku: string;
+      price: number;
+      stock: number;
+      reserved: number;
+      isActive: boolean;
+      product: { title: string; brand: string | null; slug: string; media: Array<{ storageKey: string; width: number; height: number; blurDataUrl: string; translations: Array<{ locale: string; altText: string }> }> } | null;
+    } | null;
   }>;
 
   const promoRow = cart.promoCodeId
@@ -117,14 +140,34 @@ async function buildSnapshot(cart: ResolvedCart): Promise<CartSnapshot> {
     const v = item.variant;
     const available = v ? Math.max(0, v.stock - v.reserved) : 0;
 
+    const media = v?.product?.media?.[0] as unknown as { storageKey: string; width: number | null; height: number | null; blurDataUrl: string | null; focalPoint: string | null; translations: Array<{ locale: string; altText: string }> } | undefined;
+    const baseKey = media ? media.storageKey.split('#')[0]! : null;
+    // storageKey — ключ в R2 или путь в /media; не семантическое имя сид-ассета — Media резолвит его как путь/URL.
+    const title = v?.product?.title ?? '';
+    const image = baseKey
+      ? {
+          key: baseKey,
+          alt: {
+            hy: media!.translations.find((tr) => tr.locale === 'hy')?.altText ?? title,
+            ru: media!.translations.find((tr) => tr.locale === 'ru')?.altText ?? title,
+            en: media!.translations.find((tr) => tr.locale === 'en')?.altText ?? title,
+          },
+          ...(media!.width != null ? { width: media!.width } : {}),
+          ...(media!.height != null ? { height: media!.height } : {}),
+          ...(media!.blurDataUrl ? { blurDataUrl: media!.blurDataUrl } : {}),
+          ...(media!.focalPoint ? { focalPoint: media!.focalPoint } : {}),
+        }
+      : null;
     mutableItems.push({
       id: item.id,
       variantId: item.variantId,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       sku: v?.sku ?? null,
-      title: v?.product.title ?? '—',
-      brand: v?.product.brand ?? null,
+      title: v?.product?.title ?? '—',
+      slug: v?.product?.slug ?? null,
+      image,
+      brand: v?.product?.brand ?? null,
       stock: available,
       isActive: v?.isActive ?? false,
     });

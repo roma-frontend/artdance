@@ -26,7 +26,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useRef, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useCartStore } from '@/lib/cart/store';
+import { fetchCart } from '@/lib/cart/api';
 
 import { BrandMark } from '@/components/brand/brand-mark';
 import { LocaleSwitcher } from '@/components/layout/locale-switcher';
@@ -51,6 +53,34 @@ export function SiteHeader() {
   const headerRef = useRef<HTMLElement>(null);
   const heroBehind = useCinemaHeroBehind(headerRef, hasCinemaHero(pathname));
   const { openSearch } = useSearchOverlay();
+  const snapshot = useCartStore((s) => s.snapshot);
+  const [bump, setBump] = useState(false);
+  const prevCount = useRef<number>(snapshot?.totals.itemCount ?? 0);
+
+  // Гидратация корзины в шапке + плавная анимация цифры
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (!snapshot) {
+      void fetchCart()
+        .then((s) => {
+          if (s) useCartStore.getState().setSnapshot(s);
+        })
+        .catch(() => {});
+    } else {
+      const next = snapshot.totals.itemCount;
+      if (next !== prevCount.current) {
+        prevCount.current = next;
+        if (next > 0) {
+          timer = setTimeout(() => setBump(false), 420);
+          // микротаск — не каскадный рендер внутри эффекта
+          queueMicrotask(() => setBump(true));
+        }
+      }
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [snapshot]);
 
   const solid = !heroBehind;
 
@@ -129,17 +159,14 @@ export function SiteHeader() {
         <div className="flex items-center gap-2">
           {headerIconItems.map((item) => {
             const Icon = navIcons[item.icon];
+            const isCart = item.id === 'cart';
+            const cartCount = isCart ? (snapshot?.totals.itemCount ?? 0) : 0;
+            const showBadge = isCart && cartCount > 0;
             return (
               <Link
                 key={item.id}
                 href={item.href}
-                aria-label={t(item.labelKey)}
-                /*
-                 * Поиск открывается оверлеем, но остаётся ссылкой на каталог:
-                 * без JavaScript переход сработает как обычно, с JavaScript
-                 * `preventDefault` подменяет его полноэкранным поиском.
-                 * `aria-haspopup` сообщает скринридеру, что откроется диалог.
-                 */
+                aria-label={showBadge ? `${String(t(item.labelKey))} — ${cartCount}` : String(t(item.labelKey))}
                 {...(item.opensSearch
                   ? {
                       'aria-haspopup': 'dialog' as const,
@@ -150,9 +177,8 @@ export function SiteHeader() {
                     }
                   : {})}
                 className={cn(
-                  'inline-flex size-9 items-center justify-center rounded-full border border-transparent',
+                  'relative inline-flex size-9 items-center justify-center rounded-full border border-transparent',
                   'transition-colors duration-normal ease-brand',
-                  /* Не помещающиеся иконки уходят в мобильное меню, а не исчезают. */
                   item.compact ? undefined : 'max-lg:hidden',
                   solid
                     ? 'text-content-secondary hover:border-accent hover:bg-accent-soft hover:text-content-accent'
@@ -160,6 +186,18 @@ export function SiteHeader() {
                 )}
               >
                 <Icon className="size-5" aria-hidden />
+                {showBadge && (
+                  <span
+                    aria-hidden
+                    className={cn(
+                      'absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-accent px-1 py-0.5 text-[11px] font-bold leading-none text-white',
+                      'transition-transform duration-normal ease-brand',
+                      bump ? 'scale-110' : 'scale-100',
+                    )}
+                  >
+                    {cartCount > 99 ? '99+' : String(cartCount)}
+                  </span>
+                )}
               </Link>
             );
           })}

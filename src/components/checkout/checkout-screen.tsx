@@ -32,7 +32,7 @@
 
 import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { cartValidate } from '@/lib/cart/api';
+import { cartValidate, fetchCart } from '@/lib/cart/api';
 import { useCartStore } from '@/lib/cart/store';
 
 import { OrderSummary, type OrderSummaryLine } from '@/components/checkout/order-summary';
@@ -110,7 +110,6 @@ export function CheckoutScreen({
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsError, setTermsError] = useState(false);
   const [notice, setNotice] = useState(false);
-  const [validating, setValidating] = useState(false);
   const [cartChanged, setCartChanged] = useState(false);
 
   const set = (name: FieldName) => (value: string) => {
@@ -123,9 +122,34 @@ export function CheckoutScreen({
    * Итоги считает домен, а не разметка: на шаге доставки появляется зона, и
    * стоимость доставки меняет и итог, и НДС в нём. Формула одна — `cartTotals`,
    * та же, что в корзине и на сервере перед списанием.
+   * Если корзина пришла извне (CartScreen/useCartStore), используем её — иначе
+   * на /checkout/contact видно «0 товаров», хотя /cart не пуст.
    */
+  const cartSnapshot = useCartStore((s) => s.snapshot);
+  const effectiveLines: readonly CartScreenLine[] = (() => {
+    if (!cartSnapshot || cartSnapshot.items.length === 0) return lines;
+    return cartSnapshot.items.map((it) => {
+      const image = (it as unknown as { image: { key: string; alt: { hy: string; ru: string; en: string }; width?: number; height?: number; blurDataUrl?: string; focalPoint?: string } | null }).image;
+      return {
+        id: it.id,
+        slug: (it as unknown as { slug: string | null }).slug ?? undefined,
+        title: it.title,
+        brand: (it.brand ?? undefined) as unknown as string | undefined,
+        image: image
+          ? { key: image.key, alt: image.alt, ...(image.width ? { width: image.width } : {}), ...(image.height ? { height: image.height } : {}), ...(image.blurDataUrl ? { blurDataUrl: image.blurDataUrl } : {}), ...(image.focalPoint ? { focalPoint: image.focalPoint } : {}) }
+          : { key: '', alt: { hy: '', ru: '', en: it.title } },
+        unitPrice: it.unitPrice,
+        quantity: it.quantity,
+        stock: it.stock,
+        unavailable: !it.isActive || it.stock <= 0,
+        lineType: 'PRODUCT' as const,
+        options: [] as unknown as CartScreenLine['options'],
+      };
+    });
+  })();
+
   const totals = cartTotals({
-    lines: lines
+    lines: effectiveLines
       .filter((line) => !line.unavailable)
       .map((line) => ({
         id: line.id,
@@ -137,7 +161,7 @@ export function CheckoutScreen({
     deliveryZone: deliveryMethod ? deliveryZoneFor[deliveryMethod] : null,
   });
 
-  const summaryLines: readonly OrderSummaryLine[] = lines.map((line) => ({
+  const summaryLines: readonly OrderSummaryLine[] = effectiveLines.map((line) => ({
     id: line.id,
     title: line.title,
     quantity: line.quantity,
@@ -158,17 +182,36 @@ export function CheckoutScreen({
         if (!values[name]?.trim()) found[name] = 'validation.required';
       }
       if (values.email?.trim() && !isEmail(values.email)) found.email = 'validation.email';
+      if (values.phone?.trim() && !isPhone(values.phone)) found.phone = 'validation.phone';
+      if (values.firstName?.trim() && values.firstName.trim().length < 2) found.firstName = 'validation.minLength';
+      if (values.lastName?.trim() && values.lastName.trim().length < 2) found.lastName = 'validation.minLength';
     }
 
-    if (step === 'delivery' && deliveryMethod === 'courier') {
-      for (const name of ['address', 'city'] as const) {
-        if (!values[name]?.trim()) found[name] = 'validation.required';
+    if (step === 'delivery' && deliveryMethod !== undefined) {
+      if (deliveryMethod === 'courier') {
+        for (const name of ['address', 'city'] as const) {
+          if (!values[name]?.trim()) found[name] = 'validation.required';
+        }
+        if (values.postalCode?.trim() && !isPostalCode(values.postalCode)) found.postalCode = 'validation.maxLength';
       }
     }
 
-    if (step === 'payment' && inlineCardForm && method === 'CARD') {
-      for (const name of ['cardNumber', 'expiry', 'cvv', 'cardholder'] as const) {
-        if (!values[name]?.trim()) found[name] = 'validation.required';
+    if (step === 'delivery' && deliveryMethod === undefined) {
+      // Назначить доставку должен каждый заказ — зона доставки влияет на total и НДС.
+      found['address' as FieldName] = 'validation.required';
+    }
+
+    if (step === 'payment') {
+      if (!method) {
+        found['cardNumber' as FieldName] = 'validation.required';
+      } else if (inlineCardForm && method === 'CARD') {
+        for (const name of ['cardNumber', 'expiry', 'cvv', 'cardholder'] as const) {
+          if (!values[name]?.trim()) found[name] = 'validation.required';
+        }
+        if (values.cardNumber?.trim() && !isCardNumber(values.cardNumber)) found.cardNumber = 'validation.invalidCard';
+        if (values.expiry?.trim() && !isExpiry(values.expiry)) found.expiry = 'validation.invalidExpiry';
+        if (values.cvv?.trim() && !isCvv(values.cvv, values.cardNumber)) found.cvv = 'validation.invalidCvv';
+        if (values.cardholder?.trim() && values.cardholder.trim().length < 2) found.cardholder = 'validation.minLength';
       }
     }
 
@@ -176,21 +219,15 @@ export function CheckoutScreen({
     return Object.keys(found).length === 0;
   };
 
-  // На шаге confirm — валидируем корзину сервером перед оплатой
+  // Загружаем корзину на всех шагах; на confirm — validate.
   useEffect(() => {
-    if (step !== 'confirm') return;
     let cancelled = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- флаг загрузки из внешнего API checkout
-    setValidating(true);
-    void cartValidate()
-      .then((snap) => {
-        if (!snap || cancelled) return;
-        useCartStore.getState().setSnapshot(snap);
-        if (snap.issues.length > 0) setCartChanged(true);
-      })
-      .finally(() => {
-        if (!cancelled) setValidating(false);
-      });
+    const load = step === 'confirm' ? cartValidate() : fetchCart().then((s) => s ?? null).catch(() => null);
+    void Promise.resolve(load).then((snap) => {
+      if (!snap || cancelled) return;
+      useCartStore.getState().setSnapshot(snap as never);
+      if ((snap as unknown as { issues: unknown[] }).issues?.length > 0 && step === 'confirm') setCartChanged(true);
+    });
     return () => {
       cancelled = true;
     };
@@ -485,7 +522,7 @@ export function CheckoutScreen({
         </div>
       </div>
 
-      <OrderSummary totals={totals} lines={summaryLines} locale={locale} recalculating={validating} changed={cartChanged}>
+      <OrderSummary totals={totals} lines={summaryLines} locale={locale} changed={cartChanged}>
         <TrustBadges variant="checkout" paymentMethods={paymentMethods} className="mt-6" />
       </OrderSummary>
     </form>
@@ -576,11 +613,61 @@ function CheckboxRow({ id, label, checked, onCheckedChange }: CheckboxRowProps) 
 /* ─────────────────────────── Мелочи ─────────────────────────── */
 
 /**
- * Проверка адреса — только форма записи, и намеренно грубая: единственный
- * надёжный способ узнать, что адрес существует, — письмо с подтверждением.
- * Строгая регулярка отсекает валидные адреса и не отсекает опечатки.
+ * Лёгкая валидация контактных и платёжных полей — фолбэк до серверной проверки.
+ * Картой мира: `Armenia (HY)`, все `AM` префиксы и международные номера `+`.
+ * Luhn/MII/expiry/CVV — только форма, не списания: redirect-банку не шлём.
  */
 function isEmail(value: string): boolean {
   const trimmed = value.trim();
   return trimmed.includes('@') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+}
+
+function isPhone(value: string): boolean {
+  const digits = value.replace(/[\s()-]+/g, '');
+  return /^\+?\d{8,15}$/.test(digits);
+}
+
+function isPostalCode(value: string): boolean {
+  return /^[A-Za-z0-9 -]{3,12}$/.test(value.trim());
+}
+
+function digitsOf(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+function isCardNumber(value: string): boolean {
+  const digits = digitsOf(value);
+  if (digits.length < 13 || digits.length > 19) return false;
+  // Luhn — ловит опечатку до редиректа.
+  let sum = 0;
+  let alt = false;
+  for (let i = digits.length - 1; i >= 0; i -= 1) {
+    let n = parseInt(digits[i]!, 10);
+    if (alt) {
+      n *= 2;
+      if (n > 9) n -= 9;
+    }
+    sum += n;
+    alt = !alt;
+  }
+  return sum % 10 === 0;
+}
+
+function isExpiry(value: string): boolean {
+  const m = value.trim().match(/^(\d{1,2})\s*\/\s*(\d{2,4})$/);
+  if (!m) return false;
+  const month = parseInt(m[1]!, 10);
+  let year = parseInt(m[2]!, 10);
+  if (month < 1 || month > 12) return false;
+  if (year < 100) year += 2000;
+  const now = new Date();
+  const exp = new Date(year, month - 1 + 1, 0, 23, 59, 59);
+  return exp.getTime() >= now.getTime() - 24 * 60 * 60 * 1000;
+}
+
+function isCvv(value: string, cardNumber?: string): boolean {
+  const digits = digitsOf(value);
+  const pan = digitsOf(cardNumber ?? '');
+  const isAmex = /^3[47]/.test(pan);
+  return isAmex ? digits.length === 4 : digits.length === 3;
 }

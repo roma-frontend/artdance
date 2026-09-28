@@ -27,6 +27,7 @@
 
 import { LayoutGridIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useCartStore } from '@/lib/cart/store';
 
 import { MobileMenuSheetContent } from '@/components/layout/mobile-menu-sheet';
 import { navIcons } from '@/components/layout/nav-icons';
@@ -135,12 +136,15 @@ function dockItem(slot: number): MobileDockItem | undefined {
 
 function DockTab({ item, activeSlot }: { item?: MobileDockItem; activeSlot?: number }) {
   const t = useTranslations();
+  const snapshot = useCartStore((s) => s.snapshot);
 
   /* Пустая колонка сохраняет сетку: центральная кнопка обязана остаться в центре. */
   if (!item) return <span aria-hidden />;
 
   const active = item.slot === activeSlot;
   const Icon = navIcons[item.icon];
+  const isCart = item.id === 'cart';
+  const cartCount = isCart ? (snapshot?.totals.itemCount ?? 0) : 0;
 
   return (
     <Link
@@ -152,8 +156,16 @@ function DockTab({ item, activeSlot }: { item?: MobileDockItem; activeSlot?: num
         active ? 'font-bold text-content-accent' : 'font-semibold text-content-tertiary',
       )}
     >
-      <span className="grid h-8 w-12 place-items-center">
+      <span className="relative grid h-8 w-12 place-items-center">
         <Icon className="size-5" strokeWidth={active ? 2.4 : 1.9} aria-hidden />
+        {isCart && cartCount > 0 && (
+          <span
+            aria-hidden
+            className="absolute right-0 top-0 grid min-w-4 translate-x-1 -translate-y-1 place-items-center rounded-full bg-accent px-0.5 py-0.5 text-caption font-bold leading-none text-white"
+          >
+            {cartCount > 99 ? '99+' : String(cartCount)}
+          </span>
+        )}
       </span>
       {/*
         Подпись в блоке фиксированной высоты: армянские названия разделов

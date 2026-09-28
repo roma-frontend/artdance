@@ -97,11 +97,11 @@ export function OrderSummary({
                   Количество через ICU, а не «×2»: в макете у позиции с одной
                   штукой осталось одинокое «×» — знак умножения без множителя.
                 */}
-                <p className="text-caption text-content-tertiary">
+                <p className="text-caption text-content-primary">
                   {t('common.counts.items', { count: line.quantity })}
                 </p>
               </div>
-              <p className="text-caption shrink-0 font-semibold">
+              <p className="text-caption shrink-0 font-semibold text-content-primary">
                 {format.number(line.total, 'price')}
               </p>
             </li>
@@ -144,7 +144,7 @@ export function OrderSummary({
         когда доставка выбрана и ещё платная: без зоны сумма ни о чём не говорит.
       */}
       {totals.deliveryFee > 0 && totals.freeDeliveryRemaining > 0 && (
-        <p className="text-caption mt-1 text-content-secondary">
+        <p className="text-caption mt-1 text-content-primary">
           {t('shop.freeDeliveryHint', {
             threshold: format.number(commerce.freeDeliveryThreshold, 'price'),
           })}
@@ -157,7 +157,7 @@ export function OrderSummary({
       </div>
 
       {changed && (
-        <p role="alert" className="text-caption mt-3 font-semibold text-content-warning">
+        <p role="alert" className="text-caption mt-3 font-semibold text-content-primary">
           {t('cart.pricesChanged')}
         </p>
       )}
@@ -178,12 +178,13 @@ function SummaryRow({
 }) {
   return (
     <div className="text-body-sm flex items-baseline justify-between gap-4 py-1.5">
-      <dt className="text-content-secondary">{label}</dt>
+      <dt className="text-content-primary">{label}</dt>
       <dd
         className={cn(
           'text-right font-medium tabular-nums',
-          tone === 'accent' && 'text-content-accent',
-          tone === 'success' && 'font-semibold text-content-success',
+          tone === 'default' && 'text-content-primary',
+          tone === 'accent' && 'text-content-primary',
+          tone === 'success' && 'font-semibold text-content-primary',
         )}
       >
         {value}

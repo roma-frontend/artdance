@@ -782,8 +782,8 @@
       scale var(--duration-slow) var(--ease-brand),
       rotate var(--duration-slow) var(--ease-brand),
       transform var(--duration-slow) var(--ease-brand),
-      box-shadow 900ms cubic-bezier(0.16, 1, 0.3, 1),
-      border-color 900ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow var(--duration-slow) var(--ease-brand),
+      border-color var(--duration-slow) var(--ease-brand),
       filter var(--duration-slow) var(--ease-brand);
   }
 
@@ -805,10 +805,10 @@
   .media-zoom {
     border-radius: inherit;
     transition:
-      translate 1200ms cubic-bezier(0.16, 1, 0.3, 1),
-      scale 1200ms cubic-bezier(0.16, 1, 0.3, 1),
-      rotate 1200ms cubic-bezier(0.16, 1, 0.3, 1),
-      filter 900ms cubic-bezier(0.16, 1, 0.3, 1);
+      translate 500ms cubic-bezier(0.16, 1, 0.3, 1),
+      scale 500ms cubic-bezier(0.16, 1, 0.3, 1),
+      rotate 500ms cubic-bezier(0.16, 1, 0.3, 1),
+      filter var(--duration-slow) var(--ease-brand);
     will-change: scale, filter;
   }
 
