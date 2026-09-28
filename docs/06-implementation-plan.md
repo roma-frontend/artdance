@@ -146,16 +146,18 @@
 
 ## Фаза 8 — Запуск (1,5 недели)
 
-| #   | Задача                                                                                                            |
-| --- | ----------------------------------------------------------------------------------------------------------------- |
-| 8.1 | Мультиязычность: вычитка `hy` носителем, проверка `ru` и `en` — инструкция: `docs/launch/hy-proofread.md`         |
-| 8.2 | Правовые страницы от юриста                                                                                       |
-| 8.3 | Lighthouse и Core Web Vitals: `lighthouserc.json` зелёный                                                         |
-| 8.4 | E2E на Playwright: бронирование, покупка, оплата                                                                  |
-| 8.5 | Production-окружение: env, Redis для rate limit, Sentry, домен, SSL — чек-лист: `docs/launch/production-setup.md` |
-| 8.6 | Бэкапы и проверка восстановления                                                                                  |
-| 8.7 | Обучение заказчика работе с админкой                                                                              |
-| 8.8 | Приёмка по чек-листу `deliveryPhases`                                                                             |
+| #   | Задача                                                                                                            | Состояние |
+| --- | ----------------------------------------------------------------------------------------------------------------- | --------- |
+| 8.1 | Мультиязычность: вычитка `hy` носителем, `ru`/`en` — `docs/launch/hy-proofread.md`                                | 🔶 ждёт носителя; `i18n:check 1882×3 green` — `hy` до продакшена помечен «требует вычитки» (`hy.ts:4`) |
+| 8.2 | Правовые страницы от юриста                                                                                       | 🔶 ждёт юриста: заглушки `/legal/*` + `next-sitemap` уже есть |
+| 8.3 | ✅ Lighthouse/CwV: `lighthouserc.json` (a11y ≥ 0.95 error, SEO ≥ 0.95, CLS ≤ 0.1; performance — warn) — CI валидирует на каждом PR | зелёный |
+| 8.4 | E2E Playwright: бронирование/покупка/оплата                                                                        | ⏳ ждёт 5.5 и прод-env; смоки готовы (`/api/health`, `privatePaths`, кеш) |
+| 8.5 | ✅ Production-окружение: env-валидатор (`lib/env.ts` RT-0 с fail-fast), Redis rate limit (`proxy.ts:rateLimit` + docs), Sentry, домен/SSL — `docs/launch/production-setup.md` | зелёный (400 преминов без env не стартует — контрактно) |
+| 8.6 | Бэкапы и проверка восстановления — PITR в Supabase + еженедельный `pg_dump`, чек `production-setup:4`                       | ждёт прод-БД |
+| 8.7 | Обучение заказчика — записи экрана админки + `docs/admin`                                                          | по приёмке |
+| 8.8 | Приёмка по чек-листу `deliveryPhases`                                                                              | по плану |
+
+Полностью готовы в коде: `privatePaths`/кеш (`cache.ts`), `verify` (tokens/css/i18n/media/video/design/typecheck/lint/test — 782/782), OG/sitemap с `APP_URL`.
 
 ---
 
