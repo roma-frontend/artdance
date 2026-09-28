@@ -24,11 +24,8 @@
 
 import 'server-only';
 
-import { demoCartTotals, demoProducts } from '../../../prisma/fixtures/demo';
 import type { CartScreenLine } from '@/components/cart/cart-screen';
-import { welcomePromo, type AppliedPromo, type DeliveryZone } from '@/domain/cart';
-
-import { mediaRef } from './media';
+import type { AppliedPromo, DeliveryZone } from '@/domain/cart';
 
 export interface CartContent {
   lines: readonly CartScreenLine[];
@@ -38,49 +35,12 @@ export interface CartContent {
   deliveryZone: DeliveryZone | null;
 }
 
+/**
+ * Продакшн: корзина — это то, что лежит в `Cart`/`CartItem` пользователя
+ * (или `anonymousId`), а не демо-набор из `prisma/fixtures`. Три товара
+ * «по умолчанию» были сравнением с макетом; в проде показ пустой корзины
+ * до выбора покупателя — требование, а не эстетика.
+ */
 export function getCartContent(): CartContent {
-  return {
-    lines: demoCartTotals.items.map((item) => {
-      const product = demoProducts.find((candidate) => candidate.slug === item.productSlug);
-      if (!product) {
-        throw new Error(`[content] Позиция корзины ссылается на неизвестный товар «${item.productSlug}».`);
-      }
-
-      const variant = product.variants.find((candidate) => candidate.sku === item.variantSku);
-      if (!variant) {
-        throw new Error(`[content] Неизвестный вариант товара «${item.variantSku}».`);
-      }
-
-      /*
-       * Подписи вариантов — данные, а не строка: «Цвет: чёрный · Размер: M»
-       * собирает компонент из ключей i18n, поэтому в армянской локали не
-       * появится английское «Color».
-       */
-      const options: CartScreenLine['options'] = [
-        ...(variant.color ? [{ kind: 'color' as const, value: variant.color }] : []),
-        ...(variant.size ? [{ kind: 'size' as const, value: variant.size }] : []),
-      ];
-
-      return {
-        id: variant.sku,
-        slug: product.slug,
-        title: product.title,
-        brand: product.brand,
-        image: mediaRef(product.asset),
-        unitPrice: variant.price,
-        quantity: item.quantity,
-        options,
-        stock: variant.stock,
-        /* Подарочная карта не облагается комиссией и не возвращается — свой тип позиции. */
-        lineType: product.isGiftCard === true ? 'GIFT_CARD' : 'PRODUCT',
-      };
-    }),
-    /**
-     * Приветственный код из макета применён заранее — так же, как в прототипе,
-     * где строка «Discount (WELCOME10)» есть, а поля ввода нет. Снять его можно
-     * в самой корзине, и тогда виден путь «ввод → применение → отказ».
-     */
-    promo: welcomePromo(),
-    deliveryZone: null,
-  };
+  return { lines: [], promo: null, deliveryZone: null };
 }
