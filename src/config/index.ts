@@ -170,3 +170,5 @@ export {
 } from './media';
 export { seo, type SeoConfig } from './seo';
 export { ranking, type RankingSignalName, type RankingWeights } from './ranking';
+export { growth, type GrowthConfig } from './growth';
+export { analyticsEvents, isAnalyticsEvent, type AnalyticsEvent } from './analytics';

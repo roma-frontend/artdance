@@ -90,6 +90,15 @@ export const booking = {
 
   /** Напоминания до начала, в часах. */
   reminderOffsetsHours: [24, 2],
+
+  /** SLA ответа на заявку (D-04). */
+  requestResponseSlaHours: 24,
+  /** Авто-отклонение не отвеченной заявки. */
+  autoDeclineAfterHours: 48,
+  /** Регулярные брони (B-02). */
+  recurring: { minWeeks: 2, maxWeeks: 12 },
+  /** Окно чекина до/после начала, минуты. */
+  checkInWindowMinutes: 30,
 } as const;
 
 export const bookingLocationOptions = ['STUDIO', 'CUSTOMER_LOCATION', 'ONLINE'] as const;
@@ -181,6 +190,7 @@ export const commerce = {
   allowBackorder: false,
   orderNumberPrefix: 'AD',
   orderNumberLength: 8,
+  crossSellMaxItems: 3,
 } as const;
 
 /* ───────────────────────────── ПРОМОКОДЫ ───────────────────────────── */

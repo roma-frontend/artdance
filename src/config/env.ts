@@ -145,6 +145,8 @@ const serverSchema = z.object({
   RATE_LIMIT_REDIS_URL: optionalString,
   RATE_LIMIT_REDIS_TOKEN: optionalString,
   CRON_SECRET: optionalString,
+  /** Копия критичных действий уходит на этот адрес (лучше алиас/группа). */
+  AUDIT_ALERT_EMAIL: optionalEmail,
 
   /* Внешние сервисы */
   MAPS_SERVER_API_KEY: optionalString,

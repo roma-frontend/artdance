@@ -31,6 +31,7 @@ import { TurnstileField } from '@/components/ui/turnstile-field';
 import { site } from '@/config';
 import { contactTopicLabelKey, contactTopics, type ContactTopic } from '@/domain/contact';
 import type { Locale } from '@/i18n/config';
+import { formatEmailInput, formatName } from '@/lib/input-masks';
 import { cn } from '@/lib/utils';
 import { sendContactMessage } from '@/server/actions/contact';
 
@@ -118,8 +119,9 @@ export function ContactForm({ locale, className }: ContactFormProps) {
             name="name"
             required
             autoComplete="name"
+            maxLength={80}
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => setName(formatName(event.target.value))}
             aria-invalid={invalid('name') || undefined}
             aria-describedby={invalid('name') ? `${nameId}-error` : undefined}
             disabled={isSubmitting}
@@ -143,8 +145,9 @@ export function ContactForm({ locale, className }: ContactFormProps) {
             required
             autoComplete="email"
             inputMode="email"
+            maxLength={254}
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => setEmail(formatEmailInput(event.target.value))}
             aria-invalid={invalid('email') || undefined}
             aria-describedby={invalid('email') ? `${emailId}-error` : undefined}
             disabled={isSubmitting}
@@ -194,8 +197,9 @@ export function ContactForm({ locale, className }: ContactFormProps) {
           required
           rows={6}
           placeholder={t('messagePlaceholder')}
+          maxLength={2000}
           value={message}
-          onChange={(event) => setMessage(event.target.value)}
+          onChange={(event) => setMessage(event.target.value.slice(0, 2000))}
           aria-invalid={invalid('message') || undefined}
           aria-describedby={invalid('message') ? `${messageId}-error` : undefined}
           disabled={isSubmitting}

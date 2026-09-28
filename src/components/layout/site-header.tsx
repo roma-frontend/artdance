@@ -29,20 +29,15 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { useCartStore } from '@/lib/cart/store';
 import { fetchCart } from '@/lib/cart/api';
+import { useHeaderHideOnScroll } from '@/lib/hooks/use-header-hide-on-scroll';
 
 import { BrandMark } from '@/components/brand/brand-mark';
+import { HeaderMegaMenu } from '@/components/layout/header-mega-menu';
 import { LocaleSwitcher } from '@/components/layout/locale-switcher';
 import { navIcons } from '@/components/layout/nav-icons';
 import { useSearchOverlay } from '@/components/search/search-overlay';
 import { Button } from '@/components/ui/button';
-import {
-  hasCinemaHero,
-  headerCta,
-  headerIconItems,
-  isActiveNavPath,
-  primaryNavItems,
-  routes,
-} from '@/config';
+import { hasCinemaHero, headerCta, headerIconItems, routes } from '@/config';
 import { Link, usePathname } from '@/i18n/routing';
 import { useCinemaHeroBehind } from '@/lib/hooks/use-cinema-hero-behind';
 import { cn } from '@/lib/utils';
@@ -56,6 +51,7 @@ export function SiteHeader() {
   const snapshot = useCartStore((s) => s.snapshot);
   const [bump, setBump] = useState(false);
   const prevCount = useRef<number>(snapshot?.totals.itemCount ?? 0);
+  const hidden = useHeaderHideOnScroll(headerRef);
 
   // Гидратация корзины в шапке + плавная анимация цифры
   useEffect(() => {
@@ -90,7 +86,8 @@ export function SiteHeader() {
       data-state={solid ? 'scrolled' : 'top'}
       className={cn(
         'fixed inset-x-0 top-0 z-header border-b',
-        'transition-colors duration-slow ease-standard',
+        'transition-[translate,background-color,border-color] duration-slow ease-standard will-change-transform',
+        hidden && 'translate-y-[-100%]',
         solid
           ? 'border-border-default bg-surface-canvas/85 backdrop-blur-xl'
           : 'border-transparent bg-transparent',
@@ -130,31 +127,7 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav aria-label={t('a11y.mainNav')} className="hidden items-center gap-7 lg:flex">
-          {primaryNavItems.map((item) => {
-            const active = isActiveNavPath(pathname, item.href);
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                data-magnetic=""
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'nav-link text-label transition-colors duration-normal ease-brand',
-                  solid
-                    ? active
-                      ? 'text-content-primary'
-                      : 'text-content-secondary hover:text-content-primary'
-                    : active
-                      ? 'text-content-on-cinema'
-                      : 'text-content-on-cinema-muted hover:text-content-on-cinema',
-                )}
-              >
-                {t(item.labelKey)}
-              </Link>
-            );
-          })}
-        </nav>
+        <HeaderMegaMenu solid={solid} />
 
         <div className="flex items-center gap-2">
           {headerIconItems.map((item) => {

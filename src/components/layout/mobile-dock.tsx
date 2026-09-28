@@ -107,6 +107,7 @@ export function MobileDock() {
           <div className="relative z-raised flex items-start justify-center">
             <DrawerTrigger
               aria-label={t('nav.openMenu')}
+              onClick={() => { try { navigator.vibrate?.([10]); } catch {} }}
               className={cn(
                 'grid size-14 -translate-y-5 place-items-center rounded-full',
                 'bg-accent text-content-on-accent shadow-lg',
@@ -150,9 +151,10 @@ function DockTab({ item, activeSlot }: { item?: MobileDockItem; activeSlot?: num
     <Link
       href={item.href}
       aria-current={active ? 'page' : undefined}
+      onClick={() => { if (active) try { navigator.vibrate?.([6]); } catch {} }}
       className={cn(
-        'relative z-raised flex h-full min-w-0 flex-col items-center justify-center gap-1',
-        'text-xs transition-colors duration-normal ease-brand',
+        'relative z-raised flex h-full min-w-0 flex-col items-center justify-center gap-1 active:scale-95',
+        'text-xs transition-all duration-normal ease-brand',
         active ? 'font-bold text-content-accent' : 'font-semibold text-content-tertiary',
       )}
     >

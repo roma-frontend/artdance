@@ -273,6 +273,16 @@ model User {
   auditLogs         AuditLog[]               @relation("AuditActor")
   waitlistEntries   WaitlistEntry[]
   issuedGiftCards   GiftCard[]               @relation("GiftCardPurchaser")
+  savedSearches     SavedSearch[]
+  pushSubscriptions PushSubscription[]
+  walletAccount      WalletAccount?
+  referralsMade      Referral[]          @relation("ReferralReferrer")
+  referralReceived   Referral?           @relation("ReferralReferee")
+  reliabilityEvents  ReliabilityEvent[]
+  referralCode       String?             @unique
+  referredById       String?
+  reliabilityScore   Int                 @default(100)
+  marketingConsentAt DateTime?
 
   @@index([role, isActive])
   @@index([createdAt])
@@ -425,6 +435,12 @@ model InstructorProfile {
   payoutAccounts         PayoutAccount[]
   commissions            CommissionRecord[]
   reviews                Review[]
+  verificationDocuments VerificationDocument[]
+  boostCampaigns        BoostCampaign[]
+  responseTimeMinutes   Int?
+  acceptanceRate        Decimal? @db.Decimal(5, 4)
+  rankingScore          Decimal? @db.Decimal(6, 3)
+  boostedUntil          DateTime?
 
   @@unique([userId], where: raw("\"deletedAt\" IS NULL"))
   @@unique([slug], where: raw("\"deletedAt\" IS NULL"))
@@ -877,8 +893,17 @@ model Booking {
   event      Event?             @relation(fields: [eventId], references: [id])
   orderItem  OrderItem?
   payments   Payment[]
-  reviews    Review[]
-  commission CommissionRecord?
+  reviews          Review[]
+  commission       CommissionRecord?
+  dispute          Dispute?
+  passRedemption   ClassPassRedemption?
+  series           RecurringSeries? @relation(fields: [seriesId], references: [id])
+  seriesId         String?
+  checkInAt        DateTime?
+  checkedInById    String?
+  requestExpiresAt DateTime?
+  consentVersion   String?
+  source           String?
 
   @@index([customerId, status])
   @@index([instructorId, startsAt])
@@ -1063,6 +1088,7 @@ model Order {
   payments        Payment[]
   refunds         Refund[]
   giftCards       GiftCard[]
+  invoice         Invoice?
 
   @@index([userId, status])
   @@index([status, placedAt])
@@ -1412,6 +1438,8 @@ model Review {
   authorRole         String?
   // Отзыв только после подтверждённой брони/полученного заказа.
   isVerifiedPurchase Boolean          @default(false)
+  // 07 §6: фото отзыва (связь с MediaAsset по id-списку пока строкой)
+  photoAssetIds      String[]         @default([])
   moderation         ModerationStatus @default(PENDING)
   moderatedById      String?
   moderatedAt        DateTime?
@@ -1422,6 +1450,7 @@ model Review {
 
   author     User               @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
   booking    Booking?           @relation(fields: [bookingId], references: [id])
+  response   ReviewResponse?
   instructor InstructorProfile? @relation(fields: [instructorId], references: [id])
   danceClass DanceClass?        @relation(fields: [classId], references: [id])
   course     Course?            @relation(fields: [courseId], references: [id])
@@ -1663,6 +1692,254 @@ model ApprovalRequest {
 
   @@index([status, createdAt])
   @@index([requestedById])
+}
+
+/* ── P0 модели из 07 §6 (wave 0b) ── */
+model ConsentRecord {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String
+  documentId String
+  version   String
+  ipAddress String?
+  createdAt DateTime @default(now())
+  @@unique([email, documentId, version])
+  @@index([userId])
+}
+
+model InstructorApplication {
+  id        String           @id @default(cuid())
+  userId    String?
+  email     String
+  name      String
+  phone     String
+  bio       String
+  styles    DanceStyle[]
+  status    ModerationStatus @default(PENDING)
+  payload   Json?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  @@index([status, createdAt])
+}
+
+model SavedSearch {
+  id        String   @id @default(cuid())
+  userId    String
+  query     String
+  scope     String   @default("all")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, query, scope])
+  @@index([userId])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+}
+
+model ReviewResponse {
+  id        String   @id @default(cuid())
+  reviewId  String   @unique
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+}
+
+model ContentBlock {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  locale    Locale
+  title     String?
+  body      String
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ShortLink {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  target    String
+  clicks    Int       @default(0)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  @@index([code])
+}
+
+model FeatureFlagOverride {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  enabled   Boolean
+  updatedBy String?
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationDocument {
+  id           String           @id @default(cuid())
+  instructorId String
+  type         String
+  storageKey   String
+  status       ModerationStatus @default(PENDING)
+  note         String?
+  createdAt    DateTime         @default(now())
+  instructor   InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  @@index([instructorId, status])
+}
+
+model Dispute {
+  id        String           @id @default(cuid())
+  bookingId String           @unique
+  reason    String
+  status    ModerationStatus @default(PENDING)
+  openedBy  String
+  createdAt DateTime         @default(now())
+  booking   Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}
+
+/* ── P1/P2 модели из 07 §6 (Wave — монетизация, корпоратив, продвижение) ── */
+
+model ClassPass {
+  id               String    @id @default(cuid())
+  purchaserId      String
+  templateId       String?
+  lessonsTotal     Int
+  lessonsRemaining Int
+  pricePaid        Int
+  expiresAt        DateTime
+  createdAt        DateTime  @default(now())
+  redemptions      ClassPassRedemption[]
+
+  @@index([purchaserId, expiresAt])
+}
+
+model ClassPassRedemption {
+  id        String   @id @default(cuid())
+  passId    String
+  bookingId String   @unique
+  createdAt DateTime @default(now())
+  pass      ClassPass @relation(fields: [passId], references: [id], onDelete: Cascade)
+  booking   Booking   @relation(fields: [bookingId], references: [id])
+
+  @@index([passId])
+}
+
+model RecurringSeries {
+  id           String   @id @default(cuid())
+  customerId   String
+  instructorId String?
+  pattern      Json
+  maxWeeks     Int
+  createdAt    DateTime @default(now())
+  bookings     Booking[]
+
+  @@index([customerId, createdAt])
+}
+
+model WalletAccount {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt
+  entries   WalletEntry[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WalletEntry {
+  id        String   @id @default(cuid())
+  accountId String
+  amount    Int
+  kind      String
+  refId     String?
+  createdAt DateTime @default(now())
+  account   WalletAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, createdAt])
+}
+
+model Referral {
+  id               String    @id @default(cuid())
+  referrerId       String
+  refereeId        String?   @unique
+  code             String
+  status           ModerationStatus @default(PENDING)
+  bonusPaidAt      DateTime?
+  createdAt        DateTime  @default(now())
+  referrer         User      @relation("ReferralReferrer", fields: [referrerId], references: [id])
+  referee          User?     @relation("ReferralReferee", fields: [refereeId], references: [id])
+
+  @@unique([referrerId, code])
+  @@index([code])
+  @@index([referrerId])
+}
+
+model CorporateAccount {
+  id        String   @id @default(cuid())
+  name      String
+  contactEmail String
+  balance   Int      @default(0)
+  createdAt DateTime @default(now())
+  invoices  Invoice[]
+}
+
+model Invoice {
+  id                 String   @id @default(cuid())
+  corporateAccountId String?
+  orderId            String?  @unique
+  number             String   @unique
+  amount             Int
+  status             PaymentStatus @default(PENDING)
+  issuedAt           DateTime @default(now())
+  paidAt             DateTime?
+  corporateAccount   CorporateAccount? @relation(fields: [corporateAccountId], references: [id])
+  order              Order?            @relation(fields: [orderId], references: [id])
+
+  @@index([corporateAccountId, status])
+}
+
+model BoostCampaign {
+  id           String           @id @default(cuid())
+  instructorId String
+  status       ModerationStatus @default(PENDING)
+  startsAt     DateTime
+  endsAt       DateTime
+  bidAmount    Int
+  createdAt    DateTime         @default(now())
+  instructor   InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@index([instructorId, status])
+  @@index([status, endsAt])
+}
+
+model ReliabilityEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String
+  refId     String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind])
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  title     String
+  imageKey  String?
+  href      String?
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Идемпотентность фоновых задач и cron: одна задача — одно исполнение.

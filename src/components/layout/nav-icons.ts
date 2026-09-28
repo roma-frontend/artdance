@@ -12,11 +12,16 @@
  */
 
 import {
+  BookOpenIcon,
+  BriefcaseIcon,
   CalendarDaysIcon,
   CompassIcon,
+  GiftIcon,
   HeartIcon,
+  HelpCircleIcon,
   HomeIcon,
   MapPinIcon,
+  MedalIcon,
   MusicIcon,
   SearchIcon,
   ShoppingBagIcon,
@@ -45,4 +50,10 @@ export const navIcons: Record<NavIconName, LucideIcon> = {
   favorites: HeartIcon,
   account: UserIcon,
   shop: ShoppingBagIcon,
+  schedule: CalendarDaysIcon,
+  giftCards: GiftIcon,
+  corporate: BriefcaseIcon,
+  athletes: MedalIcon,
+  help: HelpCircleIcon,
+  blog: BookOpenIcon,
 };

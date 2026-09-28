@@ -76,6 +76,10 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
   /** Отрисовать как дочерний элемент (например, `Link`) без лишней вложенности. */
   asChild?: boolean;
+  /** Показать спиннер и заблокировать кнопку. */
+  pending?: boolean;
+  /** Текст спиннера для скринридера. */
+  pendingLabel?: string;
 }
 
 export function Button({
@@ -84,11 +88,34 @@ export function Button({
   size,
   block,
   asChild = false,
+  pending = false,
+  pendingLabel,
+  children,
+  disabled,
   ...props
 }: ButtonProps) {
   const Component = asChild ? Slot.Root : 'button';
+  const isDisabled = disabled || pending;
   return (
-    <Component className={cn(buttonVariants({ variant, size, block }), className)} {...props} />
+    <Component
+      className={cn(buttonVariants({ variant, size, block }), pending && 'relative', className)}
+      aria-busy={pending || undefined}
+      disabled={asChild ? undefined : isDisabled}
+      aria-disabled={isDisabled || undefined}
+      {...props}
+    >
+      {pending ? (
+        <span className="inline-flex items-center gap-2">
+          <span
+            aria-hidden
+            className="size-[1em] shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
+          />
+          {pendingLabel ? <span>{pendingLabel}</span> : children}
+        </span>
+      ) : (
+        children
+      )}
+    </Component>
   );
 }
 

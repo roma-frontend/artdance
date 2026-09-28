@@ -53,7 +53,7 @@ export function Price({
   return (
     <span
       className={cn(
-        'text-price inline-flex items-baseline gap-1',
+        'text-price inline-flex items-baseline gap-1 tabular-nums',
         emphasis === 'accent' && 'text-content-accent',
         emphasis === 'total' && 'text-content-primary',
         emphasis === 'onCinema' && 'text-content-on-cinema',
@@ -62,7 +62,7 @@ export function Price({
     >
       {from && <span className={cn('text-caption font-normal', asideColor)}>{t('from')}</span>}
 
-      {format.number(amount, 'price')}
+      <span className="transition-[filter,opacity] duration-300">{format.number(amount, 'price')}</span>
 
       {unit !== 'plain' && (
         <span className={cn('text-caption font-normal', asideColor)}>{t(unit)}</span>

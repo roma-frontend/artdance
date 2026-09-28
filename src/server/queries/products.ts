@@ -57,12 +57,14 @@ export const productSelect = {
 } as const;
 
 interface VariantRow {
+  id: string;
   sku: string;
   size: string | null;
   color: string | null;
   price: number;
   stock: number;
   reserved: number;
+  isActive: boolean;
 }
 
 export interface ProductRow {
@@ -102,16 +104,17 @@ export function toProductCard(row: ProductRow): ProductCardItem {
   const minPrice = priceOf(row);
   const secondFrame = galleryRefs(row.media)[1];
 
+  const defaultVariant = row.variants.find((v) => v.isActive && available(v) > 0) ?? row.variants[0];
   return {
     slug: row.slug,
     title: row.title,
-    /** Бренд не обязателен в схеме: у собственных товаров его может не быть. */
     brand: row.brand ?? '',
     price: minPrice,
     priceFrom: prices.some((price) => price !== minPrice) || isGiftCard(row),
     stock: totalStock(row),
     image: firstMediaRef(row.media) ?? { key: '', alt: { hy: '', ru: '', en: '' } },
     ...(secondFrame ? { hoverImage: secondFrame } : {}),
+    ...(defaultVariant ? { variantId: defaultVariant.id } : {}),
   };
 }
 

@@ -25,6 +25,7 @@ import { absoluteUrl } from '@/config/site';
 import { routes } from '@/config/routes';
 import { locales, type Locale } from '@/i18n/config';
 import { loadMessages } from '@/i18n/messages';
+import { recordConsent } from '@/lib/consent/store';
 import { db } from '@/lib/db';
 import { sendEmail } from '@/lib/email/send';
 import { assertCaptcha, publicAction } from '@/server/safe-action';
@@ -88,10 +89,16 @@ export const subscribeToNewsletter = publicAction
       update: {
         token,
         locale: parsedInput.locale,
-        /* Повторная подписка после отписки снимает отметку об отписке. */
         unsubscribedAt: null,
         confirmedAt: null,
       },
+    });
+
+    await recordConsent({
+      email: parsedInput.email,
+      documentId: 'newsletter',
+      version: '2026-09',
+      ipAddress: ctx.identifier ?? null,
     });
 
     await sendConfirmation(parsedInput.email, parsedInput.locale, token);

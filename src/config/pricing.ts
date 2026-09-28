@@ -181,6 +181,8 @@ export function planFeatureLabelKey(feature: PlanFeatureId): MessageKey {
  * Ориентиры цен для сидов и валидации, не для отображения.
  * Реальные цены живут в БД и управляются админкой.
  */
+export const peakMultipliers: Record<string, number> = { evening: 1.2, weekend: 1.15, offpeak: 0.9 };
+
 export const priceGuidance = {
   groupClass: { min: 4_000, typical: 12_000, max: 30_000 },
   privateLesson: { min: 8_000, typical: 15_000, max: 40_000 },
@@ -188,6 +190,17 @@ export const priceGuidance = {
   workshop: { min: 5_000, typical: 8_000, max: 25_000 },
   onlineCourse: { min: 10_000, typical: 25_000, max: 80_000 },
 } as const;
+
+export const classPasses: readonly { lessons: number; discountRate: number; validityDays: number }[] = [
+  { lessons: 5, discountRate: 0.05, validityDays: 60 },
+  { lessons: 10, discountRate: 0.1, validityDays: 90 },
+  { lessons: 20, discountRate: 0.15, validityDays: 120 },
+] as const;
+
+export const instructorPlans: readonly { id: string; quota: { boostDays: number; analytics: boolean } }[] = [
+  { id: 'free', quota: { boostDays: 0, analytics: false } },
+  { id: 'pro', quota: { boostDays: 7, analytics: true } },
+] as const;
 
 /** Разрешённые типы позиций в заказе. Влияет на расчёт комиссии и налога. */
 export const lineItemTypes = [

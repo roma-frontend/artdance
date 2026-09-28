@@ -63,12 +63,14 @@ export const roomPricesRelation = {
 export const activeVariantsRelation = {
   where: { ...notTrashed, isActive: true },
   select: {
+    id: true,
     sku: true,
     size: true,
     color: true,
     price: true,
     stock: true,
     reserved: true,
+    isActive: true,
   },
 } as const;
 

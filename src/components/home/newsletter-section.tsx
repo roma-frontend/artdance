@@ -33,6 +33,7 @@ import { TurnstileField } from '@/components/ui/turnstile-field';
 import { routes } from '@/config';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
+import { formatEmailInput } from '@/lib/input-masks';
 import { cn } from '@/lib/utils';
 import { subscribeToNewsletter, type NewsletterOutcome } from '@/server/actions/newsletter';
 
@@ -108,8 +109,9 @@ export function NewsletterSection({ locale, source, className }: NewsletterSecti
                   autoComplete="email"
                   inputMode="email"
                   placeholder={t('emailPlaceholder')}
+                  maxLength={254}
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={(event) => setEmail(formatEmailInput(event.target.value))}
                   aria-invalid={failed || undefined}
                   aria-describedby={failed ? `${emailId}-error` : undefined}
                   disabled={isSubmitting}

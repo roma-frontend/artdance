@@ -305,8 +305,23 @@ export function SearchOverlay({ open, onOpenChange, onRestoreFocus }: SearchOver
    * остаётся смонтированной, и без явного закрытия человек попадает на новую
    * страницу, продолжая смотреть в затемнённое поле поиска.
    */
+  const RECENT_KEY = 'ARTDANCE_RECENT_SEARCHES';
+  const getRecent = (): string[] => {
+    try { const raw = localStorage.getItem(RECENT_KEY); return raw ? JSON.parse(raw) as string[] : []; } catch { return []; }
+  };
+  const pushRecent = (q: string) => {
+    const t = q.trim().slice(0, limits.search.maxQueryLength);
+    if (t.length < limits.search.minQueryLength) return;
+    try {
+      const prev = getRecent();
+      const next = [t, ...prev.filter((x) => x !== t)].slice(0, 5);
+      localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    } catch {}
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    if (longEnough) pushRecent(term);
     router.push(longEnough ? resultsHref : routes.discover());
     close();
   };

@@ -33,6 +33,7 @@ import { routes } from '@/config';
 import { passwordRequirements } from '@/domain/auth';
 import { Link, useRouter } from '@/i18n/routing';
 import type { MessageKey } from '@/i18n/types';
+import { formatEmailInput, formatName, isEmailValid } from '@/lib/input-masks';
 import { signUpAction } from '@/server/actions/auth';
 
 interface SignUpFormProps {
@@ -50,6 +51,17 @@ export function SignUpForm({ redirectTo }: SignUpFormProps) {
   const [password, setPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const clientError = (field: 'name' | 'email' | 'password'): MessageKey | null => {
+    if (!touched[field]) return null;
+    if (field === 'name' && name.trim().length > 0 && name.trim().length < 1) return 'validation.required';
+    if (field === 'name' && /[^A-Za-zА-Яа-яЁёԱ-Ֆա-ֆ\s'-]/.test(name)) return 'validation.maxLength';
+    if (field === 'email' && email.trim().length > 0 && !isEmailValid(email)) return 'validation.email';
+    if (field === 'password' && password.length > 0 && password.length < passwordRequirements.minLength) return 'validation.passwordTooShort';
+    if (field === 'password' && password.length > 0 && passwordRequirements.requireNumber && !/\d/.test(password)) return 'validation.passwordNeedsNumber';
+    return null;
+  };
 
   const { execute, status, result } = useAction(signUpAction, {
     onSuccess: ({ data }) => {
@@ -61,13 +73,14 @@ export function SignUpForm({ redirectTo }: SignUpFormProps) {
   const serverError = result.serverError;
   const validation = result.validationErrors;
 
-  /** Поле, названное схемой или сервером. */
+  /** Поле, названное схемой или сервером. Клиентская ошибка имеет приоритет до отправки. */
   const fieldError = (field: 'name' | 'email' | 'password'): MessageKey | null => {
     if (serverError?.field === field) return serverError.messageKey as MessageKey;
     const issue = validation && field in validation
       ? (validation as Record<string, { _errors?: string[] } | undefined>)[field]?._errors?.[0]
       : undefined;
-    return (issue as MessageKey | undefined) ?? null;
+    const server = (issue as MessageKey | undefined) ?? null;
+    return server ?? clientError(field);
   };
 
   return (
@@ -94,8 +107,10 @@ export function SignUpForm({ redirectTo }: SignUpFormProps) {
             autoComplete="name"
             autoFocus
             required
+            maxLength={80}
             value={name}
-            onChange={(event) => setName(event.target.value)}
+            onChange={(event) => setName(formatName(event.target.value))}
+            onBlur={() => setTouched((p) => ({ ...p, name: true }))}
             aria-invalid={field.invalid || undefined}
             aria-describedby={field.describedBy}
             disabled={isSubmitting}
@@ -118,8 +133,10 @@ export function SignUpForm({ redirectTo }: SignUpFormProps) {
             inputMode="email"
             autoComplete="email"
             required
+            maxLength={254}
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => setEmail(formatEmailInput(event.target.value))}
+            onBlur={() => setTouched((p) => ({ ...p, email: true }))}
             aria-invalid={field.invalid || undefined}
             aria-describedby={field.describedBy}
             disabled={isSubmitting}
@@ -143,9 +160,11 @@ export function SignUpForm({ redirectTo }: SignUpFormProps) {
             type="password"
             autoComplete="new-password"
             minLength={passwordRequirements.minLength}
+            maxLength={128}
             required
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(event) => setPassword(event.target.value.slice(0, 128))}
+            onBlur={() => setTouched((p) => ({ ...p, password: true }))}
             aria-invalid={field.invalid || undefined}
             aria-describedby={field.describedBy}
             disabled={isSubmitting}

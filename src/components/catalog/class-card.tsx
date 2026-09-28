@@ -109,7 +109,7 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
           slug={item.slug}
           name={item.title}
           onMedia
-          className="absolute top-2.5 right-2.5 z-10"
+          className="absolute top-2.5 right-2.5 z-20"
         />
       </div>
 
@@ -132,7 +132,7 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
             href={routes.class(item.slug)}
             // Растянутая ссылка накрывает карточку: подпись кольца-курсора видна над всей ней.
             data-cursor-label={t('common.actions.explore')}
-            className="after:absolute after:inset-0 after:z-10 after:content-[''] focus-visible:outline-none"
+            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
             {item.title}
           </PortalLink>

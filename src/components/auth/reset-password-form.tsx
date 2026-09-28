@@ -105,10 +105,11 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             type="password"
             autoComplete="new-password"
             minLength={passwordRequirements.minLength}
+            maxLength={128}
             autoFocus
             required
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(event) => setPassword(event.target.value.slice(0, 128))}
             aria-describedby={field.describedBy}
             disabled={isSubmitting}
             className="form-input"
@@ -129,8 +130,9 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
             type="password"
             autoComplete="new-password"
             required
+            maxLength={128}
             value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
+            onChange={(event) => setConfirmPassword(event.target.value.slice(0, 128))}
             aria-invalid={field.invalid || undefined}
             aria-describedby={field.describedBy}
             disabled={isSubmitting}

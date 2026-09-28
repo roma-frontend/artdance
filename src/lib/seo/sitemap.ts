@@ -225,7 +225,18 @@ function contentSpecs(): SitemapSpec[] {
     spec(routes.faq()),
     spec(routes.help()),
     spec(routes.becomeInstructor()),
+    // Public apply step (A-15) — content, not admin.
+    spec(routes.becomeInstructorApply()),
     spec(routes.listYourStudio()),
+    // Search alias (A-04) — canonical discover, alias intentionally indexable.
+    spec(routes.search()),
+    // Schedule grid (A-02) — weekly.
+    spec(routes.schedule()),
+    // Gift-cards redeem (A-21) — marketing entry, with shop.
+    ...(isEnabled('shop') ? [spec(routes.giftCardsRedeem())] : []),
+    // Corporate b2b (A-14), accessibility statement (A-26).
+    spec(routes.corporate()),
+    spec(routes.accessibility()),
     /*
      * Разделы сообщества DanceSport (заказчик, 21.09.2026). Афиша-срезы
      * (`/competitions`, `/social-events`) — целевые страницы органики

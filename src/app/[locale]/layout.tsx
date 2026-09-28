@@ -10,6 +10,7 @@ import { SkipToContent } from '@/components/layout/skip-to-content';
 import { ThemeColorSync } from '@/components/layout/theme-color-sync';
 import { ThemeProvider } from '@/components/layout/theme-provider';
 import { fontVariables } from '@/design/fonts';
+import { CommandPalette } from '@/components/layout/command-palette';
 import { SearchOverlayProvider } from '@/components/search/search-overlay';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import { schemeTokens } from '@/design/tokens';
@@ -150,11 +151,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
               передавать фокус между двумя модальными слоями одновременно.
             */}
             <SearchOverlayProvider>
+              <CommandPalette />
               <SkipToContent />
-              {/*
-                Публичное обрамление решает по адресу, показывать себя или нет:
-                у админки своя рама, и фиксированная шапка сайта накрывала её.
-              */}
               <SiteChrome>{children}</SiteChrome>
             </SearchOverlayProvider>
           </NextIntlClientProvider>

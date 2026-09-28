@@ -18,6 +18,7 @@
 
 import 'server-only';
 
+import { getServerEnv } from '@/config/env';
 import { criticalAuditActions } from '@/config/security';
 import { db } from '@/lib/db';
 import type { Caller } from '@/lib/auth/guards';
@@ -136,12 +137,32 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
  */
 async function notifyCritical(entry: AuditEntry): Promise<void> {
   try {
-    console.warn('[audit:critical]', {
+    const payload = {
       action: entry.action,
       actor: entry.actor?.email ?? 'system',
       entity: `${entry.entityType}:${entry.entityId}`,
-    });
-    // TODO(phase-notifications): отправка владельцу через Resend/Telegram.
+      reason: entry.reason ?? null,
+      at: new Date().toISOString(),
+    };
+    console.warn('[audit:critical]', payload);
+
+    const env = getServerEnv();
+    const ownerEmail = env.AUDIT_ALERT_EMAIL?.trim();
+    if (ownerEmail) {
+      const { sendEmail } = await import('@/lib/email/send');
+      await sendEmail({
+        to: ownerEmail,
+        locale: 'ru',
+        subject: `[ArtDance] критичное действие: ${entry.action}`,
+        heading: 'Критичное действие',
+        paragraphs: [
+          `Действие: ${entry.action}`,
+          `Исполнитель: ${payload.actor}`,
+          `Сущность: ${payload.entity}`,
+          payload.reason ? `Причина: ${payload.reason}` : null,
+        ].filter(Boolean) as string[],
+      }).catch(() => undefined);
+    }
   } catch {
     /* оповещение — best effort */
   }

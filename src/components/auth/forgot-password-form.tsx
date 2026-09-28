@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
 import { TurnstileField } from '@/components/ui/turnstile-field';
 import type { MessageKey } from '@/i18n/types';
+import { formatEmailInput } from '@/lib/input-masks';
 import { forgotPasswordAction } from '@/server/actions/auth';
 
 export function ForgotPasswordForm() {
@@ -63,8 +64,9 @@ export function ForgotPasswordForm() {
             autoComplete="email"
             autoFocus
             required
+            maxLength={254}
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => setEmail(formatEmailInput(event.target.value))}
             aria-describedby={field.describedBy}
             disabled={isSubmitting}
             className="form-input"

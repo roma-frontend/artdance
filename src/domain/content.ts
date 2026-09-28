@@ -238,6 +238,8 @@ export interface ProductCardItem {
   image: MediaRef;
   /** Второй кадр галереи — показывается при наведении. */
   hoverImage?: MediaRef;
+  /** Вариант по умолчанию для быстрого добавления в корзину. */
+  variantId?: string;
 }
 
 /**

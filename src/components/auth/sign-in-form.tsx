@@ -39,6 +39,7 @@ import { TurnstileField } from '@/components/ui/turnstile-field';
 import { routes } from '@/config';
 import { Link, useRouter } from '@/i18n/routing';
 import type { MessageKey } from '@/i18n/types';
+import { formatEmailInput } from '@/lib/input-masks';
 import { signInAction } from '@/server/actions/auth';
 
 interface SignInFormProps {
@@ -89,8 +90,9 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
             autoComplete="email"
             autoFocus
             required
+            maxLength={254}
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => setEmail(formatEmailInput(event.target.value))}
             aria-describedby={field.describedBy}
             disabled={isSubmitting}
             className="form-input"
@@ -106,8 +108,9 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
             type="password"
             autoComplete="current-password"
             required
+            maxLength={128}
             value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            onChange={(event) => setPassword(event.target.value.slice(0, 128))}
             aria-describedby={field.describedBy}
             disabled={isSubmitting}
             className="form-input"

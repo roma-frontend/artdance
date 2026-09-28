@@ -36,6 +36,13 @@ export const navIconNames = [
   'favorites',
   'account',
   'shop',
+  // Новые разделы мега-меню
+  'schedule',
+  'giftCards',
+  'corporate',
+  'athletes',
+  'help',
+  'blog',
 ] as const;
 export type NavIconName = (typeof navIconNames)[number];
 
@@ -48,6 +55,20 @@ export interface NavItem {
   feature?: FeatureKey;
   /** Иконка для мест, где раздел показывается плиткой или вкладкой. */
   icon?: NavIconName;
+}
+
+/** Пункт внутри подменю шапки. */
+export interface MegaChild extends NavItem {
+  descriptionKey?: MessageKey;
+}
+
+/** Группа верхнего меню с выпадающим подменю (как в Desktop/hr-project). */
+export interface MegaGroup {
+  id: string;
+  labelKey: MessageKey;
+  /** Якорь группы ведёт сюда (фолбэк, если подменю не открыто). */
+  href: string;
+  children: readonly MegaChild[];
 }
 
 export interface NavIconItem extends NavItem {
@@ -145,6 +166,76 @@ function enabled<T extends NavItem>(items: readonly T[]): readonly T[] {
 
 export const primaryNavItems = enabled(primaryNav);
 export const headerIconItems = enabled(iconActions);
+
+/**
+ * Мега-меню шапки — одно горизонтальное меню с подменю (по образцу
+ * Desktop/hr-project: PlatformMegaMenu / SolutionsMenu — одна полоса,
+ * группы раскрываются вниз).
+ *
+ * Группы собираются из уже существующих `routes`, поэтому новые страницы
+ * (A-02..A-26, проходят wave'ами) сразу имеют куда попасть без дублирования URL.
+ * P0-группы идут первыми — весь P0 виден без скролла.
+ */
+export const headerMegaGroups: readonly MegaGroup[] = [
+  {
+    id: 'explore',
+    labelKey: 'nav.megaExplore',
+    href: routes.discover(),
+    children: [
+      { id: 'discover', labelKey: 'nav.discover', href: routes.discover(), icon: 'discover', descriptionKey: 'nav.megaDescDiscover' },
+      { id: 'classes', labelKey: 'nav.classes', href: routes.classes(), icon: 'classes', descriptionKey: 'nav.megaDescClasses' },
+      { id: 'styles', labelKey: 'nav.styles', href: routes.styles(), icon: 'classes', descriptionKey: 'nav.megaDescStyles' },
+      { id: 'instructors', labelKey: 'nav.instructors', href: routes.instructors(), icon: 'instructors', descriptionKey: 'nav.megaDescInstructors' },
+      { id: 'studios', labelKey: 'nav.studios', href: routes.studios(), icon: 'studios', descriptionKey: 'nav.megaDescStudios' },
+      { id: 'events', labelKey: 'nav.events', href: routes.events(), icon: 'events', feature: 'events', descriptionKey: 'nav.megaDescEvents' },
+      { id: 'shop', labelKey: 'nav.shop', href: routes.shop(), icon: 'shop', feature: 'shop', descriptionKey: 'nav.megaDescShop' },
+      { id: 'schedule', labelKey: 'nav.schedule', href: routes.schedule(), icon: 'schedule', descriptionKey: 'nav.megaDescSchedule' },
+    ],
+  },
+  {
+    id: 'community',
+    labelKey: 'nav.megaCommunity',
+    href: routes.competitions(),
+    children: [
+      { id: 'competitions', labelKey: 'nav.competitions', href: routes.competitions(), icon: 'competitions', descriptionKey: 'nav.megaDescCompetitions' },
+      { id: 'socialEvents', labelKey: 'nav.socialEvents', href: routes.socialEvents(), icon: 'events', descriptionKey: 'nav.megaDescSocialEvents' },
+      { id: 'athletes', labelKey: 'nav.athletes', href: routes.athletes(), icon: 'athletes', descriptionKey: 'nav.megaDescAthletes' },
+      { id: 'federations', labelKey: 'footer.federations', href: routes.federations(), icon: 'competitions', descriptionKey: 'nav.megaDescFederations' },
+      { id: 'partners', labelKey: 'footer.partners', href: routes.partners(), icon: 'corporate', descriptionKey: 'nav.megaDescPartners' },
+      { id: 'sponsors', labelKey: 'footer.sponsors', href: routes.sponsors(), icon: 'giftCards', descriptionKey: 'nav.megaDescSponsors' },
+    ],
+  },
+  {
+    id: 'business',
+    labelKey: 'nav.megaBusiness',
+    href: routes.becomeInstructor(),
+    children: [
+      { id: 'becomeInstructor', labelKey: 'footer.becomeInstructor', href: routes.becomeInstructor(), icon: 'instructors', descriptionKey: 'nav.megaDescBecomeInstructor' },
+      { id: 'becomeInstructorApply', labelKey: 'nav.applyInstructor', href: routes.becomeInstructorApply(), icon: 'instructors', descriptionKey: 'nav.megaDescApplyInstructor' },
+      { id: 'listStudio', labelKey: 'footer.listStudio', href: routes.listYourStudio(), icon: 'studios', descriptionKey: 'nav.megaDescListStudio' },
+      { id: 'corporate', labelKey: 'nav.corporate', href: routes.corporate(), icon: 'corporate', descriptionKey: 'nav.megaDescCorporate' },
+      { id: 'giftCards', labelKey: 'footer.giftCards', href: routes.giftCards(), icon: 'giftCards', descriptionKey: 'nav.megaDescGiftCards' },
+      { id: 'pricing', labelKey: 'nav.pricing', href: routes.pricing(), icon: 'pricing', feature: 'subscriptions', descriptionKey: 'nav.megaDescPricing' },
+    ],
+  },
+  {
+    id: 'help',
+    labelKey: 'nav.megaHelp',
+    href: routes.help(),
+    children: [
+      { id: 'help', labelKey: 'footer.help', href: routes.help(), icon: 'help', descriptionKey: 'nav.megaDescHelp' },
+      { id: 'faq', labelKey: 'footer.faq', href: routes.faq(), icon: 'help', descriptionKey: 'nav.megaDescFaq' },
+      { id: 'blog', labelKey: 'footer.blog', href: routes.blog(), icon: 'blog', descriptionKey: 'nav.megaDescBlog' },
+      { id: 'about', labelKey: 'footer.about', href: routes.about(), icon: 'help', descriptionKey: 'nav.megaDescAbout' },
+      { id: 'contact', labelKey: 'footer.contact', href: routes.contact(), icon: 'help', descriptionKey: 'nav.megaDescContact' },
+    ],
+  },
+];
+
+/** Плоский список всех детей мега-меню — для mobile sheet и поиска (фильтрует фича-флаги). */
+export const allMegaChildren: readonly MegaChild[] = headerMegaGroups
+  .flatMap((g) => [...g.children])
+  .filter((c) => c.feature === undefined || features[c.feature] as boolean);
 
 /**
  * Мобильная навигация: нижний док и сетка разделов.
@@ -307,6 +398,7 @@ const footerGroups: readonly NavGroup[] = [
       { id: 'refund', labelKey: 'footer.refundPolicy', href: routes.refundPolicy() },
       { id: 'cancellation', labelKey: 'footer.cancellationPolicy', href: routes.cancellationPolicy() },
       { id: 'community', labelKey: 'footer.communityGuidelines', href: routes.communityGuidelines() },
+      { id: 'accessibility', labelKey: 'footer.accessibility', href: routes.accessibility() },
     ],
   },
 ];

@@ -10,8 +10,8 @@ import { Link } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export default async function BookingConfirmPage({ params }: { params: Promise<{ locale: string; holdId: string }> }) {
-  const { holdId, locale } = await params;
+export default async function BookingConfirmPage({ params }: { params: Promise<{ locale: string; id: string }> }) {
+  const { id: holdId, locale } = await params;
   const tBooking = await getTranslations({ locale: locale as never, namespace: 'booking' });
   const tAccount = await getTranslations({ locale: locale as never, namespace: 'account' });
   const tCommon = await getTranslations({ locale: locale as never, namespace: 'common' });

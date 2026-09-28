@@ -1157,6 +1157,7 @@ export const adminNavigation: readonly AdminNavGroupSpec[] = [
       { labelKey: 'admin.nav.settings', href: routes.adminSettings(), capability: 'settings.edit' },
       { labelKey: 'admin.nav.approvals', href: routes.adminApprovals(), capability: 'settings.edit' },
       { labelKey: 'admin.nav.auditLog', href: routes.adminAuditLog(), capability: 'audit.view' },
+      { labelKey: 'admin.nav.integrations', href: routes.adminIntegrations(), capability: 'settings.edit' },
       /*
        * Корзина в системном разделе, а не в каталоге: она общая на все разделы
        * каталога, и повторять её в каждом значило бы предлагать четырнадцать

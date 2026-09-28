@@ -80,7 +80,7 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
           slug={item.slug}
           name={item.name}
           onMedia
-          className="absolute top-2.5 right-2.5 z-10"
+          className="absolute top-2.5 right-2.5 z-20"
         />
       </div>
 
@@ -90,7 +90,7 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
             href={href ?? routes.instructor(item.slug)}
             // Растянутая ссылка накрывает карточку: подпись кольца-курсора видна над всей ней.
             data-cursor-label={t('common.actions.explore')}
-            className="after:absolute after:inset-0 after:z-10 after:content-[''] focus-visible:outline-none"
+            className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
           >
             {item.name}
           </PortalLink>

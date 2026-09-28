@@ -16,6 +16,13 @@ export const features = {
   events: clientEnv.NEXT_PUBLIC_FEATURE_EVENTS,
   subscriptions: clientEnv.NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS,
   videoCourses: clientEnv.NEXT_PUBLIC_FEATURE_VIDEO,
+  wallet: true,
+  referrals: true,
+  packages: true,
+  recurring: true,
+  push: true,
+  boost: true,
+  cms: true,
 } as const;
 
 export type FeatureKey = keyof typeof features;

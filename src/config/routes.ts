@@ -149,6 +149,8 @@ export const routes = {
   /* Бронирование */
   booking: () => '/booking',
   bookingConfirm: (holdId: string) => `/booking/${holdId}/confirm`,
+  bookingPass: (id: string) => `/booking/${id}/pass`,
+  search: (params?: ListingParams) => withQuery('/search', params),
 
   /* Аутентификация */
   signIn: (redirectTo?: string) => withQuery('/sign-in', redirectTo ? { redirectTo } : undefined),
@@ -176,6 +178,7 @@ export const routes = {
   accountReviews: () => '/account/reviews',
   accountSubscription: () => '/account/subscription',
   accountSettings: () => '/account/settings',
+  accountData: () => '/account/data',
 
   /* Кабинет инструктора */
   instructorDashboard: () => '/studio',
@@ -225,6 +228,7 @@ export const routes = {
   adminAuditLog: (params?: AdminListParams) => withQuery(adminPath('audit-log'), params),
   adminApprovals: () => adminPath('approvals'),
   adminSettings: () => adminPath('settings'),
+  adminIntegrations: () => adminPath('integrations'),
   adminTrash: (params?: AdminListParams) => withQuery(adminPath('trash'), params),
 
   /* Совместимость с ранее объявленными адресами разделов каталога. */
@@ -239,9 +243,24 @@ export const routes = {
   blog: () => '/blog',
   blogPost: (slug: string) => `/blog/${slug}`,
   becomeInstructor: () => '/become-instructor',
+  becomeInstructorApply: () => '/become-instructor/apply',
   listYourStudio: () => '/list-your-studio',
+  reviewNew: (bookingId: string) => `/reviews/new/${bookingId}`,
   giftCards: () => '/gift-cards',
+  giftCardsRedeem: () => '/gift-cards/redeem',
   pricing: () => '/pricing',
+  schedule: () => '/schedule',
+  cities: () => '/cities',
+  city: (slug: string) => `/cities/${slug}`,
+  district: (city: string, district: string) => `/cities/${city}/${district}`,
+  corporate: () => '/corporate',
+  accessibility: () => '/accessibility',
+  offline: () => '/offline',
+  instructorReviews: (slug: string) => `/instructors/${slug}/reviews`,
+  orderInvoice: (orderNumber: string) => `/orders/${orderNumber}/invoice`,
+  shortLink: (code: string) => `/s/${code}`,
+  qrLink: (code: string) => `/qr/${code}`,
+  embedSchedule: (slug: string) => `/embed/schedule/${slug}`,
 
   /**
    * Рассылка. Подтверждение и отписка — отдельные маршруты с одноразовым
@@ -250,6 +269,7 @@ export const routes = {
    */
   newsletterConfirm: (token: string) => `/newsletter/confirm/${token}`,
   newsletterUnsubscribe: (token: string) => `/newsletter/unsubscribe/${token}`,
+  unsubscribeWithToken: (token: string) => `/unsubscribe/${token}`,
 
   terms: () => '/legal/terms',
   privacy: () => '/legal/privacy',

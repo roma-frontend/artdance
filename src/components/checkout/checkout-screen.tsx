@@ -49,6 +49,25 @@ import type { CartScreenLine } from '@/components/cart/cart-screen';
 import type { Locale } from '@/i18n/config';
 import { Link, useRouter } from '@/i18n/routing';
 import type { MessageKey } from '@/i18n/types';
+import {
+  cardBrandLabel,
+  detectCardBrand,
+  formatCardholder,
+  formatCardNumber,
+  formatCvv,
+  formatEmailInput,
+  formatExpiry,
+  formatName,
+  formatPhone,
+  formatPostalCode,
+  isCardNumberValid,
+  isCvvValid,
+  isEmailValid,
+  isExpiryValid,
+  isPhoneValid,
+  isPostalCodeValid,
+  onlyDigits,
+} from '@/lib/input-masks';
 
 /** Поля всех четырёх шагов. Имя поля = имя в форме = основа `id`. */
 type FieldName =
@@ -113,8 +132,16 @@ export function CheckoutScreen({
   const [cartChanged, setCartChanged] = useState(false);
 
   const set = (name: FieldName) => (value: string) => {
-    setValues((current) => ({ ...current, [name]: value }));
-    /* Ошибка снимается при первом исправлении, а не после повторной отправки. */
+    let next = value;
+    if (name === 'cardNumber') next = formatCardNumber(value);
+    else if (name === 'expiry') next = formatExpiry(value);
+    else if (name === 'cvv') next = formatCvv(value, values.cardNumber);
+    else if (name === 'phone') next = formatPhone(value);
+    else if (name === 'email') next = formatEmailInput(value);
+    else if (name === 'firstName' || name === 'lastName') next = formatName(value);
+    else if (name === 'postalCode') next = formatPostalCode(value);
+    else if (name === 'cardholder') next = formatCardholder(value);
+    setValues((current) => ({ ...current, [name]: next }));
     setErrors((current) => (current[name] ? { ...current, [name]: undefined } : current));
   };
 
@@ -185,6 +212,8 @@ export function CheckoutScreen({
       if (values.phone?.trim() && !isPhone(values.phone)) found.phone = 'validation.phone';
       if (values.firstName?.trim() && values.firstName.trim().length < 2) found.firstName = 'validation.minLength';
       if (values.lastName?.trim() && values.lastName.trim().length < 2) found.lastName = 'validation.minLength';
+      if (values.firstName?.trim() && /[^A-Za-zА-Яа-яЁёԱ-Ֆա-ֆ\s'-]/.test(values.firstName.trim())) found.firstName = 'validation.maxLength';
+      if (values.lastName?.trim() && /[^A-Za-zА-Яа-яЁёԱ-Ֆա-ֆ\s'-]/.test(values.lastName.trim())) found.lastName = 'validation.maxLength';
     }
 
     if (step === 'delivery' && deliveryMethod !== undefined) {
@@ -197,7 +226,6 @@ export function CheckoutScreen({
     }
 
     if (step === 'delivery' && deliveryMethod === undefined) {
-      // Назначить доставку должен каждый заказ — зона доставки влияет на total и НДС.
       found['address' as FieldName] = 'validation.required';
     }
 
@@ -212,6 +240,7 @@ export function CheckoutScreen({
         if (values.expiry?.trim() && !isExpiry(values.expiry)) found.expiry = 'validation.invalidExpiry';
         if (values.cvv?.trim() && !isCvv(values.cvv, values.cardNumber)) found.cvv = 'validation.invalidCvv';
         if (values.cardholder?.trim() && values.cardholder.trim().length < 2) found.cardholder = 'validation.minLength';
+        if (values.cardholder?.trim() && /[^A-Z\s'-]/.test(values.cardholder.trim())) found.cardholder = 'validation.maxLength';
       }
     }
 
@@ -299,6 +328,8 @@ export function CheckoutScreen({
               inputMode="tel"
               autoComplete="tel"
               required
+              placeholder="+374 99 123456"
+              maxLength={16}
               value={values.phone}
               error={errors.phone}
               onChange={set('phone')}
@@ -405,6 +436,12 @@ export function CheckoutScreen({
                 inputMode="numeric"
                 autoComplete="cc-number"
                 required
+                placeholder="1234-5678-9012-3456"
+                maxLength={19}
+                brandHint={(() => {
+                  const b = detectCardBrand(values.cardNumber ?? '');
+                  return b !== 'unknown' ? cardBrandLabel[b] : undefined;
+                })()}
                 value={values.cardNumber}
                 error={errors.cardNumber}
                 onChange={set('cardNumber')}
@@ -414,9 +451,11 @@ export function CheckoutScreen({
                 <TextField
                   name="expiry"
                   labelKey="checkout.payment.expiry"
+                  placeholder="MM/YY"
                   inputMode="numeric"
                   autoComplete="cc-exp"
                   required
+                  maxLength={5}
                   value={values.expiry}
                   error={errors.expiry}
                   onChange={set('expiry')}
@@ -424,9 +463,11 @@ export function CheckoutScreen({
                 <TextField
                   name="cvv"
                   labelKey="checkout.payment.cvv"
+                  placeholder={/^3[47]/.test(onlyDigits(values.cardNumber ?? '')) ? '****' : '***'}
                   inputMode="numeric"
                   autoComplete="cc-csc"
                   required
+                  maxLength={/^3[47]/.test(onlyDigits(values.cardNumber ?? '')) ? 4 : 3}
                   value={values.cvv}
                   error={errors.cvv}
                   onChange={set('cvv')}
@@ -438,6 +479,7 @@ export function CheckoutScreen({
                 labelKey="checkout.payment.cardholder"
                 autoComplete="cc-name"
                 required
+                placeholder="NAME SURNAME"
                 value={values.cardholder}
                 error={errors.cardholder}
                 onChange={set('cardholder')}
@@ -546,17 +588,16 @@ interface TextFieldProps {
   value: string | undefined;
   error: MessageKey | undefined;
   onChange(value: string): void;
-  type?: 'text' | 'email' | 'tel';
+  type?: 'text' | 'email' | 'tel' | 'password';
   inputMode?: 'text' | 'email' | 'tel' | 'numeric';
   autoComplete?: string;
   required?: boolean;
+  placeholder?: string;
+  maxLength?: number;
+  hintKey?: MessageKey;
+  brandHint?: string;
 }
 
-/**
- * Текстовое поле шага. Отдельная функция, потому что связка «FormField + input»
- * повторяется двенадцать раз, и в одиннадцатый раз кто-нибудь забыл бы
- * `aria-describedby`.
- */
 function TextField({
   name,
   labelKey,
@@ -567,22 +608,35 @@ function TextField({
   inputMode,
   autoComplete,
   required = false,
+  placeholder,
+  maxLength,
+  hintKey,
+  brandHint,
 }: TextFieldProps) {
   return (
-    <FormField name={name} labelKey={labelKey} required={required} errorKey={error ?? null}>
+    <FormField name={name} labelKey={labelKey} required={required} errorKey={error ?? null} hintKey={hintKey}>
       {(field) => (
-        <input
-          id={field.id}
-          name={field.name}
-          type={type}
-          inputMode={inputMode}
-          autoComplete={autoComplete}
-          value={value ?? ''}
-          onChange={(event) => onChange(event.target.value)}
-          aria-describedby={field.describedBy}
-          aria-invalid={field.invalid}
-          className="form-input"
-        />
+        <div className="relative">
+          <input
+            id={field.id}
+            name={field.name}
+            type={type}
+            inputMode={inputMode}
+            autoComplete={autoComplete}
+            placeholder={placeholder}
+            maxLength={maxLength}
+            value={value ?? ''}
+            onChange={(event) => onChange(event.target.value)}
+            aria-describedby={field.describedBy}
+            aria-invalid={field.invalid}
+            className="form-input w-full"
+          />
+          {brandHint && (
+            <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-content-tertiary">
+              {brandHint}
+            </span>
+          )}
+        </div>
       )}
     </FormField>
   );
@@ -610,64 +664,12 @@ function CheckboxRow({ id, label, checked, onCheckedChange }: CheckboxRowProps) 
   );
 }
 
-/* ─────────────────────────── Мелочи ─────────────────────────── */
-
-/**
- * Лёгкая валидация контактных и платёжных полей — фолбэк до серверной проверки.
- * Картой мира: `Armenia (HY)`, все `AM` префиксы и международные номера `+`.
- * Luhn/MII/expiry/CVV — только форма, не списания: redirect-банку не шлём.
- */
-function isEmail(value: string): boolean {
-  const trimmed = value.trim();
-  return trimmed.includes('@') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
-}
-
-function isPhone(value: string): boolean {
-  const digits = value.replace(/[\s()-]+/g, '');
-  return /^\+?\d{8,15}$/.test(digits);
-}
-
-function isPostalCode(value: string): boolean {
-  return /^[A-Za-z0-9 -]{3,12}$/.test(value.trim());
-}
-
-function digitsOf(value: string): string {
-  return value.replace(/\D/g, '');
-}
-
-function isCardNumber(value: string): boolean {
-  const digits = digitsOf(value);
-  if (digits.length < 13 || digits.length > 19) return false;
-  // Luhn — ловит опечатку до редиректа.
-  let sum = 0;
-  let alt = false;
-  for (let i = digits.length - 1; i >= 0; i -= 1) {
-    let n = parseInt(digits[i]!, 10);
-    if (alt) {
-      n *= 2;
-      if (n > 9) n -= 9;
-    }
-    sum += n;
-    alt = !alt;
-  }
-  return sum % 10 === 0;
-}
-
-function isExpiry(value: string): boolean {
-  const m = value.trim().match(/^(\d{1,2})\s*\/\s*(\d{2,4})$/);
-  if (!m) return false;
-  const month = parseInt(m[1]!, 10);
-  let year = parseInt(m[2]!, 10);
-  if (month < 1 || month > 12) return false;
-  if (year < 100) year += 2000;
-  const now = new Date();
-  const exp = new Date(year, month - 1 + 1, 0, 23, 59, 59);
-  return exp.getTime() >= now.getTime() - 24 * 60 * 60 * 1000;
-}
-
-function isCvv(value: string, cardNumber?: string): boolean {
-  const digits = digitsOf(value);
-  const pan = digitsOf(cardNumber ?? '');
-  const isAmex = /^3[47]/.test(pan);
-  return isAmex ? digits.length === 4 : digits.length === 3;
-}
+/* ── валидация (обёртки над input-masks, уже импортированы выше) ── */
+function isEmail(v: string) { return isEmailValid(v); }
+function isPhone(v: string) { return isPhoneValid(v); }
+function isPostalCode(v: string) { return isPostalCodeValid(v); }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- оставлен для симметрии валидаторов
+function digitsOf(v: string) { return onlyDigits(v); }
+function isCardNumber(v: string) { return isCardNumberValid(v); }
+function isExpiry(v: string) { return isExpiryValid(v); }
+function isCvv(v: string, pan?: string) { return isCvvValid(v, pan); }

@@ -22,6 +22,7 @@ import { PortalLink } from '@/components/fx/portal-link';
 import { Badge } from '@/components/ui/badge';
 import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
+import { ProductQuickAdd } from '@/components/shop/product-quick-add';
 import { commerce, routes } from '@/config';
 import { resolveMedia, type ProductCardItem } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
@@ -82,6 +83,12 @@ export function ProductCard({ item, locale, className }: ProductCardProps) {
               {t('shop.lowStock', { count: item.stock })}
             </Badge>
           )
+        )}
+
+        {!soldOut && item.variantId && (
+          <div className="absolute inset-x-3 bottom-3 z-20 flex justify-end opacity-0 transition-opacity duration-300 ease-brand group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
+            <ProductQuickAdd variantId={item.variantId} title={item.title} />
+          </div>
         )}
       </div>
 

@@ -61,7 +61,10 @@ export function QuantityStepper({
 
   const step = (delta: number) => {
     const next = clampQuantity(current + delta);
-    if (next !== current) onChange(next);
+    if (next !== current) {
+      try { navigator.vibrate?.([8]); } catch {}
+      onChange(next);
+    }
   };
 
   return (
@@ -80,8 +83,8 @@ export function QuantityStepper({
         disabled={disabled || atMin}
         aria-label={t('quantityDecrease')}
         className={cn(
-          'flex size-8 items-center justify-center text-content-primary',
-          'transition-colors duration-normal ease-brand',
+          'flex size-8 items-center justify-center text-content-primary active:scale-95',
+          'transition-all duration-normal ease-brand',
           'hover:bg-interactive-hover disabled:pointer-events-none disabled:text-content-disabled',
         )}
       >
@@ -93,7 +96,7 @@ export function QuantityStepper({
         через смену доступного значения соседнего элемента, а объявление на
         каждое нажатие превратилось бы в поток «два, три, четыре».
       */}
-      <span className="text-body-sm w-8 text-center font-semibold tabular-nums">
+      <span className="text-body-sm w-8 text-center font-semibold tabular-nums transition-transform duration-150" key={current}>
         {format.number(current, 'plain')}
       </span>
 
@@ -103,8 +106,8 @@ export function QuantityStepper({
         disabled={disabled || atMax}
         aria-label={t('quantityIncrease')}
         className={cn(
-          'flex size-8 items-center justify-center text-content-primary',
-          'transition-colors duration-normal ease-brand',
+          'flex size-8 items-center justify-center text-content-primary active:scale-95',
+          'transition-all duration-normal ease-brand',
           'hover:bg-interactive-hover disabled:pointer-events-none disabled:text-content-disabled',
         )}
       >

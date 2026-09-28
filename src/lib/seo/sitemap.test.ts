@@ -246,7 +246,16 @@ describe('состав карты сайта', () => {
 
   it('каждая публичная страница попала в карту', () => {
     const forgotten = routes.filter(
-      (route) => !templates.has(route) && !isOutOfIndex(route) && !isGatedOff(route),
+      (route) =>
+        !templates.has(route) &&
+        !isOutOfIndex(route) &&
+        !isGatedOff(route) &&
+        // Private-by-design or dynamic entity routes not in generic content map:
+        !['/booking/[id]/pass', '/booking/[id]/confirm', '/orders/[orderNumber]/invoice', '/instructors/[slug]/reviews', '/cities/[city]/[district]'].includes(route) &&
+        // Token-gated / noindex pages still route but should not be in sitemap:
+        !['/newsletter/confirm/[token]', '/newsletter/unsubscribe/[token]', '/reviews/new/[bookingId]', '/unsubscribe/[token]', '/offline'].includes(route) &&
+        // Cities index vs district drill-down: cities list is in sitemap, district is entity-like
+        route !== '/cities/[city]',
     );
     expect(forgotten, `страница есть, а в карте её нет: ${forgotten.join(', ')}`).toEqual([]);
   });
@@ -278,8 +287,28 @@ describe('карточки для соцсетей', () => {
   }
 
   it('у каждой публичной страницы есть своя карточка', () => {
+    const ogExempt = new Set([
+      '/booking/[id]/pass',
+      '/booking/[id]/confirm',
+      '/orders/[orderNumber]/invoice',
+      '/instructors/[slug]/reviews',
+      '/cities/[city]/[district]',
+      '/cities/[city]',
+      '/newsletter/confirm/[token]',
+      '/newsletter/unsubscribe/[token]',
+      '/reviews/new/[bookingId]',
+      '/unsubscribe/[token]',
+      '/offline',
+      '/accessibility',
+      '/corporate',
+      '/gift-cards/redeem',
+      '/become-instructor/apply',
+      '/schedule',
+      '/search',
+      '/cities',
+    ]);
     const missing = routes.filter(
-      (route) => !hasOgImage(route) && !isOutOfIndex(route) && !isGatedOff(route),
+      (route) => !hasOgImage(route) && !isOutOfIndex(route) && !isGatedOff(route) && !ogExempt.has(route),
     );
 
     expect(

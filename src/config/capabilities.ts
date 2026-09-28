@@ -77,6 +77,10 @@ export const capabilities = [
   'trash.view',
   'trash.restore',
   'trash.purge',
+  'content.manage',
+  'application.review',
+  'dispute.resolve',
+  'boost.manage',
 ] as const;
 
 export type Capability = (typeof capabilities)[number];

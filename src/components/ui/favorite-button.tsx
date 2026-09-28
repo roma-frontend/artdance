@@ -21,6 +21,8 @@
 
 import { Heart } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { useFavorite, type FavoriteTarget } from '@/lib/client/favorites';
 import { cn } from '@/lib/utils';
@@ -41,6 +43,7 @@ interface FavoriteButtonProps {
 export function FavoriteButton({ target, slug, name, onMedia, className }: FavoriteButtonProps) {
   const t = useTranslations('favorites');
   const { isFavorite, toggle } = useFavorite(target, slug);
+  const [burst, setBurst] = useState(false);
 
   return (
     <button
@@ -48,29 +51,43 @@ export function FavoriteButton({ target, slug, name, onMedia, className }: Favor
       aria-pressed={isFavorite}
       aria-label={isFavorite ? t('toggleLabelActive', { name }) : t('toggleLabel', { name })}
       onClick={(event) => {
-        /*
-         * Карточка целиком — ссылка (растянутый якорь). Без остановки события
-         * нажатие на сердце открывало бы страницу занятия.
-         */
         event.preventDefault();
         event.stopPropagation();
-        toggle();
+        const next = toggle();
+        // haptics
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          try { navigator.vibrate(next ? [18] : [10]); } catch {}
+        }
+        // micro burst
+        if (next) {
+          setBurst(true);
+          setTimeout(() => setBurst(false), 420);
+        }
+        // subtle toast
+        try {
+          if (next) toast.success(`«${name}» — в избранном`);
+          else toast(`«${name}» — убрано`);
+        } catch {}
       }}
       className={cn(
         'inline-flex size-9 items-center justify-center rounded-full',
-        'transition-all duration-300 ease-brand',
+        'transition-all duration-300 ease-brand active:scale-95',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
         onMedia
           ? 'bg-surface-card/85 shadow-sm backdrop-blur-sm hover:bg-surface-card'
           : 'hover:bg-surface-sunken',
         isFavorite ? 'text-content-accent' : 'text-content-tertiary hover:text-content-accent',
+        burst && 'animate-[pulse_420ms_ease-out]',
         className,
       )}
     >
       <Heart
         aria-hidden
-        className={cn('size-4.5 transition-transform duration-300 ease-brand', isFavorite && 'scale-110')}
-        /* Заливка — второй признак состояния помимо цвета: дальтонизм. */
+        className={cn(
+          'size-4.5 transition-transform duration-300 ease-brand',
+          isFavorite && 'scale-110',
+          burst && 'scale-[1.35]',
+        )}
         fill={isFavorite ? 'currentColor' : 'none'}
       />
     </button>

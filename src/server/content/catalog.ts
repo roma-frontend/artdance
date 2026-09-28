@@ -230,10 +230,10 @@ export function toEventCard(item: DemoEvent): EventCardItem {
 }
 
 export function toProductCard(item: DemoProduct): ProductCardItem {
-  /** Цена карточки — минимальная из вариантов: покупатель видит «от чего». */
   const prices = item.variants.map((variant) => variant.price);
   const minPrice = prices.length > 0 ? Math.min(...prices) : item.price;
   const hasRange = prices.some((price) => price !== minPrice);
+  const defaultVariant = item.variants[0];
 
   return {
     slug: item.slug,
@@ -243,6 +243,7 @@ export function toProductCard(item: DemoProduct): ProductCardItem {
     priceFrom: hasRange || item.isGiftCard === true,
     stock: item.variants.reduce((sum, variant) => sum + variant.stock, 0),
     image: mediaRef(item.asset),
+    ...(defaultVariant ? { variantId: defaultVariant.sku } : {}),
   };
 }
 

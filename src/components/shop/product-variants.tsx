@@ -8,7 +8,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ interface ProductVariantsProps {
 
 export function ProductVariants({ product, className }: ProductVariantsProps) {
   const t = useTranslations();
+  const format = useFormatter();
   const [selectedSku, setSelectedSku] = useState<string | null>(product.variants[0]?.sku ?? null);
   const [qty, setQty] = useState(1);
   const [pending, setPending] = useState(false);
@@ -93,7 +94,7 @@ export function ProductVariants({ product, className }: ProductVariantsProps) {
             aria-pressed={selectedSku === v.sku}
           >
             {[v.size, v.color].filter(Boolean).join(' · ') || v.sku}
-            <span className="ms-2 text-content-tertiary">{v.price.toLocaleString()} ֏</span>
+            <span className="ms-2 text-content-tertiary">{format.number(v.price, 'plain')} ֏</span>
           </button>
         ))}
       </div>
