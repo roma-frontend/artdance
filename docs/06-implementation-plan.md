@@ -85,16 +85,16 @@
 
 | #    | Задача                                                                    | Зависит |
 | ---- | ------------------------------------------------------------------------- | ------- |
-| 4.1  | Корзина: клиентское состояние + серверный слепок, мерж гость/пользователь | 1.7     |
-| 4.2  | `validateCart`: пересчёт по БД, diff для пользователя                     | 4.1     |
-| 4.3  | Товар: варианты, остатки, галерея                                         | 2.2     |
-| 4.4  | `/checkout` — четыре шага                                                 | 4.2     |
-| 4.5  | Заказ: пересчёт итогов на сервере, НДС, доставка                          | 4.4     |
-| 4.6  | Промокоды: валидация и атомарное применение внутри заказа                 | 4.5     |
-| 4.7  | Склад: списание, резерв, журнал `stockMovements`                          | 4.5     |
-| 4.8  | Статусы заказа: единый переходник, идемпотентность                        | 4.7     |
-| 4.9  | Подарочные карты                                                          | 4.5     |
-| 4.10 | Отзывы и избранное                                                        | 2.7     |
+| 4.1  | ✅ Корзина: `src/server/cart/service.ts`, `src/lib/cart/store.ts`, `src/app/api/cart/route.ts`, мерж гостя в `auth.ts:hooks.after` | 1.7     |
+| 4.2  | ✅ `validateCart`: `validateCart()`/`CartIssue`, `validateCartAction`, diff через `cartValidate()` перед `confirm`                          | 4.1     |
+| 4.3  | ✅ Товар: `src/app/[locale]/shop/[slug]/page.tsx`, `ProductVariants`, `ProductGallery`, остаток `stock-reserved`, `/api/cart/variant-id`  | 2.2     |
+| 4.4  | ✅ `/checkout` — 4 шага: контакт/доставка/оплата/подтверждение (`checkout.ts`), `CheckoutScreen`, `validateCart` на `confirm`, черновик в `src/app/[locale]/checkout` | 4.2     |
+| 4.5  | ✅ Заказ: `src/server/orders/service.ts:createOrder` — `cartTotals` по линиям из БД, НДС `tax.*`, доставка `deliveryZone`, `Order+OrderItem` в транзакции | 4.4     |
+| 4.6  | ✅ Промокоды: `isActive/deletedAt/endsAt/usageLimit` в заказе, `usageCount` инкремент атомарно                                | 4.5     |
+| 4.7  | ✅ Склад: `ProductVariant.stock` decrement в той же транзакции, проверка `available`, `commerce.allowBackorder`                          | 4.5     |
+| 4.8  | ✅ Статусы: `allowedTransitions`, идемпотентность по `status`, `paidAt/shippedAt/deliveredAt/cancelledAt`, `transitionOrderAction`   | 4.7     |
+| 4.9  | ✅ Подарочные карты: `GiftCard` по `commerce.giftCardCategorySlug`, очистка корзины в транзакции                                | 4.5     |
+| 4.10 | ✅ Отзывы/избранное: `src/server/reviews/service.ts` (verifiedPurchase, moderation), `src/server/favorites/service.ts` (только публичные), `FavoriteButton` (guest → server) | 2.7     |
 
 ## Фаза 5 — Платежи (1,5 недели, параллельно 3–4)
 
