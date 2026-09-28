@@ -29,7 +29,9 @@
 
 import { ShoppingBagIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { cartRemove, cartUpdate, cartApplyPromo, cartRemovePromo, fetchCart } from '@/lib/cart/api';
+import { useCartStore } from '@/lib/cart/store';
 
 import { CartLineItem, type CartLineView } from '@/components/cart/cart-line-item';
 import { PromoCodeForm } from '@/components/cart/promo-code-form';
@@ -92,6 +94,45 @@ export function CartScreen({
   const [lines, setLines] = useState<readonly CartScreenLine[]>(initialLines);
   const [promo, setPromo] = useState<AppliedPromo | null>(initialPromo);
   const [promoInvalid, setPromoInvalid] = useState(false);
+  const [, setPending] = useState(false);
+  const serverSnapshot = useCartStore((s) => s.snapshot);
+
+  // Синхронизация с сервером при загрузке
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const snap = await fetchCart();
+        if (!snap || cancelled) return;
+        useCartStore.getState().setSnapshot(snap);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Подменяем локальные линии на серверный слепок
+  useEffect(() => {
+    if (!serverSnapshot) return;
+    const mapped: CartScreenLine[] = serverSnapshot.items.map((it) => ({
+      id: it.id,
+      slug: undefined,
+      title: it.title,
+      brand: it.brand ?? undefined,
+      image: { key: '', alt: { hy: '', ru: '', en: '' } },
+      unitPrice: it.unitPrice,
+      quantity: it.quantity,
+      stock: it.stock,
+      unavailable: !it.isActive || it.stock <= 0,
+      lineType: 'PRODUCT' as const,
+    }));
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронизация из внешнего стора после hydrate
+    setLines(mapped as unknown as CartScreenLine[]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- promo из серверного слепка
+    if (serverSnapshot.promoCode) setPromo({ code: serverSnapshot.promoCode } as AppliedPromo);
+    else setPromo(null);
+  }, [serverSnapshot]);
 
   const totals = cartTotals({
     lines: lines.filter((line) => !line.unavailable).map(toCartLine),
@@ -99,32 +140,60 @@ export function CartScreen({
     deliveryZone,
   });
 
-  const changeQuantity = (id: string, quantity: number) => {
-    setLines((current) =>
-      current.map((line) => (line.id === id ? { ...line, quantity } : line)),
-    );
-  };
-
-  const removeLine = (id: string) => {
-    setLines((current) => current.filter((line) => line.id !== id));
-  };
-
-  /**
-   * TODO(commerce): заменить на server action `applyPromoCode`. Здесь проверка
-   * заведомо неполная — она только показывает оба исхода на экране.
-   */
-  const applyPromo = (code: string) => {
-    if (code === promotions.welcomeCode.code) {
-      setPromo(welcomePromo());
-      setPromoInvalid(false);
-      return;
+  const changeQuantity = async (id: string, quantity: number) => {
+    setPending(true);
+    try {
+      const snap = await cartUpdate(id, quantity);
+      if (snap) useCartStore.getState().setSnapshot(snap);
+      else setLines((current) => current.map((line) => (line.id === id ? { ...line, quantity } : line)));
+    } finally {
+      setPending(false);
     }
-    setPromoInvalid(true);
   };
 
-  const removePromo = () => {
-    setPromo(null);
-    setPromoInvalid(false);
+  const removeLine = async (id: string) => {
+    setPending(true);
+    try {
+      const snap = await cartRemove(id);
+      if (snap) useCartStore.getState().setSnapshot(snap);
+      else setLines((current) => current.filter((line) => line.id !== id));
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const applyPromo = async (code: string) => {
+    setPending(true);
+    try {
+      // Сначала пробуем серверный промокод
+      const snap = await cartApplyPromo(code);
+      if (snap) {
+        useCartStore.getState().setSnapshot(snap);
+        setPromoInvalid(false);
+        return;
+      }
+      // фоллбэк: локальная проверка welcome — для демо без БД
+      if (code === promotions.welcomeCode.code) {
+        setPromo(welcomePromo());
+        setPromoInvalid(false);
+        return;
+      }
+      setPromoInvalid(true);
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const removePromo = async () => {
+    setPending(true);
+    try {
+      const snap = await cartRemovePromo();
+      if (snap) useCartStore.getState().setSnapshot(snap);
+      setPromo(null);
+      setPromoInvalid(false);
+    } finally {
+      setPending(false);
+    }
   };
 
   if (lines.length === 0) {

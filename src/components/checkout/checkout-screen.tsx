@@ -31,7 +31,9 @@
 'use client';
 
 import { useFormatter, useTranslations } from 'next-intl';
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { cartValidate } from '@/lib/cart/api';
+import { useCartStore } from '@/lib/cart/store';
 
 import { OrderSummary, type OrderSummaryLine } from '@/components/checkout/order-summary';
 import { PaymentMethodPicker } from '@/components/checkout/payment-method-picker';
@@ -108,6 +110,8 @@ export function CheckoutScreen({
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsError, setTermsError] = useState(false);
   const [notice, setNotice] = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [cartChanged, setCartChanged] = useState(false);
 
   const set = (name: FieldName) => (value: string) => {
     setValues((current) => ({ ...current, [name]: value }));
@@ -171,6 +175,26 @@ export function CheckoutScreen({
     setErrors(found);
     return Object.keys(found).length === 0;
   };
+
+  // На шаге confirm — валидируем корзину сервером перед оплатой
+  useEffect(() => {
+    if (step !== 'confirm') return;
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- флаг загрузки из внешнего API checkout
+    setValidating(true);
+    void cartValidate()
+      .then((snap) => {
+        if (!snap || cancelled) return;
+        useCartStore.getState().setSnapshot(snap);
+        if (snap.issues.length > 0) setCartChanged(true);
+      })
+      .finally(() => {
+        if (!cancelled) setValidating(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [step]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -461,7 +485,7 @@ export function CheckoutScreen({
         </div>
       </div>
 
-      <OrderSummary totals={totals} lines={summaryLines} locale={locale}>
+      <OrderSummary totals={totals} lines={summaryLines} locale={locale} recalculating={validating} changed={cartChanged}>
         <TrustBadges variant="checkout" paymentMethods={paymentMethods} className="mt-6" />
       </OrderSummary>
     </form>

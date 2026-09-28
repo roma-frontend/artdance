@@ -282,8 +282,21 @@ export const auth = betterAuth({
         return;
       }
 
-      /* Успех обнуляет счётчик: серия неудач до правильного пароля — не атака. */
+      /* Успех — обнуляем lockout и вливаем корзину гостя. Не блокирует ответ. */
       await clearFailures(email);
+      // Мерж корзины гостя: anonymousId из cookie/headers → userId из сессии
+      try {
+        const headers = ctx.headers ?? new Headers();
+        const anon = headers.get('x-anonymous-id') ?? headers.get('X-Anonymous-Id');
+        if (anon && anon.length >= 8) {
+          const session = ctx.context.returned as { user?: { id?: string } } | null;
+          const userId = (session as { user?: { id?: string } } | null)?.user?.id;
+          if (userId) {
+            const { mergeGuestCart } = await import('@/server/cart/service');
+            await mergeGuestCart({ userId, anonymousId: anon });
+          }
+        }
+      } catch {}
     }),
   },
 
