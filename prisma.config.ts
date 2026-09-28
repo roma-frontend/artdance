@@ -36,7 +36,7 @@ export default defineConfig({
   schema: 'prisma/schema.prisma',
 
   ...(migrationUrl
-    ? shadowUrl && shadowUrl !== migrationUrl
+    ? shadowUrl
       ? { datasource: { url: migrationUrl, shadowDatabaseUrl: shadowUrl } }
       : { datasource: { url: migrationUrl } }
     : {}),
