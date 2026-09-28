@@ -112,7 +112,7 @@ export function CartScreen({
     };
   }, []);
 
-  // Подменяем локальные линии на серверный слепок
+  // Подменяем локальные линии на серверный слепок (каскад — намеренно, deferred via microtask)
   useEffect(() => {
     if (!serverSnapshot) return;
     const mapped: CartScreenLine[] = serverSnapshot.items.map((it) => ({
@@ -127,11 +127,11 @@ export function CartScreen({
       unavailable: !it.isActive || it.stock <= 0,
       lineType: 'PRODUCT' as const,
     }));
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронизация из внешнего стора после hydrate
-    setLines(mapped as unknown as CartScreenLine[]);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- promo из серверного слепка
-    if (serverSnapshot.promoCode) setPromo({ code: serverSnapshot.promoCode } as AppliedPromo);
-    else setPromo(null);
+    queueMicrotask(() => {
+      setLines(mapped as unknown as CartScreenLine[]);
+      if (serverSnapshot.promoCode) setPromo({ code: serverSnapshot.promoCode } as AppliedPromo);
+      else setPromo(null);
+    });
   }, [serverSnapshot]);
 
   const totals = cartTotals({

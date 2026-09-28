@@ -41,6 +41,10 @@ export const useCartStore = create<CartState>((set) => ({
   setPending: (pending) => set({ pending }),
 }));
 
+export function useCartCount(): number {
+  return useCartStore((s) => s.snapshot?.totals.itemCount ?? 0);
+}
+
 export function cartItemCount(totals: CartTotals): number {
   return totals.itemCount;
 }

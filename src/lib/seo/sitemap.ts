@@ -127,6 +127,7 @@ export interface EntitySlugs {
   instructors: readonly string[];
   venues: readonly string[];
   events: readonly string[];
+  products?: readonly string[];
   /**
    * Хабы направлений, у которых есть предложение.
    *
@@ -164,6 +165,13 @@ function entitySpecs(slugs: EntitySlugs): SitemapSpec[] {
           priority: priorities.events,
           changeFrequency: entity,
         }))
+      : []),
+    ...(isEnabled('shop')
+      ? (slugs as unknown as { products?: readonly string[] }).products?.map((slug) => ({
+          path: routes.product(slug),
+          priority: priorities.shop,
+          changeFrequency: entity,
+        })) ?? []
       : []),
   ];
 }

@@ -26,6 +26,7 @@ const slugs = {
   instructors: ['anna-mkrtchyan'],
   venues: ['pulse-dance-studio'],
   events: ['bachata-night-workshop'],
+  products: ['premium-dance-bag'],
   styles: ['hip-hop', 'salsa'],
 };
 
