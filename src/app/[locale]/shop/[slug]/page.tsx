@@ -86,7 +86,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
         {item.related.length > 0 && (
           <section className="mt-16">
-            <h2 className="text-heading-3 mb-6">Related</h2>
+            <h2 className="text-heading-3 mb-6">{(await getTranslations({ locale: locale as never, namespace: 'shop' }))('relatedTitle')}</h2>
             <ul className="grid gap-5 xs:grid-cols-2 lg:grid-cols-4">
               {item.related.map((rel) => (
                 <li key={rel.slug}>

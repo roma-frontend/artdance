@@ -20,6 +20,7 @@ import { zonedDateKey } from '@/domain/availability/compute';
 import { useRouter } from '@/i18n/routing';
 import { getAnonymousId } from '@/lib/client/anonymous-id';
 import { parseClock } from '@/lib/time/clock';
+import { useTranslations } from 'next-intl';
 import { fromZonedParts, zonedParts } from '@/lib/time/schedule';
 import type { BookingContent } from '@/server/content/booking';
 
@@ -28,6 +29,7 @@ type HoldState = { status: 'idle' } | { status: 'holding'; holdId: string; expir
 
 export function BookingScreen({ content }: BookingScreenProps) {
   const router = useRouter();
+  const tBooking = useTranslations('booking');
   const initialDay = content.days.find((day) => day.dateKey === content.initialDateKey);
   const [date, setDate] = useState<Date | undefined>(() => (initialDay ? new Date(initialDay.dateIso) : undefined));
   const [startTime, setStartTime] = useState<string | undefined>(content.preselectedSlot ?? undefined);
@@ -143,7 +145,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
             <TimeSlotPicker slots={slots} selected={startTime} onSelect={selectSlot} date={date} durationMinutes={content.durationMinutes} justTaken={justTaken} />
             {hold.status === 'error' && (
               <p role="alert" className="text-caption mt-3 font-medium text-content-signal">
-                {hold.justTaken ? 'Слот только что заняли — выберите другое время.' : 'Не удалось удержать слот. Попробуйте снова.'}
+                {hold.justTaken ? tBooking('conflictError') : tBooking('holdExpired')}
               </p>
             )}
           </div>
