@@ -154,6 +154,8 @@ const ALLOWED_IDENTICAL = [
   /^.*\.cvv$/i,
   /^legal\.cookieBanner\.title$/,
   /^.*squareMeters$/,
+  /^footer\.phonePlaceholder$/,
+  /^admin\.integrations\.turnstileName$/,
 ];
 
 for (const locale of locales) {

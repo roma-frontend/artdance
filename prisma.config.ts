@@ -30,10 +30,16 @@ const migrationUrl = [process.env.DIRECT_DATABASE_URL, process.env.DATABASE_URL]
   .map((value) => value?.trim())
   .find((value) => Boolean(value));
 
+const shadowUrl = process.env.SHADOW_DATABASE_URL?.trim() || undefined;
+
 export default defineConfig({
   schema: 'prisma/schema.prisma',
 
-  ...(migrationUrl ? { datasource: { url: migrationUrl } } : {}),
+  ...(migrationUrl
+    ? shadowUrl && shadowUrl !== migrationUrl
+      ? { datasource: { url: migrationUrl, shadowDatabaseUrl: shadowUrl } }
+      : { datasource: { url: migrationUrl } }
+    : {}),
 
   migrations: {
     path: 'prisma/migrations',
