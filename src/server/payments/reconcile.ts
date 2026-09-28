@@ -10,7 +10,7 @@ import 'server-only';
 import { db } from '@/lib/db';
 import { getPaymentProvider, type PaymentProviderId } from '@/lib/payments';
 import { recordAudit } from '@/lib/audit';
-import { paymentStatuses } from '@/domain/enums';
+import type { PaymentStatus } from '@/domain/enums';
 
 function isTerminal(status: string): boolean {
   return ['REFUNDED', 'CANCELLED', 'CHARGEBACK'].includes(status);
@@ -28,7 +28,7 @@ export async function reconcilePayment(input: ReconcileInput) {
     ((await db.payment.findFirst({ where: { providerTransactionId: input.paymentId } }) as unknown as { id: string; provider: string; providerTransactionId: string | null; status: string; orderId: string | null; bookingId: string | null } | null));
   if (!payment || !payment.providerTransactionId) return { status: 'NOT_FOUND' as const };
 
-  if (isTerminal(payment.status)) return { status: payment.status as (typeof paymentStatuses)[number] };
+  if (isTerminal(payment.status)) return { status: payment.status as PaymentStatus };
 
   const provider = getPaymentProvider(payment.provider as PaymentProviderId);
   const snapshot = await provider.getPayment(payment.providerTransactionId);
