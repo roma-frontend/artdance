@@ -143,9 +143,9 @@ export function BookingScreen({ content }: BookingScreenProps) {
           <BookingCalendar selected={date} onSelect={selectDate} availableDates={availableDates} />
           <div className="mt-6 border-t border-border-default pt-6">
             <TimeSlotPicker slots={slots} selected={startTime} onSelect={selectSlot} date={date} durationMinutes={content.durationMinutes} justTaken={justTaken} />
-            {hold.status === 'error' && (
+            {hold.status === 'error' && !hold.justTaken && (
               <p role="alert" className="text-caption mt-3 font-medium text-content-signal">
-                {hold.justTaken ? tBooking('conflictError') : tBooking('holdExpired')}
+                {tBooking('holdExpired')}
               </p>
             )}
           </div>
