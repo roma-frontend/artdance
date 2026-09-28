@@ -33,12 +33,12 @@ const input = (
     expiresAt: Date;
   }> = {},
 ) => ({
-  instructorId: overrides.instructorId ?? 'instructor-1',
-  roomId: overrides.roomId ?? null,
+  instructorId: overrides.instructorId !== undefined ? overrides.instructorId : 'instructor-1',
+  roomId: overrides.roomId !== undefined ? overrides.roomId : null,
   startsAt: overrides.startsAt ?? utc('2026-09-12T14:00:00Z'),
   endsAt: overrides.endsAt ?? utc('2026-09-12T15:00:00Z'),
-  userId: overrides.userId ?? 'user-1',
-  anonymousId: overrides.anonymousId ?? null,
+  userId: overrides.userId !== undefined ? overrides.userId : 'user-1',
+  anonymousId: overrides.anonymousId !== undefined ? overrides.anonymousId : null,
   expiresAt: overrides.expiresAt ?? utc('2026-09-12T14:15:00Z'),
 });
 

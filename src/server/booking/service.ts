@@ -8,6 +8,7 @@ import { expandRules } from '@/domain/availability/compute';
 import { site } from '@/config/site';
 import { db } from '@/lib/db';
 import { Prisma } from '@/generated/prisma/client';
+import { notifyBookingCancelled, notifyBookingConfirmed, notifyWaitlistReady } from '@/server/booking/notify';
 function isUniqueViolation(error: unknown): boolean { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'; }
 function refFromId(id: string): string { return 'BK-' + id.slice(-8).toUpperCase(); }
 export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; now: Date; }
@@ -47,6 +48,7 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   if (!customerId) throw domainErrors.unauthorized();
   const venueId = danceClass?.venueId ?? null;
   const bookedCheck = session;
+  let createdId: string | null = null;
   try {
     const result = await db.$transaction(async (tx) => {
       if (bookedCheck && bookedCheck.bookedCount >= bookedCheck.capacity) throw domainErrors.capacityExceeded(0);
@@ -59,8 +61,10 @@ export async function createBookingFromHold(input: CreateBookingInput) {
       await tx.slotHold.delete({ where: { id: hold.id } });
       return updated;
     });
+    createdId = result.id;
+    void notifyBookingConfirmed(result.id).catch(() => {});
     return result;
-  } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; }
+  } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; } finally { void createdId; }
 }
 export interface CancelBookingInput { bookingId: string; userId: string; now: Date; reason?: string | null; }
 export async function cancelBooking(input: CancelBookingInput) {
@@ -72,13 +76,19 @@ export async function cancelBooking(input: CancelBookingInput) {
   if (outcome.kind === 'forbidden') { if (outcome.reason === 'ALREADY_STARTED') throw domainErrors.validationFailed('startsAt'); throw domainErrors.cancellationWindowClosed(); }
   const fee = outcome.kind === 'fee' ? outcome.amount : 0;
   const refund = outcome.kind === 'free' ? b.totalPrice : (()=> { try { return refundAmountFor(outcome, b.totalPrice); } catch { return b.totalPrice; } })();
-  return db.$transaction(async (tx) => {
+  const txResult = await db.$transaction(async (tx) => {
     const updated = await tx.booking.update({ where: { id: b.id }, data: { status: 'CANCELLED_BY_CUSTOMER', cancelledAt: input.now, cancellationReason: input.reason ?? (outcome.kind==='fee' ? 'LATE_FEE:'+fee : null) }, select: { id:true, reference:true, status:true, totalPrice:true } });
     if (b.sessionId) await tx.classSession.update({ where: { id: b.sessionId }, data: { bookedCount: { decrement: 1 } } }).catch(()=>{});
-    // notify waitlist if session had queue
-    if (b.sessionId) { const next = await tx.waitlistEntry.findFirst({ where:{ sessionId: b.sessionId, notifiedAt: null }, orderBy:{ position:'asc' }}); if (next) await tx.waitlistEntry.update({ where:{ id: next.id }, data:{ notifiedAt: input.now, claimUntil: new Date(input.now.getTime() + booking.waitlistClaimWindowMinutes*60_000)}}); }
-    return { booking: updated, fee, refund, outcome: outcome.kind };
+    let waitlistClaimUntil: Date | null = null;
+    let waitlistUserId: string | null = null;
+    if (b.sessionId) { const next = await tx.waitlistEntry.findFirst({ where:{ sessionId: b.sessionId, notifiedAt: null }, orderBy:{ position:'asc' }}); if (next) { waitlistClaimUntil = new Date(input.now.getTime() + booking.waitlistClaimWindowMinutes*60_000); waitlistUserId = next.userId; await tx.waitlistEntry.update({ where:{ id: next.id }, data:{ notifiedAt: input.now, claimUntil: waitlistClaimUntil }}); } }
+    return { booking: updated, fee, refund, outcome: outcome.kind, waitlistUserId, waitlistClaimUntil, sessionId: b.sessionId ?? null };
   });
+  void notifyBookingCancelled(b.id, txResult.refund).catch(()=>{});
+  if (txResult.waitlistUserId && txResult.sessionId && txResult.waitlistClaimUntil) {
+    void notifyWaitlistReady(txResult.sessionId, txResult.waitlistUserId, txResult.waitlistClaimUntil).catch(()=>{});
+  }
+  return { booking: txResult.booking, fee: txResult.fee, refund: txResult.refund, outcome: txResult.outcome };
 }
 export interface RescheduleBookingInput { bookingId: string; userId: string; now: Date; newStartsAt: Date; newEndsAt: Date; newPrice?: number | null; }
 export async function rescheduleBooking(input: RescheduleBookingInput) {

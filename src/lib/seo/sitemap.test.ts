@@ -188,7 +188,7 @@ function toTemplate(path: string): string {
  * `noIndexPathPrefixes` и `privatePaths`; появление любого из них в карте
  * означало бы приглашение проиндексировать чужой заказ.
  */
-const NOT_IN_SITEMAP = ['/cart', '/checkout', '/checkout/[step]', '/booking', '/instructors/[slug]/book'];
+const NOT_IN_SITEMAP = ['/cart', '/checkout', '/checkout/[step]', '/booking', '/booking/[holdId]/confirm', '/instructors/[slug]/book'];
 
 /**
  * Закрыт ли маршрут от индексации.

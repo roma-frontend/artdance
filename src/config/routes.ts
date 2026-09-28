@@ -280,7 +280,7 @@ export const apiRoutes = {
    * Задачи по расписанию. Имена объявлены здесь, а не строками в `vercel.json` и
    * в проверках: опечатка в имени даёт 404 у планировщика, а не ошибку сборки.
    */
-  cronJobs: { purgeTrash: 'purge-trash' } as const,
+  cronJobs: { purgeTrash: 'purge-trash', purgeHolds: 'purge-holds', booking: 'booking' } as const,
 } as const;
 
 /* ─────────────────────── Типы параметров ─────────────────────── */

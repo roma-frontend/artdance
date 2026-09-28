@@ -5,6 +5,14 @@
     {
       "path": "/api/cron/purge-trash",
       "schedule": "17 3 * * *"
+    },
+    {
+      "path": "/api/cron/purge-holds",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/booking",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
