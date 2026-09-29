@@ -96,10 +96,9 @@ export function HeaderMegaMenu({ solid }: Props) {
                 всё поддерево из порядка табуляции и дерева доступности, анимация
                 сохраняется через opacity/translate, а не display:none. */}
               <div
-              // @ts-expect-error — React 19 типы для inert ещё не во всех @types/react, но браузер поддерживает
-              inert={!open ? '' : undefined}
-              role="menu"
-              aria-hidden={!open}
+                inert={!open ? true : undefined}
+                role="menu"
+                aria-hidden={!open}
               className={cn(
                 'absolute left-1/2 top-[calc(100%+10px)] z-50 w-[min(860px,92vw)] -translate-x-1/2 rounded-2xl border bg-surface-card shadow-xl backdrop-blur-xl',
                 'border-border-default p-3 md:p-4',
