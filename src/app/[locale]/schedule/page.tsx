@@ -24,14 +24,16 @@ export default async function SchedulePage({ params }: PageProps) {
   setRequestLocale(locale as Locale);
   const t = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
   const { getClassList } = await import('@/server/content/catalog');
-  const classes = await getClassList({ sort: 'newest', page: 1, pageSize: 8 } as never).catch(() => ({ items: [] as never[], total: 0 }));
+  const { todaySlots } = await import('@/domain/schedule-grid');
+  const raw = await getClassList({ sort: 'newest', page: 1, pageSize: 20 } as never).catch(() => ({ items: [] as never[], total: 0 }));
+  const classes = todaySlots(raw.items as never, null) as never as (typeof raw)['items'];
   return (
     <main id={site.mainContentId} className="page-container inner-page">
       <h1 className="text-heading-2">{t('scheduleTitle')}</h1>
       <p className="text-body mt-2 text-content-secondary">{t('scheduleHint')}</p>
-      {classes.items.length > 0 && (
+      {classes.length > 0 && (
         <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {classes.items.map((item) => (
+          {classes.map((item) => (
             <li key={item.slug}><ClassCard item={item} locale={locale as Locale} /></li>
           ))}
         </ul>
