@@ -91,8 +91,13 @@ export function HeaderMegaMenu({ solid }: Props) {
               <ChevronDownIcon className={cn('size-3.5 opacity-60 transition-transform', open && 'rotate-180')} aria-hidden />
             </Link>
 
-            {/* Панель */}
+            {/* Панель — inert+aria-hidden когда закрыта: иначе axe ругается aria-hidden-focus
+                (скрытый блок не должен содержать фокусируемые ссылки). inert убирает
+                всё поддерево из порядка табуляции и дерева доступности, анимация
+                сохраняется через opacity/translate, а не display:none. */}
               <div
+              // @ts-expect-error — React 19 типы для inert ещё не во всех @types/react, но браузер поддерживает
+              inert={!open ? '' : undefined}
               role="menu"
               aria-hidden={!open}
               className={cn(
