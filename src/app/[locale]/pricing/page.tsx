@@ -21,6 +21,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 
 import { ContentSection } from '@/components/content/content-section';
 import { PlanComparisonTable } from '@/components/content/plan-comparison-table';
+import { ClassPassGrid } from '@/components/pricing/class-pass-grid';
 import { PageHero, breadcrumbsFromTrail } from '@/components/layout/page-hero';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { Badge } from '@/components/ui/badge';
@@ -103,6 +104,10 @@ export default async function PricingPage({ params }: PageProps) {
             subtitle={t('comparisonSubtitle')}
           >
             <PlanComparisonTable plans={orderedSubscriptionPlans} />
+          </ContentSection>
+
+          <ContentSection title={t('classPasses.title' as never)} subtitle={t('classPasses.subtitle' as never)}>
+            <ClassPassGrid locale={locale as Locale} />
           </ContentSection>
 
           <ContentSection spacing="tight" prose>
