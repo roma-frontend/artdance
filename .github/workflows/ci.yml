@@ -117,9 +117,7 @@ jobs:
       - name: Миграции соответствуют схеме
         run: |
           npx prisma migrate deploy
-          # Supabase provisioned schema drift (Session/VerificationToken/Account) — not yet migrated
-          # in this PR branch; warn instead of fail until wave_p0p1 lands. Remove `|| true` after deploy.
-          npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code || echo "::warning::Schema drift detected — wave_p0p1 pending"
+          npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
 
   # Vercel деплоит каждый пуш в main параллельно с этим workflow.
   # Его статус виден в GitHub Deployments, не в этом файле.
