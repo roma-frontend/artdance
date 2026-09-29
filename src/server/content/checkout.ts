@@ -23,7 +23,7 @@
 import 'server-only';
 
 import type { PaymentMethod } from '@/domain/enums';
-import { availablePaymentMethods, supportsInlineCardForm } from '@/lib/payments';
+import { availablePaymentMethodsWithGlobal, supportsInlineCardForm } from '@/lib/payments';
 
 import { getCartContent, type CartContent } from './cart';
 
@@ -37,7 +37,7 @@ export interface CheckoutContent {
 export function getCheckoutContent(): CheckoutContent {
   return {
     cart: getCartContent(),
-    paymentMethods: availablePaymentMethods(),
+    paymentMethods: availablePaymentMethodsWithGlobal(),
     inlineCardForm: supportsInlineCardForm(),
   };
 }

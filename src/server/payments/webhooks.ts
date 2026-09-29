@@ -31,6 +31,7 @@ export interface ProcessWebhookInput {
 function providerSecret(provider: PaymentProviderId): string | undefined {
   const env = getServerEnv();
   if (provider === 'paynet') return env.PAYNET_WEBHOOK_SECRET;
+  if (provider === 'stripe') return env.STRIPE_WEBHOOK_SECRET ?? 'stripe';
   if (provider === 'mock') return 'mock'; // mock — без подписи
   return undefined;
 }
@@ -80,9 +81,10 @@ async function persistWebhookEvent(input: {
 export async function processWebhookPayment(input: ProcessWebhookInput): Promise<{ httpStatus: 200 | 400; body: string }> {
   const headers = toHeadersRecord(input.headers);
 
-  // 1. Проверка подписи (кроме mock)
+  // 1. Проверка подписи (кроме mock; Stripe проверяет внутри провайдера)
   let signatureValid = false;
-  if (input.provider === 'mock') {
+  if (input.provider === 'mock' || input.provider === 'stripe') {
+    // mock — без подписи; stripe — Stripe-Signature валидируется в stripe-provider parseWebhook
     signatureValid = true;
   } else {
     const secret = providerSecret(input.provider);

@@ -14,6 +14,7 @@ import { getServerEnv } from '@/config/env';
 import type { PaymentMethod } from '@/domain/enums';
 
 import { mockPaymentProvider } from './mock-provider';
+import { createStripeProvider } from './stripe-provider';
 import type { PaymentProvider, PaymentProviderId } from './types';
 
 export * from './types';
@@ -22,6 +23,7 @@ type ProviderFactory = () => PaymentProvider;
 
 const registry: Partial<Record<PaymentProviderId, ProviderFactory>> = {
   mock: () => mockPaymentProvider,
+  stripe: () => createStripeProvider(),
   /**
    * TODO(phase-payments): подключить после получения тестовых реквизитов.
    *  paynet:        () => createPaynetProvider(getServerEnv()),
@@ -55,6 +57,25 @@ export function availablePaymentMethods(): readonly PaymentMethod[] {
   return getPaymentProvider().supportedMethods;
 }
 
+/** Глобальный провайдер (Stripe) — карты со всего мира, 135+ валют. */
+export function getGlobalPaymentProvider(): PaymentProvider {
+  const env = getServerEnv();
+  const gid = env.PAYMENT_GLOBAL_PROVIDER as PaymentProviderId;
+  const primary = env.PAYMENT_PROVIDER as PaymentProviderId;
+  // если глобальный не настроен (mock) — падаем на primary
+  const id: PaymentProviderId = gid && gid !== 'mock' ? gid : primary;
+  return getPaymentProvider(id);
+}
+
+/** Объединённый список для чекаута: AM-методы + CARD (worldwide). */
+export function availablePaymentMethodsWithGlobal(): readonly PaymentMethod[] {
+  const primary = getPaymentProvider();
+  const global = getGlobalPaymentProvider();
+  if (primary.id === global.id) return primary.supportedMethods;
+  const set = new Set<PaymentMethod>([...primary.supportedMethods, ...global.supportedMethods]);
+  return [...set] as readonly PaymentMethod[];
+}
+
 /**
  * Принимает ли текущий провайдер реквизиты карты на нашей стороне.
  *
@@ -66,11 +87,13 @@ export function supportsInlineCardForm(): boolean {
 }
 
 /**
- * Роутинг по способу оплаты: позволяет держать карты в банке-эквайрере,
- * а кошельки — в агрегаторе. Пока провайдер один, возвращает его же.
+ * Роутинг по способу оплаты: AM-кошельки/ArCa → primary, CARD извне/мир → global (Stripe).
+ * Пока config один, возвращает его же.
  */
 export function providerForMethod(method: PaymentMethod): PaymentProvider {
   const primary = getPaymentProvider();
   if (primary.supportedMethods.includes(method)) return primary;
-  throw new Error(`[payments] Способ оплаты ${method} не поддерживается провайдером ${primary.id}.`);
+  const global = getGlobalPaymentProvider();
+  if (global.supportedMethods.includes(method)) return global;
+  throw new Error(`[payments] Способ оплаты ${method} не поддерживается (primary ${primary.id}, global ${global.id}).`);
 }

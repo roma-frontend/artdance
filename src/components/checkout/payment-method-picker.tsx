@@ -53,8 +53,12 @@ const methodIcons: Record<PaymentMethod, ComponentType<{ className?: string }>> 
   CASH_ON_DELIVERY: BanknoteIcon,
 };
 
+/** Локальные AM-методы; Stripe/CARD — глобальная карта. Показываем две группы. */
+const armenianMethods: readonly PaymentMethod[] = ['ARCA', 'IDRAM', 'TELCELL', 'ARCA_QR'];
+const worldwideMethods: readonly PaymentMethod[] = ['CARD'];
+
 /** Способы, при которых клиент уходит на страницу провайдера. */
-const redirectingMethods: readonly PaymentMethod[] = ['ARCA', 'IDRAM', 'TELCELL', 'ARCA_QR'];
+const redirectingMethods: readonly PaymentMethod[] = ['CARD', 'ARCA', 'IDRAM', 'TELCELL', 'ARCA_QR'];
 
 interface PaymentMethodPickerProps {
   /** Из `availablePaymentMethods()`. Пустой список = оплата недоступна. */
@@ -119,48 +123,53 @@ export function PaymentMethodPicker({
           </span>
         </p>
       ) : (
-        <RadioGroup
-          value={value}
-          onValueChange={(next) => onChange(next as PaymentMethod)}
-          /* Три колонки, как в макете; на узком экране — одна. */
-          className="grid-cols-1 gap-3 xs:grid-cols-3"
-        >
-          {methods.map((method) => {
-            const Icon = methodIcons[method];
-            const checked = value === method;
-
+        <div className="space-y-4">
+          {(() => {
+            const am = methods.filter((m) => armenianMethods.includes(m as never));
+            const global = methods.filter((m) => worldwideMethods.includes(m as never));
+            const cash = methods.filter((m) => !armenianMethods.includes(m as never) && !worldwideMethods.includes(m as never));
+            const Section = ({ title, items }: { title: string; items: readonly PaymentMethod[] }) =>
+              items.length === 0 ? null : (
+                <div>
+                  <p className="text-caption mb-2 font-semibold tracking-widest text-content-tertiary uppercase">{title}</p>
+                  <RadioGroup
+                    value={value}
+                    onValueChange={(next) => onChange(next as PaymentMethod)}
+                    className="grid-cols-1 gap-3 xs:grid-cols-3"
+                  >
+                    {items.map((method) => {
+                      const Icon = methodIcons[method];
+                      const checked = value === method;
+                      return (
+                        <label
+                          key={method}
+                          className={cn(
+                            'flex cursor-pointer flex-col items-center gap-2 rounded-md border p-4 text-center',
+                            'transition-colors duration-normal ease-brand',
+                            'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-border-focus',
+                            checked
+                              ? 'border-accent bg-accent-soft text-content-accent'
+                              : 'border-border-default text-content-secondary hover:border-border-strong',
+                          )}
+                        >
+                          <RadioGroupItem value={method} className="sr-only" />
+                          <Icon className="size-5 shrink-0" aria-hidden />
+                          <span className={cn('text-caption', checked && 'font-semibold')}>{t(paymentMethodLabelKey(method))}</span>
+                        </label>
+                      );
+                    })}
+                  </RadioGroup>
+                </div>
+              );
             return (
-              <label
-                key={method}
-                className={cn(
-                  'flex cursor-pointer flex-col items-center gap-2 rounded-md border p-4 text-center',
-                  'transition-colors duration-normal ease-brand',
-                  /*
-                   * Кружок радиокнопки скрыт визуально, а фокус остаётся на нём:
-                   * без обводки у плитки клавиатурный пользователь не видит,
-                   * где находится (WCAG 2.4.7). `focus-within`, а не
-                   * `focus-visible`, потому что фокус получает вложенный input.
-                   */
-                  'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-border-focus',
-                  checked
-                    ? 'border-accent bg-accent-soft text-content-accent'
-                    : 'border-border-default text-content-secondary hover:border-border-strong',
-                )}
-              >
-                {/*
-                  Кружок радиокнопки скрыт визуально, но остаётся в разметке:
-                  выбор обозначен рамкой и фоном, как в макете, а семантику и
-                  клавиатуру обеспечивает настоящий input Radix.
-                */}
-                <RadioGroupItem value={method} className="sr-only" />
-                <Icon className="size-5 shrink-0" aria-hidden />
-                <span className={cn('text-caption', checked && 'font-semibold')}>
-                  {t(paymentMethodLabelKey(method))}
-                </span>
-              </label>
+              <>
+                {global.length > 0 && <Section title={t('checkout.payment.sectionWorldwide')} items={global} />}
+                {am.length > 0 && <Section title={t('checkout.payment.sectionArmenia')} items={am} />}
+                {cash.length > 0 && <Section title={t('checkout.payment.sectionOther')} items={cash} />}
+              </>
             );
-          })}
-        </RadioGroup>
+          })()}
+        </div>
       )}
 
       {showRedirectNote && (

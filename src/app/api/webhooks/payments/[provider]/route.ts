@@ -7,7 +7,7 @@ import type { PaymentProviderId } from '@/lib/payments/types';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const allowed: ReadonlySet<PaymentProviderId> = new Set(['mock', 'paynet', 'arca-epg', 'ameria-vpos', 'idram']);
+const allowed: ReadonlySet<PaymentProviderId> = new Set(['mock', 'stripe', 'paynet', 'arca-epg', 'ameria-vpos', 'idram']);
 
 function noStore(body: object, status: number) {
   return NextResponse.json(body, {
@@ -21,12 +21,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   if (!allowed.has(provider as PaymentProviderId)) return noStore({ error: 'UNKNOWN_PROVIDER' }, 404);
 
   const providerId = provider as PaymentProviderId;
-  // Провайдер без договора — принимаем только mock, остальные отвечают 400, чтобы не маскировать отсутствие секретов.
-  if (providerId !== 'mock') {
+  if (providerId === 'stripe') {
     const env = getServerEnv();
-    if (!env.PAYNET_WEBHOOK_SECRET && providerId === 'paynet') {
-      return noStore({ error: 'WEBHOOK_NOT_CONFIGURED' }, 503);
-    }
+    if (!env.STRIPE_WEBHOOK_SECRET) return noStore({ error: 'WEBHOOK_NOT_CONFIGURED' }, 503);
+  } else if (providerId !== 'mock') {
+    const env = getServerEnv();
+    if (!env.PAYNET_WEBHOOK_SECRET && providerId === 'paynet') return noStore({ error: 'WEBHOOK_NOT_CONFIGURED' }, 503);
   }
 
   const rawBody = await request.text();

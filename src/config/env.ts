@@ -104,8 +104,9 @@ const serverSchema = z.object({
   GOOGLE_CLIENT_ID: optionalString,
   GOOGLE_CLIENT_SECRET: optionalString,
 
-  /* Платежи — активный провайдер выбирается здесь, код от него не зависит */
-  PAYMENT_PROVIDER: z.enum(['paynet', 'arca-epg', 'ameria-vpos', 'idram', 'mock']).default('mock'),
+  /* Платежи — локальный/глобальный провайдеры: AM-эквайринг для AMD + Stripe для мира */
+  PAYMENT_PROVIDER: z.enum(['paynet', 'arca-epg', 'ameria-vpos', 'idram', 'stripe', 'mock']).default('mock'),
+  PAYMENT_GLOBAL_PROVIDER: z.enum(['stripe', 'mock']).default('mock'),
   PAYMENT_RETURN_PATH: z.string().startsWith('/').default('/checkout/result'),
   PAYNET_API_URL: optionalUrl,
   PAYNET_MERCHANT_ID: optionalString,
@@ -120,6 +121,10 @@ const serverSchema = z.object({
   AMERIA_VPOS_PASSWORD: optionalString,
   IDRAM_MERCHANT_ID: optionalString,
   IDRAM_SECRET_KEY: optionalString,
+  // Глобальный провайдер (карты со всего мира)
+  STRIPE_SECRET_KEY: optionalString,
+  STRIPE_WEBHOOK_SECRET: optionalString,
+  STRIPE_PUBLISHABLE_KEY: optionalString,
 
   /* Медиа */
   R2_ACCOUNT_ID: optionalString,

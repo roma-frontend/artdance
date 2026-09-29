@@ -191,11 +191,21 @@ export const priceGuidance = {
   onlineCourse: { min: 10_000, typical: 25_000, max: 80_000 },
 } as const;
 
-export const classPasses: readonly { lessons: number; discountRate: number; validityDays: number }[] = [
-  { lessons: 5, discountRate: 0.05, validityDays: 60 },
-  { lessons: 10, discountRate: 0.1, validityDays: 90 },
-  { lessons: 20, discountRate: 0.15, validityDays: 120 },
+export const classPasses: readonly { id: string; lessons: number; discountRate: number; validityDays: number; badge?: string }[] = [
+  { id: 'cp-5', lessons: 5, discountRate: 0.05, validityDays: 60 },
+  { id: 'cp-10', lessons: 10, discountRate: 0.1, validityDays: 90, badge: 'pricing.classPasses.popular' },
+  { id: 'cp-20', lessons: 20, discountRate: 0.15, validityDays: 120, badge: 'pricing.classPasses.bestValue' },
 ] as const;
+
+export type ClassPassId = (typeof classPasses)[number]['id'];
+
+export function classPassById(id: string): (typeof classPasses)[number] | undefined {
+  return classPasses.find((pass) => pass.id === id);
+}
+
+export function classPassPricePerLesson(baseUnitPrice: number, discountRate: number): number {
+  return Math.round(baseUnitPrice * (1 - discountRate));
+}
 
 export const instructorPlans: readonly { id: string; quota: { boostDays: number; analytics: boolean } }[] = [
   { id: 'free', quota: { boostDays: 0, analytics: false } },

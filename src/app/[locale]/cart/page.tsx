@@ -19,7 +19,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { CartScreen } from '@/components/cart/cart-screen';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { routes, site } from '@/config';
-import { availablePaymentMethods } from '@/lib/payments';
+import { availablePaymentMethodsWithGlobal } from '@/lib/payments';
 import { getCartContent } from '@/server/content/cart';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -56,7 +56,7 @@ export default async function CartPage({ params }: PageProps) {
           lines={content.lines}
           promo={content.promo}
           deliveryZone={content.deliveryZone}
-          paymentMethods={availablePaymentMethods()}
+          paymentMethods={availablePaymentMethodsWithGlobal()}
           locale={locale as Locale}
         />
       </div>

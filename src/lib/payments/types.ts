@@ -20,8 +20,19 @@
 import type { PaymentMethod, PaymentStatus } from '@/domain/enums';
 import type { Money } from '@/domain/money';
 
-export const paymentProviderIds = ['paynet', 'arca-epg', 'ameria-vpos', 'idram', 'mock'] as const;
+/**
+ * Провайдеры — армянские агрегированные/банковские + один глобальный.
+ * `stripe` = карты Visa/Mastercard со всего мира, 135+ валют, 3DS, hosted/redirect.
+ * Выбор определяется на уровне чекаута: AM-методы уходят в arCa-семейство/Paynet,
+ * CARD извне или без локальной привязки — в Stripe. Логика маршрутизации не
+ * знает деталей ключей — их читает конкретный адаптер из `getServerEnv()`.
+ */
+export const paymentProviderIds = ['paynet', 'arca-epg', 'ameria-vpos', 'idram', 'stripe', 'mock'] as const;
 export type PaymentProviderId = (typeof paymentProviderIds)[number];
+
+/** Поверхностное разбиение способов — для двух групп в пикере. */
+export const armenianPaymentMethods = ['ARCA', 'IDRAM', 'TELCELL', 'ARCA_QR'] as const satisfies readonly PaymentMethod[];
+export const globalPaymentMethods = ['CARD'] as const satisfies readonly PaymentMethod[];
 
 /** Заказ, за который платим. Провайдер не знает про наши таблицы. */
 export interface PaymentOrderRef {
