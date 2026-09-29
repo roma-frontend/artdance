@@ -17,6 +17,7 @@ import type { MetadataRoute } from 'next';
 
 import { buildSitemap } from '@/lib/seo/sitemap';
 import { getCatalogSlugs, getStyleHubSlugs } from '@/server/content/catalog';
+import { getBlogSlugs } from '@/server/queries/blog';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const slugs = await getCatalogSlugs();
@@ -26,6 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     instructors: slugs.instructors,
     venues: slugs.venues,
     events: slugs.events,
+    blog: await getBlogSlugs(),
     /*
      * Хабы направлений приходят отдельной функцией: `generateStaticParams`
      * собирает все восемнадцать страниц, а в карту сайта попадают только те, у

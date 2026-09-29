@@ -97,6 +97,28 @@ function parse(raw: string): readonly string[] {
   return raw.length === 0 ? [] : raw.split(',');
 }
 
+let serverKeysLoaded = false;
+
+/** Подмешивает ключи с сервера (для залогиненного) к локальному набору. */
+export function hydrateServerFavorites(keys: readonly string[]): void {
+  if (serverKeysLoaded) return;
+  serverKeysLoaded = true;
+  const local = new Set(parse(read()));
+  let changed = false;
+  for (const k of keys) {
+    if (!local.has(k)) {
+      local.add(k);
+      changed = true;
+    }
+  }
+  if (changed) write([...local]);
+}
+
+/** Перезаписывает локальный набор (используется после мержа гостя, чтобы не терять серверные ключи). */
+export function overwriteFavorites(keys: readonly string[]): void {
+  write([...keys]);
+}
+
 /**
  * Отмечена ли сущность и как это переключить.
  *

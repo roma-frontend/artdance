@@ -27,6 +27,7 @@ import type {
 import { db } from '@/lib/db';
 
 import { classSelect, publicClassWhere, toClassCard, type ClassRow } from './classes';
+import { upcomingSessionsRelation } from './relations';
 import {
   instructorSelect,
   publicInstructorWhere,
@@ -67,12 +68,14 @@ export async function getFavorites(userId: string): Promise<FavoriteCollections>
   const venueIds = ids('venueId');
   const productIds = ids('productId');
 
+  const now = new Date();
+
   const [classRows, instructorRows, venueRows, productRows] = await Promise.all([
     classIds.length === 0
       ? []
       : (db.danceClass.findMany({
           where: { id: { in: classIds }, ...publicClassWhere },
-          select: classSelect,
+          select: { ...classSelect, sessions: upcomingSessionsRelation(now, 1) },
         }) as unknown as Promise<ClassRow[]>),
     instructorIds.length === 0
       ? []

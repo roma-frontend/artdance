@@ -2414,6 +2414,7 @@ const en = {
       courses: 'Courses',
       lessons: 'Course lessons',
       media: 'Media library',
+      blogPosts: 'Blog',
       bookings: 'Bookings',
       orders: 'Orders',
       payouts: 'Payouts',
@@ -2710,7 +2711,16 @@ const en = {
       storageKey: 'Storage key',
       file: 'File',
       cover: 'Cover image',
+      coverAlt: 'Cover alt text',
       videoAsset: 'Video asset',
+      excerpt: 'Excerpt',
+      excerptHint: 'Short teaser shown on the blog listing — 1–2 sentences.',
+      bodyHint: 'Full article text. Use blank lines for paragraphs.',
+      categoryHint: 'E.g. News, Interviews, Tips — free text, used for filtering.',
+      coverHint: 'Seed asset key or storage key for the cover image.',
+      readingMinutes: 'Reading time',
+      viewCount: 'Views',
+      tags: 'Tags',
 
       action: 'Operation',
       entityType: 'Entity',
@@ -2764,6 +2774,10 @@ const en = {
     },
 
     resources: {
+      blogPosts: {
+        title: 'Blog',
+        subtitle: 'Stories, news and guides — every post has its own page at /blog/:slug.',
+      },
       classes: {
         title: 'Classes',
         subtitle: 'Group classes shown in the catalog and open for booking.',
@@ -2820,6 +2834,27 @@ const en = {
         title: 'Media library',
         subtitle: 'Uploaded images with alt text and owners.',
       },
+    },
+
+    blog: {
+      title: 'Blog',
+      subtitle: 'Dance stories, guides and news from Yerevan.',
+      featuredTitle: 'Featured',
+      latestTitle: 'Latest stories',
+      empty: 'No stories yet',
+      emptyHint: 'Check back soon — new posts are on the way.',
+      filterAll: 'All',
+      readMore: 'Read story',
+      readingTime: '{count, plural, one {# min read} other {# min read}}',
+      publishedOn: 'Published {date}',
+      shareTitle: 'Share',
+      relatedTitle: 'More stories',
+      relatedEmpty: 'More stories coming soon.',
+      tocTitle: 'In this story',
+      backToBlog: 'Back to blog',
+      categoryLabel: 'Category',
+      tagsLabel: 'Tags',
+      viewsLabel: '{count, plural, one {# view} other {# views}}',
     },
 
     orders: {
@@ -3037,6 +3072,27 @@ const en = {
       invalidTime: 'Time must be written as HH:MM',
       endBeforeStart: 'The end must come after the start',
     },
+  },
+
+  blog: {
+    title: 'Blog',
+    subtitle: 'Dance stories, guides and news from Yerevan.',
+    featuredTitle: 'Featured',
+    latestTitle: 'Latest stories',
+    empty: 'No stories yet',
+    emptyHint: 'Check back soon — new posts are on the way.',
+    filterAll: 'All',
+    readMore: 'Read story',
+    readingTime: '{count, plural, one {# min read} other {# min read}}',
+    publishedOn: 'Published {date}',
+    shareTitle: 'Share',
+    relatedTitle: 'More stories',
+    relatedEmpty: 'More stories coming soon.',
+    tocTitle: 'In this story',
+    backToBlog: 'Back to blog',
+    categoryLabel: 'Category',
+    tagsLabel: 'Tags',
+    viewsLabel: '{count, plural, one {# view} other {# views}}',
   },
 } as const;
 

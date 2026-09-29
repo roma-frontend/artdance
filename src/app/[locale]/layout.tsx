@@ -11,6 +11,7 @@ import { ThemeColorSync } from '@/components/layout/theme-color-sync';
 import { ThemeProvider } from '@/components/layout/theme-provider';
 import { fontVariables } from '@/design/fonts';
 import { CommandPalette } from '@/components/layout/command-palette';
+import { FavoritesSync } from '@/components/favorites/favorites-sync';
 import { SearchOverlayProvider } from '@/components/search/search-overlay';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import { schemeTokens } from '@/design/tokens';
@@ -152,6 +153,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             */}
             <SearchOverlayProvider>
               <CommandPalette />
+              <FavoritesSync />
               <SkipToContent />
               <SiteChrome>{children}</SiteChrome>
             </SearchOverlayProvider>

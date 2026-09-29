@@ -128,6 +128,7 @@ export interface EntitySlugs {
   venues: readonly string[];
   events: readonly string[];
   products?: readonly string[];
+  blog?: readonly string[];
   /**
    * Хабы направлений, у которых есть предложение.
    *
@@ -173,6 +174,11 @@ function entitySpecs(slugs: EntitySlugs): SitemapSpec[] {
           changeFrequency: entity,
         })) ?? []
       : []),
+    ...(slugs.blog?.map((slug) => ({
+      path: routes.blogPost(slug),
+      priority: priorities.content,
+      changeFrequency: entity,
+    })) ?? []),
   ];
 }
 
@@ -228,6 +234,7 @@ function contentSpecs(): SitemapSpec[] {
     // Public apply step (A-15) — content, not admin.
     spec(routes.becomeInstructorApply()),
     spec(routes.listYourStudio()),
+    spec(routes.blog()),
     // Search alias (A-04) — canonical discover, alias intentionally indexable.
     spec(routes.search()),
     // Schedule grid (A-02) — weekly.

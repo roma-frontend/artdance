@@ -251,7 +251,7 @@ describe('состав карты сайта', () => {
         !isOutOfIndex(route) &&
         !isGatedOff(route) &&
         // Private-by-design or dynamic entity routes not in generic content map:
-        !['/booking/[id]/pass', '/booking/[id]/confirm', '/orders/[orderNumber]/invoice', '/instructors/[slug]/reviews', '/cities/[city]/[district]'].includes(route) &&
+        !['/booking/[id]/pass', '/booking/[id]/confirm', '/orders/[orderNumber]/invoice', '/instructors/[slug]/reviews', '/cities/[city]/[district]', '/blog/[slug]'].includes(route) &&
         // Token-gated / noindex pages still route but should not be in sitemap:
         !['/newsletter/confirm/[token]', '/newsletter/unsubscribe/[token]', '/reviews/new/[bookingId]', '/unsubscribe/[token]', '/offline'].includes(route) &&
         // Cities index vs district drill-down: cities list is in sitemap, district is entity-like

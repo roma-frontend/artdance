@@ -187,6 +187,8 @@ export const cacheTags = {
   course: (slug: string) => `course:${slug}`,
   products: () => 'products',
   product: (slug: string) => `product:${slug}`,
+  blog: () => 'blog',
+  blogPost: (slug: string) => `blog:${slug}`,
   catalogStats: () => 'catalog-stats',
   /** Доступность конкретного ресурса на конкретную дату. */
   availability: (resourceId: string, isoDate: string) => `availability:${resourceId}:${isoDate}`,

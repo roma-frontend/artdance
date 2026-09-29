@@ -283,6 +283,7 @@ model User {
   referredById       String?
   reliabilityScore   Int                 @default(100)
   marketingConsentAt DateTime?
+  blogPosts         BlogPost[]
 
   @@index([role, isActive])
   @@index([createdAt])
@@ -1954,4 +1955,50 @@ model JobRun {
 
   @@unique([jobName, runKey])
   @@index([jobName, startedAt])
+}
+
+/**
+ * ─════════════════════════ БЛОГ ═════════════════════════
+ */
+model BlogPost {
+  id              String   @id @default(cuid())
+  slug            String
+  title           String
+  excerpt         String
+  body            String   @db.Text
+  coverKey        String?
+  coverAlt        String?
+  category        String?
+  tags            String[] @default([])
+  authorName      String?
+  authorId        String?
+  readingMinutes  Int?
+  viewCount       Int      @default(0)
+  isPublished     Boolean  @default(false)
+  publishedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  translations BlogPostTranslation[]
+  author       User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@unique([slug], where: raw("\"deletedAt\" IS NULL"))
+  @@index([isPublished, publishedAt])
+  @@index([createdAt])
+  @@index([category])
+  @@index([deletedAt])
+}
+
+model BlogPostTranslation {
+  id      String @id @default(cuid())
+  postId  String
+  locale  Locale
+  title   String
+  excerpt String
+  body    String @db.Text
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, locale])
 }

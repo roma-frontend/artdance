@@ -34,6 +34,7 @@ export const adminResources = [
   'promo-codes',
   'gift-cards',
   'media',
+  'blog-posts',
 ] as const;
 
 export type AdminResource = (typeof adminResources)[number];

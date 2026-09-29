@@ -179,7 +179,7 @@ function ratingNumber(value: unknown): number {
 
 /** Ближайшее проведение: то, что показывает карточка. */
 function nextSession(row: ClassRow): SessionRow | null {
-  return row.sessions[0] ?? null;
+  return (row.sessions as SessionRow[] | undefined)?.[0] ?? null;
 }
 
 function toScheduleEntry(session: SessionRow): ScheduleEntry {
@@ -195,7 +195,8 @@ function toScheduleEntry(session: SessionRow): ScheduleEntry {
 }
 
 export function toClassCard(row: ClassRow): ClassCardItem {
-  const session = nextSession(row);
+  // Избранное и другие пути без `sessions` — не должен падать (см. favorites).
+  const session = row.sessions ? nextSession(row) : null;
   const parts = session ? zonedParts(session.startsAt) : null;
   const cover = firstMediaRef(row.media);
   const portrait = firstMediaRef(row.instructor.media);

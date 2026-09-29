@@ -135,6 +135,8 @@ function translationConfig(resource: AdminResource): TranslationConfig | null {
       return { delegateKey: 'courseTranslation', foreignKey: 'courseId', uniqueKey: 'courseId_locale' };
     case 'media':
       return { delegateKey: 'mediaAssetTranslation', foreignKey: 'assetId', uniqueKey: 'assetId_locale' };
+    case 'blog-posts':
+      return { delegateKey: 'blogPostTranslation', foreignKey: 'postId', uniqueKey: 'postId_locale' };
     default:
       return null;
   }
@@ -174,6 +176,8 @@ export function resourceCacheTags(resource: AdminResource): readonly string[] {
       return [cacheTags.courses()];
     case 'media':
       return [cacheTags.instructors(), cacheTags.classes(), cacheTags.venues(), cacheTags.products()];
+    case 'blog-posts':
+      return [cacheTags.blog()];
     case 'promo-codes':
     case 'gift-cards':
       /* Промо не участвует в кешируемых списках: скидка считается при заказе. */
@@ -782,6 +786,51 @@ export async function listResource(resource: AdminResource, query: AdminListPara
         page,
       );
     }
+
+    case 'blog-posts': {
+      const where = baseWhere(spec, query, ['title', 'slug', 'excerpt', 'category', 'authorName']) as Prisma.BlogPostWhereInput;
+      try {
+        const [rows, total] = await Promise.all([
+          db.blogPost.findMany({
+            where,
+            skip,
+            take,
+            orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+            select: {
+              id: true,
+              slug: true,
+              title: true,
+              category: true,
+              authorName: true,
+              readingMinutes: true,
+              viewCount: true,
+              isPublished: true,
+              publishedAt: true,
+              updatedAt: true,
+            },
+          }),
+          db.blogPost.count({ where }),
+        ]);
+        return result(
+          rows.map((row) => ({
+            id: row.id,
+            title: row.title,
+            category: row.category,
+            authorName: row.authorName,
+            readingMinutes: row.readingMinutes,
+            viewCount: row.viewCount,
+            isPublished: row.isPublished,
+            publishedAt: iso(row.publishedAt),
+            updatedAt: iso(row.updatedAt),
+          })),
+          total,
+          page,
+        );
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('does not exist')) return result([], 0, page);
+        throw err;
+      }
+    }
   }
 }
 
@@ -864,6 +913,16 @@ function toPrismaData(spec: AdminResourceSpec, values: AdminFormValues): Record<
        * должна сдвигать дату: по ней строится «новинки» в каталоге.
        */
       data.publishedAt = value === true ? new Date() : null;
+      continue;
+    }
+
+    if (field.name === 'isPublished' && spec.model === 'BlogPost') {
+      const publish = value === true;
+      data.isPublished = publish;
+      data.publishedAt = publish ? new Date() : null;
+      const body = typeof values.body === 'string' ? values.body : '';
+      const words = body.trim().split(/\s+/).filter(Boolean).length;
+      data.readingMinutes = Math.max(1, Math.ceil(words / 200));
       continue;
     }
 
@@ -1021,11 +1080,8 @@ export async function updateResource(
   const data = toPrismaData(spec, values);
   assertRequired(spec, data);
 
-  /*
-   * `publishedAt` не перезаписывается при каждом сохранении: если запись уже
-   * опубликована и флаг остался включённым, дата публикации сохраняется.
-   */
-  if ('publishedAt' in data && data.publishedAt !== null) {
+  const keepsPublishedDate = 'publishedAt' in data && data.publishedAt !== null;
+  if (keepsPublishedDate) {
     const current = await writeDelegate(resource).findUnique({ where: { id } });
     if (current?.publishedAt instanceof Date) data.publishedAt = current.publishedAt;
   }
@@ -1173,6 +1229,7 @@ export async function relationOptions(source: AdminRelationSource): Promise<read
     case 'promo-codes':
     case 'gift-cards':
     case 'media':
+    case 'blog-posts':
       return [];
   }
 }

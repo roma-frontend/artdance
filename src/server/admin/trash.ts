@@ -140,16 +140,27 @@ export async function listTrash(resource: AdminResource, page: number): Promise<
   const take = trash.pageSize;
   const skip = Math.max(0, (page - 1) * take);
 
-  const [rows, total] = await Promise.all([
-    delegate.findMany({
-      where: { ...onlyTrashed },
-      orderBy: { deletedAt: 'desc' },
-      take,
-      skip,
-      select: { id: true, deletedAt: true, [spec.primaryField]: true },
-    }),
-    delegate.count({ where: { ...onlyTrashed } }),
-  ]);
+  let rows: Record<string, unknown>[];
+  let total: number;
+  try {
+    [rows, total] = await Promise.all([
+      delegate.findMany({
+        where: { ...onlyTrashed },
+        orderBy: { deletedAt: 'desc' },
+        take,
+        skip,
+        select: { id: true, deletedAt: true, [spec.primaryField]: true },
+      }),
+      delegate.count({ where: { ...onlyTrashed } }),
+    ]);
+  } catch (err) {
+    if (err instanceof Error && err.message.includes('does not exist')) {
+      rows = [];
+      total = 0;
+    } else {
+      throw err;
+    }
+  }
 
   return {
     entries: rows.map((row) => ({
@@ -168,8 +179,15 @@ export async function listTrash(resource: AdminResource, page: number): Promise<
 export async function trashCounts(): Promise<TrashCounts> {
   const pairs = await Promise.all(
     trashableResources.map(async (resource) => {
-      const count = await trashDelegate(resource).count({ where: { ...onlyTrashed } });
-      return [resource, count] as const;
+      try {
+        const count = await trashDelegate(resource).count({ where: { ...onlyTrashed } });
+        return [resource, count] as const;
+      } catch (err) {
+        if (err instanceof Error && err.message.includes('does not exist')) {
+          return [resource, 0] as const;
+        }
+        throw err;
+      }
     }),
   );
 

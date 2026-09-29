@@ -43,6 +43,7 @@ export const trashedModels = [
   'CourseLesson',
   'PromoCode',
   'MediaAsset',
+  'BlogPost',
 ] as const;
 
 export type TrashedModel = (typeof trashedModels)[number];

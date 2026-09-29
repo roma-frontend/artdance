@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 
 import { useFavorite, type FavoriteTarget } from '@/lib/client/favorites';
 import { cn } from '@/lib/utils';
+import { toggleFavoriteAction } from '@/server/actions/favorites';
 
 interface FavoriteButtonProps {
   target: FavoriteTarget;
@@ -45,6 +46,20 @@ export function FavoriteButton({ target, slug, name, onMedia, className }: Favor
   const { isFavorite, toggle } = useFavorite(target, slug);
   const [burst, setBurst] = useState(false);
 
+  // Серверный toggle — best-effort: гость получает UNAUTHORIZED (игнор),
+  // снятый с публикации — откатываем локальную отметку.
+  const toggleOnServer = async () => {
+    if (target === 'event') return;
+    try {
+      const res = await toggleFavoriteAction({ target: target as 'class' | 'instructor' | 'venue' | 'product', slug });
+      if (res?.serverError && res.serverError.code !== 'UNAUTHORIZED') {
+        toggle(); // откат локально — сервер не сохранил
+      }
+    } catch {
+      // сеть — оставляем optimistic
+    }
+  };
+
   return (
     <button
       type="button"
@@ -54,6 +69,7 @@ export function FavoriteButton({ target, slug, name, onMedia, className }: Favor
         event.preventDefault();
         event.stopPropagation();
         const next = toggle();
+        void toggleOnServer();
         // haptics
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
           try { navigator.vibrate(next ? [18] : [10]); } catch {}
