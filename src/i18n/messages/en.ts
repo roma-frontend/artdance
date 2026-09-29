@@ -2348,6 +2348,21 @@ const en = {
     },
   },
 
+  commandPalette: {
+    openLabel: 'Open command palette',
+    title: 'Command palette',
+    description: 'Jump to any section — or run an action',
+    searchPlaceholder: 'Search sections, actions…',
+    empty: 'No match',
+    groups: {
+      navigation: 'Navigation',
+      account: 'My space',
+      styles: 'Styles',
+      admin: 'Admin',
+      quickActions: 'Quick actions',
+    },
+  },
+
   a11y: {
     ratingStars: 'Rated {rating} out of {max}',
     mainNav: 'Main navigation',

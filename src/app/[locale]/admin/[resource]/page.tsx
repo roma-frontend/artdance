@@ -21,6 +21,7 @@ import { TableFilters, type FilterOption } from '@/components/data/table-filters
 import { TablePagination } from '@/components/data/table-pagination';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { Button } from '@/components/ui/button';
+import { CsvImportDialog } from '@/components/admin/csv-import-dialog';
 import { adminResourceSpecs, isAdminResource, routes } from '@/config';
 import { moderationStatusLabelKey, moderationStatuses } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
@@ -76,10 +77,15 @@ export default async function AdminResourceListPage({ params, searchParams }: Pa
         subtitleKey={spec.subtitleKey}
         parent={spec.parent ? { href: routes.adminResource(spec.parent.resource), labelKey: adminResourceSpecs[spec.parent.resource].titleKey } : undefined}
         actions={
-          canEdit && spec.creatable ? (
-            <Button asChild variant="accent" size="sm">
-              <Link href={routes.adminResourceNew(resource, query.parent)}>{t('actions.newRecord')}</Link>
-            </Button>
+          canEdit ? (
+            <div className="flex gap-2">
+              <CsvImportDialog resource={resource} />
+              {spec.creatable && (
+                <Button asChild variant="accent" size="sm">
+                  <Link href={routes.adminResourceNew(resource, query.parent)}>{t('actions.newRecord')}</Link>
+                </Button>
+              )}
+            </div>
           ) : undefined
         }
       />

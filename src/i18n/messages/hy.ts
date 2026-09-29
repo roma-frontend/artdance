@@ -2338,6 +2338,21 @@ const hy: Messages = {
     },
   },
 
+  commandPalette: {
+    openLabel: "Հրամանների վահանակ",
+    title: "Հրամանների վահանակ",
+    description: "Անցում բաժին կամ գործողություն",
+    searchPlaceholder: "Որոնել բաժին կամ գործողություն…",
+    empty: "Ոչինչ չի գտնվել",
+    groups: {
+      navigation: "Նավիգացիա",
+      account: "Իմ տարածքը",
+      styles: "Ոճեր",
+      admin: "Ադմին",
+      quickActions: "Գործողություններ",
+    },
+  },
+
   a11y: {
     ratingStars: "Գնահատականը {rating} {max}-ից",
     mainNav: "Հիմնական նավիգացիա",

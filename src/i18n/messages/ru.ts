@@ -2326,6 +2326,21 @@ const ru: Messages = {
     },
   },
 
+  commandPalette: {
+    openLabel: 'Командная палитра',
+    title: 'Палитра команд',
+    description: 'Переход к разделу или действие',
+    searchPlaceholder: 'Поиск раздела или действия…',
+    empty: 'Ничего не нашлось',
+    groups: {
+      navigation: 'Навигация',
+      account: 'Моё',
+      styles: 'Стили',
+      admin: 'Админка',
+      quickActions: 'Действия',
+    },
+  },
+
   a11y: {
     ratingStars: 'Оценка {rating} из {max}',
     mainNav: 'Основная навигация',
