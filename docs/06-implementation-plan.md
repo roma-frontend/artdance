@@ -148,7 +148,8 @@
 
 | #   | Задача                                                                                                            | Состояние |
 | --- | ----------------------------------------------------------------------------------------------------------------- | --------- |
-| 8.1 | Мультиязычность: вычитка `hy` носителем, `ru`/`en` — `docs/launch/hy-proofread.md`                                | 🔶 ждёт носителя; `i18n:check 1882×3 green` — `hy` до продакшена помечен «требует вычитки» (`hy.ts:4`) |
+| 8.1 | Мультиязычность: вычитка `hy` носителем, `ru`/`en` — `docs/launch/hy-proofread.md`                                    | 🔶 ждёт носителя; `i18n:check 2031×3 green` — `hy` до продакшена помечен «требует вычитки» (`hy.ts:4`); `footer.*` `applyFormLabelName/submit/comingSoonHint` добавлены для `/corporate` и `apply` |
+| 8.1b | PWA: `public/manifest.webmanifest` + `/offline`заглушка как PWA | ✅ сделано: `A-20` — манифест (`Artdance standalone`, `start_url /`, `logo-icon.svg`), `/offline` `force-static 3m/1y` (`offlineTitle/offlineHint` per-locale), `verify 2031×3 / typecheck 0 / build 402 SSG` — `next-pwa`/`workbox` отложен до `next 16` стабилизации |
 | 8.2 | Правовые страницы от юриста                                                                                       | 🔶 ждёт юриста: заглушки `/legal/*` + `next-sitemap` уже есть |
 | 8.3 | ✅ Lighthouse/CwV: `lighthouserc.json` (a11y ≥ 0.95 error, SEO ≥ 0.95, CLS ≤ 0.1; performance — warn) — CI валидирует на каждом PR | зелёный |
 | 8.4 | E2E Playwright: бронирование/покупка/оплата                                                                        | ⏳ ждёт 5.5 и прод-env; смоки готовы (`/api/health`, `privatePaths`, кеш) |
