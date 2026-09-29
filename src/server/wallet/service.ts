@@ -48,3 +48,12 @@ export async function debitWallet(input: { userId: string; amount: number; kind:
   });
   return { balance: updated.balance, idempotent: false };
 }
+
+export async function applyWalletToPayment(input: { userId: string; amount: number; orderId: string }) {
+  // Списывает не более баланса, идемпотентно по orderId — можно звать из reconcile/webhook повторно
+  if (input.amount <= 0) return { applied: 0, balance: await walletBalance(input.userId) };
+  const capped = Math.min(input.amount, await walletBalance(input.userId));
+  if (capped <= 0) return { applied: 0, balance: 0 };
+  const res = await debitWallet({ userId: input.userId, amount: capped, kind: 'DEBIT_CHECKOUT', refId: input.orderId });
+  return { applied: res.idempotent ? 0 : capped, balance: res.balance };
+}
