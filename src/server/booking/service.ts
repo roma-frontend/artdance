@@ -9,6 +9,7 @@ import { site } from '@/config/site';
 import { db } from '@/lib/db';
 import { Prisma } from '@/generated/prisma/client';
 import { notifyBookingCancelled, notifyBookingConfirmed, notifyWaitlistReady } from '@/server/booking/notify';
+import { creditWallet } from '@/server/wallet/service';
 function isUniqueViolation(error: unknown): boolean { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'; }
 function refFromId(id: string): string { return 'BK-' + id.slice(-8).toUpperCase(); }
 export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; now: Date; }
@@ -66,7 +67,7 @@ export async function createBookingFromHold(input: CreateBookingInput) {
     return result;
   } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; } finally { void createdId; }
 }
-export interface CancelBookingInput { bookingId: string; userId: string; now: Date; reason?: string | null; }
+export interface CancelBookingInput { bookingId: string; userId: string; now: Date; reason?: string | null; creditInsteadOfRefund?: boolean }
 export async function cancelBooking(input: CancelBookingInput) {
   const b = await db.booking.findUnique({ where: { id: input.bookingId } });
   if (!b) throw domainErrors.notFound();
@@ -84,11 +85,17 @@ export async function cancelBooking(input: CancelBookingInput) {
     if (b.sessionId) { const next = await tx.waitlistEntry.findFirst({ where:{ sessionId: b.sessionId, notifiedAt: null }, orderBy:{ position:'asc' }}); if (next) { waitlistClaimUntil = new Date(input.now.getTime() + booking.waitlistClaimWindowMinutes*60_000); waitlistUserId = next.userId; await tx.waitlistEntry.update({ where:{ id: next.id }, data:{ notifiedAt: input.now, claimUntil: waitlistClaimUntil }}); } }
     return { booking: updated, fee, refund, outcome: outcome.kind, waitlistUserId, waitlistClaimUntil, sessionId: b.sessionId ?? null };
   });
-  void notifyBookingCancelled(b.id, txResult.refund).catch(()=>{});
+  if (input.creditInsteadOfRefund && txResult.refund > 0) {
+    try {
+      await creditWallet({ userId: b.customerId, amount: txResult.refund, kind: 'CREDIT_REFUND', refId: b.id });
+    } catch {}
+  } else {
+    void notifyBookingCancelled(b.id, txResult.refund).catch(()=>{});
+  }
   if (txResult.waitlistUserId && txResult.sessionId && txResult.waitlistClaimUntil) {
     void notifyWaitlistReady(txResult.sessionId, txResult.waitlistUserId, txResult.waitlistClaimUntil).catch(()=>{});
   }
-  return { booking: txResult.booking, fee: txResult.fee, refund: txResult.refund, outcome: txResult.outcome };
+  return { booking: txResult.booking, fee: txResult.fee, refund: txResult.refund, outcome: txResult.outcome, credited: Boolean(input.creditInsteadOfRefund && txResult.refund > 0) };
 }
 export interface RescheduleBookingInput { bookingId: string; userId: string; now: Date; newStartsAt: Date; newEndsAt: Date; newPrice?: number | null; }
 export async function rescheduleBooking(input: RescheduleBookingInput) {
