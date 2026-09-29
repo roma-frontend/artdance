@@ -27,10 +27,10 @@ export function InstructorApplyForm() {
   return (
     <div className="rounded-xl border border-border-default bg-surface-card p-5">
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="text-body-sm font-semibold">{tCommon('common.labels.instructor' as never)}<input value={name} onChange={(e) => setName(e.target.value.slice(0, 80))} maxLength={80} className="form-input mt-1" placeholder={tF('namePlaceholder')} /></label>
-        <label className="text-body-sm font-semibold">Email<input value={email} onChange={(e) => setEmail(e.target.value.slice(0, 254))} maxLength={254} className="form-input mt-1" placeholder="anna@mail.ru" /></label>
+        <label className="text-body-sm font-semibold">{tF('applyFormLabelName')}<input value={name} onChange={(e) => setName(e.target.value.slice(0, 80))} maxLength={80} className="form-input mt-1" placeholder={tF('namePlaceholder')} /></label>
+        <label className="text-body-sm font-semibold">{tF('applyFormLabelEmail')}<input value={email} onChange={(e) => setEmail(e.target.value.slice(0, 254))} maxLength={254} className="form-input mt-1" placeholder="anna@mail.ru" /></label>
       </div>
-      <label className="text-body-sm mt-4 block font-semibold">{tCommon('checkout.contact.phone' as never)}<input value={phone} onChange={(e) => setPhone(e.target.value.slice(0, 20))} className="form-input mt-1" placeholder={tF('phonePlaceholder')} /></label>
+      <label className="text-body-sm mt-4 block font-semibold">{tF('phonePlaceholder')}<input value={phone} onChange={(e) => setPhone(e.target.value.slice(0, 20))} className="form-input mt-1" placeholder={tF('phonePlaceholder')} /></label>
       <label className="text-body-sm mt-4 block font-semibold">{tF('aboutPlaceholder')}<textarea value={bio} onChange={(e) => setBio(e.target.value.slice(0, 2000))} maxLength={2000} rows={4} className="form-input mt-1" placeholder={tF('bioPlaceholder')} /></label>
       <fieldset className="mt-4">
         <legend className="text-body-sm font-semibold">{tF('directionsLabel')}</legend>
@@ -42,7 +42,7 @@ export function InstructorApplyForm() {
           ))}
         </div>
       </fieldset>
-      <Button variant="accent" className="mt-5" disabled={pending || !name.trim() || !email.trim() || styles.length === 0} onClick={() => execute({ name, email, phone, bio, styles: styles as never })}>{pending ? '…' : tCommon('common.actions.submit' as never)}</Button>
+      <Button variant="accent" className="mt-5" disabled={pending || !name.trim() || !email.trim() || styles.length === 0} onClick={() => execute({ name, email, phone, bio, styles: styles as never })}>{pending ? '…' : tF('submit')}</Button>
       {(result.validationErrors || result.serverError) && <p role="alert" className="text-body-sm mt-3 text-content-signal">{String(result.validationErrors ?? result.serverError)}</p>}
     </div>
   );

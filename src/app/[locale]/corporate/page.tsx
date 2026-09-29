@@ -26,7 +26,7 @@ export default async function CorporatePage({ params }: PageProps) {
     <main id={site.mainContentId} className="page-container inner-page">
       <h1 className="text-heading-2">{t('corporateTitle')}</h1>
       <p className="text-body mt-2 text-content-secondary">{t('corporateHint')}</p>
-      <p className="text-body-sm mt-4 text-content-tertiary">{t('common.states.comingSoon' as never)}</p>
+      <p className="text-body-sm mt-4 text-content-tertiary">{t('comingSoonHint')}</p>
       <SiteFooter />
     </main>
   );
