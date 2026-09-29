@@ -792,6 +792,10 @@
     cursor: pointer;
     user-select: none;
     -webkit-user-select: none;
+    /* Изолируем карточку в свой композитный слой — без will-change постоянно */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    contain: layout paint;
     transition:
       translate var(--duration-slow) var(--ease-brand),
       scale var(--duration-slow) var(--ease-brand),
@@ -800,6 +804,22 @@
       box-shadow var(--duration-slow) var(--ease-brand),
       border-color var(--duration-slow) var(--ease-brand),
       filter var(--duration-slow) var(--ease-brand);
+  }
+
+  /* На таче убираем тяжёлые translate/scale/box-shadow переходы — только border */
+  @media (hover: none), (pointer: coarse) {
+    .card-surface {
+      contain: layout paint style;
+      transition:
+        border-color var(--duration-normal) var(--ease-brand),
+        box-shadow var(--duration-normal) var(--ease-brand);
+      will-change: auto;
+    }
+    .card-surface:hover,
+    .card-surface:focus-within {
+      translate: none !important;
+      scale: none !important;
+    }
   }
 
   .card-surface * {
@@ -819,12 +839,35 @@
    */
   .media-zoom {
     border-radius: inherit;
-    transition:
-      translate 500ms cubic-bezier(0.16, 1, 0.3, 1),
-      scale 500ms cubic-bezier(0.16, 1, 0.3, 1),
-      rotate 500ms cubic-bezier(0.16, 1, 0.3, 1),
-      filter var(--duration-slow) var(--ease-brand);
-    will-change: scale, filter;
+    /* GPU-первый слой без постоянного will-change: только compositing-подсказка */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    /* На мобилках анимируем только трансформ (дешево на GPU), фильтр исключён */
+    transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+    /* Подсказка браузеру кэшировать как текстуру только при необходимости */
+    contain: paint;
+  }
+
+  /* На touch/коarse указателях полностью убираем эффекты приближения */
+  @media (hover: none), (pointer: coarse) {
+    .media-zoom {
+      will-change: auto;
+      transition: none;
+      filter: none !important;
+    }
+  }
+
+  /* Только на устройствах с мышью включаем полный dolly-эффект + will-change */
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .media-zoom {
+      will-change: transform;
+      transition:
+        translate 600ms cubic-bezier(0.16, 1, 0.3, 1),
+        scale 600ms cubic-bezier(0.16, 1, 0.3, 1),
+        rotate 600ms cubic-bezier(0.16, 1, 0.3, 1),
+        filter 600ms var(--ease-brand);
+    }
   }
 
   /* Медиа-контейнер наследует скругление карточки — при scale углы остаются мягкими */
@@ -2149,7 +2192,30 @@ html:has(body[data-scroll-locked]) {
  * примерно верхнюю половину его высоты, и кнопки не заходят на буквы.
  */
 .hero-content .text-display-hero {
-  font-size: clamp(3.25rem, 1.5rem + 6.5vw, 7.5rem);
+  font-size: clamp(2.75rem, 1rem + 7vw, 7.5rem);
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  line-break: loose;
+}
+
+@media (width < 640px) {
+  .hero-content .text-display-hero {
+    font-size: clamp(2.5rem, 10vw, 3.5rem);
+  }
+}
+
+@media (width < 480px) {
+  .hero-content .text-display-hero {
+    font-size: clamp(2.2rem, 11vw, 3rem);
+  }
+}
+
+@media (width < 360px) {
+  .hero-content .text-display-hero {
+    font-size: clamp(1.95rem, 10.5vw, 2.55rem);
+  }
 }
 
 @media (width >= 1024px) {
@@ -2165,7 +2231,7 @@ html:has(body[data-scroll-locked]) {
   }
 
   .hero-content .text-display-hero {
-    font-size: clamp(var(--text-5xl), 1rem + 12vh, 7rem);
+    font-size: clamp(var(--text-5xl), 1rem + 8vh, 7rem);
     margin-bottom: var(--space-4);
   }
 

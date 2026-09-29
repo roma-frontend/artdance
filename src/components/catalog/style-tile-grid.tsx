@@ -52,7 +52,7 @@ export function StyleTileGrid({ tiles, locale }: StyleTileGridProps) {
                 preset="categoryCard"
                 fill
                 className="absolute inset-0 size-full"
-                imageClassName="style-tile-media media-zoom group-hover:scale-110 group-hover:brightness-70 group-hover:saturate-125"
+                imageClassName="style-tile-media media-zoom [@media(hover:hover)]:group-hover:scale-110 [@media(hover:hover)]:group-hover:brightness-70 [@media(hover:hover)]:group-hover:saturate-125"
               />
 
               {/* Затемнение снизу: без него белая подпись теряется на светлом кадре. */}

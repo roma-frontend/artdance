@@ -69,10 +69,10 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
           {t('badge')}
         </p>
 
-        <h1 style={heroEnterOrder('title')} className="text-display-hero mb-3 max-w-3xl overflow-visible pr-[0.14em] text-content-on-cinema md:mb-5">
-          <span className="inline-block overflow-visible pr-[0.04em]"><TextReveal>{t('titleLine1')}</TextReveal></span>
+        <h1 style={heroEnterOrder('title')} className="text-display-hero mb-3 max-w-full min-w-0 overflow-visible pr-[0.14em] text-content-on-cinema [overflow-wrap:anywhere] md:mb-5 md:max-w-3xl">
+          <span className="inline-block max-w-full overflow-visible pr-[0.04em] [overflow-wrap:anywhere]"><TextReveal>{t('titleLine1')}</TextReveal></span>
           <br />
-          <em data-hero-shine className="hero-shine inline-block overflow-visible bg-clip-text pr-[0.10em] text-accent-on-cinema italic"><TextReveal>{t('titleAccent')}</TextReveal></em>
+          <em data-hero-shine className="hero-shine inline-block max-w-full overflow-visible bg-clip-text pr-[0.10em] text-accent-on-cinema italic [overflow-wrap:anywhere]"><TextReveal>{t('titleAccent')}</TextReveal></em>
         </h1>
 
         {/* Подзаг не в h1 — отдельный блок со своим hero-enter-index, иначе margin у h1 схлопывается с inline-br в hy */}

@@ -109,11 +109,11 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
             (см. class-card.tsx). Высота от hover не меняется.
           */}
           <div className="card-foot pt-4">
-            <div className="card-foot-line">
+            <div className="card-foot-line flex flex-wrap items-center gap-3">
               <Price amount={item.hourlyRateFrom} unit="perHour" from emphasis="total" />
             </div>
 
-            <div className="card-foot-line card-cta flex items-center justify-between gap-3 border-t border-border-default pt-3" aria-hidden="true">
+            <div className="card-foot-line card-cta flex flex-wrap items-center justify-between gap-3 border-t border-border-default pt-3" aria-hidden="true">
               <span className="text-label font-semibold text-content-accent">
                 {t('common.actions.book')}
               </span>

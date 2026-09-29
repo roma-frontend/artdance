@@ -387,7 +387,7 @@ async function ExploreSections({ locale }: { locale: Locale }) {
             />
           </Reveal>
 
-          <Reveal as="ul" variant="stagger" className="grid gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <Reveal as="ul" variant="stagger" className="grid gap-2 md:gap-5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {venues.items.map((item) => (
               <li key={item.slug}>
                 <CardTilt>

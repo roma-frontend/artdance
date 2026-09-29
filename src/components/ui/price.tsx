@@ -53,7 +53,7 @@ export function Price({
   return (
     <span
       className={cn(
-        'text-price inline-flex items-baseline gap-1 tabular-nums',
+        'text-price inline-flex flex-wrap items-baseline gap-1 tabular-nums',
         emphasis === 'accent' && 'text-content-accent',
         emphasis === 'total' && 'text-content-primary',
         emphasis === 'onCinema' && 'text-content-on-cinema',

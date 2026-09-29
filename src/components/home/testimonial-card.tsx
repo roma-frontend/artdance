@@ -49,7 +49,7 @@ export function TestimonialCard({ item, locale, className }: TestimonialCardProp
         <ScrollWords>{item.body}</ScrollWords>
       </blockquote>
 
-      <figcaption className="relative mt-6 flex items-center gap-3">
+      <figcaption className="relative mt-6 flex flex-wrap items-center gap-3">
         <Media
           {...resolveMedia(item.image, locale)}
           preset="avatar"

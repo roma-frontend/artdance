@@ -47,7 +47,7 @@ export function SkeletonCard({ className }: { className?: string }) {
       <Skeleton className="aspect-4/3 w-full rounded-md" />
       <Skeleton className="h-5 w-3/4" />
       <Skeleton className="h-4 w-1/2" />
-      <div className="flex items-center justify-between gap-3 pt-1">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
         <Skeleton className="h-4 w-20" />
         <Skeleton className="h-4 w-16" />
       </div>

@@ -132,7 +132,7 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
               <RatingStars rating={item.ratingAverage} count={item.ratingCount} hideCount />
             </div>
 
-            <div className="card-foot-line card-cta flex items-center justify-between gap-3" aria-hidden="true">
+            <div className="card-foot-line card-cta flex flex-wrap items-center justify-between gap-3" aria-hidden="true">
               <span className="text-label font-semibold text-content-accent">
                 {t('common.actions.book')}
               </span>
