@@ -1014,7 +1014,7 @@ const hy: Messages = {
       allSubtitle: "Ներառյալ նրանք, որոնց համար դեռ մարզիչ ենք փնտրում։",
     },
     title: "«{style}»՝ դասեր Երևանում",
-    aboutTitle: "Ի՞նչ է «{style}»-ը",
+    aboutTitle: "Ի՞նչ է «{style}»-ն",
     gearTitle: "Ի՞նչ բերել առաջին դասին",
     classesTitle: "«{style}»՝ դասեր",
     classesAll: "Բոլոր դասերը՝ «{style}»",
