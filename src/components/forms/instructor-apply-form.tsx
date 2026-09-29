@@ -10,7 +10,6 @@ import { applyInstructorAction } from '@/server/actions/instructor-apply';
 
 export function InstructorApplyForm() {
   const tF = useTranslations('footer');
-  const tCommon = useTranslations('common');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');

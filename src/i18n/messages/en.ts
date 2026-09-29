@@ -684,6 +684,10 @@ const en = {
     alternativesHint: 'This group is full — these times are open with the same instructor.',
     holdExpired: 'Your slot hold expired. Please pick a time again.',
     conflictError: 'This time was just taken. Please choose another slot.',
+    recurring: {
+      weeks: 'Weeks in series',
+      hint: 'Every {weeks, plural, one {# week} other {# weeks}} — one payment creates all bookings',
+    },
     leadTimeError: 'Bookings must be made at least {hours} in advance.',
     horizonError: 'Bookings open up to {days} ahead.',
     confirmedTitle: 'Booking confirmed',
