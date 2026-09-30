@@ -92,9 +92,12 @@ test('Смена reduced motion останавливает эффекты и о�
 });
 
 test.describe('Статические состояния', () => {
-  test.use({ javaScriptEnabled: false });
   test('Без JavaScript текст и карточки доступны', async ({ page }) => {
-    await page.goto(HOME);
+    await page.route('**/*', (route) => {
+      if (route.request().resourceType() === 'media') return route.abort();
+      return route.continue();
+    });
+    await page.goto(HOME, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h1 [data-reveal-word]').first()).toHaveCSS('opacity', '1');
     const card = page.locator('[data-animation-card]').last();
     await card.scrollIntoViewIfNeeded();

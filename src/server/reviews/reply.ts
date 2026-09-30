@@ -18,7 +18,8 @@ export async function replyToReview(input: { reviewId: string; authorId: string;
   }
 }
 
-export async function deleteReply(reviewId: string, _requesterId: string) {
+export async function deleteReply(reviewId: string, requesterId: string) {
+  void requesterId;
   const response = await db.reviewResponse.findUnique({ where: { reviewId } });
   if (!response) throw domainErrors.notFound();
   await db.reviewResponse.delete({ where: { reviewId } });

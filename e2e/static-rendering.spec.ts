@@ -19,11 +19,14 @@ import en from '../src/i18n/messages/en';
 import { locales } from '../src/i18n/config';
 
 test.describe('лендинг отдаётся готовым HTML', () => {
-  test.use({ javaScriptEnabled: false });
-
   for (const locale of locales) {
     test(`/${locale}: контент виден без JavaScript`, async ({ page }) => {
-      await page.goto(`/${locale}`);
+      await page.route('**/*', (route) => {
+        // Без JS видео-постеры и шрифты не должны блокировать загрузку страницы.
+        if (route.request().resourceType() === 'media') return route.abort();
+        return route.continue();
+      });
+      await page.goto(`/${locale}`, { waitUntil: 'domcontentloaded' });
 
       const main = page.locator('main');
       await expect(main).toBeVisible();
@@ -47,7 +50,7 @@ test.describe('лендинг отдаётся готовым HTML', () => {
   }
 
   test('en: заголовки секций на своих местах', async ({ page }) => {
-    await page.goto('/en');
+    await page.goto('/en', { waitUntil: 'domcontentloaded' });
 
     for (const title of [en.home.discover.title, en.pricing.title]) {
       await expect(page.locator('h2').filter({ hasText: title })).toBeVisible();

@@ -52,7 +52,7 @@ test.describe('тема по системной настройке', () => {
 
     test('тёмная система работает без скрипта — значит, и без вспышки', async ({ page }) => {
       await page.emulateMedia({ colorScheme: 'dark' });
-      await page.goto(HOME);
+      await page.goto(HOME, { waitUntil: 'domcontentloaded' });
 
       /*
        * Атрибута нет — его ставит скрипт, которого здесь нет. Тему целиком

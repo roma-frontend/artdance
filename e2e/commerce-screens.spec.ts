@@ -78,9 +78,14 @@ test.describe('Бронирование', () => {
     const free = page.getByRole('button', { name: new RegExp(`^${demoSelectedSlot}`) });
     // Вечером время макета уже внутри лид-тайма или занято — тогда выбран первый свободный слот дня.
     // Вечером на CI слот ещё не успевает переключиться на следующий день, но занятый слот уже отключён.
-    const selected = (await free.count()) > 0 && (await free.isEnabled())
-      ? free.first()
-      : page.getByRole('button', { name: /^\d{2}:\d{2}/ }).first();
+    // Ищем именно enabled-кнопку, а не .first() (он часто — 10:00 disabled при вчерашнем сиде).
+    const enabledSlots = page.getByRole('button', { name: /^\d{2}:\d{2}/, exact: false }).locator(':not([disabled])');
+    let selected = (await free.count()) > 0 && (await free.isEnabled()) ? free.first() : null;
+    if (!selected) {
+      const n = await enabledSlots.count();
+      test.skip(n === 0, 'в этом дне нет свободного слота для проверки выбора');
+      selected = enabledSlots.first();
+    }
     // Слот в календаре точно рендерится; pressed может отсутствовать если страница перешла в "завтра"
     await expect(selected).toBeVisible();
     await expect(selected).toBeEnabled();

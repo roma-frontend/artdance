@@ -3,7 +3,8 @@ import 'server-only';
 import { db } from '@/lib/db';
 import { similarByCategory, collaborativeCandidates } from '@/domain/recommendations';
 
-export async function productRecommendations(productId: string, _viewerId?: string | null) {
+export async function productRecommendations(productId: string, viewerId?: string | null) {
+  void viewerId;
   const product = await db.product.findUnique({ where: { id: productId }, select: { categoryId: true } });
   if (!product) return [];
   const catId = (product as unknown as { categoryId: string | null }).categoryId;
