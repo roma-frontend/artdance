@@ -181,8 +181,9 @@ test('страница тарифов показывает планы, годо�
   const plans = page.getByRole('article');
   await expect(plans).toHaveCount(orderedSubscriptionPlans.length);
 
-  /* Рекомендуемый план помечен, и ровно один. */
-  await expect(page.getByText(en.pricing.mostPopular)).toHaveCount(1);
+  /* Рекомендуемый план помечен. Бейдж дублируется в карточке и в сравнении — считаем карточки. */
+  const planCards = page.locator('article').filter({ hasText: en.pricing.mostPopular });
+  await expect(planCards).toHaveCount(1);
 
   /* Таблица сравнения — настоящая таблица со строками по квотам. */
   const table = page.getByRole('table');

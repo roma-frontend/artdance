@@ -63,7 +63,8 @@ test('Магнитная навигация возвращается в исхо
   await page.goto(HOME);
   const fine = await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches);
   test.skip(!fine || (page.viewportSize()?.width ?? 0) < 1024, 'На сенсорном экране магнит отключён');
-  const link = page.locator('nav [data-magnetic]').first();
+  // Скрытый lg:hidden nav в DOM есть всегда — ищем только видимую группу
+  const link = page.locator('nav:visible [data-magnetic]').first();
   await expect(link).toBeVisible();
   await link.hover({ position: { x: 4, y: 4 } });
   await expect.poll(() => link.evaluate((node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m41)).not.toBe(0);

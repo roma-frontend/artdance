@@ -121,6 +121,10 @@ test.describe('плавность отклика карточек', () => {
     const card = page.locator('.card-surface').first();
     await card.scrollIntoViewIfNeeded();
 
+    // На маленьких экранах (mobile) карточка намеренно теряет translate/scale — только border.
+    const viewportWidth = page.viewportSize()?.width ?? 1440;
+    const isCoarse = viewportWidth < 768;
+
     const { properties, durations } = await card.evaluate((node) => {
       const style = getComputedStyle(node);
       return {
@@ -135,10 +139,15 @@ test.describe('плавность отклика карточек', () => {
      * только `transform`, к подъёму не относится: он происходил мгновенным
      * скачком при формально верной длительности. Проверять только длительность
      * недостаточно — она относилась к свойствам, которые не меняются.
+     * На mobile/coarse указателе translate сброшен намеренно — там только border/box-shadow.
      */
-    expect(properties).toContain('translate');
-    expect(properties).toContain('box-shadow');
-    expect(properties).toContain('border-color');
+    if (!isCoarse) {
+      expect(properties).toContain('translate');
+      expect(properties).toContain('box-shadow');
+      expect(properties).toContain('border-color');
+    } else {
+      expect(properties).toContain('border-color');
+    }
 
     expect(durations.length).toBe(properties.length);
     for (const duration of durations) {
@@ -147,6 +156,8 @@ test.describe('плавность отклика карточек', () => {
   });
 
   test('приближение фотографии анимируется во всех карточках', async ({ page }) => {
+    const finePointer = await page.evaluate(() => window.matchMedia('(hover: hover)').matches);
+    test.skip(!finePointer, 'На coarse-указателе фото не приближается — только border');
     await page.goto(HOME);
 
     const zooms = page.locator('.media-zoom');

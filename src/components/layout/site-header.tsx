@@ -100,7 +100,11 @@ export function SiteHeader() {
           solid ? 'py-3' : 'py-5',
         )}
       >
-        <Link href={routes.home()} className="group/logo flex items-center gap-3">
+        <Link
+          href={routes.home()}
+          aria-current={pathname === routes.home() ? 'page' : undefined}
+          className="group/logo flex items-center gap-3"
+        >
           {/*
             Знак бренда следует той же логике, что и словесная марка: над
             кинематографичным первым экраном бургунди на почти чёрном

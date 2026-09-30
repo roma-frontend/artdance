@@ -70,6 +70,7 @@ export function HeaderMegaMenu({ solid }: Props) {
           >
             <Link
               href={group.href}
+              data-magnetic=""
               aria-expanded={open}
               aria-haspopup="menu"
               aria-current={active ? 'page' : undefined}
@@ -93,9 +94,15 @@ export function HeaderMegaMenu({ solid }: Props) {
 
             {/* Панель — inert+aria-hidden когда закрыта: иначе axe ругается aria-hidden-focus
                 (скрытый блок не должен содержать фокусируемые ссылки). inert убирает
-                всё поддерево из порядка табуляции и дерева доступности, анимация
-                сохраняется через opacity/translate, а не display:none. */}
+                всё поддерево из порядка табуляции и дерева доступности.
+                hidden когда закрыта — иначе абсолютный блок шириной 860, центрированный
+                на группе у края экрана, выносит -20px за clientWidth и ломает
+                layout-integrity (mobile Chrome расширяет viewport, координаты tap
+                съезжают — шесть тестов падали как flaky). display:none исключает
+                закрытую панель из getBoundingClientRect, но открытая остаётся
+                анимированной через opacity/translate. */}
               <div
+                hidden={!open ? true : undefined}
                 inert={!open ? true : undefined}
                 role="menu"
                 aria-hidden={!open}

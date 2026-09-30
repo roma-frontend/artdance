@@ -83,7 +83,11 @@ test.describe('SiteHeader', () => {
   test('активный раздел помечен для скринридера', async ({ page }) => {
     const current = header(page).locator('[aria-current="page"]');
     await expect(current).toHaveCount(1);
-    await expect(current).toHaveAttribute('href', HOME);
+    // HOME "/" подсвечивается брендом и первой группой мега-меню; тест принимает оба источника,
+    // но требует ровно один видимый маркер и чтобы он вёл на HOME.
+    const hrefs = await current.evaluateAll((nodes) => nodes.map((n) => n.getAttribute('href')));
+    expect(hrefs).toEqual([HOME]);
+    await expect(current.first()).toHaveAttribute('href', HOME);
   });
 
   test('раскладка соответствует ширине экрана', async ({ page }) => {
