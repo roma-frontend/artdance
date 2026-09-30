@@ -44,6 +44,8 @@ export interface CartSnapshot {
   promoCode: string | null;
   totals: CartTotals;
   issues: readonly CartIssue[];
+  // B-12: товары той же категории для кросс-сейла (≤3)
+  crossSell?: readonly { slug: string; title: string; price: number; imageKey: string | null }[];
 }
 
 export type CartIssue =
@@ -208,6 +210,32 @@ async function buildSnapshot(cart: ResolvedCart): Promise<CartSnapshot> {
     deliveryZone: null,
   });
 
+  // B-12 кросс-сейл: товары той же категории, что у товаров корзины (≤3, best effort)
+  let crossSell: readonly { slug: string; title: string; price: number; imageKey: string | null }[] = [];
+  try {
+    const variantIds = mutableItems.map((m) => m.variantId).filter((v): v is string => Boolean(v));
+    if (variantIds.length > 0) {
+      const variants0 = await db.productVariant.findMany({
+        where: { id: { in: variantIds } },
+        select: { product: { select: { categoryId: true } } },
+      });
+      const categoryIds = [...new Set(variants0.map((v) => (v as unknown as { product: { categoryId: string } }).product.categoryId))];
+      const candidates = await db.product.findMany({
+        where: { categoryId: { in: categoryIds }, isActive: true, deletedAt: null },
+        select: { slug: true, title: true, basePrice: true, media: { select: { storageKey: true }, take: 1, orderBy: { sortOrder: 'asc' } as never } },
+        take: 12,
+      });
+      crossSell = candidates.slice(0, 3).map((p) => ({
+        slug: p.slug,
+        title: p.title,
+        price: p.basePrice,
+        imageKey: ((p as unknown as { media: readonly { storageKey: string }[] }).media[0]?.storageKey.split('#')[0] ?? null) as string | null,
+      }));
+    }
+  } catch {
+    // best effort — не ломает корзину
+  }
+
   // Если promoInvalid — total уже без промо в totals, но подсказка наружу нужна.
   return {
     cartId: cart.id,
@@ -216,6 +244,7 @@ async function buildSnapshot(cart: ResolvedCart): Promise<CartSnapshot> {
     promoCode: promo?.code ?? null,
     totals,
     issues,
+    crossSell: crossSell as unknown as readonly { slug: string; title: string; price: number; imageKey: string | null }[],
   };
 }
 

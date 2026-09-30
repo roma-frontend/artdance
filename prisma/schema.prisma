@@ -39,6 +39,7 @@ enum UserRole {
   VENUE_OWNER
   ADMIN
   SUPPORT
+  ATHLETE
 }
 
 enum DanceStyle {
@@ -283,6 +284,7 @@ model User {
   referredById       String?
   reliabilityScore   Int                 @default(100)
   marketingConsentAt DateTime?
+  athleteProfile  AthleteProfile?
   blogPosts         BlogPost[]
 
   @@index([role, isActive])
@@ -437,6 +439,7 @@ model InstructorProfile {
   commissions            CommissionRecord[]
   reviews                Review[]
   verificationDocuments VerificationDocument[]
+  tariffs              InstructorTariff[]
   boostCampaigns        BoostCampaign[]
   responseTimeMinutes   Int?
   acceptanceRate        Decimal? @db.Decimal(5, 4)
@@ -495,6 +498,24 @@ model PriceOption {
 
   @@index([instructorId, isActive])
   @@index([roomId, isActive])
+}
+
+model InstructorTariff {
+  id           String  @id @default(cuid())
+  instructorId String
+  name         String
+  pricePerHour Int
+  currencyCode String  @default("AMD")
+  // Доля платформы с этого тарифа (null = ставка из commission.instructorRate)
+  commissionRate Decimal? @db.Decimal(5, 4)
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  instructor InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@unique([instructorId, name])
+  @@index([instructorId, isActive])
 }
 
 /**
@@ -904,13 +925,34 @@ model Booking {
   checkedInById    String?
   requestExpiresAt DateTime?
   consentVersion   String?
+  // B-09 сплит: сколько участников делят счёт (null = без сплита)
+  splitParticipants Int?
+  // DS-04 профиль атлета (WDSF ID, разряд) — null у обычного клиента
+  athleteProfileId String?
+
   source           String?
+
+  athleteProfile AthleteProfile? @relation(fields: [athleteProfileId], references: [id])
 
   @@index([customerId, status])
   @@index([instructorId, startsAt])
   @@index([roomId, startsAt])
   @@index([status, startsAt])
   @@index([startsAt, endsAt])
+  @@index([athleteProfileId])
+}
+
+model AthleteProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  wdsfId    String?  @unique
+  category  String?
+  clubName  String?
+  rank      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings  Booking[]
 }
 
 /**
@@ -1941,6 +1983,37 @@ model Banner {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  adSlots   AdSlot[]
+}
+
+// DS-08 рекламный слот: куда ставить баннер (hero, catalog-top, checkout-sidebar)
+model AdSlot {
+  id        String   @id @default(cuid())
+  slotKey   String   @unique
+  bannerId  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  banner    Banner?  @relation(fields: [bannerId], references: [id])
+
+  @@index([slotKey, isActive])
+}
+
+// DS-03 импорт календаря WDSF: сырой календарь до нормализации в Event
+model WdsfEvent {
+  id          String   @id @default(cuid())
+  externalId  String   @unique
+  title       String
+  city        String?
+  country     String?
+  startsAt    DateTime
+  endsAt      DateTime?
+  url         String?
+  rawPayload  Json?
+  importedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([startsAt])
 }
 
 // Идемпотентность фоновых задач и cron: одна задача — одно исполнение.

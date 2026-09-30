@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { booking } from '@/config/business';
+import { getServerEnv } from '@/config/env';
 import { db } from '@/lib/db';
 import { purgeExpiredHolds } from '@/server/hold/service';
 import { notifyBookingReminder, notifyWaitlistReady } from '@/server/booking/notify';
@@ -89,4 +90,56 @@ export async function runBookingCron(now: Date): Promise<CronReport> {
   }
 
   return { purgedHolds: purged.purged, autoCompleted, remindersSent, waitlistExpired };
+}
+
+export interface DigestReport {
+  sent: boolean;
+  gmv: number;
+  bookings: number;
+  cancellations: number;
+  unpaid: number;
+  failedIntegrals: number;
+}
+
+export async function runDailyDigest(now: Date): Promise<DigestReport> {
+  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  const [gmvRow, bookings, cancellations, unpaid, failedNotifications, failedPayments] = await Promise.all([
+    db.order
+      .aggregate({ _sum: { total: true }, where: { placedAt: { gte: since }, status: { not: 'CANCELLED' } as never } })
+      .catch(() => ({ _sum: { total: 0 } }) as never),
+    db.booking.count({ where: { createdAt: { gte: since } } }).catch(() => 0),
+    db.booking.count({ where: { cancelledAt: { gte: since } } as never }).catch(() => 0),
+    db.order.count({ where: { status: 'PENDING_PAYMENT' as never } }).catch(() => 0),
+    db.notification.count({ where: { status: 'FAILED' as never, createdAt: { gte: since } } as never }).catch(() => 0),
+    db.payment.count({ where: { status: 'FAILED' as never, createdAt: { gte: since } } as never }).catch(() => 0),
+  ]);
+
+  const gmv = Number((gmvRow as unknown as { _sum: { total: number | null } })._sum.total ?? 0);
+  const failedIntegrals = Number(failedNotifications) + Number(failedPayments);
+
+  const env = getServerEnv();
+  const to = env.AUDIT_ALERT_EMAIL?.trim();
+  if (!to) return { sent: false, gmv, bookings: Number(bookings), cancellations: Number(cancellations), unpaid: Number(unpaid), failedIntegrals };
+
+  const subject = `ArtDance digest ${now.toISOString().slice(0, 10)}`;
+  const lines = [
+    `GMV (24ч): ${gmv} AMD`,
+    `Брони: ${bookings}`,
+    `Отмены: ${cancellations}`,
+    `Неоплаченные заказы: ${unpaid}`,
+    `Сбои интеграций (письма+платежи, 24ч): ${failedIntegrals}`,
+  ];
+
+  const { sendEmail } = await import('@/lib/email/send');
+  const result = await sendEmail({ to, locale: 'ru', subject, heading: 'Ежедневный дайджест', paragraphs: lines }).catch(() => ({ delivered: false }) as never);
+
+  return {
+    sent: Boolean((result as unknown as { delivered?: boolean }).delivered),
+    gmv,
+    bookings: Number(bookings),
+    cancellations: Number(cancellations),
+    unpaid: Number(unpaid),
+    failedIntegrals,
+  };
 }

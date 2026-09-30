@@ -316,6 +316,9 @@ const ru: Messages = {
       error: 'Не удалось подписать. Попробуйте ещё раз.',
       consent:
         'Подписываясь, вы соглашаетесь с <privacyLink>Политикой конфиденциальности</privacyLink>.',
+      unsubscribed: 'Вы отписаны от рассылки',
+      unsubscribedHint: 'Маркетинговые письма больше не придут. В любой момент можно подписаться снова на главной.',
+      resubscribeCta: 'Подписаться снова',
     },
     finalCta: {
       title: 'Готовы двигаться?',
@@ -1239,6 +1242,8 @@ const ru: Messages = {
     deleteTitle: 'Удаление',
     deleteHint: 'Отложенное удаление — можно отменить в grace-период',
     requestDeletion: 'Запросить удаление',
+    cancelDeletion: 'Отменить удаление',
+    deletionCancelled: 'Удаление отменено. Аккаунт снова активен.',
     applyTitle: 'Заявка инструктора',
     applyHint: 'Расскажите о себе — ответим за 2–3 дня',
     applicationSent: 'Заявка отправлена! Ответим на почту',
@@ -2949,7 +2954,8 @@ const ru: Messages = {
       dbName: 'База (PostgreSQL)',
       dbOk: 'PostgreSQL отвечает',
       r2Name: 'R2 / Хранилище медиа',
-      r2Detail: 'Настраивается через R2_* env (см. /admin/settings)',
+      r2Detail: 'R2_* настроены — загрузка в бакет',
+      r2Missing: 'R2_* не заданы — локальный драйвер (в проде упадёт)',
       paymentsName: 'Платежи (ARCA / Ameriabank / Idram)',
       paymentsDetail: 'Провайдеры — заглушки до договоров (docs/launch/banks-acquiring.md)',
       emailName: 'Почта (Resend)',

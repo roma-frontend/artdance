@@ -317,6 +317,9 @@ const hy: Messages = {
       error: "Չհաջողվեց բաժանորդագրել։ Փորձեք նորից։",
       consent:
         "Բաժանորդագրվելով՝ ընդունում եք <privacyLink>Գաղտնիության քաղաքականությունը</privacyLink>։",
+      unsubscribed: "Դուք ապաբաժանորդագրվել եք",
+      unsubscribedHint: "Մարքեթինգային նամակներ այլևս չեն գա։ Ցանկացած պահի կարող եք նորից բաժանորդագրվել գլխավորում։",
+      resubscribeCta: "Բաժանորդագրվել նորից",
     },
     finalCta: {
       title: "Պատրա՞ստ եք շարժվել",
@@ -1245,6 +1248,8 @@ const hy: Messages = {
     deleteTitle: "Ջնջում",
     deleteHint: "Հետաձգված ջնջում՝ կարող եք չեղարկել grace-ի ընթացքում",
     requestDeletion: "Խնդրել ջնջումը",
+    cancelDeletion: "Չեղարկել ջնջումը",
+    deletionCancelled: "Ջնջումը չեղարկվեց։ Հաշիվը կրկին ակտիվ է։",
     applyTitle: "Մարզչի դիմում",
     applyHint: "Պատմեք ձեր մասին՝ կպատասխանենք 2–3 օրում",
     applicationSent: "Դիմումն ուղարկվեց։ Կգրենք փոստով",
@@ -2963,7 +2968,8 @@ const hy: Messages = {
       dbName: "Տվյալների բազա (PostgreSQL)",
       dbOk: "PostgreSQL-ը պատասխանում է",
       r2Name: "R2 / Մեդիա պահոց",
-      r2Detail: "Կարգավորվում է R2_* env-ով (տե՛ս /admin/settings)",
+      r2Detail: "R2_* կարգավորված են — վերբեռնումը ամպում է",
+      r2Missing: "R2_* բացակայում են — տեղային դրայվեր (արտադրության մեջ կընկնի)",
       paymentsName: "Վճարումներ (ARCA / Ameriabank / Idram)",
       paymentsDetail: "Պրովայդերները stub են մինչև պայմանագրերը (docs/launch/banks-acquiring.md)",
       emailName: "Էլ. փոստ (Resend)",

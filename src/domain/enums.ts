@@ -20,7 +20,7 @@ import { keyIncludes, searchKey } from '@/lib/search/normalize';
 
 /* ─────────────────────────────── Роли ─────────────────────────────── */
 
-export const userRoles = ['CUSTOMER', 'INSTRUCTOR', 'VENUE_OWNER', 'ADMIN', 'SUPPORT'] as const;
+export const userRoles = ['CUSTOMER', 'INSTRUCTOR', 'VENUE_OWNER', 'ADMIN', 'SUPPORT', 'ATHLETE'] as const;
 export type UserRole = (typeof userRoles)[number];
 
 /**
@@ -37,6 +37,7 @@ export function isUserRole(value: unknown): value is UserRole {
 
 const userRoleLabelKeys: Record<UserRole, MessageKey> = {
   CUSTOMER: 'auth.roles.customer',
+  ATHLETE: 'auth.roles.customer' as MessageKey,
   INSTRUCTOR: 'auth.roles.instructor',
   VENUE_OWNER: 'auth.roles.venueOwner',
   ADMIN: 'auth.roles.admin',
@@ -50,6 +51,7 @@ export function userRoleLabelKey(role: UserRole): MessageKey {
 /** Иерархия прав: индекс = уровень. Проверка «не ниже, чем» вместо списков ролей. */
 const roleRank: Record<UserRole, number> = {
   CUSTOMER: 0,
+  ATHLETE: 0,
   INSTRUCTOR: 1,
   VENUE_OWNER: 1,
   SUPPORT: 2,

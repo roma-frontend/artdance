@@ -39,8 +39,13 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   }
   if (basePrice == null) { if (danceClass) basePrice = danceClass.price; else throw domainErrors.notFound(); }
   const locationOption = (input.locationOption ?? 'STUDIO') as 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE';
+  // B-10 динамическая цена: пиковые часы/выходные поверх тарифа инструктора
+  const { priceForSlot, isPeakHour, isWeekendDay } = await import('@/domain/dynamic-pricing');
+  const startHour = hold.startsAt.getHours();
+  const startDow = hold.startsAt.getDay();
+  const dynamicPrice = priceForSlot(basePrice, { isPeak: isPeakHour(startHour), isWeekend: isWeekendDay(startDow) });
   const travelFee = locationOption === 'CUSTOMER_LOCATION' ? booking.travelFee : 0;
-  const totalPrice = basePrice + travelFee;
+  const totalPrice = dynamicPrice + travelFee;
   const cancellationWindowHours = booking.freeCancellationHours;
   const lateCancellationRate = booking.lateCancellationFeeRate;
   const rescheduleWindowHours = booking.freeRescheduleHours;

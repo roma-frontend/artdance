@@ -355,36 +355,55 @@ export async function listModerationQueue(
   }
 
   if (tab === 'instructors') {
-    const where: Prisma.InstructorProfileWhereInput = { moderation: status };
-    const [rows, total] = await Promise.all([
-      db.instructorProfile.findMany({
-        where,
-        take,
-        orderBy: { createdAt: 'asc' },
-        select: {
-          id: true,
-          slug: true,
-          headline: true,
-          bio: true,
-          createdAt: true,
-          user: { select: { name: true } },
-        },
-      }),
-      db.instructorProfile.count({ where }),
+    // A-15: заявки с формы /become-instructor/apply хранятся отдельно от
+    // InstructorProfile (профиль создаётся только после одобрения). Оба
+    // источника показываются в одной вкладке — модератор видит и присланные
+    // анкеты, и существующие профили на перемодерации.
+    const appWhere: Prisma.InstructorApplicationWhereInput = { status };
+    const profileWhere: Prisma.InstructorProfileWhereInput = { moderation: status };
+    const [[appRows, appTotal], [profileRows, profileTotal]] = await Promise.all([
+      Promise.all([
+        db.instructorApplication.findMany({
+          where: appWhere,
+          take,
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, name: true, email: true, phone: true, bio: true, styles: true, createdAt: true },
+        }),
+        db.instructorApplication.count({ where: appWhere }),
+      ]),
+      Promise.all([
+        db.instructorProfile.findMany({
+          where: profileWhere,
+          take,
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, slug: true, headline: true, bio: true, createdAt: true, user: { select: { name: true } } },
+        }),
+        db.instructorProfile.count({ where: profileWhere }),
+      ]),
     ]);
 
-    return {
-      total,
-      items: rows.map((row) => ({
-        id: row.id,
-        title: row.user.name,
-        body: `${row.headline}\n\n${row.bio}`,
-        author: row.user.name,
-        target: row.slug,
-        rating: null,
-        createdAt: iso(row.createdAt),
-      })),
-    };
+    const appItems: readonly ModerationItem[] = appRows.map((row) => ({
+      id: `app:${row.id}`,
+      title: `${row.name} — заявка`,
+      body: `${row.bio}\n\nНаправления: ${(row.styles as string[]).join(', ')}\nТелефон: ${row.phone || '—'}\nEmail: ${row.email}`,
+      author: row.name,
+      target: (row.styles as string[]).join(', '),
+      rating: null,
+      createdAt: iso(row.createdAt),
+    }));
+    const profileItems: readonly ModerationItem[] = profileRows.map((row) => ({
+      id: row.id,
+      title: row.user.name,
+      body: `${row.headline}\n\n${row.bio}`,
+      author: row.user.name,
+      target: row.slug,
+      rating: null,
+      createdAt: iso(row.createdAt),
+    }));
+
+    // Заявки первыми — их нужно решить до появления в каталоге.
+    const items = [...appItems, ...profileItems].slice(0, take);
+    return { total: appTotal + profileTotal, items };
   }
 
   const where: Prisma.VenueWhereInput = { moderation: status };

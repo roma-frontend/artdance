@@ -383,6 +383,7 @@ export const rateLimits = {
    * порядок дороже сохранения формы, поэтому его нельзя мерить тем же счётчиком.
    */
   adminExport: { requests: 10, windowSeconds: 600 },
+  adminImport: { requests: 10, windowSeconds: 600 },
   webhook: { requests: 600, windowSeconds: 60 },
   /** Грубый backstop на весь /api: ловит флуд, а не целевую атаку. */
   apiFlood: { requests: 600, windowSeconds: 600 },

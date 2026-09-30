@@ -32,11 +32,16 @@ export default async function ReviewNewPage({ params, searchParams }: PageProps)
 
   const booking = await db.booking.findUnique({
     where: { id: bookingId },
-    select: { id: true, customerId: true, status: true, endsAt: true },
+    select: { id: true, status: true, endsAt: true },
   });
   if (!booking) notFound();
 
-  // Токен: если есть VerificationToken с identifier review:<bookingId>, сверяем.
+  // Уже есть отзыв — не показываем форму повторно.
+  const existingReview = await db.review.findFirst({
+    where: { bookingId },
+    select: { id: true, rating: true },
+  });
+
   if (token) {
     const vt = await db.verificationToken.findFirst({
       where: { identifier: `review:${bookingId}`, value: token },
@@ -51,6 +56,19 @@ export default async function ReviewNewPage({ params, searchParams }: PageProps)
         </main>
       );
     }
+  }
+
+  if (existingReview) {
+    return (
+      <main id={site.mainContentId} className="page-container inner-page">
+        <h1 className="text-heading-2">{t('leaveReview')}</h1>
+        <p className="text-body mt-2 text-content-secondary">{t('reviewBodyHint', { id: bookingId.slice(0, 8) })}</p>
+        <p role="status" className="mt-6 rounded-md border border-border-default bg-surface-card p-4 text-content-success">
+          {(await getTranslations({ locale: locale as Locale, namespace: 'reviews' }))('pendingNotice')}
+        </p>
+        <SiteFooter />
+      </main>
+    );
   }
 
   return (
