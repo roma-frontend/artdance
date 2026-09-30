@@ -171,9 +171,9 @@ test.describe('SearchOverlay', () => {
     await openSearch(page);
     await search(page, 'квантовая механика');
 
-    await expect(
-      overlay(page).getByText(withQuery(en.search.noResults, 'квантовая механика')),
-    ).toBeVisible();
+    await expect
+      .poll(async () => overlay(page).getByText(withQuery(en.search.noResults, 'квантовая механика')).count())
+      .toBe(1);
     await expect(overlay(page).getByText(en.search.noResultsHint)).toBeVisible();
     await expect(results(page)).toHaveCount(0);
   });

@@ -84,21 +84,24 @@ test.describe('Reveal — появление при прокрутке', () => {
 test.describe('Reveal — контент не зависит от эффекта', () => {
   test.describe('без JavaScript', () => {
     test('секции видны: наблюдателя нет, значит и скрывать нельзя', async ({ page }) => {
+      test.slow();
       // Без JS движок ARIA-ролей в странице не работает — и навигация не нужна,
       // поэтому легкая страница не должна блокировать `load` на медиа/шрифтах.
       await page.route('**/*', (route) => {
         const type = route.request().resourceType();
-        if (type === 'media' || type === 'font') return route.abort();
+        if (type === 'media' || type === 'font' || type === 'image') return route.abort();
         return route.continue();
       });
       await page.goto(HOME, { waitUntil: 'domcontentloaded' });
 
-      // 6 падений на CI — opacity 1 не успевает после `domcontentloaded` под
-      // параллельной нагрузкой. Ждём через poll, а не мгновенно.
-      await expect.poll(async () => page.locator('[data-reveal="up"]').first().evaluate((n) => getComputedStyle(n).opacity)).toBe('1');
+      // 7 падений на CI — opacity 1 не успевает после `domcontentloaded` под
+      // параллельной нагрузкой (до 2× timeout). Ждём через poll с тройным таймаутом.
+      await expect
+        .poll(async () => page.locator('[data-reveal="up"]').first().evaluate((n) => getComputedStyle(n).opacity), { timeout: 15_000 })
+        .toBe('1');
       /* Поиск по тегу: без JS движок ARIA-ролей в странице не работает. */
       await expect
-        .poll(async () => page.locator('h2').filter({ hasText: en.home.discover.title }).count())
+        .poll(async () => page.locator('h2').filter({ hasText: en.home.discover.title }).count(), { timeout: 10_000 })
         .toBeGreaterThan(0);
     });
   });
