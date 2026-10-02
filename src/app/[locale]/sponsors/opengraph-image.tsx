@@ -16,4 +16,4 @@ export function generateStaticParams() {
   return sectionOgParams();
 }
 
-export default sectionOgImage("sponsors", getDancesportHero("sponsors"));
+export default sectionOgImage("sponsors", () => getDancesportHero("sponsors"));

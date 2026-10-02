@@ -17,4 +17,4 @@ export function generateStaticParams() {
   return sectionOgParams();
 }
 
-export default sectionOgImage('becomeInstructor', getContentHero('becomeInstructor'));
+export default sectionOgImage('becomeInstructor', () => getContentHero('becomeInstructor'));

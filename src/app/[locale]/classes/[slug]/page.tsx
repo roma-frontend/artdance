@@ -114,7 +114,7 @@ export default async function ClassDetailPage({ params }: PageProps) {
   const format = await getFormatter({ locale: locale as Locale });
 
   const soldOut = item.spotsLeft <= 0;
-  const bookHref = routes.instructorBooking(item.instructorSlug);
+  const bookHref = routes.instructorBooking(item.instructorSlug, item.slug);
   const styleLabel = tRoot(danceStyleLabelKey(item.style as never));
 
   /** Один путь на страницу: и в крошках, и в структурированных данных. */

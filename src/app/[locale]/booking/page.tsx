@@ -27,6 +27,9 @@ import { Link } from '@/i18n/routing';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 
+/** Публикация и снятие занятия должны менять список без пересборки. */
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
@@ -49,7 +52,7 @@ export default async function BookingStartPage({ params }: PageProps) {
 
   const t = await getTranslations('booking');
   const tCommon = await getTranslations('common');
-  const instructors = getBookableInstructors();
+  const instructors = await getBookableInstructors(locale as Locale);
 
   return (
     <main id={site.mainContentId}>

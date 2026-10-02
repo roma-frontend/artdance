@@ -78,7 +78,7 @@ export default async function GiftCardsPage({ params }: PageProps) {
         title={t('title')}
         subtitle={t('subtitle')}
         eyebrow={t('eyebrow')}
-        image={getContentHero('giftCards')}
+        image={await getContentHero('giftCards')}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />

@@ -18,5 +18,5 @@ export function generateStaticParams() {
 
 export default sectionOgImage(
   "socialEvents",
-  getDancesportHero("socialEvents"),
+  () => getDancesportHero("socialEvents"),
 );

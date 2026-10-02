@@ -103,7 +103,7 @@ export default async function DiscoverPage({ params, searchParams }: PageProps) 
         title={t('discover.title')}
         subtitle={t('discover.subtitle')}
         eyebrow={tNav('discover')}
-        image={getListingHero('discover')}
+        image={await getListingHero('discover')}
         locale={locale as Locale}
         breadcrumbs={[{ label: tNav('discover') }]}
       >
@@ -124,7 +124,7 @@ export default async function DiscoverPage({ params, searchParams }: PageProps) 
         }
       >
         {hasQuery ? (
-          <SearchResults term={term} scope={scope} />
+          <SearchResults term={term} scope={scope} locale={locale as Locale} />
         ) : (
           <ExploreSections locale={locale as Locale} />
         )}
@@ -140,9 +140,11 @@ export default async function DiscoverPage({ params, searchParams }: PageProps) 
 async function SearchResults({
   term,
   scope,
+  locale,
 }: {
   term: string;
   scope: SearchScope;
+  locale: Locale;
 }) {
   const t = await getTranslations('search');
   const tRoot = await getTranslations();
@@ -153,7 +155,7 @@ async function SearchResults({
    * обязан показывать, сколько найдено в каждом, иначе выбор раздела — это
    * прыжок в неизвестность.
    */
-  const all = searchCatalog(term, 'all', limits.search.maxResults);
+  const all = await searchCatalog(term, 'all', limits.search.maxResults, locale);
   const visible = scope === 'all' ? all : all.filter((hit) => hit.scope === scope);
 
   const countFor = (candidate: SearchScope): number =>
@@ -291,7 +293,7 @@ async function ExploreSections({ locale }: { locale: Locale }) {
   const tHome = await getTranslations('home');
   const tCommon = await getTranslations('common');
 
-  const home = getHomeContent();
+  const home = await getHomeContent(locale);
   const defaults = { sort: 'relevance', page: 1, pageSize: 8 } as const;
 
   const classes = await getClassList({ ...defaults });

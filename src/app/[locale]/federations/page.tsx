@@ -57,7 +57,7 @@ export default async function FederationsPage({ params }: PageProps) {
         title={t("title")}
         subtitle={t("subtitle")}
         eyebrow={t("eyebrow")}
-        image={getDancesportHero("federations")}
+        image={await getDancesportHero("federations")}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />

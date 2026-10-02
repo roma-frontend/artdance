@@ -62,7 +62,7 @@ export default async function ShopPage({ params, searchParams }: PageProps) {
         title={t('shop.title')}
         subtitle={t('shop.subtitle')}
         eyebrow={tNav('shop')}
-        image={getListingHero('shop')}
+        image={await getListingHero('shop')}
         locale={locale as Locale}
         breadcrumbs={[{ label: tNav('shop') }]}
       >

@@ -111,7 +111,8 @@ export const routes = {
 
   instructors: (params?: ListingParams) => withQuery('/instructors', params),
   instructor: (slug: string) => `/instructors/${slug}`,
-  instructorBooking: (slug: string) => `/instructors/${slug}/book`,
+  instructorBooking: (slug: string, classSlug?: string) =>
+    withQuery(`/instructors/${slug}/book`, classSlug ? { class: classSlug } : undefined),
 
   studios: (params?: ListingParams) => withQuery('/studios', params),
   studio: (slug: string) => `/studios/${slug}`,

@@ -129,7 +129,7 @@ export default async function ListYourStudioPage({ params }: PageProps) {
         title={t('title')}
         subtitle={t('subtitle')}
         eyebrow={t('eyebrow')}
-        image={getContentHero('listYourStudio')}
+        image={await getContentHero('listYourStudio')}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       >

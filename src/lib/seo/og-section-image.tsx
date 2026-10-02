@@ -78,17 +78,18 @@ interface SectionImageProps {
  * там карточка типографская, и это не заглушка, а второй законный вариант
  * (см. шапку `og-image.tsx`).
  */
-export function sectionOgImage(key: SectionOgKey, image?: MediaRef | null) {
+export function sectionOgImage(key: SectionOgKey, image?: MediaRef | null | (() => Promise<MediaRef | null>)) {
   return async function OgSectionImage({ params }: SectionImageProps) {
     const { locale } = await params;
     setRequestLocale(locale as Locale);
 
     const t = await getTranslations({ locale: locale as Locale });
 
+    const resolvedImage = typeof image === 'function' ? await image() : image;
     return renderOgCard({
       title: t(`seo.${key}.title`),
       meta: [t('brand.positioning')],
-      imageKey: image?.key ?? null,
+      imageKey: resolvedImage?.key ?? null,
     });
   };
 }

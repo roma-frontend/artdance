@@ -12,4 +12,4 @@ export function generateStaticParams() {
   return sectionOgParams();
 }
 
-export default sectionOgImage('giftCards', getContentHero('giftCards'));
+export default sectionOgImage('giftCards', () => getContentHero('giftCards'));

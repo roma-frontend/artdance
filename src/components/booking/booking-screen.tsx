@@ -72,13 +72,17 @@ export function BookingScreen({ content }: BookingScreenProps) {
       const parts = zonedParts(day, site.timeZone);
       const minutes = parseClock(slot);
       const startsAt = fromZonedParts({ year: parts.year, month: parts.month, day: parts.day, minutesOfDay: minutes }, site.timeZone);
-      const endsAt = new Date(startsAt.getTime() + content.durationMinutes * 60_000);
+      const selectedSlot = content.days.find(item => item.dateKey === zonedDateKey(day, site.timeZone))
+        ?.slots.find(item => item.start === slot);
+      if (content.sessionBooking && !selectedSlot?.sessionId) return;
+      const endsAt = selectedSlot?.endIso ? new Date(selectedSlot.endIso)
+        : new Date(startsAt.getTime() + content.durationMinutes * 60_000);
       const anonymousId = getAnonymousId();
       if (prevId) await releasePrevHold(prevId);
       const res = await fetch(apiRoutes.slotHold(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ instructorId: content.instructorId, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), durationMinutes: content.durationMinutes, anonymousId }),
+        body: JSON.stringify({ sessionId: selectedSlot?.sessionId, instructorId: content.instructorId, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), durationMinutes: content.durationMinutes, anonymousId }),
       });
       const body = (await res.json().catch(() => null)) as { hold?: { id: string; expiresAt: string }; error?: string } | null;
       if (!res.ok || !body?.hold) {
@@ -91,7 +95,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
     } catch {
       setHold({ status: 'error', justTaken: null });
     } finally { setSubmitting(false); }
-  }, [content.durationMinutes, content.instructorId, releasePrevHold]);
+  }, [content.days, content.sessionBooking, content.durationMinutes, content.instructorId, releasePrevHold]);
   useEffect(() => {
     if (preselectedHeldRef.current) return;
     if (!content.preselectedSlot || !initialDay) return;
@@ -131,7 +135,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
     if (hold.status !== 'holding' || !hold.holdId || !date || !startTime) return;
     setSubmitting(true);
     try {
-      if (weeks > 1) {
+      if (!content.sessionBooking && weeks > 1) {
         const weekday = date.getDay();
         const res = await fetch('/api/booking/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ weekday, startTime, durationMinutes: content.durationMinutes, weeks, instructorId: content.instructorId, locationOption: location }) });
         const body = (await res.json().catch(() => null)) as { seriesId?: string; bookings?: { id: string }[]; error?: string } | null;
@@ -162,12 +166,12 @@ export function BookingScreen({ content }: BookingScreenProps) {
           </div>
         </div>
         <LocationOptionPicker value={location} onChange={setLocation} studioName={content.studioName} acceptsTravel={content.acceptsTravel} acceptsOnline={content.acceptsOnline} />
-        <div className="rounded-xl border border-border-default bg-surface-card p-5">
+        {!content.sessionBooking && <div className="rounded-xl border border-border-default bg-surface-card p-5">
           <label className="text-body-sm font-semibold">{tBooking('recurring.weeks' as never)} — {weeks}
             <input type="range" min={recurringOpts.minWeeks} max={recurringOpts.maxWeeks} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} className="mt-2 w-full" />
           </label>
           <p className="text-caption mt-1 text-content-tertiary">{tBooking('recurring.hint' as never, { weeks } as never)}</p>
-        </div>
+        </div>}
       </div>
       <BookingSummary classTitle={content.classTitle} instructorName={content.instructorName} date={date} startTime={startTime} durationMinutes={content.durationMinutes} location={{ option: location, name: content.studioName }} fee={content.fee} travelFee={travelFee} holdExpiresAt={effectiveHoldExpiresAt} onHoldExpired={handleHoldExpired} submitting={submitting} onContinue={handleContinue} />
     </div>

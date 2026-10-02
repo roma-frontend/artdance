@@ -62,7 +62,7 @@ export default async function InstructorsPage({ params, searchParams }: PageProp
         title={t('instructors.title')}
         subtitle={t('instructors.subtitle')}
         eyebrow={tNav('instructors')}
-        image={getListingHero('instructors')}
+        image={await getListingHero('instructors')}
         locale={locale as Locale}
         breadcrumbs={[{ label: tNav('instructors') }]}
       >

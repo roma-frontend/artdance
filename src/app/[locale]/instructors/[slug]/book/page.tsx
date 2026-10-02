@@ -27,6 +27,7 @@ export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ locale: string; slug: string }>;
+  searchParams: Promise<{ class?: string | string[] }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -41,11 +42,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 }
 
-export default async function InstructorBookingPage({ params }: PageProps) {
+export default async function InstructorBookingPage({ params, searchParams }: PageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 
-  const content = getInstructorBookingContent(slug);
+  const query = await searchParams;
+  if (Array.isArray(query.class) || query.class === '') notFound();
+  const content = await getInstructorBookingContent(slug, new Date(), locale as Locale, query.class);
   if (!content) notFound();
 
   const t = await getTranslations('booking');

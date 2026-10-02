@@ -12,12 +12,15 @@
  * `Request`, и проверять её через сеть значит проверять ещё и Next.
  */
 
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const getAlternativeSlots = vi.hoisted(() => vi.fn());
+vi.mock('@/server/content/booking', () => ({ getAlternativeSlots }));
 
 import { GET, type AvailabilityResponse } from './route';
 import { limits, rateLimits } from '@/config/business';
 import { cacheControl } from '@/config/cache';
-import { demoInstructors } from '../../../../prisma/fixtures/demo';
+
 
 /**
  * Каждый запрос идёт с собственного адреса: лимит частоты считается по
@@ -38,7 +41,17 @@ async function payloadOf(response: Response): Promise<AvailabilityResponse> {
   return (await response.json()) as AvailabilityResponse;
 }
 
-const knownSlug = demoInstructors[0]!.slug;
+const knownSlug = 'teacher';
+beforeEach(() => {
+  getAlternativeSlots.mockReset();
+  getAlternativeSlots.mockImplementation(async (slug: string, count: number) => {
+    if (slug !== knownSlug) return null;
+    return Array.from({ length: count }, (_, index) => ({
+      startIso: new Date(Date.now() + (index + 1) * 86_400_000).toISOString(),
+      startTime: '10:00', endTime: '11:00',
+    }));
+  });
+});
 
 describe('GET /api/availability — успешный ответ', () => {
   it('возвращает ближайшие свободные времена', async () => {
@@ -102,6 +115,12 @@ describe('GET /api/availability — успешный ответ', () => {
 });
 
 describe('GET /api/availability — отказы', () => {
+  it('отсутствие свободного времени — успешный пустой ответ, не 404', async () => {
+    getAlternativeSlots.mockResolvedValue([]);
+    const response = await call(`?instructor=${knownSlug}`);
+    expect(response.status).toBe(200);
+    expect((await payloadOf(response)).slots).toEqual([]);
+  });
   it('без параметра инструктора — 400 с машинным кодом', async () => {
     const response = await call('');
     expect(response.status).toBe(400);

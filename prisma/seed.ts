@@ -50,6 +50,7 @@ import { createLocalAccountIssuer } from '@better-auth/core/db';
 
 import { PrismaClient } from '../src/generated/prisma/client.ts';
 import { booking, promotions } from '../src/config/business.ts';
+import { homeContentConfig } from '../src/config/home-content.ts';
 import { danceStyles } from '../src/domain/enums.ts';
 import { seedMedia } from '../src/design/seed-media.ts';
 import { fromZonedParts, nextOccurrence } from '../src/lib/time/schedule.ts';
@@ -59,6 +60,7 @@ import {
   demoClasses,
   demoEmailDomain,
   demoEvents,
+  demoHomeContent,
   demoInstructorAvailability,
   demoInstructors,
   demoMediaAlt,
@@ -753,6 +755,87 @@ async function seedReviews(
   console.log(`  отзывы: ${demoReviews.length}`);
 }
 
+/* ─────────────────────────── Главная / CMS ─────────────────────────── */
+
+async function seedHomeContent(): Promise<void> {
+  const assetNames = [
+    demoHomeContent.media.heroPosterAsset,
+    demoHomeContent.media.editorialPosterAsset,
+    demoHomeContent.media.competitionPosterAsset,
+    ...demoHomeContent.styleTiles.map((tile) => tile.asset),
+    // Баннеры разделов: самостоятельные медиа, даже если кадр не привязан к сущности.
+    'hero-dancer', 'editorial-rhythm', 'hero-loop-poster', 'editorial-loop-poster',
+    'studio-pulse-dance-studio', 'style-hip-hop', 'product-dance-shoes',
+    'style-ballroom', 'style-salsa', 'instructor-anna-mkrtchyan',
+    'studio-rhythm-space', 'product-gift-card', 'studio-flow-studio',
+    'instructor-arman-harutyunyan',
+  ];
+  const storageByAsset = new Map<string, string>();
+
+  for (const assetName of new Set(assetNames)) {
+    const { translations, ...data } = mediaData(assetName);
+    const storageKey = `${data.storageKey}#content:${homeContentConfig.blockKey}:${assetName}`;
+
+    const asset = await prisma.mediaAsset.upsert({
+      where: { storageKey },
+      update: { ...data, storageKey, deletedAt: null },
+      create: { ...data, storageKey },
+      select: { id: true },
+    });
+    storageByAsset.set(assetName, storageKey);
+
+    for (const locale of ['hy', 'ru', 'en'] as const) {
+      await prisma.mediaAssetTranslation.upsert({
+        where: { assetId_locale: { assetId: asset.id, locale } },
+        update: { altText: translations[locale] },
+        create: { assetId: asset.id, locale, altText: translations[locale] },
+      });
+    }
+  }
+
+  const storageKeyFor = (assetName: string): string => {
+    const storageKey = storageByAsset.get(assetName);
+    if (!storageKey) throw new Error(`seed — не создано CMS-медиа ${assetName}`);
+    return storageKey;
+  };
+
+  const body = JSON.stringify({
+    stats: demoHomeContent.stats,
+    media: {
+      heroPosterStorageKey: storageKeyFor(demoHomeContent.media.heroPosterAsset),
+      editorialPosterStorageKey: storageKeyFor(demoHomeContent.media.editorialPosterAsset),
+      competitionPosterStorageKey: storageKeyFor(demoHomeContent.media.competitionPosterAsset),
+    },
+    styleTiles: demoHomeContent.styleTiles.map((tile) => ({
+      style: tile.style,
+      mediaStorageKey: storageKeyFor(tile.asset),
+    })),
+    collections: demoHomeContent.collections,
+  });
+
+  for (const locale of ['hy', 'ru', 'en'] as const) {
+    await prisma.contentBlock.upsert({
+      where: { key_locale: { key: homeContentConfig.blockKey, locale } },
+      update: {
+        title: homeContentConfig.blockTitle,
+        body,
+        order: 0,
+        isActive: true,
+      },
+      create: {
+        key: homeContentConfig.blockKey,
+        locale,
+        title: homeContentConfig.blockTitle,
+        body,
+        order: 0,
+        isActive: true,
+      },
+    });
+  }
+
+  console.log(`  CMS главной: 3 локали, медиа: ${storageByAsset.size}`);
+}
+
 /* ─────────────────────────── Промокоды ─────────────────────────── */
 
 async function seedPromoCodes(): Promise<void> {
@@ -788,6 +871,7 @@ async function main(): Promise<void> {
   await seedProducts();
   await seedEvents(venueIds);
   await seedReviews(instructorIds, classSlugToId);
+  await seedHomeContent();
   await seedPromoCodes();
 
   console.log('seed — готово');

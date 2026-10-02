@@ -61,7 +61,7 @@ export default async function AdvertisePage({ params }: PageProps) {
         title={t("title")}
         subtitle={t("subtitle")}
         eyebrow={t("eyebrow")}
-        image={getDancesportHero("advertise")}
+        image={await getDancesportHero("advertise")}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />

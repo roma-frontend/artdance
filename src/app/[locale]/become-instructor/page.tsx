@@ -130,7 +130,7 @@ export default async function BecomeInstructorPage({ params }: PageProps) {
         title={t('title')}
         subtitle={t('subtitle')}
         eyebrow={t('eyebrow')}
-        image={getContentHero('becomeInstructor')}
+        image={await getContentHero('becomeInstructor')}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       >

@@ -91,7 +91,7 @@ export async function GET(request: Request): Promise<NextResponse> {
       ? Math.min(requested, limits.alternativeSlots)
       : limits.alternativeSlots;
 
-  const slots = getAlternativeSlots(instructorSlug, count);
+  const slots = await getAlternativeSlots(instructorSlug, count);
 
   /*
    * Неизвестный инструктор — 404, а не пустой список: пустой список означает «нет

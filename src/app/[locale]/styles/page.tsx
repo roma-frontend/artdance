@@ -80,7 +80,7 @@ export default async function StylesPage({ params }: PageProps) {
         title={t('index.title')}
         subtitle={t('index.subtitle')}
         eyebrow={tNav('discover')}
-        image={getContentHero('styles')}
+        image={await getContentHero('styles')}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />

@@ -37,7 +37,7 @@ import { defineQuery } from '@/server/query';
 import { firstMediaRef, type MediaRow } from './media';
 import { mediaRelation } from './relations';
 
-const eventSelect = {
+export const eventSelect = {
   slug: true,
   type: true,
   title: true,
@@ -55,7 +55,7 @@ const eventSelect = {
   },
 } as const;
 
-interface EventRow {
+export interface EventRow {
   slug: string;
   type: EventType;
   title: string;
@@ -78,7 +78,7 @@ interface EventRow {
 }
 
 /** Опубликованные и ещё не закончившиеся. */
-function publicEventWhere(now: Date) {
+export function publicEventWhere(now: Date) {
   return { isPublished: true, endsAt: { gte: now } };
 }
 

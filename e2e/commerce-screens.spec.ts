@@ -15,11 +15,11 @@ import { expect, test } from '@playwright/test';
 
 import en from '../src/i18n/messages/en';
 import {
+  demoAccounts,
   demoCartTotals,
   demoClasses,
   demoInstructors,
-  demoSelectedSlot,
-  demoTakenSlots,
+  demoPassword,
 } from '../prisma/fixtures/demo';
 import { security } from '../src/config/business';
 
@@ -54,6 +54,74 @@ test.describe('Корзина', () => {
 });
 
 test.describe('Бронирование', () => {
+  test('занятие проходит через удержание в бронь и списывает одно место', async ({ page }, testInfo) => {
+    const connectionString = process.env.DATABASE_URL;
+    test.skip(!connectionString || !['localhost', '127.0.0.1', '[::1]'].includes(new URL(connectionString).hostname),
+      'Запись и очистка тестовых данных разрешены только на локальной БД');
+    const { PrismaClient } = await import('../src/generated/prisma/client');
+    const { PrismaPg } = await import('@prisma/adapter-pg');
+    const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: connectionString! }) });
+    const danceClass = demoClasses[['desktop', 'tablet', 'mobile'].indexOf(testInfo.project.name)] ?? firstClass;
+    const customer = demoAccounts.find(account => account.role === 'CUSTOMER')!;
+    let holdId: string | undefined;
+    let bookingId: string | undefined;
+    let sessionId: string | undefined;
+    try {
+      await page.setExtraHTTPHeaders({ 'x-forwarded-for': `10.240.${testInfo.parallelIndex}.1` });
+      await page.goto('/en/sign-in');
+      await page.getByLabel(en.auth.signIn.emailLabel).fill(customer.email);
+      await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
+      await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+      await page.waitForURL(/\/account$/);
+      await page.goto(`/en/classes/${danceClass.slug}`);
+      const holdResponse = page.waitForResponse(response =>
+        response.url().includes('/api/booking/hold') && response.request().method() === 'POST',
+      );
+      await page.getByRole('link', { name: en.common.actions.bookClass, exact: true }).click();
+      const held = await holdResponse;
+      expect(held.status()).toBe(201);
+      holdId = (await held.json()).hold.id;
+      sessionId = held.request().postDataJSON().sessionId;
+      expect(sessionId).toBeTruthy();
+      const session = await db.classSession.findUniqueOrThrow({
+        where: { id: sessionId },
+        include: { danceClass: true },
+      });
+      expect(session.danceClass.slug).toBe(danceClass.slug);
+      const bookingResponse = page.waitForResponse(response =>
+        new URL(response.url()).pathname === '/api/booking' && response.request().method() === 'POST',
+      );
+      await page.getByRole('button', { name: en.booking.continueCta }).click();
+      const confirmed = await bookingResponse;
+      expect(confirmed.status()).toBe(201);
+      const payload = (await confirmed.json()).booking;
+      bookingId = payload.id;
+      await expect(page).toHaveURL(new RegExp(`/booking/${payload.reference}/confirm$`));
+      await expect(page.getByRole('heading', { level: 1, name: en.booking.confirmedTitle })).toBeVisible();
+      const saved = await db.booking.findUniqueOrThrow({ where: { id: bookingId } });
+      expect(saved.sessionId).toBe(sessionId);
+      expect(saved.status).toBe('CONFIRMED');
+      expect(saved.totalPrice).toBe(session.danceClass.price);
+      expect(saved.startsAt).toEqual(session.startsAt);
+      expect(saved.endsAt).toEqual(session.endsAt);
+      expect(await db.slotHold.findUnique({ where: { id: holdId } })).toBeNull();
+      const updated = await db.classSession.findUniqueOrThrow({ where: { id: sessionId } });
+      expect(updated.bookedCount).toBe(session.bookedCount + 1);
+    } finally {
+      if (bookingId && sessionId) {
+        await db.$transaction(async transaction => {
+          await transaction.notification.deleteMany({ where: {
+            payload: { path: ['dedupeKey'], equals: `booking:${bookingId}:confirmed` },
+          } });
+          await transaction.booking.delete({ where: { id: bookingId } });
+          await transaction.classSession.update({ where: { id: sessionId }, data: { bookedCount: { decrement: 1 } } });
+        });
+      }
+      if (holdId) await db.slotHold.deleteMany({ where: { id: holdId } });
+      await db.$disconnect();
+    }
+  });
+
   test('вход в поток ведёт к выбору времени у конкретного инструктора', async ({ page }) => {
     await page.goto(BOOKING_START);
 
@@ -63,27 +131,24 @@ test.describe('Бронирование', () => {
     await expect(link).toHaveAttribute('href', `/en/instructors/${firstInstructor.slug}/book`);
   });
 
-  test('занятый слот нельзя выбрать, свободный выбирается', async ({ page }) => {
+  test('свободный слот выбирается и удерживается по ID инструктора из БД', async ({ page }) => {
+    const holdResponse = page.waitForResponse(response =>
+      response.url().includes('/api/booking/hold') && response.request().method() === 'POST',
+    );
     await page.goto(`/en/instructors/${firstInstructor.slug}/book`);
 
     /* Календарь — это сетка с ролью, а не таблица дней: проверяем роль. */
     await expect(page.getByRole('grid')).toBeVisible();
 
-    const taken = demoTakenSlots[0]!;
-    const takenBtn = page.getByRole('button', { name: new RegExp(`^${taken}`) });
-    if ((await takenBtn.count()) > 0) {
-      await expect(takenBtn).toBeDisabled();
-    }
-
-    const free = page.getByRole('button', { name: new RegExp(`^${demoSelectedSlot}`) });
-    // Вечером время макета уже внутри лид-тайма или занято — тогда выбран первый свободный слот дня.
-    // Вечером на CI слот ещё не успевает переключиться на следующий день, но занятый слот уже отключён.
-    const selected = (await free.count()) > 0 && (await free.isEnabled())
-      ? free.first()
-      : page.getByRole('button', { name: /^\d{2}:\d{2}/ }).first();
-    // Слот в календаре точно рендерится; pressed может отсутствовать если страница перешла в "завтра"
+    const selected = page.getByRole('button', { name: /^\d{2}:\d{2}/ })
+      .and(page.locator('[aria-pressed="true"]'));
     await expect(selected).toBeVisible();
     await expect(selected).toBeEnabled();
+    const response = await holdResponse;
+    expect(response.status()).toBe(201);
+    const payload = response.request().postDataJSON() as { instructorId: string };
+    expect(payload.instructorId).toBeTruthy();
+    expect(payload.instructorId).not.toBe(firstInstructor.slug);
 
     /* Сводка знает, что бронируется, и кнопка активна. */
     await expect(page.getByText(firstClass.title).first()).toBeVisible();

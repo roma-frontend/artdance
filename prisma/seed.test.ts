@@ -86,3 +86,21 @@ describe('сид и частичные уникальные индексы', () 
     expect(body.slice(0, body.indexOf('return row.id'))).toContain('deletedAt: null');
   });
 });
+
+
+
+describe('CMS-блок главной', () => {
+  it('сеется для всех локалей через составной ключ', () => {
+    expect(seed).toContain('async function seedHomeContent()');
+    expect(seed).toContain('prisma.contentBlock.upsert');
+    expect(seed).toContain('key_locale: { key: homeContentConfig.blockKey, locale }');
+    expect(seed).toContain('await seedHomeContent();');
+  });
+
+  it('схема разрешает один key на каждую locale, а не один на весь сайт', () => {
+    const block = schema.slice(schema.indexOf('model ContentBlock'));
+    const body = block.slice(0, block.indexOf('\n}'));
+    expect(body).toContain('@@unique([key, locale])');
+    expect(body).not.toMatch(/key\s+String\s+@unique/);
+  });
+});

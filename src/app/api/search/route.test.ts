@@ -10,7 +10,42 @@
  * функция от `Request`, и проверять её через сеть значит проверять ещё и Next.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+const searchCatalogMock = vi.hoisted(() =>
+  vi.fn(async (_term: string, scope: string, limit: number) => {
+    const allHits = [
+      {
+        id: 'class-salsa',
+        scope: 'classes' as const,
+        title: 'Salsa Class',
+        subtitle: 'Instructor',
+        href: '/classes/salsa-class',
+        image: 'class-salsa',
+      },
+      {
+        id: 'instructor-salsa',
+        scope: 'instructors' as const,
+        title: 'Salsa Instructor',
+        subtitle: 'Instructor',
+        href: '/instructors/salsa-instructor',
+        image: 'instructor-salsa',
+      },
+      {
+        id: 'venue-salsa',
+        scope: 'studios' as const,
+        title: 'Salsa Studio',
+        subtitle: 'Kentron',
+        href: '/studios/salsa-studio',
+        image: 'venue-salsa',
+      },
+    ];
+    const scoped = scope === 'all' ? allHits : allHits.filter((hit) => hit.scope === scope);
+    return scoped.slice(0, limit);
+  }),
+);
+
+vi.mock('@/server/content/catalog', () => ({ searchCatalog: searchCatalogMock }));
 
 import { GET } from './route';
 import { limits, rateLimits } from '@/config/business';

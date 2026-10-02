@@ -8,7 +8,7 @@
  *   • цвета  → семантические токен-утилиты Tailwind
  *   • ссылки → `routes`
  *   • фичи   → `features`
- *   • медиа  → `getHomeContent()` (единственный шов с будущей базой и админкой)
+ *   • медиа  → локализованный `getHomeContent()` из Prisma/ContentBlock
  *
  * Разметка секции живёт в компоненте секции. Здесь остаются только те блоки,
  * которые сводятся к «заголовок + сетка карточек»: у них нет собственного
@@ -69,7 +69,7 @@ export default async function HomePage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 
-  const content = getHomeContent();
+  const content = await getHomeContent(locale as Locale);
   const t = await getTranslations('home');
   const tCommon = await getTranslations('common');
   const tPricing = await getTranslations('pricing');

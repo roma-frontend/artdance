@@ -98,10 +98,9 @@ export async function GET(request: Request): Promise<NextResponse> {
       : limits.search.maxResults;
 
   /**
-   * Язык страницы влияет на выдачу только заголовком `Content-Language`: сейчас
-   * названия занятий лежат в фикстурах в одном виде. С переходом на базу тот же
-   * параметр выберет перевод в `select`, и контракт клиента не изменится —
-   * поэтому он принимается и проверяется уже сейчас.
+   * Локаль выбирает перевод контентных полей в Prisma-запросе и одновременно
+   * объявляется через `Content-Language`. Неизвестное значение безопасно
+   * подменяется основной локалью сайта.
    */
   const rawLocale = url.searchParams.get('locale') ?? '';
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
@@ -109,7 +108,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const payload: SearchResponse = {
     term,
     scope,
-    hits: searchCatalog(term, scope, maxHits),
+    hits: await searchCatalog(term, scope, maxHits, locale),
   };
 
   return jsonResponse(payload, 200, {

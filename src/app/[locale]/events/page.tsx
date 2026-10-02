@@ -59,7 +59,7 @@ export default async function EventsPage({ params, searchParams }: PageProps) {
         title={t('events.title')}
         subtitle={t('events.subtitle')}
         eyebrow={tNav('events')}
-        image={getListingHero('events')}
+        image={await getListingHero('events')}
         locale={locale as Locale}
         breadcrumbs={[{ label: tNav('events') }]}
       />

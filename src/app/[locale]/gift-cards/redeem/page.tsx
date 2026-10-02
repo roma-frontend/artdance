@@ -34,7 +34,7 @@ export default async function GiftCardRedeemPage({ params }: PageProps) {
   ];
   return (
     <main id={site.mainContentId}>
-      <PageHero title={tFooter('redeemGiftCard')} subtitle={tFooter('activateHint')} locale={locale as Locale} breadcrumbs={breadcrumbsFromTrail(trail)} image={getContentHero('giftCards')} />
+      <PageHero title={tFooter('redeemGiftCard')} subtitle={tFooter('activateHint')} locale={locale as Locale} breadcrumbs={breadcrumbsFromTrail(trail)} image={await getContentHero('giftCards')} />
       <div className="page-container py-12 md:py-16">
         <GiftCardRedeemForm />
       </div>

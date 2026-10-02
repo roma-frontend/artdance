@@ -80,7 +80,7 @@ export default async function CompetitionsPage({
         title={t("title")}
         subtitle={t("subtitle")}
         eyebrow={tNav("competitions")}
-        image={getDancesportHero("competitions")}
+        image={await getDancesportHero("competitions")}
         locale={locale as Locale}
         breadcrumbs={[{ label: tNav("competitions") }]}
       />

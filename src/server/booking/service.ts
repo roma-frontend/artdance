@@ -1,6 +1,9 @@
 import 'server-only';
 import { booking } from '@/config/business';
 import { domainErrors } from '@/domain/errors';
+import { publicClassWhere } from '@/server/queries/classes';
+import { notTrashed } from '@/server/queries/relations';
+import { slotBlockingBookingStatuses } from '@/domain/enums';
 import { isHoldExpired } from '@/domain/slot-hold';
 import { cancellationOutcome, refundAmountFor, rescheduleOutcome, type BookingSnapshot } from '@/domain/booking/policy';
 import { assertInsideAvailability, assertNoConflict } from '@/domain/availability/conflicts';
@@ -26,16 +29,23 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   let session: { id: string; capacity: number; bookedCount: number } | null = null;
   let sessionClassId: string | null = null;
   if (hold.sessionId) {
-    const s = await db.classSession.findUnique({ where: { id: hold.sessionId }, select: { id: true, capacity: true, bookedCount: true, classId: true } });
+    const s = await db.classSession.findFirst({
+      where: { id: hold.sessionId, ...notTrashed, isCancelled: false, danceClass: { ...notTrashed, ...publicClassWhere } },
+      select: { id: true, capacity: true, bookedCount: true, classId: true, startsAt: true, endsAt: true,
+        danceClass: { select: { instructorId: true } } },
+    });
     if (!s) throw domainErrors.notFound();
+    if (s.startsAt.getTime() !== hold.startsAt.getTime() || s.endsAt.getTime() !== hold.endsAt.getTime()
+      || s.danceClass.instructorId !== hold.instructorId) throw domainErrors.slotUnavailable();
+    if (s.startsAt <= now) throw domainErrors.slotUnavailable();
+    if (input.locationOption && input.locationOption !== 'STUDIO') throw domainErrors.validationFailed('locationOption');
     session = { id: (s as { id: string }).id, capacity: (s as { capacity: number }).capacity, bookedCount: (s as { bookedCount: number }).bookedCount };
     sessionClassId = (s as { classId: string }).classId;
     const dc = await db.danceClass.findUnique({ where: { id: sessionClassId }, select: { id: true, price: true, venueId: true } });
     if (dc) danceClass = dc as { id: string; price: number; venueId: string | null };
   } else if (hold.instructorId) {
-    const cls = await db.danceClass.findFirst({ where: { instructorId: hold.instructorId, isActive: true, deletedAt: null } as never, select: { id: true, price: true, venueId: true } });
+    const cls = await db.danceClass.findFirst({ where: { instructorId: hold.instructorId, isActive: true, deletedAt: null } as never, orderBy: { id: 'asc' }, select: { id: true, price: true, venueId: true } });
     if (cls) { danceClass = cls as { id: string; price: number; venueId: string | null }; basePrice = (cls as { price: number }).price; }
-    else { const { demoClasses } = await import('../../../prisma/fixtures/demo'); const demo = (demoClasses as readonly { instructorSlug: string; price: number }[]).find(c => c.instructorSlug === hold.instructorId); if (demo) basePrice = demo.price; }
   }
   if (basePrice == null) { if (danceClass) basePrice = danceClass.price; else throw domainErrors.notFound(); }
   const locationOption = (input.locationOption ?? 'STUDIO') as 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE';
@@ -53,13 +63,25 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   try {
     const result = await db.$transaction(async (tx) => {
       if (bookedCheck && bookedCheck.bookedCount >= bookedCheck.capacity) throw domainErrors.capacityExceeded(0);
-      const conflict = await (tx as unknown as { booking: { findFirst: (a: unknown)=>Promise<unknown> } }).booking.findFirst({ where: { instructorId: hold.instructorId ?? undefined, startsAt: { lt: hold.endsAt }, endsAt: { gt: hold.startsAt }, status: { in: ['PENDING', 'CONFIRMED'] } } } as never);
+      const consumed = await tx.slotHold.deleteMany({ where: { id: hold.id, expiresAt: { gt: now } } });
+      if (consumed.count !== 1) throw domainErrors.holdExpired();
+      if (session) {
+        const reserved = await tx.classSession.updateMany({
+          where: { id: session.id, ...notTrashed, isCancelled: false, bookedCount: { lt: session.capacity } },
+          data: { bookedCount: { increment: 1 } },
+        });
+        if (reserved.count !== 1) throw domainErrors.capacityExceeded(0);
+      }
+      const conflict = await tx.booking.findFirst({ where: {
+        instructorId: hold.instructorId ?? undefined,
+        startsAt: { lt: hold.endsAt }, endsAt: { gt: hold.startsAt },
+        status: { in: [...slotBlockingBookingStatuses] },
+        ...(session ? { OR: [{ sessionId: null }, { sessionId: { not: session.id } }, { customerId }] } : {}),
+      } });
       if (conflict) throw domainErrors.slotConflict();
       const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject: 'CLASS_SESSION', status: 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants: 1, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount: 0, totalPrice, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules }, select: { id: true, reference: true } });
       const ref = refFromId(created.id);
       const updated = await tx.booking.update({ where: { id: created.id }, data: { reference: ref }, select: { id: true, reference: true, totalPrice: true, startsAt: true, endsAt: true } });
-      if (session) await tx.classSession.update({ where: { id: session.id }, data: { bookedCount: { increment: 1 } } });
-      await tx.slotHold.delete({ where: { id: hold.id } });
       return updated;
     });
     createdId = result.id;
@@ -117,11 +139,10 @@ export async function rescheduleBooking(input: RescheduleBookingInput) {
   let exceptions: { start: Date; end: Date; isAvailable:boolean }[] = [];
   if (b.instructorId) {
     const profile = await db.instructorProfile.findUnique({ where:{ id: b.instructorId }, select:{ id:true }});
-    if (profile) {
-      rules = await db.availabilityRule.findMany({ where:{ instructorId: b.instructorId, isActive:true }, select:{ weekday:true, startTime:true, endTime:true, validFrom:true, validUntil:true, isActive:true }});
-      const ex = await db.availabilityException.findMany({ where:{ instructorId: b.instructorId }, select:{ startsAt:true, endsAt:true, isAvailable:true }});
-      exceptions = ex.map(e=>({ start:e.startsAt, end:e.endsAt, isAvailable:e.isAvailable }));
-    } else { const { demoInstructorAvailability } = await import('../../../prisma/fixtures/demo'); const demo = (demoInstructorAvailability as Record<string, readonly {weekday:number;startTime:string;endTime:string}[]>)[b.instructorId]; if (demo) rules = demo.map(w=>({ weekday:w.weekday, startTime:w.startTime, endTime:w.endTime, validFrom:null, validUntil:null, isActive:true })); }
+    if (!profile) throw domainErrors.notFound();
+    rules = await db.availabilityRule.findMany({ where:{ instructorId: b.instructorId, isActive:true }, select:{ weekday:true, startTime:true, endTime:true, validFrom:true, validUntil:true, isActive:true }});
+    const ex = await db.availabilityException.findMany({ where:{ instructorId: b.instructorId }, select:{ startsAt:true, endsAt:true, isAvailable:true }});
+    exceptions = ex.map(e=>({ start:e.startsAt, end:e.endsAt, isAvailable:e.isAvailable }));
   }
   const windows = expandRules(rules as never, exceptions as never, { start: input.newStartsAt, end: input.newEndsAt }, site.timeZone);
   assertInsideAvailability(windows, { start: input.newStartsAt, end: input.newEndsAt });

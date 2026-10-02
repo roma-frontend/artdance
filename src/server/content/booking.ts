@@ -1,8 +1,8 @@
 /**
  * Контент экрана бронирования.
  *
- * Тот же шов, что `home.ts` и `cart.ts`: расписание сегодня из демо-фикстур
- * прототипа, завтра из базы, компоненты не меняются.
+ * Публичный профиль и занятие читаются из Prisma; расписание, исключения,
+ * блокирующие брони и непросроченные удержания перечитываются без кеша.
  *
  * **Доступность считает движок, а не вёрстка.** `domain/availability/compute.ts`
  * разворачивает правила расписания в окна, вырезает занятое время с буфером и
@@ -20,40 +20,35 @@
  * ответ означает двойную бронь. Маршрут бронирования лежит в `privatePaths`
  * (`no-store`), функция не оборачивается ни в `unstable_cache`, ни в теги.
  *
- * **Что здесь остаётся заглушкой до задачи 2.1.** Занятое время берётся из трёх
- * зачёркнутых времён макета, а не из `Booking` и `SlotHold`; исключения
- * расписания (отпуск, разовое окно) пусты. Форма входа при этом уже настоящая:
- * появление базы меняет источники массивов, а не движок и не компоненты.
+ * Переход с занятия передаёт его слаг: календарь показывает ClassSession с ID,
+ * временем и остатком мест. Прямой вход от инструктора сохраняет индивидуальную
+ * сетку; онлайн-формат без соответствующего поля в схеме не предлагается.
  */
 
 import 'server-only';
 
-import {
-  demoClasses,
-  demoInstructorAvailability,
-  demoInstructors,
-  demoSelectedSlot,
-  demoTakenSlots,
-  demoVenues,
-} from '../../../prisma/fixtures/demo';
+import { db } from '@/lib/db';
+import { defaultLocale, type Locale } from '@/i18n/config';
+import { slotBlockingBookingStatuses } from '@/domain/enums';
+import { publicInstructorWhere, instructorSelect, toInstructorCard } from '../queries/instructors';
+import { publicClassWhere } from '../queries/classes';
+import { notTrashed } from '../queries/relations';
 import type { TimeSlot } from '@/components/booking/time-slot-picker';
-import { booking } from '@/config';
+import { booking, limits } from '@/config';
 import { site } from '@/config/site';
 import {
   computeFreeSlots,
   groupSlotsByDay,
   nextAvailableSlots,
+  zonedDateKey,
   type AvailabilityInput,
-  type AvailabilityRule,
 } from '@/domain/availability/compute';
 import type { InstructorCardItem } from '@/domain/content';
 import type { Money } from '@/domain/money';
 import { publicHolidaysBetween, startOfZonedDay } from '@/domain/holidays';
-import { formatClock, parseClock } from '@/lib/time/clock';
+import { formatClock } from '@/lib/time/clock';
 import type { Interval } from '@/lib/time/interval';
-import { fromZonedParts, zonedParts } from '@/lib/time/schedule';
-
-import { mediaRef } from './media';
+import { zonedParts } from '@/lib/time/schedule';
 
 const MS_PER_MINUTE = 60_000;
 const MS_PER_DAY = 24 * 60 * MS_PER_MINUTE;
@@ -65,7 +60,7 @@ export interface BookingDay {
   /** Полночь этого дня в поясе бизнеса, ISO. Нужен календарю. */
   dateIso: string;
   /** Времена дня: занятые остаются в списке недоступными. */
-  slots: readonly TimeSlot[];
+  slots: ReadonlyArray<TimeSlot & { sessionId?: string; endIso?: string }>;
 }
 
 /** Ближайшее свободное время: момент для показа даты и время суток для подписи. */
@@ -94,60 +89,34 @@ export interface BookingContent {
   days: readonly BookingDay[];
   /** День, открытый при входе на экран: первый с доступностью. */
   initialDateKey: string | null;
-  /** Слот, предвыбранный при открытии страницы (в макете — 18:00). */
+  /** Первое свободное время начального дня. */
   preselectedSlot: string | null;
-  /** Инструктор выезжает к клиенту. В production — поле профиля. */
+  /** Инструктор выезжает к клиенту — поле профиля. */
   acceptsTravel: boolean;
   acceptsOnline: boolean;
-  instructorId: string | null;
+  instructorId: string;
   venueSlug: string | null;
+  /** Групповой календарь: только реальные проведения выбранного занятия. */
+  sessionBooking?: boolean;
 }
 
-/** Окна фикстур → правила движка. Форма совпадает с `AvailabilityRule` в схеме. */
-function availabilityRulesFor(instructorSlug: string): readonly AvailabilityRule[] {
-  return (demoInstructorAvailability[instructorSlug] ?? []).map((window) => ({
-    weekday: window.weekday,
-    startTime: window.startTime,
-    endTime: window.endTime,
-  }));
-}
-
-/**
- * Занятое время инструктора.
- *
- * Заглушка: три зачёркнутых времени макета повторяются в каждый рабочий день
- * горизонта. В production это выборка `Booking` и непросроченных `SlotHold` по
- * инструктору за тот же диапазон — функция меняется целиком, вход движка нет.
- */
-function busyIntervalsFor(
-  rules: readonly AvailabilityRule[],
-  range: Interval,
-  durationMinutes: number,
-): readonly Interval[] {
-  const workingWeekdays = new Set(rules.map((rule) => rule.weekday));
-  const takenMinutes = demoTakenSlots.map(parseClock);
-  const busy: Interval[] = [];
-
-  for (
-    let cursor = range.start.getTime();
-    cursor < range.end.getTime();
-    cursor += MS_PER_DAY
-  ) {
-    const parts = zonedParts(new Date(cursor));
-    if (!workingWeekdays.has(parts.weekday)) continue;
-
-    for (const minutesOfDay of takenMinutes) {
-      const start = fromZonedParts({
-        year: parts.year,
-        month: parts.month,
-        day: parts.day,
-        minutesOfDay,
-      });
-      busy.push({ start, end: new Date(start.getTime() + durationMinutes * MS_PER_MINUTE) });
-    }
-  }
-
-  return busy;
+async function bookingSubject(slug: string, locale: Locale = defaultLocale, classSlug?: string) {
+  const instructor = await db.instructorProfile.findFirst({
+    where: { slug, ...publicInstructorWhere },
+    select: { id: true, slug: true, acceptsTravel: true, user: { select: { name: true } } },
+  });
+  if (!instructor) return null;
+  const classItem = await db.danceClass.findFirst({
+    where: { ...publicClassWhere, instructorId: instructor.id, ...(classSlug ? { slug: classSlug } : {}) },
+    orderBy: { id: 'asc' },
+    select: {
+      id: true, slug: true, title: true, price: true, durationMinutes: true,
+      translations: { where: { locale }, select: { title: true } },
+      venue: { select: { slug: true, name: true, deletedAt: true,
+        translations: { where: { locale }, select: { name: true } } } },
+    },
+  });
+  return { instructor, classItem };
 }
 
 /** Время суток слота в машинном виде `HH:mm` — то, что понимает `TimeSlotPicker`. */
@@ -156,27 +125,17 @@ function slotClock(instant: Date): string {
 }
 
 /**
- * Данные для бронирования занятия у инструктора.
- *
- * Возвращает `null`, если инструктора нет или у него нет занятий: страница
- * отвечает 404, а не рисует пустую сводку.
- *
- * `now` параметром: экран рендерится на сервере, но тест доступности не должен
- * зависеть от дня, в который его запустили.
- */
-/**
  * Вход движка доступности для одного инструктора.
  *
  * Одна функция на все вопросы о его расписании: и «что свободно в календаре», и
  * «когда ближайшее» (C-02). Два разных сбора входа означали бы два разных ответа
  * на один вопрос — например, альтернативы, предлагающие уже занятое время.
  */
-function availabilityInputFor(
-  instructorSlug: string,
+async function availabilityInputFor(
+  instructorId: string,
   durationMinutes: number,
   now: Date,
-): AvailabilityInput {
-  const rules = availabilityRulesFor(instructorSlug);
+): Promise<AvailabilityInput> {
 
   /*
    * Диапазон — весь горизонт бронирования: календарю нужно знать, какие дни
@@ -184,15 +143,31 @@ function availabilityInputFor(
    * при этом немного (несколько рабочих дней в неделю), и они не кешируются.
    */
   const range: Interval = {
-    start: new Date(now.getTime()),
+    start: startOfZonedDay(now, site.timeZone),
     end: new Date(now.getTime() + booking.maxAdvanceDays * MS_PER_DAY),
   };
 
+  const overlap = {
+    startsAt: { lt: range.end },
+    endsAt: { gt: new Date(range.start.getTime() - booking.bufferBetweenBookingsMinutes * MS_PER_MINUTE) },
+  };
+  const [rules, exceptions, bookings, holds] = await Promise.all([
+    db.availabilityRule.findMany({ where: { instructorId, isActive: true } }),
+    db.availabilityException.findMany({ where: { instructorId, ...overlap } }),
+    db.booking.findMany({
+      where: { instructorId, ...overlap, status: { in: [...slotBlockingBookingStatuses] } },
+      select: { startsAt: true, endsAt: true },
+    }),
+    db.slotHold.findMany({
+      where: { instructorId, ...overlap, expiresAt: { gt: now } },
+      select: { startsAt: true, endsAt: true },
+    }),
+  ]);
+
   return {
     rules,
-    /* Отпуска и разовые окна появятся вместе с расписанием инструктора. */
-    exceptions: [],
-    busy: busyIntervalsFor(rules, range, durationMinutes),
+    exceptions: exceptions.map((row) => ({ start: row.startsAt, end: row.endsAt, isAvailable: row.isAvailable })),
+    busy: [...bookings, ...holds].map((row) => ({ start: row.startsAt, end: row.endsAt })),
     holidays: publicHolidaysBetween(range.start, range.end).map((holiday) => holiday.date),
     range,
     durationMinutes,
@@ -214,22 +189,78 @@ function availabilityInputFor(
  * `now` параметром: экран рендерится на сервере, но тест доступности не должен
  * зависеть от дня, в который его запустили.
  */
-export function getInstructorBookingContent(
+export async function getInstructorBookingContent(
   slug: string,
   now: Date = new Date(),
-): BookingContent | null {
-  const instructor = demoInstructors.find((item) => item.slug === slug);
-  if (!instructor) return null;
+  locale: Locale = defaultLocale,
+  classSlug?: string,
+): Promise<BookingContent | null> {
+  const subject = await bookingSubject(slug, locale, classSlug);
+  if (!subject?.classItem) return null;
+  const { instructor, classItem } = subject;
+  const venue = classItem.venue?.deletedAt === null ? classItem.venue : null;
+  if (classSlug) {
+    const range = {
+      start: startOfZonedDay(now, site.timeZone),
+      end: new Date(now.getTime() + booking.maxAdvanceDays * MS_PER_DAY),
+    };
+    const sessions = await db.classSession.findMany({
+      where: {
+        ...notTrashed, classId: classItem.id, isCancelled: false,
+        startsAt: {
+          gte: new Date(now.getTime() + booking.minLeadTimeMinutes * MS_PER_MINUTE),
+          lt: range.end,
+        },
+      },
+      orderBy: { startsAt: 'asc' },
+      select: { id: true, startsAt: true, endsAt: true, capacity: true, bookedCount: true },
+    });
+    const [sessionBookings, activeHolds] = await Promise.all([
+      db.booking.findMany({
+        where: { instructorId: instructor.id, status: { in: [...slotBlockingBookingStatuses] },
+          startsAt: { lt: range.end }, endsAt: { gt: range.start } },
+        select: { startsAt: true, endsAt: true, sessionId: true },
+      }),
+      db.slotHold.findMany({
+        where: { instructorId: instructor.id, expiresAt: { gt: now },
+          startsAt: { lt: range.end }, endsAt: { gt: range.start } },
+        select: { startsAt: true, endsAt: true },
+      }),
+    ]);
+    const days: BookingDay[] = [];
+    for (const session of sessions) {
+      const date = startOfZonedDay(session.startsAt, site.timeZone);
+      const dateKey = zonedDateKey(session.startsAt, site.timeZone);
+      let day = days.find(item => item.dateKey === dateKey);
+      if (!day) {
+        day = { dateKey, dateIso: date.toISOString(), slots: [] };
+        days.push(day);
+      }
+      const bufferMs = booking.bufferBetweenBookingsMinutes * MS_PER_MINUTE;
+      const occupied = [...sessionBookings.filter(row => row.sessionId !== session.id), ...activeHolds]
+        .some(row => row.startsAt.getTime() < session.endsAt.getTime() + bufferMs
+          && row.endsAt.getTime() > session.startsAt.getTime() - bufferMs);
+      const available = session.bookedCount < session.capacity && !occupied;
+      day.slots = [...day.slots, {
+        start: slotClock(session.startsAt), available,
+        sessionId: session.id, endIso: session.endsAt.toISOString(),
+      }];
+    }
+    const initial = days.find(day => day.slots.some(slot => slot.available)) ?? days[0] ?? null;
+    return {
+      instructorSlug: instructor.slug, instructorId: instructor.id,
+      instructorName: instructor.user.name,
+      classTitle: classItem.translations[0]?.title ?? classItem.title,
+      classSlug: classItem.slug,
+      studioName: venue?.translations[0]?.name ?? venue?.name ?? '',
+      venueSlug: venue?.slug ?? null,
+      durationMinutes: classItem.durationMinutes, fee: classItem.price,
+      acceptsTravel: false, acceptsOnline: false, sessionBooking: true,
+      days, initialDateKey: initial?.dateKey ?? null, preselectedSlot: preselectedSlotFor(initial),
+    };
+  }
 
-  /*
-   * Занятие, которое инструктор ведёт. В production бронируется конкретный
-   * `ClassSession`, и его id приходит параметром запроса из карточки занятия.
-   */
-  const classItem = demoClasses.find((item) => item.instructorSlug === slug);
-  if (!classItem) return null;
-
-  const venue = demoVenues.find((item) => item.slug === classItem.venueSlug);
-  const input = availabilityInputFor(slug, classItem.durationMinutes, now);
+  const input = await availabilityInputFor(instructor.id, classItem.durationMinutes, now);
 
   /*
    * Сетка дня — тот же расчёт, но якорённый к НАЧАЛУ СУТОК и без лид-тайма:
@@ -264,18 +295,19 @@ export function getInstructorBookingContent(
 
   return {
     instructorSlug: instructor.slug,
-    instructorName: instructor.name,
-    classTitle: classItem.title,
+    instructorName: instructor.user.name,
+    classTitle: classItem.translations[0]?.title ?? classItem.title,
     classSlug: classItem.slug,
-    studioName: venue?.name ?? '',
+    studioName: venue?.translations[0]?.name ?? venue?.name ?? '',
     durationMinutes: classItem.durationMinutes,
     fee: classItem.price,
     days,
     initialDateKey: initialDay?.dateKey ?? null,
     preselectedSlot: preselectedSlotFor(initialDay),
-    acceptsTravel: true,
-    acceptsOnline: true,
-    instructorId: instructor.slug,
+    acceptsTravel: instructor.acceptsTravel,
+    // Онлайн-формат не объявлен в схеме: не обещаем его вместо данных.
+    acceptsOnline: false,
+    instructorId: instructor.id,
     venueSlug: venue?.slug ?? null,
   };
 }
@@ -283,14 +315,11 @@ export function getInstructorBookingContent(
 /**
  * Что выбрать за человека при открытии экрана.
  *
- * Время из макета, если оно свободно; иначе первое свободное этого дня. Ничего не
- * выбирать нельзя: сводка справа без слота — пустой блок с неактивной кнопкой,
- * и человек не понимает, чего от него ждут.
+ * Первое свободное время дня; null, если весь день занят.
  */
 function preselectedSlotFor(day: BookingDay | null): string | null {
   if (!day) return null;
-  const preferred = day.slots.find((slot) => slot.start === demoSelectedSlot && slot.available);
-  return (preferred ?? day.slots.find((slot) => slot.available))?.start ?? null;
+  return day.slots.find((slot) => slot.available)?.start ?? null;
 }
 
 /**
@@ -308,18 +337,15 @@ function preselectedSlotFor(day: BookingDay | null): string | null {
  * `null` — инструктора нет. Это не то же самое, что «нет времени»: подменять
  * первое вторым значит скрыть битую ссылку от того, кто её поставил.
  */
-export function getAlternativeSlots(
+export async function getAlternativeSlots(
   instructorSlug: string,
   count: number,
   now: Date = new Date(),
-): readonly AlternativeSlot[] | null {
-  const instructor = demoInstructors.find((item) => item.slug === instructorSlug);
-  if (!instructor) return null;
-
-  const classItem = demoClasses.find((item) => item.instructorSlug === instructorSlug);
-  if (!classItem) return [];
-
-  const input = availabilityInputFor(instructorSlug, classItem.durationMinutes, now);
+): Promise<readonly AlternativeSlot[] | null> {
+  const subject = await bookingSubject(instructorSlug);
+  if (!subject) return null;
+  if (!subject.classItem) return [];
+  const input = await availabilityInputFor(subject.instructor.id, subject.classItem.durationMinutes, now);
 
   return nextAvailableSlots(input, count).map((slot) => ({
     startIso: slot.start.toISOString(),
@@ -328,20 +354,13 @@ export function getAlternativeSlots(
   }));
 }
 
-/** Инструкторы, к которым открыто бронирование: для страницы входа в поток. */export function getBookableInstructors(): readonly InstructorCardItem[] {
-  /* Только те, у кого есть занятие: ссылка на бронирование обязана открываться. */
-  return demoInstructors
-    .filter((instructor) => demoClasses.some((item) => item.instructorSlug === instructor.slug))
-    .map((instructor) => ({
-      slug: instructor.slug,
-      name: instructor.name,
-      headline: instructor.headline,
-      styles: instructor.styles,
-      yearsExperience: instructor.yearsExperience,
-      hourlyRateFrom: instructor.hourlyRateFrom,
-      ratingAverage: instructor.ratingAverage,
-      ratingCount: instructor.ratingCount,
-      isVerified: instructor.isVerified,
-      image: mediaRef(instructor.asset),
-    }));
+/** Публичные инструкторы с действующим занятием. Без кеша. */
+export async function getBookableInstructors(locale: Locale = defaultLocale): Promise<readonly InstructorCardItem[]> {
+  const rows = await db.instructorProfile.findMany({
+    where: { ...publicInstructorWhere, classes: { some: { ...notTrashed, ...publicClassWhere } } },
+    orderBy: { id: 'asc' },
+    take: limits.query.maxRows,
+    select: { ...instructorSelect, translations: { where: { locale }, select: { headline: true } } },
+  });
+  return rows.map((row) => toInstructorCard({ ...row, headline: row.translations[0]?.headline ?? row.headline }));
 }

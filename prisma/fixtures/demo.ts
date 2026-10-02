@@ -919,3 +919,33 @@ export const demoHeroStats: ReadonlyArray<{
   { id: 'styles', value: 50, suffix: '+', decimals: 0 },
   { id: 'rating', value: 4.9, suffix: '', decimals: 1 },
 ];
+
+
+/**
+ * CMS-конфигурация главной для сида.
+ *
+ * Здесь остаются семантические имена ассетов; seed переводит их в реальные
+ * storageKey записей MediaAsset до сериализации ContentBlock.
+ */
+export const demoHomeContent = {
+  stats: demoHeroStats,
+  media: {
+    heroPosterAsset: 'hero-loop-poster',
+    editorialPosterAsset: 'editorial-loop-poster',
+    competitionPosterAsset: 'competition-loop-poster',
+  },
+  styleTiles: demoStyleTiles.map((tile) => ({
+    style: tile.style,
+    asset: tile.asset,
+  })),
+  collections: {
+    popularClassSlugs: [...demoClasses]
+      .sort((left, right) => Number(right.isTrending) - Number(left.isTrending))
+      .map((item) => item.slug),
+    instructorSlugs: demoInstructors.map((item) => item.slug),
+    venueSlugs: demoVenues.map((item) => item.slug),
+    productSlugs: demoProducts.map((item) => item.slug),
+    eventSlugs: demoEvents.map((item) => item.slug),
+    testimonialAuthorEmails: demoReviews.map((item) => demoReviewerEmail(item.authorName)),
+  },
+} as const;

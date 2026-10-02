@@ -63,7 +63,7 @@ export default async function SponsorsPage({ params }: PageProps) {
         title={t("title")}
         subtitle={t("subtitle")}
         eyebrow={t("eyebrow")}
-        image={getDancesportHero("sponsors")}
+        image={await getDancesportHero("sponsors")}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />

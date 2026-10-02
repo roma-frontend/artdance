@@ -75,7 +75,7 @@ export default async function AboutPage({ params }: PageProps) {
         title={t('title')}
         subtitle={t('subtitle')}
         eyebrow={t('eyebrow')}
-        image={getContentHero('about')}
+        image={await getContentHero('about')}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />

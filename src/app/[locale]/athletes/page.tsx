@@ -3,7 +3,7 @@
  *
  * Страничка секции сообщества: у каждой строки — дисциплины, лучший результат и
  * переход к бронированию у инструктора. Данные читает контент-слой
- * (`getAthletes`): сегодня фикстуры, завтра база — компонент не меняется.
+ * (`getAthletes`): публичные профили, опыт и медиа из Prisma.
  */
 
 import type { Metadata } from "next";
@@ -23,6 +23,9 @@ import type { Crumb } from "@/lib/seo/jsonld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getAthletes, type AthleteItem } from "@/server/content/athletes";
 import { getDancesportHero } from "@/server/content/catalog";
+
+/** Обновление профилей видно и в статически собранной странице. */
+export const revalidate = 180;
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -58,7 +61,7 @@ export default async function AthletesPage({ params }: PageProps) {
   setRequestLocale(locale as Locale);
 
   const t = await getTranslations("athletes");
-  const athletes = getAthletes();
+  const athletes = await getAthletes(locale as Locale);
 
   const trail: Crumb[] = [{ name: t("eyebrow"), path: routes.athletes() }];
 
@@ -68,7 +71,7 @@ export default async function AthletesPage({ params }: PageProps) {
         title={t("title")}
         subtitle={t("subtitle")}
         eyebrow={t("eyebrow")}
-        image={getDancesportHero("athletes")}
+        image={await getDancesportHero("athletes")}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />

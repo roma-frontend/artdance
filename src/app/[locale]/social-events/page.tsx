@@ -70,7 +70,7 @@ export default async function SocialEventsPage({
         title={t("title")}
         subtitle={t("subtitle")}
         eyebrow="Social"
-        image={getDancesportHero("socialEvents")}
+        image={await getDancesportHero("socialEvents")}
         locale={locale as Locale}
         breadcrumbs={[{ label: t("title") }]}
       />

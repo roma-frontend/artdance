@@ -63,7 +63,7 @@ export default async function StudiosPage({ params, searchParams }: PageProps) {
         title={t('studios.title')}
         subtitle={t('studios.subtitle')}
         eyebrow={tNav('studios')}
-        image={getListingHero('studios')}
+        image={await getListingHero('studios')}
         locale={locale as Locale}
         breadcrumbs={[{ label: tNav('studios') }]}
       >

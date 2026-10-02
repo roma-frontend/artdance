@@ -1,123 +1,162 @@
-/**
- * Тесты контента экрана бронирования.
- *
- * Проверяется шов между движком доступности и экраном: календарь не должен
- * открывать дни, в которые инструктор не принимает, а занятые времена обязаны
- * оставаться в сетке недоступными — иначе день выглядит менее рабочим, чем он есть.
- *
- * `now` фиксирован: доступность зависит от даты запуска, и тест, который зависит
- * от неё, краснеет по вторникам.
- */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { describe, expect, it } from 'vitest';
+const db = vi.hoisted(() => ({
+  instructorProfile: { findFirst: vi.fn(), findMany: vi.fn() },
+  danceClass: { findFirst: vi.fn() },
+  classSession: { findMany: vi.fn() },
+  availabilityRule: { findMany: vi.fn() },
+  availabilityException: { findMany: vi.fn() },
+  booking: { findMany: vi.fn() },
+  slotHold: { findMany: vi.fn() },
+}));
+vi.mock('@/lib/db', () => ({ db }));
 
-import { demoTakenSlots } from '../../../prisma/fixtures/demo';
 import { booking } from '@/config/business';
-import { zonedParts } from '@/lib/time/schedule';
+import { slotBlockingBookingStatuses } from '@/domain/enums';
+import { getAlternativeSlots, getBookableInstructors, getInstructorBookingContent } from './booking';
 
-import { getBookableInstructors, getInstructorBookingContent } from './booking';
-
-/** Понедельник 7 сентября 2026, 12:00 по Еревану. */
 const now = new Date('2026-09-07T08:00:00Z');
+const instructor = { id: 'profile-1', slug: 'teacher', user: { name: 'Teacher' }, acceptsTravel: false };
+const classItem = {
+  id: 'class-1', slug: 'lesson', title: 'Lesson', durationMinutes: 60, price: 17_000,
+  translations: [{ title: 'Занятие' }],
+  venue: { slug: 'studio', name: 'Studio', deletedAt: null, translations: [{ name: 'Студия' }] },
+};
+const interval = (start: string, end: string) => ({ startsAt: new Date(start), endsAt: new Date(end) });
 
-/** Anna Mkrtchyan принимает во вторник, четверг и субботу. */
-const annaWeekdays = new Set([2, 4, 6]);
-
-describe('getInstructorBookingContent', () => {
-  it('возвращает null для неизвестного инструктора: страница отвечает 404', () => {
-    expect(getInstructorBookingContent('нет-такого', now)).toBeNull();
-  });
-
-  it('открывает только те дни, в которые инструктор принимает', () => {
-    const content = getInstructorBookingContent('anna-mkrtchyan', now);
-
-    expect(content?.days.length).toBeGreaterThan(0);
-    for (const day of content!.days) {
-      expect(annaWeekdays.has(zonedParts(new Date(day.dateIso)).weekday)).toBe(true);
-    }
-  });
-
-  it('дни идут по возрастанию и не повторяются', () => {
-    const keys = getInstructorBookingContent('anna-mkrtchyan', now)!.days.map((day) => day.dateKey);
-
-    expect([...keys].sort()).toEqual(keys);
-    expect(new Set(keys).size).toBe(keys.length);
-  });
-
-  it('не выходит за горизонт бронирования', () => {
-    const content = getInstructorBookingContent('anna-mkrtchyan', now)!;
-    const last = content.days.at(-1)!;
-    const horizonDays =
-      (new Date(last.dateIso).getTime() - now.getTime()) / (24 * 60 * 60 * 1_000);
-
-    expect(horizonDays).toBeLessThanOrEqual(booking.maxAdvanceDays);
-  });
-
-  it('занятые времена макета остаются в сетке недоступными, а не исчезают', () => {
-    const content = getInstructorBookingContent('anna-mkrtchyan', now)!;
-    const firstDay = content.days[0]!;
-
-    for (const taken of demoTakenSlots) {
-      const slot = firstDay.slots.find((item) => item.start === taken);
-      expect(slot, `слот ${taken} обязан остаться в сетке`).toBeDefined();
-      expect(slot?.available, `слот ${taken} обязан быть недоступным`).toBe(false);
-    }
-  });
-
-  it('в дне есть и свободные времена: экран не может состоять из зачёркнутого', () => {
-    const content = getInstructorBookingContent('anna-mkrtchyan', now)!;
-
-    expect(content.days[0]!.slots.some((slot) => slot.available)).toBe(true);
-  });
-
-  it('сетка выровнена по шагу расписания', () => {
-    const content = getInstructorBookingContent('anna-mkrtchyan', now)!;
-
-    for (const slot of content.days[0]!.slots) {
-      const [hours, minutes] = slot.start.split(':').map(Number);
-      expect(((hours! * 60 + minutes!) % booking.slotGranularityMinutes)).toBe(0);
-    }
-  });
-
-  it('предвыбирает время из макета, и оно свободно', () => {
-    const content = getInstructorBookingContent('anna-mkrtchyan', now)!;
-    const initial = content.days.find((day) => day.dateKey === content.initialDateKey)!;
-
-    expect(content.preselectedSlot).toBe('18:00');
-    expect(initial.slots.find((slot) => slot.start === '18:00')?.available).toBe(true);
-  });
-
-  it('первый открытый день содержит свободное время', () => {
-    const content = getInstructorBookingContent('anna-mkrtchyan', now)!;
-    const initial = content.days.find((day) => day.dateKey === content.initialDateKey);
-
-    expect(initial?.slots.some((slot) => slot.available)).toBe(true);
-  });
-
-  it('цена и длительность берутся у занятия, а не выдумываются', () => {
-    const content = getInstructorBookingContent('anna-mkrtchyan', now)!;
-
-    expect(content.classSlug).toBe('latin-fusion');
-    expect(content.durationMinutes).toBe(90);
-    expect(content.fee).toBe(12_000);
-  });
-
-  it('у разных инструкторов разные рабочие дни', () => {
-    const anna = getInstructorBookingContent('anna-mkrtchyan', now)!;
-    const arman = getInstructorBookingContent('arman-harutyunyan', now)!;
-
-    const weekday = (dateIso: string) => zonedParts(new Date(dateIso)).weekday;
-
-    expect(new Set(anna.days.map((day) => weekday(day.dateIso)))).not.toEqual(
-      new Set(arman.days.map((day) => weekday(day.dateIso))),
-    );
-  });
+beforeEach(() => {
+  vi.resetAllMocks();
+  db.instructorProfile.findFirst.mockResolvedValue(instructor);
+  db.instructorProfile.findMany.mockResolvedValue([]);
+  db.danceClass.findFirst.mockResolvedValue(classItem);
+  db.availabilityRule.findMany.mockResolvedValue([
+    { weekday: 2, startTime: '10:00', endTime: '16:00', isActive: true },
+  ]);
+  db.availabilityException.findMany.mockResolvedValue([]);
+  db.booking.findMany.mockResolvedValue([]);
+  db.slotHold.findMany.mockResolvedValue([]);
 });
 
-describe('getBookableInstructors', () => {
-  it('возвращает только инструкторов с занятиями: ссылка обязана открываться', () => {
-    for (const instructor of getBookableInstructors()) {
-      expect(getInstructorBookingContent(instructor.slug, now)).not.toBeNull();
-    }
+const content = () => getInstructorBookingContent(instructor.slug, now, 'ru');
+
+describe('календарь бронирования из БД', () => {
+  it('не показывает отсутствующий или непубличный профиль', async () => {
+    db.instructorProfile.findFirst.mockResolvedValue(null);
+    expect(await content()).toBeNull();
+    expect(await getAlternativeSlots('unknown', 3, now)).toBeNull();
+    expect(db.instructorProfile.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ moderation: 'APPROVED', publishedAt: { not: null }, user: { isActive: true } }),
+    }));
+    expect(db.availabilityRule.findMany).not.toHaveBeenCalled();
+  });
+
+  it('без занятия не открывает бронь, а альтернативы пусты', async () => {
+    db.danceClass.findFirst.mockResolvedValue(null);
+    expect(await content()).toBeNull();
+    expect(await getAlternativeSlots(instructor.slug, 3, now)).toEqual([]);
+  });
+
+  it('читает цену, длительность, переводы и настоящий ID', async () => {
+    expect(await content()).toMatchObject({
+      instructorId: 'profile-1', instructorName: 'Teacher', classSlug: 'lesson',
+      classTitle: 'Занятие', studioName: 'Студия', fee: 17_000, durationMinutes: 60,
+      acceptsTravel: false, acceptsOnline: false,
+    });
+    expect(db.danceClass.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ instructorId: instructor.id, isActive: true }),
+      orderBy: { id: 'asc' },
+    }));
+  });
+
+  it('открывает рабочие дни по порядку в пределах горизонта и выбирает первое свободное время', async () => {
+    const result = (await content())!;
+    const keys = result.days.map(day => day.dateKey);
+    expect(keys.length).toBeGreaterThan(0);
+    expect(keys).toEqual([...new Set(keys)].sort());
+    expect(result.days[0]?.dateKey).toBe('2026-09-08');
+    expect(result.preselectedSlot).toBe('10:00');
+    expect(new Date(result.days.at(-1)!.dateIso).getTime() - now.getTime())
+      .toBeLessThanOrEqual(booking.maxAdvanceDays * 86_400_000);
+  });
+
+  it('бронь и активное удержание остаются в сетке недоступными', async () => {
+    db.booking.findMany.mockResolvedValue([interval('2026-09-08T06:00:00Z', '2026-09-08T07:00:00Z')]);
+    db.slotHold.findMany.mockResolvedValue([interval('2026-09-08T08:00:00Z', '2026-09-08T09:00:00Z')]);
+    const result = (await content())!;
+    const slots = result.days[0]!.slots;
+    expect(slots.find(slot => slot.start === '10:00')?.available).toBe(false);
+    expect(slots.find(slot => slot.start === '12:00')?.available).toBe(false);
+    expect(slots.some(slot => slot.available)).toBe(true);
+    const alternatives = (await getAlternativeSlots(instructor.slug, 3, now))!;
+    expect(alternatives.every(slot => !['2026-09-08T06:00:00.000Z', '2026-09-08T08:00:00.000Z'].includes(slot.startIso))).toBe(true);
+  });
+
+  it('выбирает только блокирующие брони и непросроченные удержания по ID', async () => {
+    await content();
+    expect(db.booking.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ instructorId: instructor.id, status: { in: [...slotBlockingBookingStatuses] } }),
+    }));
+    expect(db.slotHold.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ instructorId: instructor.id, expiresAt: { gt: now } }),
+    }));
+  });
+
+  it('учитывает отпуск и разовое доступное окно', async () => {
+    db.availabilityException.findMany.mockResolvedValue([
+      { ...interval('2026-09-08T06:00:00Z', '2026-09-08T12:00:00Z'), isAvailable: false },
+      { ...interval('2026-09-09T06:00:00Z', '2026-09-09T08:00:00Z'), isAvailable: true },
+    ]);
+    const result = (await content())!;
+    expect(result.days.some(day => day.dateKey === '2026-09-08')).toBe(false);
+    expect(result.initialDateKey).toBe('2026-09-09');
+  });
+
+  it('без расписания не выдумывает времена', async () => {
+    db.availabilityRule.findMany.mockResolvedValue([]);
+    expect(await content()).toMatchObject({ days: [], initialDateKey: null, preselectedSlot: null });
+    expect(await getAlternativeSlots(instructor.slug, 3, now)).toEqual([]);
+  });
+
+  it('повторный запрос перечитывает занятость без кеша', async () => {
+    await content();
+    await content();
+    expect(db.booking.findMany).toHaveBeenCalledTimes(2);
+    expect(db.slotHold.findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('выбранное занятие показывает только реальные проведения с ID и вместимостью', async () => {
+    db.classSession.findMany.mockResolvedValue([
+      { id: 'session-1', ...interval('2026-09-08T14:00:00Z', '2026-09-08T15:00:00Z'), capacity: 5, bookedCount: 5 },
+      { id: 'session-2', ...interval('2026-09-09T14:00:00Z', '2026-09-09T15:00:00Z'), capacity: 5, bookedCount: 2 },
+    ]);
+    const result = (await getInstructorBookingContent('teacher', now, 'ru', 'lesson'))!;
+    expect(result.sessionBooking).toBe(true);
+    expect(result.days[0]?.slots[0]).toMatchObject({ sessionId: 'session-1', available: false, start: '18:00' });
+    expect(result.initialDateKey).toBe('2026-09-09');
+    expect(result.days[1]?.slots[0]).toMatchObject({ sessionId: 'session-2', available: true });
+    expect(db.danceClass.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ slug: 'lesson', instructorId: 'profile-1' }),
+    }));
+    expect(db.classSession.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ classId: 'class-1', isCancelled: false, deletedAt: null }),
+    }));
+  });
+
+  it('бронь той же группы не закрывает оставшиеся места, активное удержание закрывает', async () => {
+    const times = interval('2026-09-08T14:00:00Z', '2026-09-08T15:00:00Z');
+    db.classSession.findMany.mockResolvedValue([{ id: 'session-1', ...times, capacity: 5, bookedCount: 1 }]);
+    db.booking.findMany.mockResolvedValue([{ ...times, sessionId: 'session-1' }]);
+    expect((await getInstructorBookingContent('teacher', now, 'ru', 'lesson'))?.days[0]?.slots[0]?.available).toBe(true);
+    db.slotHold.findMany.mockResolvedValue([times]);
+    expect((await getInstructorBookingContent('teacher', now, 'ru', 'lesson'))?.days[0]?.slots[0]?.available).toBe(false);
+  });
+
+  it('в список входят только публичные профили с неудалёнными занятиями', async () => {
+    expect(await getBookableInstructors('ru')).toEqual([]);
+    expect(db.instructorProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        moderation: 'APPROVED', classes: { some: expect.objectContaining({ deletedAt: null, isActive: true }) },
+      }),
+    }));
   });
 });

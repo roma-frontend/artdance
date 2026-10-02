@@ -1756,7 +1756,7 @@ model ReviewResponse {
 
 model ContentBlock {
   id        String   @id @default(cuid())
-  key       String   @unique
+  key       String
   locale    Locale
   title     String?
   body      String
@@ -1764,6 +1764,8 @@ model ContentBlock {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([key, locale])
 }
 
 model ShortLink {

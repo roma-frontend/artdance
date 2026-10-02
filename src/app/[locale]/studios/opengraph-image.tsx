@@ -12,4 +12,4 @@ export function generateStaticParams() {
   return sectionOgParams();
 }
 
-export default sectionOgImage('studios', getListingHero('studios'));
+export default sectionOgImage('studios', () => getListingHero('studios'));

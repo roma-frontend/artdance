@@ -47,6 +47,7 @@ import 'server-only';
 import { booking, limits } from '@/config/business';
 import { cacheTags, dataRevalidate } from '@/config/cache';
 import {
+  availableSorts,
   buildFacets,
   matchesQuery,
   paginate,
@@ -302,6 +303,8 @@ function classSortKeys() {
     createdAt: (row: ClassRow) => row.createdAt.getTime(),
   };
 }
+
+export const classSortOptions = availableSorts(classSortKeys());
 
 export const getClassList = defineQuery({
   name: 'classList',

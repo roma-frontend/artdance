@@ -6,18 +6,22 @@
  * соревнований приходят от инструкторов платформы, у которых есть спортивная
  * карьера.
  *
- * Место в шве «фикстуры → база»: сегодня данные читаются из демо-фикстур
- * (`experience`, `specializations`), завтра запрос уйдёт в `InstructorProfile`
- * + новая таблица достижений, и компонент страницы не заметит разницы.
- * Реализация меняется здесь — сигнатуры и форма результата стабильны.
+ * Данные читаются из публичных InstructorProfile и их опыта. Распознавание
+ * дисциплин и результата по тексту сохранено до появления структурированных
+ * спортивных достижений; новая таблица в этом переходе не нужна.
  */
 
 import "server-only";
 
-import { demoInstructors } from "../../../prisma/fixtures/demo";
+import { limits, cacheTags, dataRevalidate } from "@/config";
+import { defaultLocale, type Locale } from "@/i18n/config";
+import { db } from "@/lib/db";
+import { defineQuery } from "@/server/query";
+import { instructorSelect, publicInstructorWhere, toInstructorCard } from "../queries/instructors";
+import type { MediaRef } from "@/domain/content";
 import { standardDisciplines } from "@/domain/dancesport";
 
-import { mediaRef } from "./media";
+
 
 /** Строка секции атлетов. */
 export interface AthleteItem {
@@ -32,7 +36,7 @@ export interface AthleteItem {
   bestResult: string;
   /** Сколько лет спортивной карьеры (из общего стажа — не то же самое). */
   competitionYears: number;
-  image: ReturnType<typeof mediaRef>;
+  image: MediaRef;
 }
 
 const standardSlugs = new Set(standardDisciplines.map((item) => item.slug));
@@ -40,7 +44,7 @@ const standardSlugs = new Set(standardDisciplines.map((item) => item.slug));
 /**
  * Спортивные дисциплины атлета.
  *
- * Слагов дисциплин в фикстурах нет — они собираются из специализаций: то, что
+ * Отдельного поля дисциплин пока нет — они собираются из специализаций: то, что
  * упоминает дисциплину Standard/Latine, попадает в список; прочее («Body
  * Movement», «Salsa On1») — это педагогика, а не спорт, и в строку атлета не идёт.
  */
@@ -66,7 +70,7 @@ function sportSpecializations(
  * сильнее «finalist», упомянутого в другой строке.
  */
 function bestResultFrom(
-  instructor: (typeof demoInstructors)[number],
+  instructor: { experience: readonly { title: string; organization: string | null }[] },
 ): AthleteItem["bestResult"] {
   const text = (instructor.experience ?? [])
     .map((item) => `${item.title} ${item.organization ?? ""}`)
@@ -81,10 +85,27 @@ function bestResultFrom(
 }
 
 /** Атлеты платформы: инструкторы со спортивным профилем, порядок — по карьере. */
-export function getAthletes(): readonly AthleteItem[] {
-  return demoInstructors
-    .map((instructor) => {
-      const experience = instructor.experience ?? [];
+export const getAthletes = defineQuery({
+  name: "athletes",
+  tags: () => [cacheTags.instructors()],
+  revalidate: dataRevalidate.catalog,
+  handler: async (locale: Locale = defaultLocale): Promise<readonly AthleteItem[]> => {
+    const rows = await db.instructorProfile.findMany({
+      where: publicInstructorWhere,
+      orderBy: { id: "asc" },
+      take: limits.query.maxRows,
+      select: {
+        ...instructorSelect,
+        translations: { where: { locale }, select: { headline: true } },
+        experiences: {
+          orderBy: { sortOrder: "asc" },
+          select: { title: true, organization: true, startYear: true, endYear: true },
+        },
+      },
+    });
+    return rows.map((row) => {
+      const instructor = toInstructorCard(row);
+      const experience = row.experiences;
       /*
        * Протяжённость карьеры — охват опыта, а не сумма лет: параллельные
        * этапы не удваиваются. Эндпойнт открытого этапа — текущий год.
@@ -99,13 +120,14 @@ export function getAthletes(): readonly AthleteItem[] {
       return {
         slug: instructor.slug,
         name: instructor.name,
-        headline: instructor.headline,
-        disciplines: sportSpecializations(instructor.specializations),
+        headline: row.translations[0]?.headline ?? instructor.headline,
+        disciplines: sportSpecializations(row.specializations),
         styles: instructor.styles,
-        bestResult: bestResultFrom(instructor),
+        bestResult: bestResultFrom({ experience }),
         competitionYears,
-        image: mediaRef(instructor.asset),
+        image: instructor.image,
       } satisfies AthleteItem;
     })
     .sort((a, b) => b.competitionYears - a.competitionYears);
-}
+  },
+});
