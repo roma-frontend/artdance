@@ -22,6 +22,7 @@ import {
   demoPassword,
 } from '../prisma/fixtures/demo';
 import { security } from '../src/config/business';
+import { isPeakHour, isWeekendDay, priceForSlot } from '../src/domain/dynamic-pricing';
 
 const CART = '/en/cart';
 const BOOKING_START = '/en/booking';
@@ -101,7 +102,11 @@ test.describe('Бронирование', () => {
       const saved = await db.booking.findUniqueOrThrow({ where: { id: bookingId } });
       expect(saved.sessionId).toBe(sessionId);
       expect(saved.status).toBe('CONFIRMED');
-      expect(saved.totalPrice).toBe(session.danceClass.price);
+      expect(saved.basePrice).toBe(session.danceClass.price);
+      expect(saved.totalPrice).toBe(priceForSlot(session.danceClass.price, {
+        isPeak: isPeakHour(session.startsAt.getHours()),
+        isWeekend: isWeekendDay(session.startsAt.getDay()),
+      }));
       expect(saved.startsAt).toEqual(session.startsAt);
       expect(saved.endsAt).toEqual(session.endsAt);
       expect(await db.slotHold.findUnique({ where: { id: holdId } })).toBeNull();

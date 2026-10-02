@@ -17,8 +17,8 @@ const schema = z.object({
 export const applyInstructorAction = publicAction
   .metadata({ rateLimit: 'contactForm' })
   .inputSchema(schema)
-  .action(async ({ parsedInput }) => {
-    await db.instructorApplication.create({
+  .action(async ({ parsedInput, ctx }) => {
+    const created = await db.instructorApplication.create({
       data: {
         name: parsedInput.name,
         email: parsedInput.email,
@@ -27,6 +27,38 @@ export const applyInstructorAction = publicAction
         styles: parsedInput.styles as never,
         status: 'PENDING',
       },
+      select: { id: true },
     });
+
+    const { recordAudit } = await import('@/lib/audit');
+    await recordAudit({
+      actor: null,
+      action: 'public.instructor.apply',
+      entityType: 'InstructorApplication',
+      entityId: created.id,
+      after: { name: parsedInput.name, email: parsedInput.email, styles: parsedInput.styles },
+      ipAddress: ctx.identifier,
+    }).catch(() => {
+      /* best effort — форма уже сохранена */
+    });
+
+    // Подтверждение заявителю — best effort, без блокировки формы.
+    void Promise.resolve().then(async () => {
+      try {
+        const { loadMessages } = await import('@/i18n/messages');
+        const messages = await loadMessages('ru');
+        const { sendEmail } = await import('@/lib/email/send');
+        await sendEmail({
+          to: parsedInput.email,
+          subject: messages.footer.applicationSent,
+          heading: messages.footer.applicationSent,
+          paragraphs: [messages.footer.applyHint],
+          locale: 'ru',
+        });
+      } catch {
+        /* сеть или отсутствие ключа — не ошибка заявки */
+      }
+    });
+
     return { ok: true as const };
   });

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 
 /** Прячет шапку при скролле вниз, показывает при скролле вверх. */
-export function useHeaderHideOnScroll(_ref: React.RefObject<HTMLElement | null>): boolean {
+export function useHeaderHideOnScroll(ref?: React.RefObject<HTMLElement | null>): boolean {
+  void ref;
   const [hidden, setHidden] = useState(false);
   const lastY = useRef(0);
 

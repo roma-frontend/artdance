@@ -26,7 +26,7 @@ export function MobileMenuSheetContent() {
         className={cn('mx-auto mt-1 mb-3 block h-1.5 w-10 shrink-0 rounded-full bg-border-strong transition-colors hover:bg-content-tertiary')}
       />
 
-      <nav aria-label={t('a11y.mainNav')} className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
+      <nav aria-label={t('a11y.mainNav')} className="min-h-0 flex-1 overflow-y-auto px-1 pb-2 scrollbar-none">
         <div className="space-y-5">
           {headerMegaGroups.map((group) => (
             <section key={group.id}>

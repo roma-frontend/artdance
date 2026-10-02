@@ -389,7 +389,7 @@ export const moderateItem = authedAction
   .metadata({ rateLimit: 'adminMutation', audit: 'admin.moderation.decide' })
   .inputSchema(
     z.object({
-      kind: z.enum(['reviews', 'instructors', 'venues']),
+      kind: z.enum(['reviews', 'instructors', 'venues', 'instructors-verification']),
       id: z.string().trim().min(1).max(64),
       approve: z.boolean(),
       /** Причина видна автору: без неё отказ невозможно исправить. */
@@ -407,6 +407,27 @@ export const moderateItem = authedAction
 
     const moderation = parsedInput.approve ? 'APPROVED' : 'REJECTED';
     const now = new Date();
+
+    if (parsedInput.kind === 'instructors-verification') {
+      const doc = await db.verificationDocument.findUnique({ where: { id: parsedInput.id }, select: { id: true, status: true, instructorId: true } });
+      if (!doc) throw domainErrors.notFound();
+      const docStatus = (parsedInput.approve ? 'APPROVED' : 'REJECTED') as never;
+      await db.verificationDocument.update({ where: { id: parsedInput.id }, data: { status: docStatus, note: parsedInput.reason ?? null } });
+      if (parsedInput.approve) {
+        await db.instructorProfile.update({ where: { id: doc.instructorId }, data: { isVerified: true } });
+      }
+      await recordAudit({
+        actor: caller,
+        action: parsedInput.approve ? 'admin.verification.approve' : 'admin.verification.reject',
+        entityType: 'VerificationDocument',
+        entityId: parsedInput.id,
+        before: { status: doc.status },
+        after: { status: docStatus },
+        ...(parsedInput.reason ? { reason: parsedInput.reason } : {}),
+        ipAddress: ctx.identifier,
+      });
+      return { moderation: docStatus };
+    }
 
     if (parsedInput.kind === 'reviews') {
       const review = await db.review.findUnique({
@@ -452,6 +473,34 @@ export const moderateItem = authedAction
     }
 
     if (parsedInput.kind === 'instructors') {
+      // Заявки с формы имеют префикс app: — это InstructorApplication, а не профиль.
+      if (parsedInput.id.startsWith('app:')) {
+        const appId = parsedInput.id.slice(4);
+        const app = await db.instructorApplication.findUnique({
+          where: { id: appId },
+          select: { id: true, status: true, email: true, name: true },
+        });
+        if (!app) throw domainErrors.notFound();
+
+        await db.instructorApplication.update({
+          where: { id: appId },
+          data: { status: moderation },
+        });
+
+        await recordAudit({
+          actor: caller,
+          action: parsedInput.approve ? 'admin.instructorApplication.approve' : 'admin.instructorApplication.reject',
+          entityType: 'InstructorApplication',
+          entityId: appId,
+          before: { status: app.status },
+          after: { status: moderation },
+          ...(parsedInput.reason ? { reason: parsedInput.reason } : {}),
+          ipAddress: ctx.identifier,
+        });
+
+        return { moderation };
+      }
+
       const before = await db.instructorProfile.findUnique({
         where: { id: parsedInput.id },
         select: { id: true, moderation: true, publishedAt: true },

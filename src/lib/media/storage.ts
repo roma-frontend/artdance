@@ -22,6 +22,7 @@ import 'server-only';
  * здесь нет.
  */
 
+import { createHash, createHmac } from 'node:crypto';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join, normalize, sep } from 'node:path';
 
@@ -110,27 +111,181 @@ async function putToLocalDisk(key: string, data: Buffer): Promise<StoredObject> 
 
 /* ─────────────────────────────── R2 ─────────────────────────────── */
 
-/**
- * Запись в R2.
- *
- * Не реализована намеренно, и это единственное место во всей админке, где что-то
- * не доделано. Причина: бакет и ключи создаются в аккаунте заказчика (задача 0.4
- * плана), и подписать запрос AWS SigV4 «на всякий случай» без единой возможности
- * проверить подпись — значит получить неработающую загрузку на продакшене вместо
- * понятной ошибки на старте. Когда ключи появятся, реализация — одна функция:
- * PUT `https://{account}.r2.cloudflarestorage.com/{bucket}/{key}` с
- * `Authorization: AWS4-HMAC-SHA256` (`node:crypto`, без SDK — как `webhook.ts`).
- *
- * До этого момента разработка идёт на локальном драйвере, а прод честно падает с
- * сообщением, называющим недостающие переменные.
- */
+const R2_SERVICE = 's3';
+const R2_REGION = 'auto';
+
+function sha256Hex(data: Buffer | string): string {
+  return createHash('sha256').update(data).digest('hex');
+}
+
+function hmacSha256(key: Buffer | string, data: string): Buffer {
+  return createHmac('sha256', key).update(data).digest();
+}
+
+function amzDates(now: Date): { amzDate: string; dateStamp: string } {
+  const iso = now.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  // 20260930T123456Z
+  return { amzDate: iso, dateStamp: iso.slice(0, 8) };
+}
+
+function encodeR2Key(key: string): string {
+  return key.split('/').map(encodeURIComponent).join('/');
+}
+
+function r2PublicUrl(key: string): string {
+  const env = getServerEnv();
+  if (env.R2_PUBLIC_BASE_URL) {
+    return `${env.R2_PUBLIC_BASE_URL.replace(/\/$/, '')}/${key}`;
+  }
+  return mediaUrl(key);
+}
+
+function r2Endpoint(accountId: string, bucket: string, key: string): { url: string; host: string; canonicalUri: string } {
+  const encodedKey = encodeR2Key(key);
+  const host = `${accountId}.r2.cloudflarestorage.com`;
+  const canonicalUri = `/${bucket}/${encodedKey}`;
+  const url = `https://${host}${canonicalUri}`;
+  return { url, host, canonicalUri };
+}
+
+function buildAuthorization(input: {
+  method: string;
+  canonicalUri: string;
+  host: string;
+  payloadHash: string;
+  amzDate: string;
+  dateStamp: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  contentType?: string;
+}): { authorization: string; signedHeaders: string; canonicalHeaders: string } {
+  const headers: Record<string, string> = {
+    host: input.host,
+    'x-amz-content-sha256': input.payloadHash,
+    'x-amz-date': input.amzDate,
+  };
+  if (input.contentType) headers['content-type'] = input.contentType;
+
+  const sortedKeys = Object.keys(headers).sort();
+  const signedHeaders = sortedKeys.join(';');
+  const canonicalHeaders = sortedKeys.map((k) => `${k}:${(headers[k] ?? '').trim()}\n`).join('');
+
+  const canonicalRequest = [
+    input.method,
+    input.canonicalUri,
+    '',
+    canonicalHeaders,
+    signedHeaders,
+    input.payloadHash,
+  ].join('\n');
+
+  const credentialScope = `${input.dateStamp}/${R2_REGION}/${R2_SERVICE}/aws4_request`;
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    input.amzDate,
+    credentialScope,
+    sha256Hex(canonicalRequest),
+  ].join('\n');
+
+  const kDate = hmacSha256(`AWS4${input.secretAccessKey}`, input.dateStamp);
+  const kRegion = hmacSha256(kDate, R2_REGION);
+  const kService = hmacSha256(kRegion, R2_SERVICE);
+  const kSigning = hmacSha256(kService, 'aws4_request');
+  const signature = hmacSha256(kSigning, stringToSign).toString('hex');
+
+  const authorization = `AWS4-HMAC-SHA256 Credential=${input.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+
+  return { authorization, signedHeaders, canonicalHeaders };
+}
+
 async function putToR2(key: string, data: Buffer, contentType: string): Promise<StoredObject> {
-  throw new Error(
-    `[media] Драйвер R2 не реализован (задача 1.6 ждёт ключи из задачи 0.4). ` +
-      `Ключ: ${key}, тип: ${contentType}, байт: ${data.byteLength}.`,
-  );
+  const env = getServerEnv();
+  const accountId = env.R2_ACCOUNT_ID;
+  const accessKeyId = env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = env.R2_SECRET_ACCESS_KEY;
+  const bucket = env.R2_BUCKET;
+
+  if (!accountId || !accessKeyId || !secretAccessKey || !bucket) {
+    throw new Error(
+      '[media] R2 не настроен: задайте R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY и R2_BUCKET.',
+    );
+  }
+
+  const payloadHash = sha256Hex(data);
+  const { amzDate, dateStamp } = amzDates(new Date());
+  const { url, host, canonicalUri } = r2Endpoint(accountId, bucket, key);
+  const { authorization } = buildAuthorization({
+    method: 'PUT',
+    canonicalUri,
+    host,
+    payloadHash,
+    amzDate,
+    dateStamp,
+    accessKeyId,
+    secretAccessKey,
+    contentType,
+  });
+
+  const response = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      host,
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': amzDate,
+      'content-type': contentType,
+      'content-length': String(data.byteLength),
+      authorization,
+    },
+    body: data as unknown as BodyInit,
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`[media] R2 PUT ${response.status} ${response.statusText}${body ? `: ${body.slice(0, 2000)}` : ''}`);
+  }
+
+  return { key, url: r2PublicUrl(key), bytes: data.byteLength };
 }
 
 async function deleteFromR2(key: string): Promise<void> {
-  throw new Error(`[media] Драйвер R2 не реализован. Удаление ключа ${key} невозможно.`);
+  const env = getServerEnv();
+  const accountId = env.R2_ACCOUNT_ID;
+  const accessKeyId = env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = env.R2_SECRET_ACCESS_KEY;
+  const bucket = env.R2_BUCKET;
+
+  if (!accountId || !accessKeyId || !secretAccessKey || !bucket) {
+    throw new Error(
+      '[media] R2 не настроен: задайте R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY и R2_BUCKET.',
+    );
+  }
+
+  const payloadHash = sha256Hex('');
+  const { amzDate, dateStamp } = amzDates(new Date());
+  const { url, host, canonicalUri } = r2Endpoint(accountId, bucket, key);
+  const { authorization } = buildAuthorization({
+    method: 'DELETE',
+    canonicalUri,
+    host,
+    payloadHash,
+    amzDate,
+    dateStamp,
+    accessKeyId,
+    secretAccessKey,
+  });
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      host,
+      'x-amz-content-sha256': payloadHash,
+      'x-amz-date': amzDate,
+      authorization,
+    },
+  });
+
+  if (!response.ok && response.status !== 404) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`[media] R2 DELETE ${response.status} ${response.statusText}${body ? `: ${body.slice(0, 2000)}` : ''}`);
+  }
 }

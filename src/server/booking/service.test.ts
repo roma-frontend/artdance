@@ -23,6 +23,7 @@ vi.mock('@/server/booking/notify', () => ({
 vi.mock('@/server/wallet/service', () => ({ creditWallet: vi.fn() }));
 
 import { booking } from '@/config/business';
+import { isPeakHour, isWeekendDay, priceForSlot } from '@/domain/dynamic-pricing';
 import { createBookingFromHold, rescheduleBooking } from './service';
 
 const now = new Date('2026-10-01T08:00:00Z');
@@ -81,7 +82,10 @@ describe('бронирование: цена только из БД', () => {
       data: expect.objectContaining({
         basePrice: price,
         travelFee: booking.travelFee,
-        totalPrice: price + booking.travelFee,
+        totalPrice: priceForSlot(price, {
+          isPeak: isPeakHour(startsAt.getHours()),
+          isWeekend: isWeekendDay(startsAt.getDay()),
+        }) + booking.travelFee,
         venueId: 'venue-1',
       }),
     }));

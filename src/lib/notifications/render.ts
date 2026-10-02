@@ -80,9 +80,11 @@ export async function renderEmail(input: RenderInput): Promise<RenderedEmail> {
  */
 export function renderEmailSync(
   type: NotificationType,
-  _locale: Locale,
-  _data: Record<string, string | number>,
+  locale: Locale,
+  data: Record<string, string | number>,
 ): { subject: string; html: string; text: string } {
   void type;
+  void locale;
+  void data;
   return { subject: '', html: '', text: '' };
 }

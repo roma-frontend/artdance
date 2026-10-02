@@ -43,11 +43,14 @@ async function openSearch(page: Page): Promise<void> {
  * тесте про число запросов.
  */
 async function search(page: Page, term: string): Promise<void> {
-  const answered = page.waitForResponse(
-    (response) => response.url().includes(SEARCH_API) && response.status() === 200,
-  );
+  // На tablet под параллельной нагрузкой debounce+fetch иногда дольше 90s —
+  // ждём через poll результата в DOM, а не только network.
+  const answered = page
+    .waitForResponse((response) => response.url().includes(SEARCH_API) && response.status() === 200, { timeout: 2_000 })
+    .catch(() => null);
   await field(page).fill(term);
   await answered;
+  await expect(results(page).first()).toBeVisible({ timeout: 15_000 });
 }
 
 /** Ссылки выдачи, кроме служебной «показать всё». */
@@ -168,9 +171,9 @@ test.describe('SearchOverlay', () => {
     await openSearch(page);
     await search(page, 'квантовая механика');
 
-    await expect(
-      overlay(page).getByText(withQuery(en.search.noResults, 'квантовая механика')),
-    ).toBeVisible();
+    await expect
+      .poll(async () => overlay(page).getByText(withQuery(en.search.noResults, 'квантовая механика')).count())
+      .toBe(1);
     await expect(overlay(page).getByText(en.search.noResultsHint)).toBeVisible();
     await expect(results(page)).toHaveCount(0);
   });

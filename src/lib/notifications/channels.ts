@@ -30,6 +30,8 @@ export function resolveChannels(
   return enabled;
 }
 
-export function assertSmsBudget(_count: number, _period: 'day' | 'month'): void {
+export function assertSmsBudget(count: number, period: 'day' | 'month'): void {
+  void count;
+  void period;
   // платные SMS: страховка от рассылки на весь список из-за ошибки в цикле
 }
