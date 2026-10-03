@@ -31,6 +31,31 @@ const canvasColor = (page: Page) =>
     window.getComputedStyle(document.documentElement).getPropertyValue('--surface-canvas').trim(),
   );
 
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`ссылки навбара читаемы в теме ${colorScheme} до и после раскрытия`, async ({ page }) => {
+    test.skip((page.viewportSize()?.width ?? 0) < 1024, 'Мегаменю показывается только на широких экранах');
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/en/help');
+    await expect.poll(() => themeAttribute(page)).toBe(colorScheme);
+    await expect(page.getByRole('banner')).toHaveAttribute('data-state', 'scrolled');
+    const primary = await page.evaluate(() => {
+      const reference = document.createElement('span');
+      reference.style.color = 'var(--content-primary)';
+      document.body.append(reference);
+      const color = getComputedStyle(reference).color;
+      reference.remove();
+      return color;
+    });
+    const link = page.getByRole('banner').getByRole('navigation')
+      .locator('a[aria-haspopup="menu"]:not([aria-current])').first();
+    await expect(link).toHaveCSS('color', primary);
+    await link.hover();
+    await expect(link).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.getByRole('menu')).toBeVisible();
+    await expect(link).toHaveCSS('color', primary);
+  });
+}
+
 test.describe('тема по системной настройке', () => {
   test('тёмная система даёт тёмную тему без единого клика', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });

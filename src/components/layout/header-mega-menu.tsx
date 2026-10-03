@@ -166,12 +166,12 @@ export function HeaderMegaMenu({ solid, onOpenChange }: Props) {
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-label transition-colors duration-normal ease-brand',
                 open
-                  ? 'bg-accent text-content-on-accent'
+                  ? cn('bg-signal-soft', solid ? 'text-content-primary' : 'text-content-on-accent')
                   : active
-                    ? 'bg-accent text-content-on-accent'
+                    ? 'bg-signal-soft text-content-accent'
                     : solid
-                      ? 'text-content-secondary hover:bg-accent hover:text-content-on-accent'
-                      : 'text-content-on-cinema-muted hover:bg-accent hover:text-content-on-accent',
+                      ? 'text-content-primary hover:bg-signal-soft hover:text-content-accent'
+                      : 'text-content-on-accent hover:bg-signal-soft hover:text-content-accent',
               )}
             >
               {t(group.labelKey)}
