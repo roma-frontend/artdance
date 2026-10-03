@@ -257,6 +257,7 @@ function contentSpecs(): SitemapSpec[] {
     spec(routes.partners()),
     spec(routes.sponsors()),
     spec(routes.advertise()),
+    spec(routes.cities()),
   ];
 
   if (isEnabled('subscriptions')) specs.push(spec(routes.pricing()));

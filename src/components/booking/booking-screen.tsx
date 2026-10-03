@@ -136,14 +136,24 @@ export function BookingScreen({ content }: BookingScreenProps) {
       if (!content.sessionBooking && weeks > 1) {
         const weekday = date.getDay();
         const res = await fetch('/api/booking/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ weekday, startTime, durationMinutes: content.durationMinutes, weeks, instructorId: content.instructorId, locationOption: location }) });
-        const body = (await res.json().catch(() => null)) as { seriesId?: string; bookings?: { id: string }[]; error?: string } | null;
+        if (res.status === 401) {
+          // Не создано ни одной брони — нужно сначала войти, затем заново создать серию.
+          router.push(routes.signIn(`/instructors/${content.instructorSlug}/book`));
+          return;
+        }
+        const body = (await res.json().catch(() => null)) as { seriesId?: string; bookings?: { id: string; reference?: string }[]; error?: string } | null;
         if (!res.ok || !body?.seriesId) { setHold({ status: 'error', justTaken: null }); return; }
-        const first = body.bookings?.[0] as { reference?: string; id?: string } | undefined;
-        router.push(routes.bookingConfirm(first?.reference ?? first?.id ?? body.seriesId));
+        if (!body.bookings || body.bookings.length === 0) { setHold({ status: 'error', justTaken: null }); return; }
+        const first = body.bookings[0] as { reference?: string; id?: string };
+        router.push(routes.bookingConfirm(first.reference ?? first.id!));
         return;
       }
       const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ holdId: hold.holdId, locationOption: location, anonymousId: getAnonymousId() }) });
-      if (res.status === 401) { router.push(routes.signIn(routes.bookingConfirm(hold.holdId))); return; }
+      if (res.status === 401) {
+        // Hold ещё жив — возвращаем к экрану бронирования, а не к несуществующему confirm(holdId)
+        router.push(routes.signIn(`/instructors/${content.instructorSlug}/book`));
+        return;
+      }
       const body = (await res.json().catch(() => null)) as { booking?: { id: string; reference: string }; error?: string } | null;
       if (!res.ok || !body?.booking) { const taken = body?.error === 'SLOT_CONFLICT' || body?.error === 'HOLD_EXPIRED' ? startTime ?? null : null; setHold({ status: 'error', justTaken: taken }); return; }
       router.push(routes.bookingConfirm(body.booking.reference ?? body.booking.id));

@@ -83,6 +83,10 @@ if (!connectionString) {
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
+// Когда нужно тестировать оплату/резервацию с чистого листа — все слоты свободны.
+// Включается: npm run db:seed:clean  или  CLEAN_SLOTS=true npm run db:seed
+const CLEAN_SLOTS = process.argv.includes('--clean') || process.env.CLEAN_SLOTS === 'true';
+
 /** Сколько ближайших проведений создать у каждого занятия. */
 const SESSIONS_PER_CLASS = 8;
 
@@ -595,7 +599,7 @@ async function seedClasses(
     for (let index = 0; index < SESSIONS_PER_CLASS; index += 1) {
       const startsAt = new Date(first.getTime() + index * MS_PER_WEEK);
       const endsAt = new Date(startsAt.getTime() + item.durationMinutes * MS_PER_MINUTE);
-      const bookedCount = index === 0 ? Math.max(0, item.capacity - item.spotsLeft) : 0;
+      const bookedCount = CLEAN_SLOTS ? 0 : index === 0 ? Math.max(0, item.capacity - item.spotsLeft) : 0;
 
       await upsertLive(
         prisma.classSession,
@@ -697,7 +701,7 @@ async function seedEvents(venueIds: Map<string, string>): Promise<void> {
       endsAt,
       price: item.price,
       capacity: item.capacity,
-      bookedCount: Math.max(0, item.capacity - item.spotsLeft),
+      bookedCount: CLEAN_SLOTS ? 0 : Math.max(0, item.capacity - item.spotsLeft),
       isPublished: true,
     };
 
@@ -874,7 +878,18 @@ async function main(): Promise<void> {
   await seedHomeContent();
   await seedPromoCodes();
 
-  console.log('seed — готово');
+  if (CLEAN_SLOTS) {
+    const holds = await prisma.slotHold.deleteMany({});
+    const waits = await prisma.waitlistEntry.deleteMany({});
+    if (holds.count || waits.count) console.log(`  CLEAN_SLOTS: удалено holds ${holds.count}, waitlist ${waits.count}`);
+    // На случай если сид до этого уже ставил bookedCount — уже обнулён выше,
+    // но если база была до флага — подстраховка:
+    const sUpd = await prisma.classSession.updateMany({ where: { bookedCount: { gt: 0 } }, data: { bookedCount: 0 } });
+    const eUpd = await prisma.event.updateMany({ where: { bookedCount: { gt: 0 } }, data: { bookedCount: 0 } });
+    if (sUpd.count || eUpd.count) console.log(`  CLEAN_SLOTS: обнулено sessions ${sUpd.count}, events ${eUpd.count}`);
+  }
+
+  console.log(CLEAN_SLOTS ? 'seed — готово (CLEAN_SLOTS: все слоты свободны)' : 'seed — готово');
 }
 
 /*
