@@ -1,9 +1,12 @@
 'use client';
 
+import { motion as animated, useAnimationControls, useInView, useTransform } from 'framer-motion';
 import { useEffect, useRef, type ReactNode } from 'react';
 
-import { useFinePointer } from '@/lib/hooks/use-media-query';
+import { motion } from '@/design/motion';
+import { useCursorFollow } from '@/hooks/use-cursor-follow';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
+import { revealTransition } from '@/lib/animations/scroll-reveal';
 import { cn } from '@/lib/utils';
 
 interface CardTiltLiteProps {
@@ -12,80 +15,93 @@ interface CardTiltLiteProps {
   index?: number;
 }
 
-/**
- * Лёгкая замена CardTilt без framer-motion для LCP/TBT.
- * Сохраняет тот же data-slot/data-cursor-depth API, но tilt делает чистым CSS+rAF.
- */
-export function CardTilt({ children, className }: CardTiltLiteProps) {
+export function CardTilt({ children, className, index = 0 }: CardTiltLiteProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const fine = useFinePointer();
-  const reduced = usePrefersReducedMotion();
-  const enabled = fine && !reduced;
+  const cursor = useCursorFollow(ref);
+  const reducedMotion = usePrefersReducedMotion();
+  const rotateX = useTransform(cursor.y, (value) => -value * motion.cardTilt.maxRotateDeg);
+  const rotateY = useTransform(cursor.x, (value) => value * motion.cardTilt.maxRotateDeg);
+  const x = useTransform(cursor.x, (value) => value * motion.cardTilt.pointerTravelPx);
+  const y = useTransform(cursor.y, (value) => value * motion.cardTilt.pointerTravelPx);
+  const inView = useInView(ref, { once: true, amount: 0.1 });
+  const controls = useAnimationControls();
+  const revealed = useRef(false);
 
   useEffect(() => {
     const node = ref.current;
-    if (!node || !enabled) return;
-    let raf = 0;
-    let targetX = 0;
-    let targetY = 0;
-    let currentX = 0;
-    let currentY = 0;
-
-    const onMove = (e: PointerEvent) => {
-      const rect = node.getBoundingClientRect();
-      // -0.5 … 0.5
-      targetX = Math.max(-0.5, Math.min(0.5, (e.clientX - rect.left) / rect.width - 0.5));
-      targetY = Math.max(-0.5, Math.min(0.5, (e.clientY - rect.top) / rect.height - 0.5));
-      if (!raf) raf = requestAnimationFrame(tick);
+    if (!node) return;
+    const size = { width: node.offsetWidth, height: node.offsetHeight };
+    const resize = new ResizeObserver(() => {
+      size.width = node.offsetWidth;
+      size.height = node.offsetHeight;
+    });
+    resize.observe(node);
+    const writeX = (value: number) => {
+      node.style.setProperty('--card-cursor-x', `${(value + 0.5) * size.width}px`);
+      node.style.setProperty('--card-media-x', `${value * -motion.cardTilt.mediaTravelPx}px`);
     };
-    const onLeave = () => {
-      targetX = 0;
-      targetY = 0;
-      if (!raf) raf = requestAnimationFrame(tick);
+    const writeY = (value: number) => {
+      node.style.setProperty('--card-cursor-y', `${(value + 0.5) * size.height}px`);
+      node.style.setProperty('--card-media-y', `${value * -motion.cardTilt.mediaTravelPx}px`);
     };
-    const tick = () => {
-      raf = 0;
-      // lerp 0.18 ~ прежний cursorRing.follow
-      currentX += (targetX - currentX) * 0.18;
-      currentY += (targetY - currentY) * 0.18;
-      node.style.setProperty('--card-cursor-x', `${(currentX + 0.5) * node.offsetWidth}px`);
-      node.style.setProperty('--card-cursor-y', `${(currentY + 0.5) * node.offsetHeight}px`);
-      node.style.setProperty('--card-media-x', `${currentX * -14}px`);
-      node.style.setProperty('--card-media-y', `${currentY * -14}px`);
-      // лёгкий 3D tilt без framer-motion
-      const rx = -currentY * 9;
-      const ry = currentX * 9;
-      const tx = currentX * 8;
-      const ty = currentY * 8;
-      node.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translate3d(${tx}px, ${ty}px, 0)`;
-      if (Math.abs(targetX - currentX) > 0.001 || Math.abs(targetY - currentY) > 0.001) {
-        raf = requestAnimationFrame(tick);
-      }
-    };
-
-    node.addEventListener('pointermove', onMove as EventListener, { passive: true } as AddEventListenerOptions);
-    node.addEventListener('pointerleave', onLeave as EventListener);
+    writeX(cursor.x.get());
+    writeY(cursor.y.get());
+    const stopX = cursor.x.on('change', writeX);
+    const stopY = cursor.y.on('change', writeY);
     return () => {
-      node.removeEventListener('pointermove', onMove as EventListener);
-      node.removeEventListener('pointerleave', onLeave as EventListener);
-      if (raf) cancelAnimationFrame(raf);
-      node.style.transform = '';
+      resize.disconnect();
+      stopX();
+      stopY();
       node.style.removeProperty('--card-cursor-x');
       node.style.removeProperty('--card-cursor-y');
       node.style.removeProperty('--card-media-x');
       node.style.removeProperty('--card-media-y');
     };
-  }, [enabled]);
+  }, [cursor.x, cursor.y]);
+
+  useEffect(() => {
+    if (reducedMotion) {
+      controls.stop();
+      controls.set({ opacity: 1, scale: 1 });
+      return;
+    }
+    if (revealed.current) return;
+    const node = ref.current;
+    if (!node) return;
+    if (inView || node.getBoundingClientRect().top < window.innerHeight) {
+      revealed.current = true;
+      node.setAttribute('data-card-entering', '');
+      void controls.start({ opacity: 1, scale: 1, transition: revealTransition(index) }).then(() => {
+        node.removeAttribute('data-card-entering');
+      });
+    } else {
+      controls.set({ opacity: 0, scale: 0.94 });
+    }
+  }, [controls, inView, index, reducedMotion]);
 
   return (
-    <div
+    <animated.div
       ref={ref}
       data-slot="card-tilt"
       data-animation-card=""
-      data-cursor-depth={enabled ? '' : undefined}
+      data-cursor-depth={cursor.enabled ? '' : undefined}
       className={cn('relative h-full', className)}
+      initial={false}
+      animate={controls}
+      onFocusCapture={() => {
+        revealed.current = true;
+        controls.stop();
+        controls.set({ opacity: 1, scale: 1 });
+      }}
+      style={{
+        rotateX: cursor.enabled ? rotateX : 0,
+        rotateY: cursor.enabled ? rotateY : 0,
+        x: cursor.enabled ? x : 0,
+        y: cursor.enabled ? y : 0,
+        transformPerspective: cursor.enabled ? motion.cardTilt.perspectivePx : undefined,
+      }}
     >
       {children}
-    </div>
+    </animated.div>
   );
 }

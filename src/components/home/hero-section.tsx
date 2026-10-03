@@ -5,8 +5,10 @@
 import { getTranslations } from 'next-intl/server';
 import type { CSSProperties, ReactNode } from 'react';
 
+import { HeroMythicDust } from '@/components/fx/hero-mythic-dust';
 import { HeroVideo } from '@/components/home/hero-video';
-import { HeroClientFX } from '@/components/home/hero-client-fx';
+import { HeroParallaxFX } from '@/components/home/hero-parallax-fx';
+import { TextReveal } from '@/components/fx/text-reveal';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/config';
 import type { HomeContent } from '@/domain/content';
@@ -33,7 +35,7 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
 
   return (
     <section className={cn('hero-viewport hero-mythic cinema-surface relative overflow-hidden', className)}>
-      <HeroClientFX />
+      <HeroParallaxFX />
 
       <HeroVideo video={hero.video} poster={hero.image} locale={locale} />
 
@@ -51,6 +53,8 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
       <div aria-hidden className="hero-mythic-rays" />
       <div aria-hidden className="hero-mythic-vignette" />
       <div aria-hidden className="hero-mythic-grain" />
+      {/* Золотая пыль в луче — canvas screen-blend, уважает reduced motion. */}
+      <HeroMythicDust />
 
       {/* Кнопка поиска в самом правом верхнем углу первого экрана */}
       {children !== undefined && (
@@ -66,14 +70,14 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
         </p>
 
         <h1 style={heroEnterOrder('title')} className="text-display-hero mb-3 max-w-full min-w-0 overflow-visible pr-[0.14em] text-content-on-cinema [overflow-wrap:anywhere] md:mb-5 md:max-w-3xl">
-          <span className="inline-block max-w-full overflow-visible pr-[0.04em] [overflow-wrap:anywhere]">{t('titleLine1')}</span>
+          <span className="inline-block max-w-full overflow-visible pr-[0.04em] [overflow-wrap:anywhere]"><TextReveal>{t('titleLine1')}</TextReveal></span>
           <br />
-          <em data-hero-shine className="hero-shine inline-block max-w-full overflow-visible bg-clip-text pr-[0.10em] text-accent-on-cinema italic [overflow-wrap:anywhere]">{t('titleAccent')}</em>
+          <em data-hero-shine className="hero-shine inline-block max-w-full overflow-visible bg-clip-text pr-[0.10em] text-accent-on-cinema italic [overflow-wrap:anywhere]"><TextReveal>{t('titleAccent')}</TextReveal></em>
         </h1>
 
         {/* Подзаг не в h1 — отдельный блок со своим hero-enter-index, иначе margin у h1 схлопывается с inline-br в hy */}
         <p style={heroEnterOrder('subtitle')} className="text-body md:text-body-lg mt-2 mb-6 max-w-lg overflow-visible pr-[0.10em] text-content-on-cinema-muted md:mb-8">
-          {t('subtitle')}
+          <TextReveal>{t('subtitle')}</TextReveal>
         </p>
 
         <div style={heroEnterOrder('actions')} className="flex flex-wrap gap-4">
