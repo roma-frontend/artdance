@@ -34,9 +34,9 @@ import type { VideoFormat } from '@/domain/content';
 
 /** MIME-типы источников. Единственное место, где они объявлены. */
 export const videoMimeByFormat: Record<VideoFormat, string> = {
-  av1: 'video/mp4; codecs=av01.0.05M.08',
-  vp9: 'video/webm; codecs=vp9',
-  h264: 'video/mp4; codecs=avc1.640028',
+  av1: 'video/mp4; codecs="av01.0.05M.08"',
+  vp9: 'video/webm; codecs="vp09.00.10.08"',
+  h264: 'video/mp4; codecs="avc1.640028"',
 };
 
 export interface VideoSourceChoice {
