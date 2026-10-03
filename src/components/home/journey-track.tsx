@@ -30,38 +30,40 @@ export function JourneyTrack({ totalSteps = 4, className }: JourneyTrackProps) {
     if (!container || reducedMotion) return;
 
     let frame = 0;
+    let lastStep = -1;
+
     const updateProgress = () => {
       frame = 0;
-      // Находим родительскую секцию Journey
+      // READ фаза — все геометрии до первой записи (избегаем forced reflow)
       const section = container.closest('section') || container;
       const rect = section.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
 
-      // Рассчитываем положение скролла относительно секции
       const topOffset = rect.top;
       const totalScrollable = Math.max(1, rect.height - viewportHeight * 0.4);
       const scrolled = -topOffset + viewportHeight * 0.3;
       const progress = Math.min(1, Math.max(0, scrolled / totalScrollable));
-
-      // Рисуем линию со скроллом непрерывно (0% -> 100%)
       const linePercent = Math.min(100, Math.max(0, progress * 100));
+      const nextStep = Math.min(totalSteps - 1, Math.floor(progress * totalSteps));
+
+      // WRITE фаза — batched
       if (activeLineRef.current) {
         activeLineRef.current.style.height = `${linePercent}%`;
       }
 
-      // Пороги активации для 4 карточек: шаг 0 активен всегда при входе в секцию
-      const stepIndex = Math.min(totalSteps - 1, Math.floor(progress * totalSteps));
-      setActiveStep(stepIndex);
-
-      // Раздаём атрибуты на карточки стопки
-      const cards = section.querySelectorAll<HTMLElement>('[data-journey-step]');
-      cards.forEach((card, idx) => {
-        if (idx <= stepIndex) {
-          card.setAttribute('data-step-active', 'true');
-        } else {
-          card.removeAttribute('data-step-active');
-        }
-      });
+      // setState и DOM-атрибуты только при смене шага — избегаем лишних рендеров
+      if (nextStep !== lastStep) {
+        lastStep = nextStep;
+        setActiveStep(nextStep);
+        const cards = section.querySelectorAll<HTMLElement>('[data-journey-step]');
+        cards.forEach((card, idx) => {
+          if (idx <= nextStep) {
+            card.setAttribute('data-step-active', 'true');
+          } else {
+            card.removeAttribute('data-step-active');
+          }
+        });
+      }
     };
 
     const schedule = () => {
@@ -69,10 +71,14 @@ export function JourneyTrack({ totalSteps = 4, className }: JourneyTrackProps) {
     };
 
     updateProgress();
+    // IntersectionObserver вместо scroll-listener где возможно — дешевле main-thread
+    const io = new IntersectionObserver(schedule, { rootMargin: '100% 0px' });
+    io.observe(container.closest('section') || container);
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule, { passive: true });
 
     return () => {
+      io.disconnect();
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);
       if (frame !== 0) window.cancelAnimationFrame(frame);

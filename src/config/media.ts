@@ -45,7 +45,7 @@ export const imagePresets = {
   categoryCard: {
     aspectRatio: raw.aspectRatio.portrait,
     sizes: `(max-width: ${raw.breakpoint.xs}px) 50vw, (max-width: ${raw.breakpoint.lg}px) 33vw, 20vw`,
-    quality: imageQuality.standard,
+    quality: imageQuality.thumbnail,
     priority: false,
   },
   classCard: {

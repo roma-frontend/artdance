@@ -65,9 +65,22 @@ export function HeroParallaxFX() {
     let currentY = 0;
     let pointer: { x: number; y: number } | null = null;
 
+    // rect кэшируется и обновляется только по resize/scroll — избегаем forced reflow на pointermove
+    let cachedRect: DOMRect | null = null;
+    let cachedRectTime = 0;
+
+    const getCachedRect = () => {
+      const now = performance.now();
+      if (!cachedRect || now - cachedRectTime > 300) {
+        cachedRect = root.getBoundingClientRect();
+        cachedRectTime = now;
+      }
+      return cachedRect;
+    };
+
     const paintPointer = () => {
       if (pointer) {
-        const rect = root.getBoundingClientRect();
+        const rect = getCachedRect();
         if (rect.width && rect.height) {
           targetX = Math.max(-0.5, Math.min(0.5, (pointer.x - rect.left) / rect.width - 0.5));
           targetY = Math.max(-0.5, Math.min(0.5, (pointer.y - rect.top) / rect.height - 0.5));
@@ -118,6 +131,12 @@ export function HeroParallaxFX() {
     };
 
     const onScroll = () => {
+      cachedRect = null;
+      if (frame === 0) frame = window.requestAnimationFrame(paintScroll);
+    };
+
+    const onResize = () => {
+      cachedRect = null;
       if (frame === 0) frame = window.requestAnimationFrame(paintScroll);
     };
 
@@ -128,7 +147,7 @@ export function HeroParallaxFX() {
     const unsubscribe = scrollY.on('change', onScroll);
     root.addEventListener('focusin', onScroll);
     root.addEventListener('focusout', onScroll);
-    window.addEventListener('resize', onScroll, { passive: true });
+    window.addEventListener('resize', onResize, { passive: true });
     paintScroll();
 
     return () => {
@@ -139,7 +158,7 @@ export function HeroParallaxFX() {
       unsubscribe();
       root.removeEventListener('focusin', onScroll);
       root.removeEventListener('focusout', onScroll);
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('resize', onResize);
       if (frame !== 0) window.cancelAnimationFrame(frame);
       if (raf !== 0) window.cancelAnimationFrame(raf);
       if (background) background.style.transform = '';

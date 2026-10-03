@@ -41,10 +41,21 @@ export function FooterParallaxFX() {
     let currentX = 0;
     let currentY = 0;
     let pointer: { x: number; y: number } | null = null;
+    let cachedFooterRect: DOMRect | null = null;
+    let cachedFooterTime = 0;
+
+    const getFooterRect = () => {
+      const now = performance.now();
+      if (!cachedFooterRect || now - cachedFooterTime > 300) {
+        cachedFooterRect = root.getBoundingClientRect();
+        cachedFooterTime = now;
+      }
+      return cachedFooterRect;
+    };
 
     const paintPointer = () => {
       if (pointer) {
-        const rect = root.getBoundingClientRect();
+        const rect = getFooterRect();
         if (rect.width && rect.height) {
           targetX = Math.max(-0.5, Math.min(0.5, (pointer.x - rect.left) / rect.width - 0.5));
           targetY = Math.max(-0.5, Math.min(0.5, (pointer.y - rect.top) / rect.height - 0.5));
@@ -89,6 +100,12 @@ export function FooterParallaxFX() {
     };
 
     const onScroll = () => {
+      cachedFooterRect = null;
+      if (frame === 0) frame = window.requestAnimationFrame(paintScroll);
+    };
+
+    const onResize = () => {
+      cachedFooterRect = null;
       if (frame === 0) frame = window.requestAnimationFrame(paintScroll);
     };
 
@@ -98,7 +115,7 @@ export function FooterParallaxFX() {
     }
     const unsubscribe = scrollY.on('change', onScroll);
 
-    window.addEventListener('resize', onScroll, { passive: true });
+    window.addEventListener('resize', onResize, { passive: true });
     paintScroll();
 
     return () => {
@@ -107,7 +124,7 @@ export function FooterParallaxFX() {
         root.removeEventListener('pointerleave', onPointerLeave);
       }
       unsubscribe();
-      window.removeEventListener('resize', onScroll);
+      window.removeEventListener('resize', onResize);
       if (frame !== 0) window.cancelAnimationFrame(frame);
       if (raf !== 0) window.cancelAnimationFrame(raf);
       if (word) word.style.translate = '';

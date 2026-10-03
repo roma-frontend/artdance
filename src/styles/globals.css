@@ -2766,12 +2766,9 @@ html:has(body[data-scroll-locked]) {
  * Подсветка номеров и границы карточки при активации шага.
  */
 [data-journey-step] .journey-step-number {
-  color: var(--content-secondary);
-  /*
-   * Неактивный номер остаётся приглушённым, но проходит порог 3:1 для крупного
-   * текста в обеих темах. При 0.55 итоговый цвет был #a39f9b на белом (2.62:1).
-   */
-  opacity: 0.7;
+  /* text-content-primary (14:1) — проходит WCAG 4.5:1, крупный текст 3:1 с запасом */
+  color: var(--content-primary);
+  opacity: 0.85;
   transition:
     color var(--duration-normal) var(--ease-brand),
     opacity var(--duration-normal) var(--ease-brand),

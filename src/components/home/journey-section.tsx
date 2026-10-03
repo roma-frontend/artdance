@@ -61,7 +61,7 @@ export function JourneySection({ images, locale }: JourneySectionProps) {
                     <span
                       aria-hidden
                       data-journey-number=""
-                      className="journey-step-number text-display-editorial text-content-accent transition-all duration-slow"
+                      className="journey-step-number text-display-editorial transition-all duration-slow"
                     >
                       {String(index + 1).padStart(2, '0')}
                     </span>
@@ -69,7 +69,7 @@ export function JourneySection({ images, locale }: JourneySectionProps) {
                     <p className="text-body-lg mt-3 max-w-md text-content-secondary">{t(`${step.key}.body`)}</p>
                     <Link
                       href={step.href}
-                      className="text-label mt-auto inline-flex items-center gap-2 pt-8 font-semibold text-content-accent hover:underline"
+                      className="text-label mt-auto inline-flex items-center gap-2 pt-8 font-semibold text-content-primary underline decoration-border-default underline-offset-4 hover:text-content-accent hover:decoration-accent"
                     >
                       {t(`${step.key}.cta`)}
                       <ArrowRightIcon aria-hidden className="size-4" />
@@ -80,7 +80,7 @@ export function JourneySection({ images, locale }: JourneySectionProps) {
                       <Media
                         {...resolveMedia(image, locale)}
                         alt=""
-                        preset="instructorCard"
+                        preset="categoryCard"
                         fill
                         className="size-full"
                       />
