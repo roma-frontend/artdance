@@ -168,7 +168,7 @@ export function HeaderMegaMenu({ solid, onOpenChange }: Props) {
                 open
                   ? 'bg-accent text-content-on-accent'
                   : active
-                    ? 'bg-accent text-content-on-accent'
+                    ? 'bg-accent-soft text-content-accent'
                     : solid
                       ? 'text-content-secondary hover:bg-accent hover:text-content-on-accent'
                       : 'text-content-on-cinema-muted hover:bg-accent hover:text-content-on-accent',
