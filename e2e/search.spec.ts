@@ -20,6 +20,14 @@ import en from '../src/i18n/messages/en';
 const HOME = '/en';
 const SEARCH_API = '/api/search';
 
+let probeCounter = 0;
+test.beforeEach(async ({ context }, testInfo) => {
+  probeCounter += 1;
+  await context.setExtraHTTPHeaders({
+    'x-forwarded-for': `10.242.${testInfo.workerIndex % 250}.${probeCounter % 250}`,
+  });
+});
+
 const trigger = (page: Page): Locator =>
   page.getByRole('banner').getByRole('link', { name: en.nav.openSearch });
 const overlay = (page: Page): Locator => page.getByRole('dialog');
@@ -194,10 +202,10 @@ test.describe('SearchOverlay', () => {
 
     await page.unroute(`**${SEARCH_API}**`);
     const answered = page.waitForResponse(
-      (response) => response.url().includes(SEARCH_API) && response.status() === 200,
+      (response) => response.url().includes(SEARCH_API),
     );
     await retry.click();
-    await answered;
+    expect((await answered).status()).toBe(200);
 
     await expect(overlay(page).getByText(en.search.failed)).toBeHidden();
     expect(await results(page).count()).toBeGreaterThan(0);
@@ -210,11 +218,13 @@ test.describe('SearchOverlay', () => {
     });
 
     await openSearch(page);
+    const answered = page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return url.pathname === SEARCH_API && url.searchParams.get('q') === 'bachata';
+    });
     /* Паузы между нажатиями короче задержки: так печатает человек. */
     await field(page).pressSequentially('bachata', { delay: 30 });
-    await page.waitForResponse(
-      (response) => response.url().includes(SEARCH_API) && response.status() === 200,
-    );
+    expect((await answered).status()).toBe(200);
 
     /*
      * Задержка ввода и отмена предыдущего запроса работают вместе: без задержки
