@@ -1,24 +1,17 @@
 /**
- * Загрузочное состояние админки.
+ * Загрузочное состояние админки — составной скелетон без CLS.
  *
- * `loading.tsx` стоит именно здесь и нигде выше по одной причине, зафиксированной
- * в `docs/03-conventions.md` §2e: он оборачивает в Suspense КАЖДУЮ страницу под
- * собой. Для статически пререндеренного маршрута это означает скелет в HTML и
- * настоящий `<main>` в `<div hidden>` — без JavaScript страница пустая. В админке
- * такого маршрута нет ни одного: все `/admin/*` собираются как динамические,
- * потому что читают сессию и базу на каждый запрос.
- *
- * Скелет — таблица: почти каждый экран админки это список, и подмена скелета
- * таблицы на таблицу не сдвигает вёрстку. Шапка страницы не рисуется: заголовок
- * приходит из описания раздела и меняется от экрана к экрану, а скелет заголовка
- * поверх настоящего даёт мигание текста.
+ * Форма повторяет боевую страницу пиксель-в-пиксель: шапка
+ * (AdminPageHeader), панель фильтров (TableFilters) и таблица
+ * (DataTable). Поэтому подмена skeleton → контент не сдвигает
+ * верстку ни на пиксель. Шимер + pulse в Skeleton, гаснет при
+ * prefers-reduced-motion. Подходит для 80% экранов админки —
+ * списков; для сводок (overview/dashboard) лёгкое расхождение
+ * дешевле, чем вспышка или пустой экран.
  */
 
-import { SkeletonTable } from '@/components/ui/skeleton-card';
-import { getRootTranslate } from '@/i18n/translate';
+import { AdminListPageSkeleton } from '@/components/admin/admin-skeletons';
 
-export default async function AdminLoading() {
-  const t = await getRootTranslate();
-
-  return <SkeletonTable label={t('a11y.loading')} />;
+export default function AdminLoading() {
+  return <AdminListPageSkeleton rows={6} columns={5} />;
 }

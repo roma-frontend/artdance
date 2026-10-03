@@ -14,6 +14,7 @@
  * сокративший выдачу до двух строк, оставляет человека на пустой седьмой.
  */
 
+import { motion, useReducedMotion, type Easing } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
@@ -21,6 +22,7 @@ import { useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { tableTargetHref, type TableTarget } from '@/components/data/table-target';
 import { type AdminListParams } from '@/config';
+import { motion as designMotion } from '@/design/motion';
 import { useRouter } from '@/i18n/routing';
 import type { Translate } from '@/i18n/translate';
 import type { MessageKey } from '@/i18n/types';
@@ -88,14 +90,29 @@ export function TableFilters({
     startTransition(() => router.push(href));
   }
 
+  const reduce = useReducedMotion();
+  const adminMotion = designMotion.admin;
+  const adminEase = adminMotion.ease as unknown as Easing;
+
+  const FormWrapper: React.ElementType = reduce ? 'form' : motion.form;
+  const formMotionProps = reduce
+    ? {}
+    : {
+        initial: { opacity: 0, y: adminMotion.card.yPx },
+        animate: { opacity: 1, y: 0 },
+        transition: { duration: adminMotion.durationMs.enter / 1000, ease: adminEase, delay: 0.06 },
+        style: { willChange: 'transform, opacity' as const },
+      };
+
   return (
-    <form
+    <FormWrapper
       className="flex flex-col gap-3 rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end sm:p-4"
-      onSubmit={(event) => {
+      onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const value = new FormData(event.currentTarget).get('q');
         go(hrefWith({ q: typeof value === 'string' ? value : '' }));
       }}
+      {...formMotionProps}
     >
       {searchable ? (
         <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:min-w-56 sm:max-w-sm">
@@ -159,6 +176,6 @@ export function TableFilters({
       <Button type="submit" variant="accent" size="sm" disabled={isPending} className="w-full sm:w-auto sm:self-end rounded-full">
         {t('applyFilters')}
       </Button>
-    </form>
+    </FormWrapper>
   );
 }

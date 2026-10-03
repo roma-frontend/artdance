@@ -1,6 +1,7 @@
 'use client';
 
 import { Menu, X } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion, type Easing } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 import { AdminSidebar, type SidebarGroup } from '@/components/admin/admin-sidebar';
@@ -8,6 +9,7 @@ import { SignOutButton } from '@/components/auth/sign-out-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { routes, site } from '@/config';
+import { motion as designMotion } from '@/design/motion';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
@@ -21,17 +23,19 @@ interface Props {
   children: React.ReactNode;
 }
 
+const admin = designMotion.admin;
+const adminEase = admin.ease as unknown as Easing;
+
 export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle, backToSiteLabel, children }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const reduce = useReducedMotion();
 
-  // close drawer on route change — сброс локального UI при навигации
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- сброс drawer при смене адреса
     setOpen(false);
   }, [pathname]);
 
-  // lock body scroll when drawer open
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -39,7 +43,6 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
     return () => { document.body.style.overflow = prev; };
   }, [open]);
 
-  // Esc to close
   useEffect(() => {
     function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setOpen(false); }
     window.addEventListener('keydown', onKey);
@@ -48,10 +51,15 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
 
   return (
     <div className="min-h-dvh bg-surface-canvas">
-      {/* Header */}
-      <header className="sticky top-0 z-header border-b border-border-default bg-surface-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-surface-card/80">
+      {/* Header — лёгкий entrance сверху, танцевальная плавность */}
+      <motion.header
+        initial={reduce ? false : { y: admin.header.yPx, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={reduce ? { duration: 0 } : { duration: admin.durationMs.normal / 1000, ease: adminEase }}
+        className="sticky top-0 z-header border-b border-border-default bg-surface-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-surface-card/80"
+        style={{ willChange: reduce ? undefined : 'transform, opacity' }}
+      >
         <div className="page-container flex items-center gap-3 py-3 sm:py-4">
-          {/* Burger - mobile only */}
           <button
             type="button"
             aria-label="Open navigation"
@@ -63,7 +71,6 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
             <Menu className="size-5" />
           </button>
 
-          {/* Title block */}
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <Link href={routes.admin()} className="shrink-0 text-heading-4 leading-none tracking-tight text-content-primary">
               {title}
@@ -73,7 +80,6 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
             </span>
           </div>
 
-          {/* Desktop actions */}
           <div className="hidden items-center gap-2 lg:flex">
             <span className="max-w-[14ch] truncate text-body-sm text-content-secondary xl:max-w-none">{userName}</span>
             <Badge variant="metal" size="md" className="shrink-0">{roleLabel}</Badge>
@@ -81,7 +87,6 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
             <SignOutButton />
           </div>
 
-          {/* Mobile actions - compact */}
           <div className="flex items-center gap-2 lg:hidden">
             <Badge variant="metal" size="sm" className="shrink-0 max-w-[10ch] truncate">{roleLabel}</Badge>
             <Link href={routes.home()} className="inline-flex size-9 items-center justify-center rounded-full border border-border-default bg-surface-card text-content-secondary">
@@ -91,52 +96,75 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
           </div>
         </div>
 
-        {/* Mobile second row - user + signout */}
         <div className="page-container flex items-center justify-between gap-3 border-t border-border-subtle bg-surface-sunken/60 py-2.5 text-body-sm lg:hidden">
           <span className="min-w-0 truncate text-content-secondary">{userName} <span className="text-content-tertiary">· {roleLabel}</span></span>
           <div className="shrink-0 [&_button]:h-8 [&_button]:px-3 [&_button]:text-xs">
             <SignOutButton />
           </div>
         </div>
-      </header>
+      </motion.header>
 
-      {/* Drawer overlay */}
-      <div className={cn('fixed inset-0 z-drawer bg-surface-overlay/60 backdrop-blur-[2px] transition-opacity lg:hidden', open ? 'opacity-100' : 'pointer-events-none opacity-0')} aria-hidden={!open} onClick={() => setOpen(false)} />
+      {/* Drawer overlay — fade */}
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            key="admin-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: adminEase }}
+            className="fixed inset-0 z-drawer bg-surface-overlay/60 backdrop-blur-sm lg:hidden"
+            aria-hidden={!open}
+            onClick={() => setOpen(false)}
+          />
+        ) : null}
+      </AnimatePresence>
 
-      {/* Drawer panel */}
-      <div
-        id="admin-drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Admin navigation"
-        className={cn(
-          'fixed inset-y-0 left-0 z-drawer flex w-[86vw] max-w-sm flex-col bg-surface-card shadow-xl transition-transform duration-300 ease-brand lg:hidden',
-          open ? 'translate-x-0' : '-translate-x-full'
-        )}
-        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-border-default px-5 py-4">
-          <div>
-            <p className="text-sm font-bold tracking-tight text-content-primary">{title}</p>
-            <p className="text-xs text-content-tertiary">{subtitle}</p>
-          </div>
-          <button type="button" onClick={() => setOpen(false)} className="inline-flex size-9 items-center justify-center rounded-full border border-border-default bg-surface-card text-content-secondary hover:bg-surface-sunken">
-            <X className="size-4" />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 scrollbar-compact">
-          <AdminSidebar groups={groups} onNavigate={() => setOpen(false)} variant="drawer" />
-        </div>
-      </div>
+      {/* Drawer panel — spring slide */}
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            key="admin-drawer"
+            id="admin-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Admin navigation"
+            initial={reduce ? { x: 0, opacity: 0 } : { x: '-100%' }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={reduce ? { opacity: 0 } : { x: '-100%' }}
+            transition={reduce ? { duration: 0.15 } : (admin.spring as unknown as Record<string, unknown>)}
+            className="fixed inset-y-0 left-0 z-drawer flex w-[86vw] max-w-sm flex-col bg-surface-card shadow-xl lg:hidden"
+            style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)', willChange: 'transform' }}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-border-default px-5 py-4">
+              <div>
+                <p className="text-sm font-bold tracking-tight text-content-primary">{title}</p>
+                <p className="text-xs text-content-tertiary">{subtitle}</p>
+              </div>
+              <button type="button" onClick={() => setOpen(false)} className="inline-flex size-9 items-center justify-center rounded-full border border-border-default bg-surface-card text-content-secondary hover:bg-surface-sunken">
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 scrollbar-compact">
+              <AdminSidebar groups={groups} onNavigate={() => setOpen(false)} variant="drawer" />
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {/* Main layout */}
       <div className="page-container grid grid-cols-1 gap-6 py-6 sm:gap-8 sm:py-8 lg:grid-cols-[var(--layout-admin-sidebar-width)_1fr] xl:grid-cols-[var(--layout-admin-sidebar-width-wide)_1fr]">
-        {/* Desktop sidebar */}
-        <aside className="hidden lg:block">
+        {/* Desktop sidebar — появление мягкой волной */}
+        <motion.aside
+          initial={reduce ? false : { opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={reduce ? { duration: 0 } : { duration: admin.durationMs.normal / 1000, ease: adminEase, delay: 0.06 }}
+          className={cn('hidden lg:block', reduce ? '' : '')}
+        >
           <div className="sticky top-[calc(var(--layout-nav-height)+1.25rem)] max-h-dvh overflow-y-auto pr-2 scrollbar-compact">
             <AdminSidebar groups={groups} variant="desktop" />
           </div>
-        </aside>
+        </motion.aside>
 
         <main id={site.mainContentId} className="min-w-0">
           {children}

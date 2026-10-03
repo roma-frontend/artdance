@@ -350,6 +350,60 @@ export const loadingMotion = {
 } as const;
 
 /**
+ * АДМИНКА — танцевальная плавность.
+ *
+ * Все движения инструмента должны читаться как танец: скольжение,
+ * а не щелчок. Поэтому ease — brand (cubic 0.16,1,0.3,1), длительности
+ * короткие, а spring мягкий — без дрожи. Stagger 48/55мс — волна,
+ * а не ожидание. Числа подобраны, чтобы «сделайте поспокойнее» было
+ * правкой одной строки.
+ */
+export const adminMotion = {
+  /** Главный изгиб — скольжение, как в вальсе: быстрый старт, мягкая посадка. */
+  ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
+  easeSoft: [0.2, 0, 0, 1] as [number, number, number, number],
+  durationMs: {
+    fast: 160,
+    normal: 320,
+    slow: 480,
+    enter: 420,
+  },
+  /** Пружина для панели/карточек: без перелёта, но живая. */
+  spring: {
+    type: 'spring' as const,
+    stiffness: 340,
+    damping: 30,
+    mass: 0.85,
+  },
+  springSoft: {
+    type: 'spring' as const,
+    stiffness: 300,
+    damping: 26,
+    mass: 0.9,
+  },
+  /** Поочерёдное появление — волна сцены. */
+  stagger: {
+    baseDelayMs: 38,
+    stepMs: 52,
+    maxChildren: 10,
+  },
+  /** Смещение карточки при входе — лёгкий подъём сцены. */
+  card: {
+    yPx: 14,
+    scaleFrom: 0.985,
+  },
+  /** Хедер — едва заметное проявление сверху. */
+  header: {
+    yPx: -10,
+  },
+  /** Скелет — мерцание и кроссфейд в контент. */
+  skeleton: {
+    shimmerMs: 1_400,
+    fadeMs: 180,
+  },
+} as const;
+
+/**
  * Что отключается при `prefers-reduced-motion: reduce`.
  *
  * Список явный, потому что «отключить все анимации» — неверно: скрытые
@@ -422,6 +476,7 @@ export const motion = {
   carousel: carouselScroll,
   loading: loadingMotion,
   portal: portalTransition,
+  admin: adminMotion,
   reducedMotionDisables,
   /** Базовые шкалы — чтобы не импортировать primitives отдельно. */
   duration,

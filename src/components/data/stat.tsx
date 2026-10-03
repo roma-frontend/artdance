@@ -13,6 +13,7 @@
 import type { ReactNode } from 'react';
 import { getFormatter } from 'next-intl/server';
 
+import { AdminStagger, AdminStaggerItem } from '@/components/admin/admin-motion';
 import { getRootTranslate } from '@/i18n/translate';
 import { cn } from '@/lib/utils';
 import type { MessageKey } from '@/i18n/types';
@@ -37,11 +38,13 @@ export async function StatGrid({ items, className }: StatGridProps) {
   if (items.length === 0) return null;
 
   return (
-    <dl className={cn('grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4', className)}>
+    <AdminStagger className={cn('grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4', className)}>
       {items.map((item) => (
-        <Stat key={item.labelKey} spec={item} />
+        <AdminStaggerItem key={item.labelKey}>
+          <Stat spec={item} />
+        </AdminStaggerItem>
       ))}
-    </dl>
+    </AdminStagger>
   );
 }
 

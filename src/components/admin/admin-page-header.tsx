@@ -11,6 +11,7 @@
 
 import type { ReactNode } from 'react';
 
+import { AdminReveal } from '@/components/admin/admin-motion';
 import { Link } from '@/i18n/routing';
 import { getRootTranslate } from '@/i18n/translate';
 import type { MessageKey } from '@/i18n/types';
@@ -37,27 +38,29 @@ export async function AdminPageHeader({
   const t = await getRootTranslate();
 
   return (
-    <header className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
-      <div className="min-w-0 flex-1">
-        {parent ? (
-          <Link
-            href={parent.href}
-            className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-content-tertiary underline-offset-4 hover:text-content-accent hover:underline"
-          >
-            <span aria-hidden>←</span> {t(parent.labelKey)}
-          </Link>
-        ) : null}
+    <AdminReveal>
+      <header className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0 flex-1">
+          {parent ? (
+            <Link
+              href={parent.href}
+              className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-content-tertiary underline-offset-4 hover:text-content-accent hover:underline"
+            >
+              <span aria-hidden>←</span> {t(parent.labelKey)}
+            </Link>
+          ) : null}
 
-        <h1 className="mt-2 text-2xl font-bold tracking-tight text-content-primary sm:mt-1 sm:text-3xl lg:text-2xl leading-none">{title ?? (titleKey ? t(titleKey) : '')}</h1>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-content-primary sm:mt-1 sm:text-3xl lg:text-2xl leading-none">{title ?? (titleKey ? t(titleKey) : '')}</h1>
 
-        {subtitle ?? subtitleKey ? (
-          <p className="text-body-sm mt-2 max-w-(--layout-prose-max-width) leading-relaxed text-content-secondary">
-            {subtitle ?? (subtitleKey ? t(subtitleKey) : '')}
-          </p>
-        ) : null}
-      </div>
+          {subtitle ?? subtitleKey ? (
+            <p className="text-body-sm mt-2 max-w-(--layout-prose-max-width) leading-relaxed text-content-secondary">
+              {subtitle ?? (subtitleKey ? t(subtitleKey) : '')}
+            </p>
+          ) : null}
+        </div>
 
-      {actions ? <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:shrink-0 [&_a]:shrink-0 [&_button]:shrink-0">{actions}</div> : null}
-    </header>
+        {actions ? <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:shrink-0 [&_a]:shrink-0 [&_button]:shrink-0">{actions}</div> : null}
+      </header>
+    </AdminReveal>
   );
 }

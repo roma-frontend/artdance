@@ -1,25 +1,24 @@
 'use client';
 
 /**
- * SCROLL TO TOP BUTTON — кнопка быстрого возврата к началу экрана в админке.
- *
- * Показывается плавно при прокрутке более 400px.
+ * SCROLL TO TOP BUTTON — танцевальная пружина, spring без рывка.
  */
 
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { motion as designMotion } from '@/design/motion';
 
 export function ScrollToTopButton() {
   const [visible, setVisible] = useState(false);
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     function onScroll() {
       setVisible(window.scrollY > 400);
     }
-
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -30,19 +29,29 @@ export function ScrollToTopButton() {
   }
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={scrollToTop}
-      aria-label="Scroll to top"
-      className={cn(
-        'fixed bottom-6 right-6 z-sticky size-10 rounded-full p-0 shadow-lg backdrop-blur-md transition-all duration-normal ease-brand',
-        'border-border-strong bg-surface-card/95 hover:border-accent hover:text-content-accent',
-        visible ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-4 opacity-0 pointer-events-none',
-      )}
-    >
-      <ArrowUp className="size-4" />
-    </Button>
+    <AnimatePresence>
+      {visible ? (
+        <motion.div
+          key="scroll-top"
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: 12, scale: 0.92 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.96 }}
+          transition={reduce ? { duration: 0.15 } : (designMotion.admin.spring as unknown as Record<string, unknown>)}
+          className="fixed bottom-6 right-6 z-sticky"
+          style={{ willChange: 'transform, opacity' }}
+        >
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={scrollToTop}
+            aria-label="Scroll to top"
+            className="size-10 rounded-full p-0 shadow-lg backdrop-blur-md border-border-strong bg-surface-card/95 hover:border-accent hover:text-content-accent"
+          >
+            <ArrowUp className="size-4" />
+          </Button>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }

@@ -17,10 +17,12 @@
  * навигацию там нельзя.
  */
 
+import { motion, useReducedMotion, type Easing } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 
 import { LinkPending } from '@/components/ui/link-pending';
 import { routes } from '@/config';
+import { motion as designMotion } from '@/design/motion';
 import { Link, usePathname } from '@/i18n/routing';
 import type { Translate } from '@/i18n/translate';
 import type { MessageKey } from '@/i18n/types';
@@ -47,39 +49,81 @@ export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminS
   const t = useTranslations('admin');
   const tRoot = useTranslations() as unknown as Translate;
   const pathname = usePathname();
+  const reduce = useReducedMotion();
 
   const isDrawer = variant === 'drawer';
+  const admin = designMotion.admin;
+  const adminEase = admin.ease as unknown as Easing;
 
   return (
     <nav aria-label={t('sectionNav')} className={isDrawer ? '' : 'contents'}>
       {!isDrawer ? <p className="text-eyebrow mb-4 hidden uppercase text-content-tertiary lg:block">{t('title')}</p> : null}
 
-      <div className={isDrawer ? 'flex flex-col gap-6' : 'hidden lg:flex lg:flex-col lg:gap-6'}>
+      <motion.div
+        initial={reduce ? false : 'hidden'}
+        animate="show"
+        variants={
+          reduce
+            ? {}
+            : {
+                hidden: {},
+                show: {
+                  transition: {
+                    staggerChildren: admin.stagger.stepMs / 1000,
+                    delayChildren: 0.08,
+                  },
+                },
+              }
+        }
+        className={isDrawer ? 'flex flex-col gap-6' : 'hidden lg:flex lg:flex-col lg:gap-6'}
+      >
         {groups.map((group) => (
-          <div key={group.labelKey}>
+          <motion.div
+            key={group.labelKey}
+            variants={
+              reduce
+                ? {}
+                : {
+                    hidden: { opacity: 0, y: 8 },
+                    show: {
+                      opacity: 1,
+                      y: 0,
+                      transition: { duration: admin.durationMs.normal / 1000, ease: adminEase },
+                    },
+                  }
+            }
+          >
             <p className="text-label mb-2 uppercase tracking-wide text-content-tertiary">{tRoot(group.labelKey)}</p>
             <ul className={isDrawer ? 'flex flex-col gap-1' : 'flex flex-col gap-1'}>
               {group.items.map((item) => {
                 const active = isActive(pathname, item.href);
                 return (
-                  <li key={item.href}>
+                  <li key={item.href} className="relative">
+                    {active ? (
+                      <motion.div
+                        layoutId={isDrawer ? 'admin-active-drawer' : 'admin-active-desktop'}
+                        className="absolute inset-0 rounded-xl bg-accent shadow-sm shadow-accent/20"
+                        transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 420, damping: 32, mass: 0.8 } as unknown as Record<string, unknown>}
+                        style={{ willChange: 'transform' }}
+                      />
+                    ) : null}
                     <Link
                       href={item.href}
                       aria-current={active ? 'page' : undefined}
                       onClick={onNavigate}
                       className={cn(
-                        'group flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm transition-all duration-fast',
+                        'group relative flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm transition-colors duration-fast',
                         active
-                          ? 'bg-accent text-content-on-accent shadow-sm shadow-accent/20 font-semibold'
+                          ? 'text-content-on-accent font-semibold'
                           : 'text-content-secondary hover:bg-surface-raised hover:text-content-primary active:bg-surface-sunken',
                         isDrawer && 'py-3 text-[15px]',
                       )}
                     >
-                      <span className="min-w-0 truncate">{tRoot(item.labelKey)}</span>
+                      <span className="min-w-0 truncate relative">{tRoot(item.labelKey)}</span>
                       {item.badge !== undefined && item.badge > 0 ? (
                         <span
                           className={cn(
-                            'inline-flex min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums leading-none',
+                            'inline-flex min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums leading-none relative',
                             active ? 'bg-white text-accent' : 'bg-accent-soft text-content-accent border border-accent/10',
                           )}
                         >
@@ -92,9 +136,9 @@ export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminS
                 );
               })}
             </ul>
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </nav>
   );
 }
