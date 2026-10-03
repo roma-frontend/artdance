@@ -44,7 +44,9 @@ const devConnect = isProduction || isPreview ? '' : ' ws: wss:';
 function buildCsp(extraScriptSrc = ''): string {
   return [
     "default-src 'self'",
-    `script-src 'self' 'unsafe-inline' ${externalOrigins.turnstile} ${externalOrigins.vercelInsights} ${externalOrigins.maps}${previewScript}${extraScriptSrc}${devScript}`,
+    // 'wasm-unsafe-eval' — разрешает WebAssembly.compile из строки (Sentry, некоторые полифилы)
+    // без разрешения полного `eval()`. Полный 'unsafe-eval' оставлен только для dev/auth (см. ниже).
+    `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' ${externalOrigins.turnstile} ${externalOrigins.vercelInsights} ${externalOrigins.maps}${previewScript}${extraScriptSrc}${devScript}`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
     `img-src 'self' data: blob: https: ${externalOrigins.mapsStatic}`,
