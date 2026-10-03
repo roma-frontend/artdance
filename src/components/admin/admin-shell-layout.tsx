@@ -181,7 +181,7 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
         >
           <div
             data-admin-sidebar-scroll
-            className="sticky top-[calc(var(--layout-nav-height)+1.25rem)] overflow-y-auto overscroll-contain scrollbar-compact pr-2 scroll-smooth"
+            className="sticky top-[calc(var(--layout-nav-height)+1.25rem)] overflow-y-auto overscroll-contain pr-2 scroll-smooth scrollbar-none"
             style={
               {
                 maxHeight: 'calc(100dvh - var(--layout-nav-height) - 1.5rem)',
