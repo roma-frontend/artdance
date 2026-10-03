@@ -168,10 +168,10 @@ export function HeaderMegaMenu({ solid, onOpenChange }: Props) {
                 open
                   ? 'bg-accent text-content-on-accent'
                   : active
-                    ? 'bg-accent-soft text-content-accent'
+                    ? 'bg-accent text-content-on-accent'
                     : solid
-                      ? 'text-content-secondary hover:bg-accent-soft hover:text-content-accent'
-                      : 'text-content-on-cinema-muted hover:bg-accent-soft hover:text-content-accent',
+                      ? 'text-content-secondary hover:bg-accent hover:text-content-on-accent'
+                      : 'text-content-on-cinema-muted hover:bg-accent hover:text-content-on-accent',
               )}
             >
               {t(group.labelKey)}
