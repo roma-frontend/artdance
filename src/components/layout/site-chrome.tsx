@@ -26,18 +26,21 @@
 
 'use client';
 
+import dynamic from 'next/dynamic';
 import type { ReactNode } from 'react';
 
-import { Magnetic } from '@/components/fx/magnetic';
-import { OrbitCursor } from '@/components/fx/orbit-cursor';
-import { PointerGlow } from '@/components/fx/pointer-glow';
 import { PortalTransitionProvider } from '@/components/fx/portal-transition';
-import { ScrollProgress } from '@/components/fx/scroll-progress';
 import { MobileDock } from '@/components/layout/mobile-dock';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { isAdminPath } from '@/config';
 import { usePathname } from '@/i18n/routing';
+
+// Декоративные pointer/scroll эффекты — строго ленивые, не влияют на LCP.
+const ScrollProgress = dynamic(() => import('@/components/fx/scroll-progress').then((m) => m.ScrollProgress), { ssr: false });
+const PointerGlow = dynamic(() => import('@/components/fx/pointer-glow').then((m) => m.PointerGlow), { ssr: false });
+const OrbitCursor = dynamic(() => import('@/components/fx/orbit-cursor').then((m) => m.OrbitCursor), { ssr: false });
+const Magnetic = dynamic(() => import('@/components/fx/magnetic').then((m) => m.Magnetic), { ssr: false });
 
 export function SiteChrome({ children }: { children: ReactNode }) {
   /* `usePathname` next-intl отдаёт путь без префикса локали — как ждёт `isAdminPath`. */

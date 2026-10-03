@@ -58,7 +58,7 @@ const nextConfig: NextConfig = {
 
   /** Барели библиотек иконок и UI тянут весь пакет: включаем tree-shaking. */
   experimental: {
-    optimizePackageImports: ['lucide-react', 'radix-ui', 'date-fns'],
+    optimizePackageImports: ['lucide-react', 'radix-ui', 'date-fns', 'framer-motion', 'next-intl'],
   },
 
   /** Типизированные роуты включим после стабилизации набора страниц. */

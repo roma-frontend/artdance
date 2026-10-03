@@ -32,14 +32,10 @@
 
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 
 import { Media } from '@/components/ui/media';
-import { hasPlayableVideo, resolveMedia, type VideoRef } from '@/domain/content';
-import { useBackgroundVideo } from '@/lib/hooks/use-background-video';
-import { usePrefersStillImage } from '@/lib/hooks/use-motion-preferences';
-import { pickDecodableSource } from '@/lib/media/video-source';
-import { cn } from '@/lib/utils';
+import { resolveMedia, type VideoRef } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
 
 export interface HeroVideoProps {
@@ -49,65 +45,20 @@ export interface HeroVideoProps {
   locale: Locale;
 }
 
+/**
+ * Видео-слой ленивый: фоновое видео не блокирует LCP и декодируется после idle.
+ * Poстер — единственная работа на критическом пути.
+ */
+const HeroVideoLayer = dynamic(() => import('./hero-video-layer').then((m) => m.HeroVideoLayer), {
+  ssr: false,
+  loading: () => null,
+});
+
 export function HeroVideo({ video, poster, locale }: HeroVideoProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const stillImage = usePrefersStillImage();
-
-  /**
-   * До гидратации `stillImage` равен `true`, поэтому сервер и клиент отдают
-   * одинаковую разметку с одним постером, а клип появляется после того, как стали
-   * известны предпочтения.
-   */
-  const playable = hasPlayableVideo(video) && !stillImage;
-
-  /** Выбранный источник. Пока он не определён, `<video>` без `src` и не грузит. */
-  const [source, setSource] = useState<string | null>(null);
-
-  const { near, active } = useBackgroundVideo({
-    videoRef,
-    containerRef,
-    enabled: playable,
-    ready: source !== null,
-    /**
-     * Ноль, а не `preloadAheadViewportFactor`: первый экран виден при открытии
-     * страницы, и «грузить заранее» ему некуда — иначе рамка упреждения просто
-     * совпала бы с рамкой видимости, а намерение осталось бы непрочитанным.
-     */
-    preloadAheadViewports: 0,
-  });
-
-  useEffect(() => {
-    if (!near || !hasPlayableVideo(video)) return;
-
-    let cancelled = false;
-    void pickDecodableSource(video.sources, 'hero').then((chosen) => {
-      if (!cancelled && chosen) setSource(chosen.url);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [near, video]);
-
-  /**
-   * Кадр показывается только когда петля действительно идёт.
-   *
-   * Именно `active`, а не «источник выбран»: пока браузер качает файл, видео —
-   * пустой чёрный прямоугольник, и проявлять его поверх постера значило бы
-   * гасить первый экран на время загрузки.
-   */
-  const playing = active && source !== null;
-
   const posterProps = resolveMedia(poster, locale);
 
   return (
-    <div ref={containerRef} data-hero-background="" className="absolute inset-0 z-0 overflow-hidden">
-      {/*
-        Постер лежит под кадром и остаётся видимым, пока браузер не отдал кадр
-        клипа. Это же изображение — единственное содержимое экрана при экономии
-        данных и при просьбе убрать движение.
-      */}
+    <div data-hero-background="" className="absolute inset-0 z-0 overflow-hidden">
       <Media
         {...posterProps}
         preset="heroFullBleed"
@@ -115,35 +66,8 @@ export function HeroVideo({ video, poster, locale }: HeroVideoProps) {
         fill
         className="absolute inset-0 size-full"
       />
-
-      {playable && hasPlayableVideo(video) && (
-        <div
-          data-slot="hero-video-wrap"
-          className={cn(
-            'hero-video-wrap absolute inset-0 transition-opacity duration-slow ease-brand',
-            playing ? 'opacity-100' : 'opacity-0',
-          )}
-        >
-          <video
-            ref={videoRef}
-            data-slot="hero-clip"
-            className="hero-video-main absolute inset-0 size-full object-cover"
-            /*
-             * `autoPlay` нет намеренно: воспроизведением управляет
-             * `useBackgroundVideo` — старт по `canplay`, пауза вне видимости и
-             * в фоновой вкладке.
-             */
-            muted
-            loop
-            playsInline
-            src={source ?? undefined}
-            preload={source === null ? 'none' : 'auto'}
-            /** Без описания и без управления фокусом: это фон, а не контент. */
-            aria-hidden
-            tabIndex={-1}
-          />
-        </div>
-      )}
+      {/* Видео грузится только после idle/интеракции — не конкурирует с LCP. */}
+      <HeroVideoLayer video={video} />
     </div>
   );
 }

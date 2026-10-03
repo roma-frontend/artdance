@@ -11,24 +11,30 @@ import { DM_Sans, Noto_Sans_Armenian, Playfair_Display } from 'next/font/google'
 
 export const displayFont = Playfair_Display({
   subsets: ['latin', 'cyrillic'],
-  weight: ['400', '700', '900'],
+  weight: ['400', '700'],
+  // italic нужен только для акцент-слова в hero — один начертания достаточно.
   style: ['normal', 'italic'],
   display: 'swap',
   variable: '--font-playfair',
   preload: true,
+  adjustFontFallback: true,
+  fallback: ['Times New Roman', 'Georgia', 'serif'],
 });
 
 export const sansFont = DM_Sans({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  // На первом экране геро-тексты это 400/600 — 500/700 ниже фолда.
+  weight: ['400', '600'],
   display: 'swap',
   variable: '--font-dm-sans',
   preload: true,
+  adjustFontFallback: true,
+  fallback: ['system-ui', 'Segoe UI', 'sans-serif'],
 });
 
 export const armenianFont = Noto_Sans_Armenian({
   subsets: ['armenian'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '600'],
   display: 'swap',
   variable: '--font-noto-armenian',
   preload: false,
