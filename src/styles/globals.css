@@ -2923,8 +2923,9 @@ html:has(body[data-scroll-locked]) {
 }
 
 .footer-content {
-  transform: translate3d(calc(var(--footer-parallax-x) * 14px), calc(var(--footer-parallax-y) * 10px), 0);
-  will-change: transform, translate;
+  /* Не двигается: ссылки/навигация всегда под курсором, клик попадает с первого раза */
+  transform: none;
+  will-change: auto;
 }
 
 .footer-light-sweep {
@@ -2966,8 +2967,7 @@ html:has(body[data-scroll-locked]) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .footer-depth-word,
-  .footer-content {
+  .footer-depth-word {
     transform: none;
     translate: none;
   }

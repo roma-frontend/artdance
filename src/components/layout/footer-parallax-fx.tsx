@@ -30,7 +30,6 @@ export function FooterParallaxFX() {
     const root = anchor.parentElement;
     if (!root) return;
     const word = root.querySelector<HTMLElement>('[data-footer-word]');
-    const content = root.querySelector<HTMLElement>('.footer-content');
     const foreground = root.querySelector<HTMLElement>('.footer-light-sweep');
     const factor = wide ? 1 : motion.heroDepth.narrowFactor;
     const pointerEnabled = finePointer && wide;
@@ -83,14 +82,10 @@ export function FooterParallaxFX() {
       const progress = Math.min(1, Math.max(0, raw));
       // Мягкий ход — 1/3 от hero, иначе на высоком футере слово уезжает за нижнюю границу
       const depth = heroDepthFrame(progress, Math.min(rect.height, vh * 0.9), factor);
-      const wordShift = depth.word * 0.18;
-      const contentShift = depth.content * 0.22;
+      // Двигаются ТОЛЬКО декоративные слои — интерактивный контент всегда на месте (клик попадает с первого раза)
+      const wordShift = depth.word * 0.14;
       if (word) word.style.translate = `0 ${wordShift.toFixed(2)}px`;
-      if (content) {
-        const focused = root.matches(':focus-within');
-        content.style.translate = `0 ${focused ? 0 : contentShift.toFixed(2)}px`;
-      }
-      if (foreground) foreground.style.transform = `translate3d(0, ${(depth.foreground * 0.22).toFixed(2)}px, 0)`;
+      if (foreground) foreground.style.transform = `translate3d(0, ${(depth.foreground * 0.18).toFixed(2)}px, 0)`;
     };
 
     const onScroll = () => {
@@ -102,8 +97,7 @@ export function FooterParallaxFX() {
       root.addEventListener('pointerleave', onPointerLeave, { passive: true });
     }
     const unsubscribe = scrollY.on('change', onScroll);
-    root.addEventListener('focusin', onScroll);
-    root.addEventListener('focusout', onScroll);
+
     window.addEventListener('resize', onScroll, { passive: true });
     paintScroll();
 
@@ -113,13 +107,10 @@ export function FooterParallaxFX() {
         root.removeEventListener('pointerleave', onPointerLeave);
       }
       unsubscribe();
-      root.removeEventListener('focusin', onScroll);
-      root.removeEventListener('focusout', onScroll);
       window.removeEventListener('resize', onScroll);
       if (frame !== 0) window.cancelAnimationFrame(frame);
       if (raf !== 0) window.cancelAnimationFrame(raf);
       if (word) word.style.translate = '';
-      if (content) content.style.translate = '';
       if (foreground) foreground.style.transform = '';
       root.style.removeProperty('--footer-parallax-x');
       root.style.removeProperty('--footer-parallax-y');

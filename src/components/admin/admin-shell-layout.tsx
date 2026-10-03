@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { routes, site } from '@/config';
 import { motion as designMotion } from '@/design/motion';
 import { Link, usePathname } from '@/i18n/routing';
-import { cn } from '@/lib/utils';
 
 interface Props {
   groups: readonly SidebarGroup[];
@@ -152,40 +151,21 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
         ) : null}
       </AnimatePresence>
 
-      {/* Main layout — правая часть sticky: пока скролится sidebar, контент на виду */}
-      <div className="page-container grid grid-cols-1 items-start gap-6 py-6 sm:gap-8 sm:py-8 lg:grid-cols-[var(--layout-admin-sidebar-width)_1fr] xl:grid-cols-[var(--layout-admin-sidebar-width-wide)_1fr]">
-        {/* Desktop sidebar — скролится страницей, появление волной */}
+      {/* Main layout — левая навигация липкая, правая часть обычный поток без внутреннего скролла */}
+      <div className="page-container grid grid-cols-1 gap-6 py-6 sm:gap-8 sm:py-8 lg:grid-cols-[var(--layout-admin-sidebar-width)_1fr] xl:grid-cols-[var(--layout-admin-sidebar-width-wide)_1fr]">
         <motion.aside
           initial={reduce ? false : { opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
           transition={reduce ? { duration: 0 } : { duration: admin.durationMs.normal / 1000, ease: adminEase, delay: 0.06 }}
-          className="hidden lg:block lg:self-start"
+          className="hidden lg:block"
         >
-          <div className="pr-2">
+          <div className="sticky top-[calc(var(--layout-nav-height)+1.25rem)] max-h-[calc(100dvh-var(--layout-nav-height)-1.5rem)] overflow-y-auto overscroll-contain scrollbar-none pr-2">
             <AdminSidebar groups={groups} variant="desktop" />
           </div>
         </motion.aside>
 
-        <main
-          id={site.mainContentId}
-          className={cn(
-            'min-w-0',
-            // sticky-панель: фиксируется под шапкой, всегда на виду пока sidebar скролится
-            'lg:sticky lg:top-[calc(var(--layout-nav-height)+1.25rem)] lg:self-start',
-            // когда контент длинный — внутренний скролл панели, а не страницы
-            'lg:max-h-[calc(100dvh-var(--layout-nav-height)-1.5rem)] lg:overflow-y-auto lg:overscroll-contain scrollbar-compact lg:pr-1',
-            // танцевальная плавность — только compositor свойства
-            'lg:will-change-transform',
-          )}
-        >
-          <motion.div
-            initial={reduce ? false : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={reduce ? { duration: 0 } : { duration: admin.durationMs.enter / 1000, ease: adminEase, delay: 0.08 }}
-            className="pb-2"
-          >
-            {children}
-          </motion.div>
+        <main id={site.mainContentId} className="min-w-0">
+          <div className="pb-2">{children}</div>
         </main>
       </div>
     </div>
