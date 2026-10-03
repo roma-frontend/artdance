@@ -1,32 +1,29 @@
 /**
- * SITE HEADER — фиксированная шапка сайта.
+ * SITE HEADER — умная шапка как в Desktop/hr-project.
  *
- * Два состояния, как в прототипе:
- *   • `top`      — прозрачная, светлый текст: шапка лежит поверх тёмного hero;
- *   • `scrolled` — фон канвы, размытие и уменьшенная высота.
+ * Идея hr-project: центр — пилюля с разделами, шапка не «перекрашивается»
+ * на скачке высоты, а меняет плотность. У нас та же задача + кинематографичный
+ * hero на главной.
  *
- * Состояние зависит не от порога прокрутки, а от того, лежит ли за шапкой
- * кинематографичный первый экран. Прежде это был порог из прототипа — 60
- * пикселей, — и он работал, пока первый экран уезжал вверх сразу. С раскрытием
- * занавеса экран приколот на две высоты окна, и порог красил шапку в цвет канвы,
- * когда за ней ещё тёмный театр: светлая полоса поверх кадра. Список страниц с
- * таким первым экраном — в `hasCinemaHero`; сам факт «кадр ещё за шапкой» меряется
- * по обёртке экрана, поэтому компонент не знает, что на главной нарисовано.
+ * 3 режима — без дёргания высоты:
+ *   • `top`      — hero ещё за шапкой: прозрачная, светлый текст, пилюля на
+ *                  полупрозрачном стекле поверх кадра.
+ *   • `scrolled` — hero ушёл: фон канвы, размытие, пилюля с границей. Высота
+ *                  ОБОЛОЧКИ фиксирована (var(--layout-nav-height)), меняется
+ *                  только внутренний падинг и плотность, поэтому контент не
+ *                  прыгает и якоря не съезжают.
+ *   • `hidden`   — скролл вниз: шапка уезжает вверх целиком, возвращаясь на
+ *                  движение вверх. При открытом мега-меню не прячется.
  *
- * Клиентский компонент: положение скролла известно только в браузере. Всё
- * остальное — ссылки, иконки, ключи переводов — приходит из `@/config`, поэтому
- * здесь нет ни одного пути, ни одной подписи и ни одного цвета.
- *
- * Состояние `authenticated` (аватар и меню аккаунта вместо иконки входа) придёт
- * с волной аутентификации отдельным клиентским островком в `nav-right`: чтение
- * сессии — обращение к БД, и делать его в шапке значило бы отключить статическую
- * генерацию у каждой страницы сайта.
+ * Цвет и фон — из токенов, без произвольных значений и без text-[]. Состояние
+ * «герой за шапкой» меряет useCinemaHeroBehind по геометрии, а не по порогу.
  */
 
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+
 import { useCartStore } from '@/lib/cart/store';
 import { fetchCart } from '@/lib/cart/api';
 import { useHeaderHideOnScroll } from '@/lib/hooks/use-header-hide-on-scroll';
@@ -51,9 +48,10 @@ export function SiteHeader() {
   const snapshot = useCartStore((s) => s.snapshot);
   const [bump, setBump] = useState(false);
   const prevCount = useRef<number>(snapshot?.totals.itemCount ?? 0);
-  const hidden = useHeaderHideOnScroll(headerRef);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const onMenuOpenChange = useCallback((open: boolean) => setMenuOpen(open), []);
+  const hidden = useHeaderHideOnScroll(headerRef, menuOpen);
 
-  // Гидратация корзины в шапке + плавная анимация цифры
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     if (!snapshot) {
@@ -68,7 +66,6 @@ export function SiteHeader() {
         prevCount.current = next;
         if (next > 0) {
           timer = setTimeout(() => setBump(false), 420);
-          // микротаск — не каскадный рендер внутри эффекта
           queueMicrotask(() => setBump(true));
         }
       }
@@ -86,30 +83,21 @@ export function SiteHeader() {
       data-state={solid ? 'scrolled' : 'top'}
       className={cn(
         'fixed inset-x-0 top-0 z-header border-b',
-        'transition-[translate,background-color,border-color] duration-slow ease-standard will-change-transform',
+        // высота оболочки фиксирована — дёргания нет, едет только translate + цвет
+        'h-[var(--layout-nav-height)] will-change-transform',
+        'transition-[translate,background-color,border-color,backdrop-filter] duration-slow ease-standard',
         hidden && 'translate-y-[-100%]',
         solid
           ? 'border-border-default bg-surface-canvas/85 backdrop-blur-xl'
           : 'border-transparent bg-transparent',
       )}
     >
-      <div
-        className={cn(
-          'page-container flex items-center justify-between gap-6',
-          'transition-all duration-slow ease-standard',
-          solid ? 'py-3' : 'py-5',
-        )}
-      >
+      <div className="page-container flex h-full items-center justify-between gap-4">
         <Link
           href={routes.home()}
           aria-current={pathname === routes.home() ? 'page' : undefined}
-          className="group/logo flex items-center gap-3"
+          className="group/logo flex shrink-0 items-center gap-3"
         >
-          {/*
-            Знак бренда следует той же логике, что и словесная марка: над
-            кинематографичным первым экраном бургунди на почти чёрном
-            практически не виден, поэтому там берётся осветлённый акцент.
-          */}
           <BrandMark
             className={cn(
               'transition-transform duration-slow ease-brand group-hover/logo:-rotate-12',
@@ -117,10 +105,6 @@ export function SiteHeader() {
             )}
           />
           <span
-            /*
-             * Марка бренда не переводится: авто-переводчик Chrome на армянской и
-             * русской версиях иначе выдаёт «ArtDance» транслитерацией.
-             */
             translate="no"
             className={cn(
               'text-card-title transition-colors duration-slow ease-standard',
@@ -131,9 +115,11 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <HeaderMegaMenu solid={solid} />
+        <div className="hidden min-w-0 flex-1 justify-center lg:flex">
+          <HeaderMegaMenu solid={solid} onOpenChange={onMenuOpenChange} />
+        </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {headerIconItems.map((item) => {
             const Icon = navIcons[item.icon];
             const isCart = item.id === 'cart';
@@ -154,12 +140,12 @@ export function SiteHeader() {
                     }
                   : {})}
                 className={cn(
-                  'relative inline-flex size-9 items-center justify-center rounded-full border border-transparent',
+                  'relative inline-flex size-9 items-center justify-center rounded-full border',
                   'transition-colors duration-normal ease-brand',
                   item.compact ? undefined : 'max-lg:hidden',
                   solid
-                    ? 'text-content-secondary hover:border-accent hover:bg-accent-soft hover:text-content-accent'
-                    : 'text-content-on-cinema-muted hover:border-border-on-cinema hover:text-content-on-cinema',
+                    ? 'border-transparent text-content-secondary hover:border-accent hover:bg-accent-soft hover:text-content-accent'
+                    : 'border-white/10 text-content-on-cinema-muted hover:border-border-on-cinema hover:text-content-on-cinema',
                 )}
               >
                 <Icon className="size-5" aria-hidden />
@@ -167,7 +153,7 @@ export function SiteHeader() {
                   <span
                     aria-hidden
                     className={cn(
-                      'absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-accent px-1 py-0.5 text-[11px] font-bold leading-none text-white',
+                      'absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-accent px-1 py-0.5 text-caption font-bold leading-none text-white',
                       'transition-transform duration-normal ease-brand',
                       bump ? 'scale-110' : 'scale-100',
                     )}
@@ -181,8 +167,10 @@ export function SiteHeader() {
 
           <LocaleSwitcher solid={solid} />
 
-          <Button asChild size="sm" className="max-lg:hidden text-sm">
-            <Link data-magnetic="" href={headerCta.href}>{t(headerCta.labelKey)}</Link>
+          <Button asChild size="sm" className="max-lg:hidden">
+            <Link data-magnetic="" href={headerCta.href}>
+              {t(headerCta.labelKey)}
+            </Link>
           </Button>
         </div>
       </div>

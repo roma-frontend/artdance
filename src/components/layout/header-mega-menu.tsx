@@ -1,9 +1,12 @@
 /**
- * HEADER MEGA MENU — одно меню с сабменюшками (как в hr-project).
+ * HEADER MEGA MENU — пилюля-навбар как в Desktop/hr-project.
  *
- * Desktop: группы в ряд, ховер/фокус раскрывает панель с детьми.
- * Панель — поверх контента, бурдажи-мозаика: blур + граница, как у сайта.
- * Mobile не трогает — там остаётся MobileMenuSheet.
+ * Desktop: группы в ряд внутри скруглённой пилюли, ховер/фокус раскрывает
+ * панель с детьми. Панель — поверх контента, blur + граница, как у сайта.
+ * Mobile не трогает — там остаётся MobileMenuSheet через MobileDock.
+ *
+ * Анимация появления/исчезновения — без скачка на выходе: панель остаётся
+ * в DOM на время ухода, поэтому закрытие — плавный fade+сдвиг, а не пропажа.
  */
 
 'use client';
@@ -21,52 +24,122 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   solid: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function HeaderMegaMenu({ solid }: Props) {
+export function HeaderMegaMenu({ solid, onOpenChange }: Props) {
   const t = useTranslations();
   const pathname = usePathname();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [renderId, setRenderId] = useState<string | null>(null);
+  const [visible, setVisible] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navRef = useRef<HTMLElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const top = useMegaMenuTop(openId !== null, navRef);
+  const isOpen = openId !== null;
+  const top = useMegaMenuTop(isOpen, navRef);
 
-  const clearTimer = () => {
-    if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
+  const activeGroup = headerMegaGroups.find((g) => g.id === renderId) ?? null;
+
+  const clearTimers = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current);
+      hideTimer.current = null;
+    }
   };
+
   const scheduleClose = () => {
-    clearTimer();
+    clearTimers();
     closeTimer.current = setTimeout(() => setOpenId(null), 140);
   };
 
-  // Esc закрывает, клик вне — закрывает, смена маршрута — закрывает
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- сброс меню при навигации
-  useEffect(() => { setOpenId(null); }, [pathname]);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpenId(null); };
+    // монтирование панели: каскад намеренный — уход панели должен быть виден, а не резким размонтажем
+    if (openId) {
+      clearTimers();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRenderId(openId);
+      requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)));
+    } else if (renderId) {
+      setVisible(false);
+      hideTimer.current = setTimeout(() => setRenderId(null), 220);
+    }
+    return () => {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, [openId, renderId]);
+
+  useEffect(() => {
+    onOpenChange?.(isOpen);
+  }, [isOpen, onOpenChange]);
+
+  useEffect(() => {
+    // смена маршрута — закрыть (панель не должна жить после навигации)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOpenId(null);
+  }, [pathname]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenId(null);
+    };
     const onDown = (e: MouseEvent) => {
-      if (!navRef.current?.contains(e.target as Node) && !panelRef.current?.contains(e.target as Node)) setOpenId(null);
+      if (
+        !navRef.current?.contains(e.target as Node) &&
+        !panelRef.current?.contains(e.target as Node)
+      )
+        setOpenId(null);
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onDown);
-    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onDown); };
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onDown);
+    };
   }, []);
 
   return (
-    <nav ref={navRef} aria-label={t('a11y.mainNav')} className="hidden items-center gap-1 lg:flex">
-      {headerMegaGroups.map((group: (typeof headerMegaGroups)[number]) => {
-        const active = isActiveNavPath(pathname, group.href) || group.children.some((c: (typeof group.children)[number]) => isActiveNavPath(pathname, c.href));
+    <nav
+      ref={navRef}
+      aria-label={t('a11y.mainNav')}
+      className={cn(
+        'hidden items-center gap-1 lg:flex',
+        'rounded-full border p-1',
+        solid
+          ? 'border-border-default bg-surface-card/70 backdrop-blur-xl'
+          : 'border-white/10 bg-white/5 backdrop-blur-xl',
+      )}
+    >
+      {headerMegaGroups.map((group) => {
+        const active =
+          isActiveNavPath(pathname, group.href) ||
+          group.children.some((c) => isActiveNavPath(pathname, c.href));
         const open = openId === group.id;
         return (
           <div
             key={group.id}
             className="relative"
-            onMouseEnter={() => { clearTimer(); setOpenId(group.id); }}
+            onMouseEnter={() => {
+              if (closeTimer.current) {
+                clearTimeout(closeTimer.current);
+                closeTimer.current = null;
+              }
+              setOpenId(group.id);
+            }}
             onMouseLeave={scheduleClose}
-            onFocusCapture={() => { clearTimer(); setOpenId(group.id); }}
+            onFocusCapture={() => {
+              if (closeTimer.current) {
+                clearTimeout(closeTimer.current);
+                closeTimer.current = null;
+              }
+              setOpenId(group.id);
+            }}
             onBlurCapture={(e) => {
-              // закрыть только если фокус ушёл за пределы группы
               const next = e.relatedTarget as Node | null;
               if (next && e.currentTarget.contains(next)) return;
               scheduleClose();
@@ -79,78 +152,121 @@ export function HeaderMegaMenu({ solid }: Props) {
               aria-haspopup="menu"
               aria-current={active ? 'page' : undefined}
               onClick={(e) => {
-                // первый клик на десктопе открывает, второй — переходит
-                if (!open) { e.preventDefault(); setOpenId(group.id); }
+                if (!open) {
+                  e.preventDefault();
+                  setOpenId(group.id);
+                }
               }}
               onKeyDown={(e) => {
-                if (e.key === 'ArrowDown' || e.key === 'Enter') { e.preventDefault(); setOpenId(group.id); }
+                if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                  e.preventDefault();
+                  setOpenId(group.id);
+                }
               }}
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-label transition-colors duration-normal ease-brand',
-                solid
-                  ? active ? 'bg-accent-soft text-content-primary' : 'text-content-secondary hover:bg-surface-sunken hover:text-content-primary'
-                  : active ? 'bg-white/10 text-content-on-cinema' : 'text-content-on-cinema-muted hover:bg-white/10 hover:text-content-on-cinema',
+                open
+                  ? solid
+                    ? 'bg-accent text-content-on-accent'
+                    : 'bg-white text-black'
+                  : solid
+                    ? active
+                      ? 'bg-accent-soft text-content-primary'
+                      : 'text-content-secondary hover:bg-surface-sunken hover:text-content-primary'
+                    : active
+                      ? 'bg-white/15 text-content-on-cinema'
+                      : 'text-content-on-cinema-muted hover:bg-white/10 hover:text-content-on-cinema',
               )}
             >
               {t(group.labelKey)}
-              <ChevronDownIcon className={cn('size-3.5 opacity-60 transition-transform', open && 'rotate-180')} aria-hidden />
+              <ChevronDownIcon
+                className={cn('size-3.5 opacity-60 transition-transform duration-normal', open && 'rotate-180')}
+                aria-hidden
+              />
             </Link>
-
-            {open && top !== null && createPortal(
-              <div
-                ref={panelRef}
-                style={{ top: `calc(${top}px + var(--space-2))` }}
-                role="menu"
-              className={cn(
-                'fixed left-1/2 z-header w-[min(860px,92vw)] -translate-x-1/2 rounded-2xl border bg-surface-card shadow-xl backdrop-blur-xl',
-                'border-border-default p-3 md:p-4',
-                'transition-[opacity,translate] duration-200',
-                open ? 'pointer-events-auto translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0',
-                solid ? 'bg-surface-card/95' : 'bg-surface-card',
-              )}
-            >
-              <div className="mb-2 flex items-center justify-between px-1">
-                <p className="text-eyebrow text-content-tertiary">{t(group.labelKey)}</p>
-                <Link href={group.href} onClick={() => setOpenId(null)} className="text-caption font-semibold text-content-accent hover:underline">{t('common.actions.viewAll' as never)}</Link>
-              </div>
-              <div className="grid gap-1.5 sm:grid-cols-2">
-                {group.children
-                  .filter((c: (typeof group.children)[number]) => !c.feature || c.feature === undefined || true)
-                  .map((child: (typeof group.children)[number]) => {
-                    const Icon: (typeof navIcons)[keyof typeof navIcons] | null = child.icon
-                      ? (navIcons as Record<string, (typeof navIcons)[keyof typeof navIcons]>)[child.icon] ?? null
-                      : null;
-                    const childActive = isActiveNavPath(pathname, child.href);
-                    return (
-                      <Link
-                        key={child.id}
-                        href={child.href}
-                        role="menuitem"
-                        onClick={() => setOpenId(null)}
-                        className={cn(
-                          'group/item flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors',
-                          childActive ? 'bg-accent-soft text-content-accent' : 'hover:bg-surface-sunken text-content-primary',
-                        )}
-                      >
-                        {Icon && (
-                          <span className={cn('mt-0.5 grid size-8 place-items-center rounded-lg', childActive ? 'bg-accent text-white' : 'bg-surface-sunken text-content-tertiary group-hover/item:bg-surface-card')}>
-                            <Icon className="size-4" aria-hidden />
-                          </span>
-                        )}
-                        <span className="min-w-0">
-                          <span className="block text-body-sm font-semibold leading-none">{t(child.labelKey)}</span>
-                          {child.descriptionKey && (
-                            <span className="mt-1 block text-caption leading-tight text-content-tertiary">{t(child.descriptionKey)}</span>
-                          )}
-                        </span>
-                      </Link>
-                    );
-                  })}
-              </div>
-            </div>, document.body)}
           </div>
         );
       })}
+
+      {renderId &&
+        activeGroup &&
+        top !== null &&
+        createPortal(
+          <div
+            ref={panelRef}
+            role="menu"
+            style={{ top: `calc(${top}px + var(--space-2))` }}
+            className={cn(
+              'fixed left-1/2 z-header w-[min(860px,92vw)] -translate-x-1/2 rounded-2xl border bg-surface-card shadow-xl backdrop-blur-xl',
+              'border-border-default p-3 md:p-4',
+              'transition-[opacity,translate] duration-200 ease-brand',
+              visible ? 'translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0',
+            )}
+            onMouseEnter={() => {
+              if (closeTimer.current) {
+                clearTimeout(closeTimer.current);
+                closeTimer.current = null;
+              }
+              setOpenId(renderId);
+            }}
+            onMouseLeave={scheduleClose}
+          >
+            <div className="mb-2 flex items-center justify-between px-1">
+              <p className="text-eyebrow text-content-tertiary">{t(activeGroup.labelKey)}</p>
+              <Link
+                href={activeGroup.href}
+                onClick={() => setOpenId(null)}
+                className="text-caption font-semibold text-content-accent hover:underline"
+              >
+                {t('common.actions.viewAll' as never)}
+              </Link>
+            </div>
+            <div className="grid gap-1.5 sm:grid-cols-2">
+              {activeGroup.children.map((child) => {
+                const Icon = child.icon
+                  ? (navIcons as Record<string, (typeof navIcons)[keyof typeof navIcons]>)[child.icon] ?? null
+                  : null;
+                const childActive = isActiveNavPath(pathname, child.href);
+                return (
+                  <Link
+                    key={child.id}
+                    href={child.href}
+                    role="menuitem"
+                    onClick={() => setOpenId(null)}
+                    className={cn(
+                      'group/item flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors',
+                      childActive
+                        ? 'bg-accent-soft text-content-accent'
+                        : 'hover:bg-surface-sunken text-content-primary',
+                    )}
+                  >
+                    {Icon && (
+                      <span
+                        className={cn(
+                          'mt-0.5 grid size-8 place-items-center rounded-lg',
+                          childActive
+                            ? 'bg-accent text-white'
+                            : 'bg-surface-sunken text-content-tertiary group-hover/item:bg-surface-card',
+                        )}
+                      >
+                        <Icon className="size-4" aria-hidden />
+                      </span>
+                    )}
+                    <span className="min-w-0">
+                      <span className="block text-body-sm font-semibold leading-none">{t(child.labelKey)}</span>
+                      {child.descriptionKey && (
+                        <span className="mt-1 block text-caption leading-tight text-content-tertiary">
+                          {t(child.descriptionKey)}
+                        </span>
+                      )}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>,
+          document.body,
+        )}
     </nav>
   );
 }
