@@ -259,9 +259,13 @@
     }
   }
 
-  /* View Transitions: карточка → страница без мигания (docs/10 §1, 6ч) */
+  /* View Transitions отключены: кастомный PortalTransition (Framer) управляет
+     переходом карточки → страница. Нативный @view-transition { navigation:auto }
+     внутри @supports не считался opt-in и давал в Chrome
+     «InvalidStateError: ViewTransition opt-in disabled» на каждом router.push.
+     Если понадобится нативный MPA-переход — выносить @view-transition
+     на верхний уровень, без вложенности в @supports. */
   @supports (view-transition-name: none) {
-    @view-transition { navigation: auto; }
     ::view-transition-group(root) { animation-duration: 260ms; }
   }
 
