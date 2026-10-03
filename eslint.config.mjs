@@ -141,6 +141,7 @@ const config = [
     files: [
       'src/components/ui/media.tsx',
       'src/components/home/hero-video.tsx',
+      'src/components/home/hero-video-layer.tsx',
       'src/components/home/editorial-video.tsx',
       'src/components/home/final-cta-video-text.tsx',
       'src/components/media/video-player.tsx',

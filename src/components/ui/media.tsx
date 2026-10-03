@@ -229,13 +229,10 @@ if (!resolved) {
         sizes={spec.sizes}
         quality={spec.quality}
         priority={isPriority}
-        /** Ленивая загрузка для всего, что не LCP — иначе приоритет теряет смысл. */
         loading={isPriority ? 'eager' : 'lazy'}
-        // Для LCP-картинки маркируем как high — у next/image это добавит fetchPriority=high.
+        // LCP должен быть с максимальным приоритетом сети.
         fetchPriority={isPriority ? 'high' : 'auto'}
-        // Декодим синхронно только LCP — иначе браузер может отложить отрисовку.
         decoding={isPriority ? 'sync' : 'async'}
-        // Небольшие размеры — гарантируем, что фрагмент совпадает с размерами контейнера и CLS не дергается.
         placeholder="blur"
         blurDataURL={resolved.blur}
         className={cn('size-full object-cover', imageClassName)}

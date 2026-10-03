@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 interface CardTiltLiteProps {
   children: ReactNode;
   className?: string;
+  index?: number;
 }
 
 /**

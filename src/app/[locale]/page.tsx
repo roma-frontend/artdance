@@ -21,19 +21,15 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { HeroSection } from '@/components/home/hero-section';
 import { HeroSearchBar } from '@/components/home/hero-search-bar';
 import { StatsBar } from '@/components/home/stats-bar';
-import { JourneySection } from '@/components/home/journey-section';
 import { EditorialStatement } from '@/components/home/editorial-statement';
 import { CompetitionSection } from '@/components/home/competition-section';
 import { DisciplineSections } from '@/components/home/discipline-sections';
-import { NewsletterSection } from '@/components/home/newsletter-section';
 import { StyleMarquee } from '@/components/home/style-marquee';
 import { TestimonialCard } from '@/components/home/testimonial-card';
-import { CardTilt } from '@/components/fx/card-tilt';
+import { CardTilt } from '@/components/fx/card-tilt-lite';
 import { Reveal } from '@/components/fx/reveal';
-import { TextReveal } from '@/components/fx/text-reveal';
 import { StyleAccordion } from '@/components/home/style-accordion';
 import { CinemaAperture } from '@/components/fx/cinema-aperture';
-import { FinalCtaVideoText } from '@/components/home/final-cta-video-text';
 import { InstructorsSpotlight } from '@/components/home/instructors-spotlight';
 import { ScrollSeal } from '@/components/fx/scroll-seal';
 import { RailSeal } from '@/components/fx/rail-seal';
@@ -60,6 +56,9 @@ import { danceStyles } from '@/domain/enums';
 import { Link } from '@/i18n/routing';
 import { getHomeContent } from '@/server/content/home';
 import type { Locale } from '@/i18n/config';
+import { JourneyLazy } from '@/components/home/journey-lazy';
+import { NewsletterLazy } from '@/components/home/newsletter-lazy';
+import { FinalCtaLazy } from '@/components/home/final-cta-lazy';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -163,14 +162,12 @@ export default async function HomePage({ params }: PageProps) {
       />
       </CinemaAperture>
 
-      {/* ── JOURNEY: четыре шага стопкой наезжающих карточек ── */}
-      <JourneySection
-        images={[
-          content.styleTiles[0]?.image,
-          content.instructors[0]?.image,
-          content.popularClasses[0]?.image,
-          content.competition.image,
-        ].filter((image) => image !== undefined)}
+      {/* ── JOURNEY: ниже фолда — грузим лениво, чтобы не тащить тяжелую логику в начальный чанк */}
+      <JourneyLazy
+        styleImage={content.styleTiles[0]?.image}
+        instructorImage={content.instructors[0]?.image}
+        classImage={content.popularClasses[0]?.image}
+        competitionImage={content.competition.image}
         locale={locale as Locale}
       />
 
@@ -329,29 +326,13 @@ export default async function HomePage({ params }: PageProps) {
         </div>
       </section>
 
-      {/* ── FINAL CTA: последнее предложение перед подвалом ── */}
-      <section className="cinema-surface section-y relative text-center">
-        {/*
-          Scroll-driven rotation (перенесён с карточек — решение заказчика):
-          вращается декоративная печать, содержание не крутится никогда.
-        */}
-        <ScrollSeal />
-        <Reveal variant="scale" className="page-container">
-          {/* Видео внутри букв MOVE DIFFERENT с эффектом раскрытия на скролле */}
-          <FinalCtaVideoText video={content.editorial.video} text="MOVE DIFFERENT" />
-
-          <h2 className="text-heading-1 text-content-on-cinema"><TextReveal>{t('finalCta.title')}</TextReveal></h2>
-          <p className="text-body-lg mt-3 text-content-on-cinema-muted">{t('finalCta.subtitle')}</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Button asChild size="lg" variant="accent">
-              <Link href={routes.discover()}>{t('finalCta.primaryCta')}</Link>
-            </Button>
-            <Button asChild size="lg" variant="onCinema">
-              <Link href={routes.booking()}>{t('finalCta.secondaryCta')}</Link>
-            </Button>
-          </div>
-        </Reveal>
-      </section>
+      {/* ── FINAL CTA: ниже фолда — отдельный чанк чтобы не утяжелять TBT */}
+      <FinalCtaLazy
+        title={t('finalCta.title')}
+        subtitle={t('finalCta.subtitle')}
+        primaryCta={t('finalCta.primaryCta')}
+        secondaryCta={t('finalCta.secondaryCta')}
+      />
 
       {/* ── PRICING: суммы и квоты приходят из config/pricing, не из разметки ── */}
       {features.subscriptions && (
@@ -408,8 +389,8 @@ export default async function HomePage({ params }: PageProps) {
         </section>
       )}
 
-      {/* ── NEWSLETTER: последний шанс остаться на связи, перед подвалом ── */}
-      <NewsletterSection locale={locale as Locale} source="home" />
+      {/* ── NEWSLETTER: ленивый, ниже фолда */}
+      <NewsletterLazy locale={locale as Locale} source="home" />
 
       {/* ── FOOTER: колонки из слоя навигации, год из системного времени ── */}
       <SiteFooter />

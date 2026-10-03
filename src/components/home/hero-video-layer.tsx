@@ -31,7 +31,7 @@ export function HeroVideoLayer({ video }: { video: VideoRef | null }) {
 
   useEffect(() => {
     // Не грузим видео, пока браузер не в idle / пользователь не взаимодействует.
-    let cleanupIdle = onIdle(() => setIdle(true));
+    const cleanupIdle = onIdle(() => setIdle(true));
     const onInteract = () => setIdle(true);
     window.addEventListener('pointerdown', onInteract, { once: true, passive: true });
     window.addEventListener('touchstart', onInteract, { once: true, passive: true });
