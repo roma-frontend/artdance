@@ -3077,6 +3077,38 @@ const en = {
       storageLocal: 'Local storage: files live in the project folder, not in a bucket.',
     },
 
+    overview: {
+      title: 'Overview',
+      subtitle: 'Key metrics — queue depth, funnel and fill rate',
+      gmvTitle: 'GMV, 30 days',
+      gmvHint: 'Paid orders only. Revenue before commission.',
+      takeRateTitle: 'Take rate',
+      takeRateHint: 'Commission / GMV over the same period.',
+      conversionTitle: 'Booking conversion',
+      conversionHint: 'Completes per booking view (requires analytics events; mock until A-16).',
+      occupancyTitle: 'Fill rate',
+      occupancyHint: 'Booked / capacity this week from ClassSession.',
+      empty: 'No data yet — seed is required for the build',
+      emptyHint: 'Run prisma:seed so that GMV, take rate and occupancy have live data.',
+      ctaReports: 'Open reports',
+      ctaSchedule: 'Open schedule',
+    },
+
+    content: {
+      title: 'Content',
+      subtitle: 'Homepage, banners and featured collections',
+      blocksTitle: 'Homepage blocks',
+      blocksHint: 'What defines homepage order and media lives in ContentBlock; editable without a developer.',
+      blocksKey: 'Block key',
+      statusActive: 'Active',
+      statusInactive: 'Draft',
+      orderLabel: 'Order',
+      noBlocks: 'No blocks yet',
+      noBlocksHint: 'Blocks appear after seeding. A missing block key is a content error, not a code one.',
+      previewHint: 'Homepage preview uses the same ContentRenderer as the public site.',
+      ctaManageBlocks: 'Manage blocks',
+    },
+
     errors: {
       notFound: 'This entry no longer exists',
       capabilityMissing: 'Your access level does not cover this operation',
