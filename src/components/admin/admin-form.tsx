@@ -101,12 +101,12 @@ export function AdminForm({
         execute({ resource, ...(id ? { id } : {}), values });
       }}
     >
-      <section aria-labelledby="admin-form-general" className="flex flex-col gap-5">
+      <section aria-labelledby="admin-form-general" className="flex flex-col gap-5 rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-6">
         <h2 id="admin-form-general" className="text-card-title text-content-primary">
           {t('generalSection')}
         </h2>
 
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 grid-cols-1 md:grid-cols-2">
           {fields.map((field) => (
             <FieldControl
               key={field.name}
@@ -125,7 +125,7 @@ export function AdminForm({
       </section>
 
       {showTranslations ? (
-        <section aria-labelledby="admin-form-translations" className="flex flex-col gap-4">
+        <section aria-labelledby="admin-form-translations" className="flex flex-col gap-4 rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-6">
           <h2 id="admin-form-translations" className="text-card-title text-content-primary">
             {t('translationsSection')}
           </h2>
@@ -133,7 +133,7 @@ export function AdminForm({
             {t('translationsHint', { locale: localeMeta[defaultLocale].nativeName })}
           </p>
 
-          <div role="tablist" aria-label={t('translationsSection')} className="flex gap-2">
+          <div role="tablist" aria-label={t('translationsSection')} className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
             {locales.map((locale) => (
               <button
                 key={locale}
@@ -142,9 +142,9 @@ export function AdminForm({
                 aria-selected={activeLocale === locale}
                 onClick={() => setActiveLocale(locale)}
                 className={cn(
-                  'text-button rounded-full px-4 py-2 transition-colors duration-fast',
+                  'text-button shrink-0 rounded-full px-4 py-2.5 transition-colors duration-fast',
                   activeLocale === locale
-                    ? 'bg-accent text-content-on-accent'
+                    ? 'bg-accent text-content-on-accent shadow-sm'
                     : 'bg-surface-sunken text-content-secondary hover:text-content-primary',
                 )}
               >
@@ -157,7 +157,7 @@ export function AdminForm({
             <div
               key={locale}
               hidden={activeLocale !== locale}
-              className="grid gap-5 md:grid-cols-2"
+              className="grid gap-5 grid-cols-1 md:grid-cols-2"
             >
               {fields
                 .filter((field) => field.localized === true)
@@ -199,8 +199,8 @@ export function AdminForm({
         </p>
       ) : null}
 
-      <div className="flex items-center gap-3">
-        <Button type="submit" variant="accent" disabled={isSubmitting}>
+      <div className="sticky bottom-0 z-10 -mx-4 flex items-center gap-3 border-t border-border-default bg-surface-card/95 px-4 py-3 backdrop-blur-md sm:mx-0 sm:rounded-xl sm:border sm:shadow-sm">
+        <Button type="submit" variant="accent" size="md" disabled={isSubmitting} className="w-full sm:w-auto">
           {t('saveCta')}
         </Button>
       </div>

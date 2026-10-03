@@ -105,9 +105,9 @@ export function BulkActionBar({ resource, actions, children }: BulkActionBarProp
         <div
           aria-live="polite"
           className={cn(
-            'flex flex-wrap items-center gap-3 rounded-md border border-border-default bg-surface-raised px-4 py-3 transition-all duration-normal ease-brand',
+            'flex flex-wrap items-center gap-3 rounded-2xl border border-border-default bg-surface-card px-4 py-3 shadow-sm transition-all duration-normal ease-brand',
             selected > 0 &&
-              'sticky bottom-4 z-sticky shadow-xl backdrop-blur-md bg-surface-raised/95 border-border-strong ring-1 ring-border-default/50',
+              'sticky bottom-4 z-sticky shadow-xl backdrop-blur-md bg-surface-card/95 border-border-strong ring-1 ring-border-default/50',
           )}
         >
           <p className="text-body-sm text-content-secondary">

@@ -75,14 +75,15 @@ export default async function AdminDashboardPage({ params }: PageProps) {
               {t('shortcuts')}
             </h2>
 
-            <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
               {shortcuts.map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className="text-body-sm block rounded-md border border-border-default bg-surface-card px-4 py-3 text-content-primary transition-colors duration-fast hover:border-border-strong hover:text-content-accent"
+                    className="text-body-sm flex items-center justify-between gap-2 rounded-2xl border border-border-default bg-surface-card px-4 py-3.5 font-medium text-content-primary shadow-sm transition-all hover:border-accent/20 hover:shadow-md hover:text-content-accent active:scale-[0.98]"
                   >
-                    {tRoot(item.labelKey)}
+                    <span className="min-w-0 truncate">{tRoot(item.labelKey)}</span>
+                    <span aria-hidden className="shrink-0 text-content-tertiary">→</span>
                   </Link>
                 </li>
               ))}

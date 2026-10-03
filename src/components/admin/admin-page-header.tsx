@@ -37,27 +37,27 @@ export async function AdminPageHeader({
   const t = await getRootTranslate();
 
   return (
-    <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
-      <div className="min-w-0">
+    <header className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-start sm:justify-between">
+      <div className="min-w-0 flex-1">
         {parent ? (
           <Link
             href={parent.href}
-            className="text-eyebrow uppercase text-content-tertiary underline-offset-4 hover:text-content-accent hover:underline"
+            className="inline-flex items-center gap-1.5 text-caption font-semibold uppercase tracking-wide text-content-tertiary underline-offset-4 hover:text-content-accent hover:underline"
           >
-            {t(parent.labelKey)}
+            <span aria-hidden>←</span> {t(parent.labelKey)}
           </Link>
         ) : null}
 
-        <h1 className="text-heading-2 mt-1 text-content-primary">{title ?? (titleKey ? t(titleKey) : '')}</h1>
+        <h1 className="mt-2 text-2xl font-bold tracking-tight text-content-primary sm:mt-1 sm:text-3xl lg:text-2xl leading-none">{title ?? (titleKey ? t(titleKey) : '')}</h1>
 
         {subtitle ?? subtitleKey ? (
-          <p className="text-body-sm mt-2 max-w-(--layout-prose-max-width) text-content-secondary">
+          <p className="text-body-sm mt-2 max-w-(--layout-prose-max-width) leading-relaxed text-content-secondary">
             {subtitle ?? (subtitleKey ? t(subtitleKey) : '')}
           </p>
         ) : null}
       </div>
 
-      {actions ? <div className="flex flex-wrap items-center gap-3">{actions}</div> : null}
+      {actions ? <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:shrink-0 [&_a]:shrink-0 [&_button]:shrink-0">{actions}</div> : null}
     </header>
   );
 }

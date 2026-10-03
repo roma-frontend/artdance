@@ -12,15 +12,10 @@
 import type { ReactNode } from 'react';
 import { getTranslations } from 'next-intl/server';
 
-import { AdminHeader } from '@/components/admin/admin-header';
-import { AdminSidebar, type SidebarGroup } from '@/components/admin/admin-sidebar';
+import { AdminShellLayout } from '@/components/admin/admin-shell-layout';
+import type { SidebarGroup } from '@/components/admin/admin-sidebar';
 import { ScrollToTopButton } from '@/components/admin/scroll-to-top-button';
-import { SignOutButton } from '@/components/auth/sign-out-button';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { routes, site } from '@/config';
 import { userRoleLabelKey, type UserRole } from '@/domain/enums';
-import { Link } from '@/i18n/routing';
 import { getRootTranslate } from '@/i18n/translate';
 
 interface AdminShellProps {
@@ -35,37 +30,18 @@ export async function AdminShell({ groups, userName, role, children }: AdminShel
   const tRoot = await getRootTranslate();
 
   return (
-    <div className="min-h-dvh bg-surface-canvas">
-      <AdminHeader>
-        <div className="page-container flex flex-wrap items-center justify-between gap-4 py-4">
-          <div className="flex items-baseline gap-3">
-            <Link href={routes.admin()} className="text-heading-4 text-content-primary">
-              {t('title')}
-            </Link>
-            <span className="text-caption text-content-tertiary">{t('subtitle')}</span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="text-body-sm text-content-secondary">{t('signedInAs', { name: userName })}</span>
-            <Badge variant="metal" size="md">
-              {tRoot(userRoleLabelKey(role))}
-            </Badge>
-            <Button asChild variant="ghost" size="sm">
-              <Link href={routes.home()}>{t('backToSite')}</Link>
-            </Button>
-            <SignOutButton />
-          </div>
-        </div>
-      </AdminHeader>
-
-      <div className="page-container grid items-start gap-8 py-8 lg:grid-cols-[var(--layout-sidebar-width)_1fr]">
-        <AdminSidebar groups={groups} />
-        <main id={site.mainContentId} className="min-w-0">
-          {children}
-        </main>
-      </div>
-
+    <>
+      <AdminShellLayout
+        groups={groups}
+        userName={userName}
+        roleLabel={tRoot(userRoleLabelKey(role))}
+        title={t('title')}
+        subtitle={t('subtitle')}
+        backToSiteLabel={t('backToSite')}
+      >
+        {children}
+      </AdminShellLayout>
       <ScrollToTopButton />
-    </div>
+    </>
   );
 }

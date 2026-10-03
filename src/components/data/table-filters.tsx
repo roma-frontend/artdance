@@ -90,7 +90,7 @@ export function TableFilters({
 
   return (
     <form
-      className="flex flex-wrap items-end gap-3"
+      className="flex flex-col gap-3 rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end sm:p-4"
       onSubmit={(event) => {
         event.preventDefault();
         const value = new FormData(event.currentTarget).get('q');
@@ -98,8 +98,8 @@ export function TableFilters({
       }}
     >
       {searchable ? (
-        <div className="flex flex-col gap-2">
-          <label htmlFor="admin-list-search" className="text-label uppercase text-content-secondary">
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:min-w-56 sm:max-w-sm">
+          <label htmlFor="admin-list-search" className="text-caption font-semibold uppercase tracking-wide text-content-tertiary">
             {t('searchLabel')}
           </label>
           <input
@@ -108,21 +108,21 @@ export function TableFilters({
             type="search"
             defaultValue={currentQuery}
             placeholder={t('searchPlaceholder')}
-            className="form-input min-w-56"
+            className="form-input rounded-full"
           />
         </div>
       ) : null}
 
       {statusOptions.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          <label htmlFor="admin-list-status" className="text-label uppercase text-content-secondary">
+        <div className="flex min-w-0 flex-col gap-1.5 sm:w-48">
+          <label htmlFor="admin-list-status" className="text-caption font-semibold uppercase tracking-wide text-content-tertiary">
             {t('statusLabel')}
           </label>
           <select
             id="admin-list-status"
             name="status"
             defaultValue={currentStatus}
-            className="form-input"
+            className="form-input rounded-full"
             onChange={(event) => go(hrefWith({ status: event.target.value }))}
           >
             <option value="">{t('statusAll')}</option>
@@ -136,15 +136,15 @@ export function TableFilters({
       ) : null}
 
       {sortOptions.length > 0 ? (
-        <div className="flex flex-col gap-2">
-          <label htmlFor="admin-list-sort" className="text-label uppercase text-content-secondary">
+        <div className="flex min-w-0 flex-col gap-1.5 sm:w-48">
+          <label htmlFor="admin-list-sort" className="text-caption font-semibold uppercase tracking-wide text-content-tertiary">
             {t('sortLabel')}
           </label>
           <select
             id="admin-list-sort"
             name="sort"
             defaultValue={currentSort}
-            className="form-input"
+            className="form-input rounded-full"
             onChange={(event) => go(hrefWith({ sort: event.target.value }))}
           >
             {sortOptions.map((option) => (
@@ -156,7 +156,7 @@ export function TableFilters({
         </div>
       ) : null}
 
-      <Button type="submit" variant="outline" size="sm" disabled={isPending}>
+      <Button type="submit" variant="accent" size="sm" disabled={isPending} className="w-full sm:w-auto sm:self-end rounded-full">
         {t('applyFilters')}
       </Button>
     </form>

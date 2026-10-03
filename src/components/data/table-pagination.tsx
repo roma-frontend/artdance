@@ -37,33 +37,33 @@ export async function TablePagination({ target, page, pageCount, total, query }:
   return (
     <nav
       aria-label={t('pageOf', { page: current, pages: Math.max(pageCount, 1) })}
-      className="flex flex-wrap items-center justify-between gap-4"
+      className="flex flex-col gap-3 rounded-2xl border border-border-default bg-surface-card px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
     >
       <p className="text-body-sm text-content-secondary">{t('resultsCount', { count: total })}</p>
 
-      <div className="flex items-center gap-3">
-        <p className="text-caption text-content-tertiary">
+      <div className="flex items-center justify-between gap-3 sm:justify-end">
+        <p className="rounded-full bg-surface-sunken px-3 py-1.5 text-caption font-semibold text-content-tertiary">
           {t('pageOf', { page: current, pages: Math.max(pageCount, 1) })}
         </p>
 
         <div className="flex gap-2">
-          <Button asChild={hasPrevious} variant="ghost" size="sm" disabled={!hasPrevious}>
+          <Button asChild={hasPrevious} variant="outline" size="sm" disabled={!hasPrevious} className="rounded-full">
             {hasPrevious ? (
               <Link href={tableTargetHref(target, { ...query, page: current - 1 })} rel="prev">
-                {t('previousPage')}
+                ← {t('previousPage')}
               </Link>
             ) : (
-              <span>{t('previousPage')}</span>
+              <span>← {t('previousPage')}</span>
             )}
           </Button>
 
-          <Button asChild={hasNext} variant="ghost" size="sm" disabled={!hasNext}>
+          <Button asChild={hasNext} variant="accent" size="sm" disabled={!hasNext} className="rounded-full">
             {hasNext ? (
               <Link href={tableTargetHref(target, { ...query, page: current + 1 })} rel="next">
-                {t('nextPage')}
+                {t('nextPage')} →
               </Link>
             ) : (
-              <span>{t('nextPage')}</span>
+              <span>{t('nextPage')} →</span>
             )}
           </Button>
         </div>

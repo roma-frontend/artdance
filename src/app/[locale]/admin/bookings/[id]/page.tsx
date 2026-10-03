@@ -67,8 +67,8 @@ export default async function AdminBookingPage({ params }: PageProps) {
         actions={<StatusBadge kind="booking" status={booking.status} size="md" />}
       />
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <section aria-labelledby="booking-main" className="lg:col-span-2">
+      <div className="grid gap-6 lg:grid-cols-3 xl:gap-8">
+        <section aria-labelledby="booking-main" className="lg:col-span-2 rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-6">
           <h2 id="booking-main" className="text-card-title mb-4 text-content-primary">
             {tRoot('admin.form.generalSection')}
           </h2>
@@ -114,8 +114,8 @@ export default async function AdminBookingPage({ params }: PageProps) {
           </dl>
         </section>
 
-        <aside className="flex flex-col gap-8">
-          <section aria-labelledby="booking-status">
+        <aside className="flex flex-col gap-6">
+          <section aria-labelledby="booking-status" className="rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-5">
             <h2 id="booking-status" className="text-card-title mb-4 text-content-primary">
               {tRoot('admin.fields.status')}
             </h2>
@@ -128,7 +128,7 @@ export default async function AdminBookingPage({ params }: PageProps) {
             ) : null}
           </section>
 
-          <section aria-labelledby="booking-policy">
+          <section aria-labelledby="booking-policy" className="rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-5">
             <h2 id="booking-policy" className="text-card-title mb-2 text-content-primary">
               {t('policySection')}
             </h2>

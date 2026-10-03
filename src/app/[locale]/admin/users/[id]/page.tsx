@@ -58,8 +58,8 @@ export default async function AdminUserPage({ params }: PageProps) {
         }
       />
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <section aria-labelledby="user-profile">
+      <div className="grid gap-6 lg:grid-cols-2 xl:gap-8">
+        <section aria-labelledby="user-profile" className="rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-6">
           <h2 id="user-profile" className="text-card-title mb-4 text-content-primary">
             {t('profileSection')}
           </h2>
@@ -99,7 +99,7 @@ export default async function AdminUserPage({ params }: PageProps) {
           </dl>
         </section>
 
-        <section aria-labelledby="user-access">
+        <section aria-labelledby="user-access" className="rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-6">
           <h2 id="user-access" className="text-card-title mb-4 text-content-primary">
             {t('accessSection')}
           </h2>

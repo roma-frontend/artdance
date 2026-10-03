@@ -236,6 +236,8 @@ export const layout = {
   sidebarWidth: '22.5rem',
   sidebarWidthBooking: '23.75rem',
   sidebarWidthCheckout: '25rem',
+  adminSidebarWidth: '16.5rem',
+  adminSidebarWidthWide: '18rem',
 } as const;
 
 export const radius = {

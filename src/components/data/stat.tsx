@@ -37,7 +37,7 @@ export async function StatGrid({ items, className }: StatGridProps) {
   if (items.length === 0) return null;
 
   return (
-    <dl className={cn('grid gap-4 sm:grid-cols-2 xl:grid-cols-4', className)}>
+    <dl className={cn('grid gap-3 grid-cols-2 lg:grid-cols-3 xl:grid-cols-4', className)}>
       {items.map((item) => (
         <Stat key={item.labelKey} spec={item} />
       ))}
@@ -50,10 +50,10 @@ export async function Stat({ spec }: { spec: StatSpec }) {
   const format = await getFormatter();
 
   return (
-    <div className="rounded-lg border border-border-default bg-surface-card p-5">
-      <dt className="text-label uppercase text-content-tertiary">{t(spec.labelKey)}</dt>
-      <dd className="text-price mt-2 text-content-primary">{formatValue(spec, format)}</dd>
-      {spec.hintKey ? <p className="text-caption mt-1 text-content-tertiary">{t(spec.hintKey)}</p> : null}
+    <div className="group rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm transition-all hover:shadow-md hover:border-border-strong sm:p-5">
+      <dt className="text-caption font-semibold uppercase tracking-wide text-content-tertiary">{t(spec.labelKey)}</dt>
+      <dd className="mt-2 text-lg font-bold tracking-tight text-content-primary sm:text-xl">{formatValue(spec, format)}</dd>
+      {spec.hintKey ? <p className="text-caption mt-1 text-content-tertiary leading-snug">{t(spec.hintKey)}</p> : null}
     </div>
   );
 }

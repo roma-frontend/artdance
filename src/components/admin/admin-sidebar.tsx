@@ -39,63 +39,53 @@ export interface SidebarGroup {
 
 interface AdminSidebarProps {
   groups: readonly SidebarGroup[];
+  onNavigate?: () => void;
+  variant?: 'desktop' | 'drawer';
 }
 
-export function AdminSidebar({ groups }: AdminSidebarProps) {
+export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminSidebarProps) {
   const t = useTranslations('admin');
-  /** Узкая подпись: ключи приходят переменными, см. `@/i18n/translate`. */
   const tRoot = useTranslations() as unknown as Translate;
   const pathname = usePathname();
 
+  const isDrawer = variant === 'drawer';
+
   return (
-    <nav
-      aria-label={t('sectionNav')}
-      className="scrollbar-compact lg:sticky lg:top-[calc(var(--layout-nav-height)+1.5rem)] lg:max-h-[calc(100dvh-var(--layout-nav-height)-3rem)] lg:overflow-y-auto"
-    >
-      <p className="text-eyebrow mb-4 hidden uppercase text-content-tertiary lg:block">{t('title')}</p>
+    <nav aria-label={t('sectionNav')} className={isDrawer ? '' : 'contents'}>
+      {!isDrawer ? <p className="text-eyebrow mb-4 hidden uppercase text-content-tertiary lg:block">{t('title')}</p> : null}
 
-      <div className="flex gap-6 overflow-x-auto pb-2 lg:flex-col lg:gap-6 lg:overflow-visible lg:pb-0">
+      <div className={isDrawer ? 'flex flex-col gap-6' : 'hidden lg:flex lg:flex-col lg:gap-6'}>
         {groups.map((group) => (
-          <div key={group.labelKey} className="min-w-max lg:min-w-0">
-            <p className="text-label mb-2 uppercase text-content-tertiary">{tRoot(group.labelKey)}</p>
-
-            <ul className="flex gap-1 lg:flex-col">
+          <div key={group.labelKey}>
+            <p className="text-label mb-2 uppercase tracking-wide text-content-tertiary">{tRoot(group.labelKey)}</p>
+            <ul className={isDrawer ? 'flex flex-col gap-1' : 'flex flex-col gap-1'}>
               {group.items.map((item) => {
                 const active = isActive(pathname, item.href);
-
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href}
                       aria-current={active ? 'page' : undefined}
+                      onClick={onNavigate}
                       className={cn(
-                        'text-body-sm flex items-center justify-between gap-2 rounded-md px-3 py-2 whitespace-nowrap transition-colors duration-fast',
+                        'group flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-sm transition-all duration-fast',
                         active
-                          ? 'bg-accent-soft font-semibold text-content-accent'
-                          : 'text-content-secondary hover:bg-interactive-hover hover:text-content-primary',
+                          ? 'bg-accent text-content-on-accent shadow-sm shadow-accent/20 font-semibold'
+                          : 'text-content-secondary hover:bg-surface-raised hover:text-content-primary active:bg-surface-sunken',
+                        isDrawer && 'py-3 text-[15px]',
                       )}
                     >
-                      <span className="truncate">{tRoot(item.labelKey)}</span>
-
+                      <span className="min-w-0 truncate">{tRoot(item.labelKey)}</span>
                       {item.badge !== undefined && item.badge > 0 ? (
                         <span
                           className={cn(
-                            'text-caption inline-flex items-center justify-center rounded-full px-1.5 py-0.5 font-medium tabular-nums',
-                            active
-                              ? 'bg-accent text-content-on-accent'
-                              : 'bg-surface-raised text-content-secondary border border-border-default',
+                            'inline-flex min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums leading-none',
+                            active ? 'bg-white text-accent' : 'bg-accent-soft text-content-accent border border-accent/10',
                           )}
                         >
                           {item.badge > 99 ? '99+' : item.badge}
                         </span>
                       ) : null}
-
-                      {/*
-                        Обратная связь на нажатие. В админке она нужнее всего:
-                        каждый раздел — динамический маршрут с запросами к базе, и
-                        без индикатора между щелчком и новым экраном проходит
-                        пауза, в которой человек щёлкает второй раз.
-                      */}
                       <LinkPending />
                     </Link>
                   </li>

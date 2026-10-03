@@ -67,8 +67,8 @@ export default async function AdminOrderPage({ params }: PageProps) {
         actions={<StatusBadge kind="order" status={order.status} size="md" />}
       />
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <section aria-labelledby="order-items" className="lg:col-span-2">
+      <div className="grid gap-6 lg:grid-cols-3 xl:gap-8">
+        <section aria-labelledby="order-items" className="lg:col-span-2 rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-6">
           <h2 id="order-items" className="text-card-title mb-4 text-content-primary">
             {t('itemsSection')}
           </h2>
@@ -77,13 +77,13 @@ export default async function AdminOrderPage({ params }: PageProps) {
             {order.items.map((item) => (
               <li
                 key={item.id}
-                className="flex flex-wrap items-baseline justify-between gap-2 rounded-md border border-border-subtle bg-surface-card px-4 py-3"
+                className="flex flex-col gap-2 rounded-xl border border-border-default bg-surface-sunken/40 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
               >
-                <span className="text-body-sm text-content-primary">{item.titleSnapshot}</span>
-                <span className="text-caption text-content-tertiary">
+                <span className="min-w-0 flex-1 text-sm font-medium leading-snug text-content-primary">{item.titleSnapshot}</span>
+                <span className="inline-flex w-fit rounded-full bg-surface-raised px-2.5 py-1 text-xs font-semibold text-content-tertiary">
                   {tRoot(`admin.enums.lineItem.${item.type}`)}
                 </span>
-                <span className="text-body-sm text-content-secondary">
+                <span className="text-sm text-content-secondary">
                   {format.number(item.quantity, 'plain')} × {format.number(item.unitPrice, 'price')}
                 </span>
                 <span className="text-price text-content-primary">
@@ -115,8 +115,8 @@ export default async function AdminOrderPage({ params }: PageProps) {
           </dl>
         </section>
 
-        <aside className="flex flex-col gap-8">
-          <section aria-labelledby="order-status">
+        <aside className="flex flex-col gap-6">
+          <section aria-labelledby="order-status" className="rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-5">
             <h2 id="order-status" className="text-card-title mb-4 text-content-primary">
               {t('statusSection')}
             </h2>
@@ -125,7 +125,7 @@ export default async function AdminOrderPage({ params }: PageProps) {
             ) : null}
           </section>
 
-          <section aria-labelledby="order-customer">
+          <section aria-labelledby="order-customer" className="rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-5">
             <h2 id="order-customer" className="text-card-title mb-4 text-content-primary">
               {t('customerSection')}
             </h2>
@@ -143,7 +143,7 @@ export default async function AdminOrderPage({ params }: PageProps) {
             </dl>
           </section>
 
-          <section aria-labelledby="order-payments">
+          <section aria-labelledby="order-payments" className="rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-5">
             <h2 id="order-payments" className="text-card-title mb-4 text-content-primary">
               {t('paymentSection')}
             </h2>
@@ -153,9 +153,9 @@ export default async function AdminOrderPage({ params }: PageProps) {
             ) : (
               <ul className="flex flex-col gap-2">
                 {order.payments.map((payment) => (
-                  <li key={payment.id} className="flex items-center justify-between gap-3">
+                  <li key={payment.id} className="flex items-center justify-between gap-3 rounded-xl bg-surface-sunken/40 px-3 py-2">
                     <StatusBadge kind="payment" status={payment.status} />
-                    <span className="text-body-sm text-content-secondary">
+                    <span className="text-body-sm font-semibold text-content-secondary">
                       {format.number(payment.paidAmount, 'price')}
                     </span>
                   </li>

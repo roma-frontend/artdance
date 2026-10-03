@@ -19,6 +19,12 @@ playwright-report/
 test-results/
 .vitest/
 
+# Инструменты / локальные кэши (не попадают в CI)
+.kilo/
+.claude/
+.freebuff/
+.ci-playwright-report/
+
 # ОС и редакторы
 .DS_Store
 Thumbs.db

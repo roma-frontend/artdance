@@ -130,85 +130,141 @@ export async function DataTable({
     );
   }
 
+  const primaryColumn = columns.find((c) => c.key === primaryKey) ?? columns[0];
+
   return (
-    <div className={cn('overflow-hidden rounded-lg border border-border-default bg-surface-card', className)}>
-      <Table>
-        <TableCaption className="sr-only">
-          {t('list.tableCaption', { resource: resourceLabel, count: rows.length })}
-        </TableCaption>
+    <>
+      {/* Mobile cards — <640px */}
+      <div className={cn('flex flex-col gap-3 sm:hidden', className)}>
+        {rows.map((row) => {
+          const href = primaryColumn ? hrefFor(rowLink, row.id) : null;
+          const primaryValue = primaryColumn ? row[primaryColumn.key] : row[primaryKey];
+          return (
+            <div key={row.id} className="group relative flex flex-col gap-3 rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm transition-all hover:border-border-strong hover:shadow-md active:scale-[0.99]">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  {href ? (
+                    <Link href={href} className="block text-body font-semibold leading-tight text-content-primary hover:text-content-accent">
+                      {renderCell(primaryColumn!, primaryValue, format, tRoot) ?? row.id}
+                    </Link>
+                  ) : (
+                    <p className="text-body font-semibold leading-tight text-content-primary">{String(primaryValue ?? row.id)}</p>
+                  )}
+                  {/* secondary meta row */}
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {columns
+                      .filter((c) => c.kind === 'moderation' || c.kind === 'orderStatus' || c.kind === 'bookingStatus' || c.kind === 'paymentStatus' || c.kind === 'payoutStatus' || c.kind === 'role')
+                      .slice(0, 2)
+                      .map((c) => (
+                        <span key={c.key} className="inline-flex">{renderCell(c, row[c.key], format, tRoot)}</span>
+                      ))}
+                  </div>
+                </div>
+                {selectable ? (
+                  <input type="checkbox" name="ids" value={row.id} aria-label={t('list.selectRow')} className="mt-1 size-5 shrink-0 rounded border-border-strong accent-accent" />
+                ) : null}
+              </div>
 
-        <TableHeader>
-          <TableRow>
-            {selectable ? (
-              <TableHead className="w-10">
-                <span className="sr-only">{t('list.selectRow')}</span>
-              </TableHead>
-            ) : null}
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 border-t border-border-subtle pt-3">
+                {columns
+                  .filter((c) => c.key !== primaryKey && c.kind !== 'moderation' && c.kind !== 'orderStatus' && c.kind !== 'bookingStatus' && c.kind !== 'paymentStatus' && c.kind !== 'payoutStatus')
+                  .slice(0, 6)
+                  .map((column) => (
+                    <div key={column.key} className="min-w-0">
+                      <dt className="truncate text-caption font-semibold uppercase tracking-wide text-content-tertiary">{tRoot(column.labelKey)}</dt>
+                      <dd className="mt-0.5 truncate text-sm text-content-secondary">{renderCell(column, row[column.key], format, tRoot)}</dd>
+                    </div>
+                  ))}
+              </dl>
 
-            {columns.map((column) => (
-              <TableHead
-                key={column.key}
-                className={cn(
-                  'text-label whitespace-nowrap',
-                  column.secondary === true && 'hidden lg:table-cell',
-                )}
-              >
-                {tRoot(column.labelKey)}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-
-        <TableBody>
-          {rows.map((row) => (
-            <TableRow key={row.id}>
-              {selectable ? (
-                <TableCell>
-                  {/*
-                   * Обычный input, а не Radix-чекбокс: значение обязано попасть в
-                   * `FormData` родительской формы. Radix рисует кнопку и скрытое
-                   * поле, и полагаться на это в массовых действиях — лишний риск.
-                   */}
-                  <input
-                    type="checkbox"
-                    name="ids"
-                    value={row.id}
-                    aria-label={t('list.selectRow')}
-                    className="size-4 rounded-sm border-border-strong accent-accent"
-                  />
-                </TableCell>
+              {href ? (
+                <Link href={href} className="text-caption inline-flex items-center gap-1 font-semibold text-content-accent">
+                  Открыть <span aria-hidden>→</span>
+                </Link>
               ) : null}
+            </div>
+          );
+        })}
+      </div>
 
-              {columns.map((column) => {
-                const href = column.key === primaryKey ? hrefFor(rowLink, row.id) : null;
+      {/* Desktop table — ≥640px */}
+      <div className={cn('hidden overflow-hidden rounded-xl border border-border-default bg-surface-card shadow-sm sm:block', className)}>
+        <div className="overflow-x-auto scrollbar-compact overscroll-x-contain">
+          <Table>
+            <TableCaption className="sr-only">
+              {t('list.tableCaption', { resource: resourceLabel, count: rows.length })}
+            </TableCaption>
 
-                return (
-                  <TableCell
+            <TableHeader className="sticky top-0 z-10 bg-surface-raised/80 backdrop-blur-sm">
+              <TableRow className="hover:bg-transparent">
+                {selectable ? (
+                  <TableHead className="w-10 sticky left-0 z-20 bg-surface-raised/80 backdrop-blur-sm">
+                    <span className="sr-only">{t('list.selectRow')}</span>
+                  </TableHead>
+                ) : null}
+
+                {columns.map((column) => (
+                  <TableHead
                     key={column.key}
                     className={cn(
-                      'align-middle',
+                      'text-label whitespace-nowrap bg-surface-raised/80',
                       column.secondary === true && 'hidden lg:table-cell',
-                      column.key === primaryKey && 'font-semibold',
+                      column.key === primaryKey && 'sticky left-0 z-20 sm:sticky lg:static',
                     )}
                   >
-                    {href ? (
-                      <Link
-                        href={href}
-                        className="text-content-primary underline-offset-4 hover:text-content-accent hover:underline"
+                    {tRoot(column.labelKey)}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {rows.map((row) => (
+                <TableRow key={row.id} className="group hover:bg-surface-sunken/50">
+                  {selectable ? (
+                    <TableCell className="sticky left-0 z-10 bg-surface-card group-hover:bg-surface-sunken/50">
+                      <input
+                        type="checkbox"
+                        name="ids"
+                        value={row.id}
+                        aria-label={t('list.selectRow')}
+                        className="size-4 rounded-sm border-border-strong accent-accent"
+                      />
+                    </TableCell>
+                  ) : null}
+
+                  {columns.map((column) => {
+                    const href = column.key === primaryKey ? hrefFor(rowLink, row.id) : null;
+
+                    return (
+                      <TableCell
+                        key={column.key}
+                        className={cn(
+                          'align-middle',
+                          column.secondary === true && 'hidden lg:table-cell',
+                          column.key === primaryKey && 'sticky left-0 z-10 bg-surface-card group-hover:bg-surface-sunken/50 font-semibold sm:sticky lg:static lg:bg-transparent',
+                        )}
                       >
-                        {renderCell(column, row[column.key], format, tRoot) ?? row.id}
-                      </Link>
-                    ) : (
-                      renderCell(column, row[column.key], format, tRoot)
-                    )}
-                  </TableCell>
-                );
-              })}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+                        {href ? (
+                          <Link
+                            href={href}
+                            className="inline-flex max-w-prose truncate text-content-primary underline-offset-4 hover:text-content-accent hover:underline"
+                          >
+                            {renderCell(column, row[column.key], format, tRoot) ?? row.id}
+                          </Link>
+                        ) : (
+                          <span className="inline-flex max-w-prose truncate">{renderCell(column, row[column.key], format, tRoot)}</span>
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </>
   );
 }
 
