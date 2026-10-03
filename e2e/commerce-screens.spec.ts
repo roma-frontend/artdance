@@ -12,6 +12,8 @@
  */
 
 import { expect, test } from '@playwright/test';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../src/generated/prisma/client';
 
 import en from '../src/i18n/messages/en';
 import {
@@ -55,20 +57,26 @@ test.describe('Корзина', () => {
 });
 
 test.describe('Бронирование', () => {
+  let probeCounter = 0;
+  test.beforeEach(async ({ context }, testInfo) => {
+    probeCounter += 1;
+    await context.setExtraHTTPHeaders({
+      'x-forwarded-for': `10.241.${testInfo.workerIndex % 250}.${probeCounter % 250}`,
+    });
+  });
+
   test('занятие проходит через удержание в бронь и списывает одно место', async ({ page }, testInfo) => {
     const connectionString = process.env.DATABASE_URL;
     test.skip(!connectionString || !['localhost', '127.0.0.1', '[::1]'].includes(new URL(connectionString).hostname),
       'Запись и очистка тестовых данных разрешены только на локальной БД');
-    const { PrismaClient } = await import('../src/generated/prisma/client');
-    const { PrismaPg } = await import('@prisma/adapter-pg');
     const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: connectionString! }) });
-    const danceClass = demoClasses[['desktop', 'tablet', 'mobile'].indexOf(testInfo.project.name)] ?? firstClass;
+    const danceClass = demoClasses.filter(item => item.spotsLeft > 0)
+      [['desktop', 'tablet', 'mobile'].indexOf(testInfo.project.name)] ?? firstClass;
     const customer = demoAccounts.find(account => account.role === 'CUSTOMER')!;
     let holdId: string | undefined;
     let bookingId: string | undefined;
     let sessionId: string | undefined;
     try {
-      await page.setExtraHTTPHeaders({ 'x-forwarded-for': `10.240.${testInfo.parallelIndex}.1` });
       await page.goto('/en/sign-in');
       await page.getByLabel(en.auth.signIn.emailLabel).fill(customer.email);
       await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
@@ -78,7 +86,8 @@ test.describe('Бронирование', () => {
       const holdResponse = page.waitForResponse(response =>
         response.url().includes('/api/booking/hold') && response.request().method() === 'POST',
       );
-      await page.getByRole('link', { name: en.common.actions.bookClass, exact: true }).click();
+      await page.getByRole('complementary')
+        .getByRole('link', { name: en.common.actions.bookClass, exact: true }).click();
       const held = await holdResponse;
       expect(held.status()).toBe(201);
       holdId = (await held.json()).hold.id;
@@ -158,6 +167,11 @@ test.describe('Бронирование', () => {
     /* Сводка знает, что бронируется, и кнопка активна. */
     await expect(page.getByText(firstClass.title).first()).toBeVisible();
     await expect(page.getByRole('button', { name: en.booking.continueCta })).toBeEnabled();
+    const released = page.waitForResponse(response =>
+      response.url().includes('/api/booking/hold') && response.request().method() === 'DELETE',
+    );
+    await page.locator('header a[href="/en"]').first().click();
+    expect((await released).status()).toBe(200);
   });
 });
 

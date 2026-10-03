@@ -83,6 +83,8 @@ test.describe('Reveal — появление при прокрутке', () => {
 
 test.describe('Reveal — контент не зависит от эффекта', () => {
   test.describe('без JavaScript', () => {
+    test.use({ javaScriptEnabled: false });
+
     test('секции видны: наблюдателя нет, значит и скрывать нельзя', async ({ page }) => {
       test.slow();
       // Без JS движок ARIA-ролей в странице не работает — и навигация не нужна,

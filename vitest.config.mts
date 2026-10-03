@@ -17,6 +17,7 @@ export default defineConfig({
   },
   test: {
     environment: 'node',
+    maxWorkers: 2,
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'prisma/**/*.test.ts'],
     // Тесты не должны зависеть от .env.local разработчика.
     env: {

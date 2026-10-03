@@ -38,7 +38,7 @@
 
 'use client';
 
-import { useCallback, useSyncExternalStore, type RefObject } from 'react';
+import { useCallback, useRef, useSyncExternalStore, type RefObject } from 'react';
 
 /** Селектор первого экрана. Класс секции, а не ролей внутри неё. */
 const HERO_SELECTOR = '.hero-viewport';
@@ -47,6 +47,8 @@ export function useCinemaHeroBehind(
   headerRef: RefObject<HTMLElement | null>,
   enabled: boolean,
 ): boolean {
+  const snapshot = useRef(enabled);
+  const getSnapshot = useCallback(() => enabled && snapshot.current, [enabled]);
   const measure = useCallback(() => {
     if (!enabled) return false;
 
@@ -66,14 +68,14 @@ export function useCinemaHeroBehind(
 
   const subscribe = useCallback(
     (onStoreChange: () => void) => {
-      let current = measure();
+      snapshot.current = measure();
       let frame = 0;
 
       const read = () => {
         frame = 0;
         const next = measure();
-        if (next === current) return;
-        current = next;
+        if (next === snapshot.current) return;
+        snapshot.current = next;
         onStoreChange();
       };
 
@@ -95,5 +97,5 @@ export function useCinemaHeroBehind(
     [measure],
   );
 
-  return useSyncExternalStore(subscribe, measure, () => enabled);
+  return useSyncExternalStore(subscribe, getSnapshot, () => enabled);
 }

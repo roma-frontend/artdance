@@ -58,9 +58,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
         const qs = new URLSearchParams({ holdId: id });
         if (anon) qs.set('anonymousId', anon);
         const url = '/api/booking/hold?' + qs.toString();
-        const nb = navigator as unknown as { sendBeacon?: (u: string) => boolean };
-        if (typeof navigator !== 'undefined' && typeof nb.sendBeacon === 'function') nb.sendBeacon(url);
-        else fetch(url, { method: 'DELETE' });
+        void fetch(url, { method: 'DELETE', keepalive: true }).catch(() => {});
       } catch {}
     };
   }, []);

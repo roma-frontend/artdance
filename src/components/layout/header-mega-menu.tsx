@@ -11,10 +11,12 @@
 import { ChevronDownIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { navIcons } from '@/components/layout/nav-icons';
 import { headerMegaGroups, isActiveNavPath } from '@/config/navigation';
 import { Link, usePathname } from '@/i18n/routing';
+import { useMegaMenuTop } from '@/lib/hooks/use-mega-menu-top';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -27,6 +29,8 @@ export function HeaderMegaMenu({ solid }: Props) {
   const [openId, setOpenId] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const top = useMegaMenuTop(openId !== null, navRef);
 
   const clearTimer = () => {
     if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = null; }
@@ -42,7 +46,7 @@ export function HeaderMegaMenu({ solid }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpenId(null); };
     const onDown = (e: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) setOpenId(null);
+      if (!navRef.current?.contains(e.target as Node) && !panelRef.current?.contains(e.target as Node)) setOpenId(null);
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onDown);
@@ -92,22 +96,13 @@ export function HeaderMegaMenu({ solid }: Props) {
               <ChevronDownIcon className={cn('size-3.5 opacity-60 transition-transform', open && 'rotate-180')} aria-hidden />
             </Link>
 
-            {/* Панель — inert+aria-hidden когда закрыта: иначе axe ругается aria-hidden-focus
-                (скрытый блок не должен содержать фокусируемые ссылки). inert убирает
-                всё поддерево из порядка табуляции и дерева доступности.
-                hidden когда закрыта — иначе абсолютный блок шириной 860, центрированный
-                на группе у края экрана, выносит -20px за clientWidth и ломает
-                layout-integrity (mobile Chrome расширяет viewport, координаты tap
-                съезжают — шесть тестов падали как flaky). display:none исключает
-                закрытую панель из getBoundingClientRect, но открытая остаётся
-                анимированной через opacity/translate. */}
+            {open && top !== null && createPortal(
               <div
-                hidden={!open ? true : undefined}
-                inert={!open ? true : undefined}
+                ref={panelRef}
+                style={{ top: `calc(${top}px + var(--space-2))` }}
                 role="menu"
-                aria-hidden={!open}
               className={cn(
-                'absolute left-1/2 top-[calc(100%+10px)] z-50 w-[min(860px,92vw)] -translate-x-1/2 rounded-2xl border bg-surface-card shadow-xl backdrop-blur-xl',
+                'fixed left-1/2 z-header w-[min(860px,92vw)] -translate-x-1/2 rounded-2xl border bg-surface-card shadow-xl backdrop-blur-xl',
                 'border-border-default p-3 md:p-4',
                 'transition-[opacity,translate] duration-200',
                 open ? 'pointer-events-auto translate-y-0 opacity-100' : 'pointer-events-none -translate-y-1 opacity-0',
@@ -152,7 +147,7 @@ export function HeaderMegaMenu({ solid }: Props) {
                     );
                   })}
               </div>
-            </div>
+            </div>, document.body)}
           </div>
         );
       })}

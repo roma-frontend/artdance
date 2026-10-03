@@ -54,6 +54,30 @@ test.describe('SiteHeader', () => {
     await expect(header(page)).toHaveAttribute('data-state', 'top');
   });
 
+  test('переход через границу hero не вызывает цикл рендеров шапки', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    page.on('console', message => {
+      if (message.type() === 'error' && /Maximum update depth|Minified React error #185/.test(message.text())) {
+        errors.push(message.text());
+      }
+    });
+    for (let index = 0; index < 6; index += 1) {
+      await page.evaluate(offset => {
+        const hero = document.querySelector<HTMLElement>('.hero-viewport')!;
+        const nav = document.querySelector('header')!;
+        const boundary = hero.getBoundingClientRect().bottom + window.scrollY
+          - nav.getBoundingClientRect().height;
+        window.scrollTo({ top: boundary + offset, behavior: 'instant' });
+      }, index % 2 ? 10 : -10);
+      await page.evaluate(() => new Promise<void>(resolve =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ));
+      await expect(header(page)).toHaveCount(1);
+      expect(errors).toEqual([]);
+    }
+  });
+
   test('первый Tab попадает на ссылку «к содержимому», и она ведёт к main', async ({ page }) => {
     await page.keyboard.press('Tab');
 
@@ -89,6 +113,34 @@ test.describe('SiteHeader', () => {
     expect(hrefs).toEqual([HOME]);
     await expect(current.first()).toHaveAttribute('href', HOME);
   });
+
+  for (const width of [1440, 1280]) {
+    test(`hover-панели центрируются под шапкой при ${width}px`, async ({ page }) => {
+      test.skip(await isMobileLayout(page), 'Мегаменю показывается только на широких экранах');
+      await page.setViewportSize({ width, height: 900 });
+      const triggers = header(page).getByRole('navigation').locator('a[aria-haspopup="menu"]');
+      for (let index = 0; index < await triggers.count(); index += 1) {
+        await triggers.nth(index).hover();
+        const panel = page.getByRole('menu');
+        await expect(panel).toBeVisible();
+        await expect.poll(async () => panel.evaluate(node => {
+          const rect = node.getBoundingClientRect();
+          return Math.abs(rect.left + rect.width / 2 - window.innerWidth / 2);
+        })).toBeLessThan(1);
+        await expect.poll(async () => panel.evaluate(node => {
+          const rect = node.getBoundingClientRect();
+          const nav = document.querySelector('header')!;
+          const gap = Number.parseFloat(getComputedStyle(node).getPropertyValue('--space-2'))
+            * Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
+          return Math.abs(rect.top - nav.getBoundingClientRect().bottom - gap);
+        })).toBeLessThan(1);
+        await panel.getByRole('menuitem').first().hover();
+        await expect(panel).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(panel).toHaveCount(0);
+      }
+    });
+  }
 
   test('раскладка соответствует ширине экрана', async ({ page }) => {
     const links = header(page).getByRole('navigation').getByRole('link');

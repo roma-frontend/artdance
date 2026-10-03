@@ -56,8 +56,15 @@ export async function createSlotHold(request: HoldRequest): Promise<HoldResult> 
   assertInsideAvailability(windows, candidate);
   assertNoConflict(request.busy as readonly Interval[], candidate, booking.bufferBetweenBookingsMinutes);
   try {
-    const created = await db.slotHold.create({ data: { instructorId: request.instructorId ?? null, roomId: request.roomId ?? null, sessionId: request.sessionId ?? null, startsAt: request.startsAt, endsAt: request.endsAt, userId: request.userId ?? null, anonymousId: request.anonymousId ?? null, expiresAt, extensions: 0 }, select: { id: true, startsAt: true, endsAt: true, expiresAt: true, extensions: true } });
-    return created;
+    return await db.$transaction(async transaction => {
+      await transaction.slotHold.deleteMany({ where: {
+        instructorId: request.instructorId ?? null,
+        roomId: request.roomId ?? null,
+        startsAt: request.startsAt,
+        expiresAt: { lte: now },
+      } });
+      return transaction.slotHold.create({ data: { instructorId: request.instructorId ?? null, roomId: request.roomId ?? null, sessionId: request.sessionId ?? null, startsAt: request.startsAt, endsAt: request.endsAt, userId: request.userId ?? null, anonymousId: request.anonymousId ?? null, expiresAt, extensions: 0 }, select: { id: true, startsAt: true, endsAt: true, expiresAt: true, extensions: true } });
+    });
   } catch (error) {
     if (isUniqueViolation(error)) throw domainErrors.slotConflict();
     throw error;

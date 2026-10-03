@@ -42,15 +42,18 @@ async function openSearch(page: Page): Promise<void> {
  * именно так, как при вставке из буфера. Побуквенный ввод проверяется отдельно, в
  * тесте про число запросов.
  */
-async function search(page: Page, term: string): Promise<void> {
-  // На tablet под параллельной нагрузкой debounce+fetch иногда дольше 90s —
-  // ждём через poll результата в DOM, а не только network.
-  const answered = page
-    .waitForResponse((response) => response.url().includes(SEARCH_API) && response.status() === 200, { timeout: 2_000 })
-    .catch(() => null);
+async function search(page: Page, term: string, empty = false): Promise<void> {
+  const answered = page.waitForResponse(response => {
+    const url = new URL(response.url());
+    return url.pathname === SEARCH_API && url.searchParams.get('q') === term;
+  });
   await field(page).fill(term);
-  await answered;
-  await expect(results(page).first()).toBeVisible({ timeout: 15_000 });
+  expect((await answered).status()).toBe(200);
+  if (empty) {
+    await expect(overlay(page).getByText(withQuery(en.search.noResults, term))).toBeVisible();
+  } else {
+    await expect(results(page).first()).toBeVisible();
+  }
 }
 
 /** Ссылки выдачи, кроме служебной «показать всё». */
@@ -169,7 +172,7 @@ test.describe('SearchOverlay', () => {
 
   test('ничего не найдено — говорит об этом и предлагает выход', async ({ page }) => {
     await openSearch(page);
-    await search(page, 'квантовая механика');
+    await search(page, 'квантовая механика', true);
 
     await expect
       .poll(async () => overlay(page).getByText(withQuery(en.search.noResults, 'квантовая механика')).count())
