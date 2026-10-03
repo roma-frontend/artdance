@@ -19,6 +19,7 @@
 
 import { motion, useReducedMotion, type Easing } from 'framer-motion';
 import { useTranslations } from 'next-intl';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { LinkPending } from '@/components/ui/link-pending';
 import { routes } from '@/config';
@@ -54,6 +55,50 @@ export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminS
   const isDrawer = variant === 'drawer';
   const admin = designMotion.admin;
   const adminEase = admin.ease as unknown as Easing;
+
+  const activeRef = useRef<HTMLLIElement | null>(null);
+
+  const setActiveRef = useCallback((node: HTMLLIElement | null) => {
+    activeRef.current = node;
+  }, []);
+
+  // активная ссылка всегда в центре видимости сайдбара — даже если скроллбара визуально нет
+  useEffect(() => {
+    const el = activeRef.current;
+    if (!el) return;
+    const behavior: ScrollBehavior = reduce ? 'auto' : 'smooth';
+
+    const doScroll = () => {
+      const container =
+        (el.closest('[data-admin-sidebar-scroll]') as HTMLElement | null) ??
+        (el.closest('div.overflow-y-auto') as HTMLElement | null);
+
+      if (container) {
+        // если контент помещается — скролл не нужен, выходим без вычислений
+        if (container.scrollHeight <= container.clientHeight + 2) return;
+
+        const cRect = container.getBoundingClientRect();
+        const eRect = el.getBoundingClientRect();
+        const delta = eRect.top + eRect.height / 2 - (cRect.top + cRect.height / 2);
+        // порог меньше — иначе пункт остаётся у края и не центрируется
+        if (Math.abs(delta) < 4) return;
+
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        const next = Math.min(maxScroll, Math.max(0, container.scrollTop + delta));
+        container.scrollTo({ top: next, behavior });
+        return;
+      }
+      el.scrollIntoView({ behavior, block: 'center', inline: 'nearest' });
+    };
+
+    // stagger групп до 400мс — ждём окончания анимации, иначе координаты съезжают
+    const t = window.setTimeout(() => requestAnimationFrame(doScroll), 420);
+    const id = requestAnimationFrame(() => requestAnimationFrame(doScroll));
+    return () => {
+      clearTimeout(t);
+      cancelAnimationFrame(id);
+    };
+  }, [pathname, reduce]);
 
   return (
     <nav aria-label={t('sectionNav')} className={isDrawer ? '' : 'contents'}>
@@ -98,7 +143,7 @@ export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminS
               {group.items.map((item) => {
                 const active = isActive(pathname, item.href);
                 return (
-                  <li key={item.href} className="relative">
+                  <li key={item.href} ref={active ? setActiveRef : undefined} className="relative">
                     {active ? (
                       <motion.div
                         layoutId={isDrawer ? 'admin-active-drawer' : 'admin-active-desktop'}

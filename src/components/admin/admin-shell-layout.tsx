@@ -2,7 +2,7 @@
 
 import { Menu, X } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion, type Easing } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { AdminSidebar, type SidebarGroup } from '@/components/admin/admin-sidebar';
 import { SignOutButton } from '@/components/auth/sign-out-button';
@@ -29,11 +29,31 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const reduce = useReducedMotion();
+  const mainRef = useRef<HTMLElement>(null);
+  const prevPathRef = useRef(pathname);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- сброс drawer при смене адреса
     setOpen(false);
   }, [pathname]);
+
+  // при переходе по сайдбару — плавно скроллим страницу к началу контента (под шапку)
+  useEffect(() => {
+    if (prevPathRef.current === pathname) return;
+    prevPathRef.current = pathname;
+    if (reduce) return;
+    const id = requestAnimationFrame(() => {
+      const el = mainRef.current;
+      if (!el) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      // scroll-padding-top уже = var(--layout-nav-height), но делаем 12px воздуха от хедера
+      const top = el.getBoundingClientRect().top + window.scrollY - 12;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [pathname, reduce]);
 
   useEffect(() => {
     if (!open) return;
@@ -159,12 +179,22 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
           transition={reduce ? { duration: 0 } : { duration: admin.durationMs.normal / 1000, ease: adminEase, delay: 0.06 }}
           className="hidden lg:block"
         >
-          <div className="sticky top-[calc(var(--layout-nav-height)+1.25rem)] max-h-[calc(100dvh-var(--layout-nav-height)-1.5rem)] overflow-y-auto overscroll-contain scrollbar-none pr-2">
+          <div
+            data-admin-sidebar-scroll
+            className="sticky top-[calc(var(--layout-nav-height)+1.25rem)] overflow-y-auto overscroll-contain scrollbar-compact pr-2 scroll-smooth"
+            style={
+              {
+                maxHeight: 'calc(100dvh - var(--layout-nav-height) - 1.5rem)',
+                height: 'calc(100dvh - var(--layout-nav-height) - 1.5rem)',
+                scrollbarGutter: 'stable',
+              } as React.CSSProperties
+            }
+          >
             <AdminSidebar groups={groups} variant="desktop" />
           </div>
         </motion.aside>
 
-        <main id={site.mainContentId} className="min-w-0">
+        <main ref={mainRef} id={site.mainContentId} className="min-w-0">
           <div className="pb-2">{children}</div>
         </main>
       </div>
