@@ -45,17 +45,23 @@ export function SiteHeader() {
   const prevCount = useRef<number>(snapshot?.totals.itemCount ?? 0);
   const [menuOpen, setMenuOpen] = useState(false);
   const onMenuOpenChange = useCallback((open: boolean) => setMenuOpen(open), []);
-  const { hidden, island } = useHeaderHideOnScroll(headerRef, menuOpen, pathname === routes.home(), pathname);
+  // island-компакт доступен на всех страницах (не только на главной):
+  // пользователь ожидает один язык шапки после навигации, а не «на главной остров есть, внутри — нет»
+  const { hidden, island } = useHeaderHideOnScroll(headerRef, menuOpen, true, pathname);
 
-  // мега-меню не должно оставаться открытым после клиентской навигации — иначе
-  // header остаётся в paused (menuOpen=true) и не компактится до перезагрузки
+  // мега-меню и фокус внутри шапки не должны оставаться после клиентской навигации —
+  // иначе header остаётся в paused и не компактится до перезагрузки/blur
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- сброс меню при смене маршрута
     setMenuOpen(false);
-    // фокус внутри шапки (клик по ссылке в шапке) блокирует island — снимаем
     if (headerRef.current?.contains(document.activeElement) && document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
+    // next-intl скроллит к верху асинхронно — даём тик на scroll-restoration
+    const id = requestAnimationFrame(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    return () => cancelAnimationFrame(id);
   }, [pathname]);
 
   useEffect(() => {

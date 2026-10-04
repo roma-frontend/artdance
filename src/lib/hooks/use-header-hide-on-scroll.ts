@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 
 /** Preserve the current shape while hiding; morph only on reveal or at the top. */
 export function useHeaderHideOnScroll(
@@ -10,69 +10,52 @@ export function useHeaderHideOnScroll(
   resetKey = '',
 ): { hidden: boolean; island: boolean } {
   const [state, setState] = useState({ hidden: false, island: false });
+  // цель islands при смене маршрута — её видит второй эффект до ресета хука
+  const targetIslandRef = useRef(false);
 
-  // При клиентской навигации сохраняем компактность, если на новой странице
-  // уже прокручено (scroll-restoration). Иначе "остров" сбрасывается в full
-  // и появляется только после первого скролла — эффект "после перезагрузки нормализуется".
+  // Навигация: сразу целимся в остров если вкладка уже прокручена — иначе
+  // следующий эффект стартует с lastY=0 и не может выставить island до первого скролла
   useLayoutEffect(() => {
-    // next-intl делает scroll-to-top на новой странице асинхронно в том же тике —
-    // если читать window.scrollY синхронно, он ещё старый (например 400) и island
-    // успевает закоммититься на один кадр, а потом сбрасывается вторым ререндером.
-    // Поэтому читаем на следующий кадр + ищем BFCache/restoration tick.
-    let cancelled = false;
-    const apply = () => {
-      if (cancelled) return;
-      const y = Math.max(0, window.scrollY);
-      const locked =
-        document.body.style.overflow === 'hidden' ||
-        document.documentElement.contains(document.activeElement) === false;
-      void locked;
-      const shouldBeIsland = y > 18 && y > 8 && islandEnabled;
-      // на главной: island только если действительно прокручено; иначе full до скролла
-      // на остальных страницах: heroBehind=false, но island всё равно по y (см. SiteHeader solid=island||!heroBehind)
-      let nextHidden = false;
-      let nextIsland = shouldBeIsland;
-      // на вершине страницы island всегда выключен — иначе compact появляется на 0px
-      if (y <= 18) {
-        nextHidden = false;
-        nextIsland = false;
-      }
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронный апдейт при смене маршрута
-      setState((previous) =>
-        previous.hidden === nextHidden && previous.island === nextIsland
-          ? previous
-          : { hidden: nextHidden, island: nextIsland },
-      );
-    };
-    // два rAF — дожидаемся scroll-restoration от next-intl/next
-    let id1 = requestAnimationFrame(() => {
-      id1 = requestAnimationFrame(apply);
-    });
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(id1);
-    };
+    const y = Math.max(0, window.scrollY);
+    const nextIsland = y > 18 && islandEnabled;
+    targetIslandRef.current = nextIsland;
+    const nextHidden = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронный апдейт при смене маршрута
+    setState((previous) =>
+      previous.hidden === nextHidden && previous.island === nextIsland
+        ? previous
+        : { hidden: nextHidden, island: nextIsland },
+    );
   }, [resetKey, islandEnabled]);
 
   useEffect(() => {
     let frame = 0;
-    // после навигации scrollY может асинхронно сброситься в 0 — синхронизируем на след. кадре
     let lastY = Math.max(0, window.scrollY);
-    queueMicrotask(() => {
-      lastY = Math.max(0, window.scrollY);
-    });
     let down = 0;
     let up = 0;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     const desktop = window.matchMedia('(min-width: 1024px)');
+
+    // Вернуть island после всплытия из следующей навигации: next-intl scrollTo(0) идёт
+    // после коммита, поэтому первый read после ресета видит y=0 и сбрасывает island.
+    // Если scrollY уже 0 и цель была островом — держим island до реального скролла.
+    let pendingRestoreIsland = targetIslandRef.current && Math.max(0, window.scrollY) <= 18;
 
     const read = () => {
       frame = 0;
       const y = Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
       const delta = y - lastY;
       lastY = y;
+
+      // Ожидаем реальную прокрутку после программного сброса в 0
+      if (pendingRestoreIsland) {
+        if (y <= 18) return;
+        pendingRestoreIsland = false;
+      }
+
       if (y <= 18 || !desktop.matches || reducedMotion.matches) {
         down = up = 0;
+        pendingRestoreIsland = false;
         setState(previous => previous.hidden || previous.island ? { hidden: false, island: false } : previous);
       } else if (paused || ref.current?.contains(document.activeElement) || document.body.style.overflow === 'hidden') {
         down = up = 0;
@@ -92,6 +75,9 @@ export function useHeaderHideOnScroll(
             ? previous : { hidden: false, island: islandEnabled });
           up = 0;
         }
+      } else if (targetIslandRef.current && !paused) {
+        // нет дельты, но цель — остров (сохранён с прошлой страницы): догоняем без ожидания up>16
+        setState(previous => previous.island ? previous : { hidden: false, island: islandEnabled });
       }
     };
     const schedule = () => {
