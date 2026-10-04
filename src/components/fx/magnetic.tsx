@@ -12,7 +12,7 @@ export function Magnetic() {
   }, []);
   useCursorFollow(
     ref,
-    '[data-magnetic], button, .hero-content a, .cinema-surface a.rounded-full, .magnetic-button',
+    '[data-magnetic], .magnetic-button',
   );
   return null;
 }

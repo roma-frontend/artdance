@@ -175,12 +175,12 @@ export const pointerGlow = {
  */
 export const cardTilt = {
   perspectivePx: 900,
-  /** 6° из макета читались как дрожание, а не наклон; 9° — уже объём. */
-  maxRotateDeg: 9,
+  /** Subtle depth: keep text readable while the photograph takes the lead. */
+  maxRotateDeg: 3,
   /** Предел смещения карточки при ведении за курсором, px. */
-  pointerTravelPx: 8,
+  pointerTravelPx: 2,
   /** Обратный ход кадра внутри карточки — он и даёт глубину «окна», px. */
-  mediaTravelPx: 14,
+  mediaTravelPx: 4,
   liftPx: -4,
   scale: 1.01,
   /** На touch-устройствах наклона нет: без курсора он не воспроизводится. */

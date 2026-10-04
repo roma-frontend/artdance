@@ -1,47 +1,66 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 
-/**
- * Умное скрытие шапки при скролле вниз, возврат при скролле вверх.
- *
- * Пауза: когда `paused` (открыто мега-меню), шапка не прячется — меню не
- * должно уезжать из-под курсора. Это единственная причина читать внешний флаг.
- */
-export function useHeaderHideOnScroll(ref?: React.RefObject<HTMLElement | null>, paused = false): boolean {
-  void ref;
-  const [hidden, setHidden] = useState(false);
-  const lastY = useRef(0);
-  const pausedRef = useRef(paused);
+/** Preserve the current shape while hiding; morph only on reveal or at the top. */
+export function useHeaderHideOnScroll(
+  ref: RefObject<HTMLElement | null>,
+  paused = false,
+  islandEnabled = false,
+  resetKey = '',
+): { hidden: boolean; island: boolean } {
+  const [state, setState] = useState({ hidden: false, island: false });
 
   useEffect(() => {
-    pausedRef.current = paused;
-    if (paused) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setHidden(false);
-    }
-  }, [paused]);
+    let frame = 0;
+    let lastY = Math.max(0, window.scrollY);
+    let down = 0;
+    let up = 0;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const desktop = window.matchMedia('(min-width: 1024px)');
 
-  useEffect(() => {
-    if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        ticking = false;
-        if (pausedRef.current) return;
-        const y = window.scrollY;
-        const delta = y - lastY.current;
-        if (y < 80) setHidden(false);
-        else if (delta > 8) setHidden(true);
-        else if (delta < -8) setHidden(false);
-        lastY.current = y;
-      });
+    const read = () => {
+      frame = 0;
+      const y = Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
+      const delta = y - lastY;
+      lastY = y;
+      if (y <= 18 || !desktop.matches || reducedMotion.matches) {
+        down = up = 0;
+        setState(previous => previous.hidden || previous.island ? { hidden: false, island: false } : previous);
+      } else if (paused || ref.current?.contains(document.activeElement) || document.body.style.overflow === 'hidden') {
+        down = up = 0;
+        setState(previous => previous.hidden ? { ...previous, hidden: false } : previous);
+      } else if (delta >= 1) {
+        up = 0;
+        down += delta;
+        if (y > 120 && down > 40) {
+          setState(previous => previous.hidden ? previous : { ...previous, hidden: true });
+          down = 0;
+        }
+      } else if (delta <= -1) {
+        down = 0;
+        up -= delta;
+        if (up > 16) {
+          setState(previous => !previous.hidden && previous.island === islandEnabled
+            ? previous : { hidden: false, island: islandEnabled });
+          up = 0;
+        }
+      }
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(read);
+    };
+    schedule();
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    reducedMotion.addEventListener('change', schedule);
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      reducedMotion.removeEventListener('change', schedule);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [ref, paused, islandEnabled, resetKey]);
 
-  return hidden;
+  return state;
 }

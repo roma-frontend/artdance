@@ -45,8 +45,7 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
       className={cn(
         'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
-        'hover:-translate-y-1.5 hover:shadow-lg',
-        'focus-within:-translate-y-1.5 focus-within:shadow-lg',
+        'hover:shadow-md focus-within:shadow-md',
         className,
       )}
     >
@@ -105,8 +104,8 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
 
         <div className="mt-auto">
           {/*
-            Подвал карточки: цена и «Записаться» в одном слоте, крестфейдом
-            (см. class-card.tsx). Высота от hover не меняется.
+            Цена остаётся видимой; стрелка проявляется в отдельном слоте.
+            Высота от hover не меняется.
           */}
           <div className="card-foot pt-4">
             <div className="card-foot-line flex flex-wrap items-center gap-3">

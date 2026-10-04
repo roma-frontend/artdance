@@ -21,7 +21,7 @@
 
 import { Heart } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useRef } from 'react';
 import { toast } from 'sonner';
 
 import { useFavorite, type FavoriteTarget } from '@/lib/client/favorites';
@@ -44,7 +44,7 @@ interface FavoriteButtonProps {
 export function FavoriteButton({ target, slug, name, onMedia, className }: FavoriteButtonProps) {
   const t = useTranslations('favorites');
   const { isFavorite, toggle } = useFavorite(target, slug);
-  const [burst, setBurst] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Серверный toggle — best-effort: гость получает UNAUTHORIZED (игнор),
   // снятый с публикации — откатываем локальную отметку.
@@ -62,6 +62,7 @@ export function FavoriteButton({ target, slug, name, onMedia, className }: Favor
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       aria-pressed={isFavorite}
       aria-label={isFavorite ? t('toggleLabelActive', { name }) : t('toggleLabel', { name })}
@@ -74,36 +75,37 @@ export function FavoriteButton({ target, slug, name, onMedia, className }: Favor
         if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
           try { navigator.vibrate(next ? [18] : [10]); } catch {}
         }
-        // micro burst
-        if (next) {
-          setBurst(true);
-          setTimeout(() => setBurst(false), 420);
+        // Restart only the decorative response, never replay it on hydration.
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          const button = buttonRef.current;
+          button?.getAnimations({ subtree: true }).forEach(animation => animation.cancel());
+          button?.querySelector('svg')?.animate(
+            [{ transform: 'scale(1)' }, { transform: `scale(${next ? 1.25 : 0.9})`, offset: 0.4 }, { transform: 'scale(1)' }],
+            { duration: 320, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+          );
+          if (next) button?.querySelector('[data-favorite-ring]')?.animate(
+            [{ transform: 'scale(0.65)', opacity: 0.55 }, { transform: 'scale(1.3)', opacity: 0 }],
+            { duration: 420, easing: 'ease-out' },
+          );
         }
-        // subtle toast
-        try {
-          if (next) toast.success(`«${name}» — в избранном`);
-          else toast(`«${name}» — убрано`);
-        } catch {}
+        if (next) toast.success(t('added'), { description: name });
+        else toast(t('removed'), { description: name });
       }}
       className={cn(
-        'inline-flex size-9 items-center justify-center rounded-full',
-        'transition-all duration-300 ease-brand active:scale-95',
+        'favorite-motion relative inline-flex size-9 items-center justify-center rounded-full',
+        'transition-[background-color,color,scale] duration-normal ease-brand',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
         onMedia
           ? 'bg-surface-card/85 shadow-sm backdrop-blur-sm hover:bg-surface-card'
           : 'hover:bg-surface-sunken',
         isFavorite ? 'text-content-accent' : 'text-content-tertiary hover:text-content-accent',
-        burst && 'animate-[pulse_420ms_ease-out]',
         className,
       )}
     >
+      <span aria-hidden data-favorite-ring className="pointer-events-none absolute inset-0 rounded-full border border-current opacity-0" />
       <Heart
         aria-hidden
-        className={cn(
-          'size-4.5 transition-transform duration-300 ease-brand',
-          isFavorite && 'scale-110',
-          burst && 'scale-[1.35]',
-        )}
+        className="size-4.5"
         fill={isFavorite ? 'currentColor' : 'none'}
       />
     </button>

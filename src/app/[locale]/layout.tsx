@@ -14,6 +14,7 @@ import { CommandPalette } from '@/components/layout/command-palette';
 import { FavoritesSync } from '@/components/favorites/favorites-sync';
 import { SearchOverlayProvider } from '@/components/search/search-overlay';
 import { JsonLdScript } from '@/components/seo/json-ld';
+import { Toaster } from '@/components/ui/sonner';
 import { schemeTokens } from '@/design/tokens';
 import { localeMeta, locales, isLocale, type Locale } from '@/i18n/config';
 import { organizationSchema, websiteSchema } from '@/lib/seo/jsonld';
@@ -154,6 +155,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
             <SearchOverlayProvider>
               <CommandPalette />
               <FavoritesSync />
+              <Toaster position="top-center" />
               <SkipToContent />
               <SiteChrome>{children}</SiteChrome>
             </SearchOverlayProvider>

@@ -43,8 +43,7 @@ export function EventCard({ item, locale, className }: EventCardProps) {
       className={cn(
         'card-surface ticket-card group relative flex h-full flex-col overflow-hidden rounded-xl',
         'border border-border-default bg-surface-card',
-        'hover:-translate-y-1.5 hover:shadow-xl',
-        'focus-within:-translate-y-1.5 focus-within:shadow-xl',
+        'hover:shadow-md focus-within:shadow-md',
         className,
       )}
     >

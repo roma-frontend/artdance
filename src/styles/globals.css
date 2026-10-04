@@ -296,6 +296,130 @@
     padding-inline-end: max(var(--layout-gutter), env(safe-area-inset-right));
   }
 
+  /* One tactile language for native buttons and Button's asChild links. */
+  .button-motion,
+  .favorite-motion {
+    scale: 1;
+    transition: background-color var(--duration-normal) var(--ease-standard),
+      color var(--duration-normal) var(--ease-standard),
+      border-color var(--duration-normal) var(--ease-standard),
+      box-shadow var(--duration-normal) var(--ease-standard),
+      translate var(--duration-normal) var(--ease-brand),
+      scale var(--duration-normal) var(--ease-brand);
+  }
+
+  .button-motion:active:not(:disabled):not([aria-disabled='true']),
+  .favorite-motion:active {
+    scale: 0.97;
+    transition-duration: var(--duration-instant);
+  }
+
+  .button-motion:has(.lucide-arrow-right) .lucide-arrow-right,
+  .button-motion:has(.lucide-chevron-right) .lucide-chevron-right {
+    transition: translate var(--duration-normal) var(--ease-brand);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .button-motion:hover:not(:disabled):not([aria-disabled='true']) :is(.lucide-arrow-right, .lucide-chevron-right),
+    .button-motion:focus-visible :is(.lucide-arrow-right, .lucide-chevron-right) {
+      translate: var(--space-1) 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .button-motion,
+    .favorite-motion,
+    .button-motion :is(.lucide-arrow-right, .lucide-chevron-right) {
+      transition: none;
+      scale: 1;
+      translate: none;
+    }
+
+    .button-motion:active:not(:disabled):not([aria-disabled='true']),
+    .favorite-motion:active {
+      scale: 1;
+    }
+  }
+
+  /* Full-width cinema header → floating island, without clipping its menus. */
+  .site-header {
+    padding: 0;
+    transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1), padding 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .site-header-surface {
+    width: 100%;
+    max-width: 100vw;
+    height: var(--layout-nav-height);
+    margin-inline: auto;
+    border-width: 1px;
+    border-style: solid;
+    border-top-width: 0;
+    border-inline-width: 0;
+    border-radius: 0;
+    transition: max-width 520ms cubic-bezier(0.22, 1, 0.36, 1), height 520ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-radius 520ms cubic-bezier(0.22, 1, 0.36, 1), background-color 360ms var(--ease-standard),
+      border-color 360ms var(--ease-standard), box-shadow 360ms var(--ease-standard);
+  }
+
+  .site-header-content {
+    transition: padding 520ms var(--ease-brand);
+  }
+
+  .site-header[data-mode='island'] {
+    padding: var(--space-4) var(--space-6);
+  }
+
+  .site-header[data-mode='island'] .site-header-surface {
+    max-width: 1140px;
+    height: var(--layout-nav-height-scrolled);
+    border-width: 1px;
+    border-radius: var(--radius-lg);
+    background-color: color-mix(in srgb, var(--surface-card) 92%, transparent);
+    backdrop-filter: blur(20px) saturate(140%);
+    box-shadow: var(--shadow-lg), inset 0 1px 0 color-mix(in srgb, var(--content-primary) 5%, transparent);
+  }
+
+  .site-header[data-mode='island'] .site-header-content {
+    padding-inline: var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .site-header[data-mode='island'] nav {
+    border-color: transparent;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .site-header[data-mode='island'] nav a {
+    padding-inline: var(--space-2);
+  }
+
+  .site-header[data-mode='island'] .site-header-secondary-action {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-header,
+    .site-header-surface,
+    .site-header-content {
+      transition: none;
+    }
+  }
+
+  /* Same document sticky as .detail-grid: no nested scroll containers. */
+  @media (width >= theme(--breakpoint-lg)) {
+    body:has(.admin-shell) {
+      padding-bottom: 0;
+    }
+
+    .admin-content-panel {
+      position: sticky;
+      top: calc(var(--layout-nav-height) + var(--space-2));
+      align-self: start;
+    }
+  }
+
   .section-y {
     padding-block: var(--layout-section-y);
   }
@@ -894,29 +1018,24 @@
   }
 
   /*
-   * Кинематографичный долли-наезд на карточке — как «профессиональная камера»
-   * из промпта Planet Jumping: кадр не просто растёт на 5%, а отъезжает с
-   * лёгким просветлением и насыщением, будто диафрагма открылась. Длительность
-   * 1200ms — кино-темп, а не UI-щелчок.
+   * Короткий редакционный наезд: фото приближается на 4.5%, без изменения
+   * цвета и яркости. Текст и факты не двигаются вместе с фотографией.
    */
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .card-surface:hover .media-zoom,
     .card-surface:focus-within .media-zoom {
-      scale: 1.18;
-      filter: brightness(1.07) saturate(1.14) contrast(1.05);
+      scale: 1.045;
+      filter: none;
     }
-    /* Перебиваем Tailwind group-hover:scale-105 (1.05) — кино требует 1.18 */
+    /* Small photographic dolly; content and metadata remain steady. */
     .group:hover .media-zoom {
-      scale: 1.18;
-      filter: brightness(1.07) saturate(1.14) contrast(1.05);
+      scale: 1.045;
+      filter: none;
     }
     .card-surface:hover,
     .card-surface:focus-within {
       border-color: color-mix(in srgb, var(--accent) 38%, var(--border-default));
-      box-shadow:
-        0 22px 50px -18px rgba(0, 0, 0, 0.55),
-        0 10px 24px -12px rgba(0, 0, 0, 0.4),
-        0 0 28px -6px var(--accent-glow);
+      box-shadow: var(--shadow-md);
     }
   }
 
@@ -1008,18 +1127,18 @@
    * карточка целиком и есть ссылка на бронирование.
    */
   /*
-   * Подвал карточки: цена и «Записаться» в одном слоте.
-   * Ссылка карточки лежит поверх всего через z-10, поэтому клик в любой точке
-   * подвала гарантированно активирует переход, а текст цены под «Записаться»
-   * полностью скрывается и не просвечивает.
+   * Подвал карточки: цена и доступность всегда на виду, стрелка проявляется
+   * справа. Её слот зарезервирован, поэтому hover не меняет высоту строки.
    */
   .card-foot {
     display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2);
     position: relative;
   }
 
   .card-foot-line {
-    grid-area: 1 / 1;
     transition: opacity var(--duration-normal) var(--ease-brand);
   }
 
@@ -1029,6 +1148,13 @@
 
   .card-cta {
     opacity: 0;
+    border: 0;
+    padding-top: 0;
+  }
+
+  /* The arrow is an affordance, not a replacement for price or availability. */
+  .card-cta > span {
+    display: none;
   }
 
   .card-cta-chevron {
@@ -1038,8 +1164,7 @@
   @media (hover: hover) and (pointer: fine) {
     .card-surface:hover .card-foot-line:not(.card-cta),
     .card-surface:focus-within .card-foot-line:not(.card-cta) {
-      opacity: 0;
-      pointer-events: none;
+      opacity: 1;
     }
 
     .card-surface:hover .card-cta,
@@ -2316,14 +2441,24 @@ html:has(body[data-scroll-locked]) {
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   [data-animation-card]:hover > .card-surface {
-    box-shadow:
-      0 12px 30px -10px rgba(0, 0, 0, 0.45),
-      0 0 20px -2px var(--accent-glow);
-    border-color: color-mix(in srgb, var(--accent) 65%, transparent);
+    box-shadow: var(--shadow-md);
+    border-color: color-mix(in srgb, var(--accent) 38%, var(--border-default));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .button-motion,
+  .button-motion:hover,
+  .button-motion:active,
+  .button-motion:focus-visible,
+  .button-motion :is(.lucide-arrow-right, .lucide-chevron-right),
+  .favorite-motion,
+  .favorite-motion:active {
+    translate: none !important;
+    scale: none !important;
+    transition: none !important;
+  }
+
   [data-animation-card],
   [data-reveal-word],
   [data-magnetic],

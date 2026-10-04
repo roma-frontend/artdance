@@ -65,7 +65,8 @@ export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminS
   // активная ссылка всегда в центре видимости сайдбара — даже если скроллбара визуально нет
   useEffect(() => {
     const el = activeRef.current;
-    if (!el) return;
+    // Desktop navigation is now part of the document, not a nested scroller.
+    if (!el || !isDrawer) return;
     const behavior: ScrollBehavior = reduce ? 'auto' : 'smooth';
 
     const doScroll = () => {
@@ -98,7 +99,7 @@ export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminS
       clearTimeout(t);
       cancelAnimationFrame(id);
     };
-  }, [pathname, reduce]);
+  }, [pathname, reduce, isDrawer]);
 
   return (
     <nav aria-label={t('sectionNav')} className={isDrawer ? '' : 'contents'}>

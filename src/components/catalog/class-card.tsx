@@ -55,8 +55,7 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
       className={cn(
         'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
-        'hover:-translate-y-1.5 hover:shadow-lg',
-        'focus-within:-translate-y-1.5 focus-within:shadow-lg',
+        'hover:shadow-md focus-within:shadow-md',
         className,
       )}
     >
@@ -148,8 +147,8 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
 
         <div className="mt-auto">
           {/*
-            Подвал карточки: цена и «Записаться» в одном слоте, крестфейдом.
-            Высота карточки от hover не меняется — соседи по сетке не прыгают.
+            Цена и доступность остаются видимыми; справа проявляется стрелка.
+            Её место зарезервировано — hover не меняет высоту карточки.
           */}
           <div className="card-foot border-t border-border-default pt-3">
             <div className="card-foot-line flex flex-wrap items-center justify-between gap-3">

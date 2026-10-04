@@ -5,15 +5,10 @@
  * на скачке высоты, а меняет плотность. У нас та же задача + кинематографичный
  * hero на главной.
  *
- * 3 режима — без дёргания высоты:
- *   • `top`      — hero ещё за шапкой: прозрачная, светлый текст, пилюля на
- *                  полупрозрачном стекле поверх кадра.
- *   • `scrolled` — hero ушёл: фон канвы, размытие, пилюля с границей. Высота
- *                  ОБОЛОЧКИ фиксирована (var(--layout-nav-height)), меняется
- *                  только внутренний падинг и плотность, поэтому контент не
- *                  прыгает и якоря не съезжают.
- *   • `hidden`   — скролл вниз: шапка уезжает вверх целиком, возвращаясь на
- *                  движение вверх. При открытом мега-меню не прячется.
+ * Вверху — полная прозрачная шапка, вниз — скрытие всей текущей формы,
+ * вверх — компактный стеклянный остров. У начала страницы остров плавно
+ * раскрывается обратно. Фиксированная рама не сдвигает контент.
+ * При открытом мега-меню или фокусе внутри шапка не прячется.
  *
  * Цвет и фон — из токенов, без произвольных значений и без text-[]. Состояние
  * «герой за шапкой» меряет useCinemaHeroBehind по геометрии, а не по порогу.
@@ -50,7 +45,7 @@ export function SiteHeader() {
   const prevCount = useRef<number>(snapshot?.totals.itemCount ?? 0);
   const [menuOpen, setMenuOpen] = useState(false);
   const onMenuOpenChange = useCallback((open: boolean) => setMenuOpen(open), []);
-  const hidden = useHeaderHideOnScroll(headerRef, menuOpen);
+  const { hidden, island } = useHeaderHideOnScroll(headerRef, menuOpen, pathname === routes.home(), pathname);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -75,24 +70,20 @@ export function SiteHeader() {
     };
   }, [snapshot]);
 
-  const solid = !heroBehind;
+  const solid = island || !heroBehind;
 
   return (
     <header
       ref={headerRef}
       data-state={solid ? 'scrolled' : 'top'}
-      className={cn(
-        'fixed inset-x-0 top-0 z-header border-b',
-        // высота оболочки фиксирована — дёргания нет, едет только translate + цвет
-        'h-[var(--layout-nav-height)] will-change-transform',
-        'transition-[translate,background-color,border-color,backdrop-filter] duration-slow ease-standard',
-        hidden && 'translate-y-[-100%]',
-        solid
-          ? 'border-border-default bg-surface-canvas/85 backdrop-blur-xl'
-          : 'border-transparent bg-transparent',
-      )}
+      data-mode={island ? 'island' : 'full'}
+      aria-hidden={hidden || undefined}
+      inert={hidden || undefined}
+      className={cn('site-header fixed inset-x-0 top-0 z-header will-change-transform', hidden && 'pointer-events-none')}
+      style={{ transform: hidden ? 'translateY(calc(-100% - 20px))' : 'translateY(0)' }}
     >
-      <div className="page-container flex h-full items-center justify-between gap-4">
+      <div className={cn('site-header-surface', solid ? 'border-border-default bg-surface-canvas/85 backdrop-blur-xl' : 'border-transparent bg-transparent')}>
+      <div className="site-header-content page-container flex h-full items-center justify-between gap-4">
         <Link
           href={routes.home()}
           aria-current={pathname === routes.home() ? 'page' : undefined}
@@ -142,7 +133,7 @@ export function SiteHeader() {
                 className={cn(
                   'relative inline-flex size-9 items-center justify-center rounded-full border',
                   'transition-colors duration-normal ease-brand',
-                  item.compact ? undefined : 'max-lg:hidden',
+                  item.compact ? undefined : 'site-header-secondary-action max-lg:hidden',
                   solid
                     ? 'border-transparent text-content-secondary hover:border-accent hover:bg-accent-soft hover:text-content-accent'
                     : 'border-white/10 text-content-on-cinema-muted hover:border-border-on-cinema hover:text-content-on-cinema',
@@ -173,6 +164,7 @@ export function SiteHeader() {
             </Link>
           </Button>
         </div>
+      </div>
       </div>
     </header>
   );

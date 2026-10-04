@@ -46,8 +46,7 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
       className={cn(
         'card-surface group relative flex h-full flex-col overflow-hidden rounded-lg',
         'border border-border-default bg-surface-card',
-        'hover:-translate-y-1 hover:shadow-lg',
-        'focus-within:-translate-y-1 focus-within:shadow-lg',
+        'hover:shadow-md focus-within:shadow-md',
         className,
       )}
     >
@@ -123,8 +122,8 @@ export function VenueCard({ item, locale, className }: VenueCardProps) {
 
         <div className="mt-auto">
           {/*
-            Подвал карточки: цена с рейтингом и «Записаться» в одном слоте,
-            крестфейдом (см. class-card.tsx). Высота от hover не меняется.
+            Цена и рейтинг остаются видимыми; стрелка появляется справа.
+            Высота от hover не меняется.
           */}
           <div className="card-foot border-t border-border-default pt-3">
             <div className="card-foot-line flex flex-wrap items-center justify-between gap-3">

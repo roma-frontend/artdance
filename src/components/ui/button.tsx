@@ -15,10 +15,10 @@ import { cn } from '@/lib/utils';
 
 const buttonVariants = cva(
   [
-    'inline-flex items-center justify-center gap-2 whitespace-nowrap',
+    'button-motion inline-flex items-center justify-center gap-2 whitespace-nowrap',
     'font-semibold uppercase tracking-wide',
     'rounded-full border border-transparent',
-    'transition-all duration-300 ease-brand active:scale-[0.97] active:duration-75',
+    'transition-[background-color,color,border-color,box-shadow,translate,scale] duration-normal ease-brand',
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
     'disabled:pointer-events-none disabled:opacity-50',
   ],
@@ -28,9 +28,9 @@ const buttonVariants = cva(
         accent:
           'bg-accent text-content-on-accent hover:bg-accent-hover hover:-translate-y-px hover:shadow-lg hover:shadow-accent/25 active:translate-y-0 active:shadow-sm shadow-md',
         outline:
-          'border-border-default text-content-primary hover:border-accent hover:text-content-accent hover:bg-accent-soft/30 active:scale-[0.98]',
+          'border-border-default text-content-primary hover:border-accent hover:text-content-accent hover:bg-accent-soft/30',
         ghost:
-          'border-content-accent text-content-accent hover:bg-accent hover:text-content-on-accent active:scale-[0.98]',
+          'border-content-accent text-content-accent hover:bg-accent hover:text-content-on-accent',
         contrast:
           'bg-surface-card text-content-primary hover:-translate-y-px hover:shadow-lg active:translate-y-0 shadow-md',
         onCinema:
@@ -43,7 +43,7 @@ const buttonVariants = cva(
         default:
           'bg-accent text-content-on-accent hover:bg-accent-hover hover:-translate-y-px hover:shadow-lg hover:shadow-accent/25 active:translate-y-0 shadow-md',
         /** Разрушающее действие: удаление, отмена брони, возврат. */
-        destructive: 'bg-danger text-content-on-accent hover:opacity-90 shadow-md active:scale-[0.98]',
+        destructive: 'bg-danger text-content-on-accent hover:opacity-90 shadow-md',
       },
       size: {
         sm: 'px-4 py-2 text-xs',

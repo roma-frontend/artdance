@@ -37,20 +37,12 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
     setOpen(false);
   }, [pathname]);
 
-  // при переходе по сайдбару — плавно скроллим страницу к началу контента (под шапку)
+  // Общий скролл документа, как на странице инструктора.
   useEffect(() => {
     if (prevPathRef.current === pathname) return;
     prevPathRef.current = pathname;
-    if (reduce) return;
     const id = requestAnimationFrame(() => {
-      const el = mainRef.current;
-      if (!el) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-      }
-      // scroll-padding-top уже = var(--layout-nav-height), но делаем 12px воздуха от хедера
-      const top = el.getBoundingClientRect().top + window.scrollY - 12;
-      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: reduce ? 'instant' : 'smooth' });
     });
     return () => cancelAnimationFrame(id);
   }, [pathname, reduce]);
@@ -69,13 +61,13 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
   }, []);
 
   return (
-    <div className="min-h-dvh bg-surface-canvas">
+    <div className="admin-shell min-h-dvh bg-surface-canvas">
       {/* Header — лёгкий entrance сверху, танцевальная плавность */}
       <motion.header
         initial={reduce ? false : { y: admin.header.yPx, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={reduce ? { duration: 0 } : { duration: admin.durationMs.normal / 1000, ease: adminEase }}
-        className="sticky top-0 z-header border-b border-border-default bg-surface-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-surface-card/80"
+        className="admin-shell-header sticky top-0 z-header shrink-0 border-b border-border-default bg-surface-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-surface-card/80"
         style={{ willChange: reduce ? undefined : 'transform, opacity' }}
       >
         <div className="page-container flex items-center gap-3 py-3 sm:py-4">
@@ -164,15 +156,15 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
                 <X className="size-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-4 scrollbar-compact">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 scrollbar-none">
               <AdminSidebar groups={groups} onNavigate={() => setOpen(false)} variant="drawer" />
             </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
 
-      {/* Main layout — левая навигация липкая, правая часть обычный поток без внутреннего скролла */}
-      <div className="page-container grid grid-cols-1 gap-6 py-6 sm:gap-8 sm:py-8 lg:grid-cols-[var(--layout-admin-sidebar-width)_1fr] xl:grid-cols-[var(--layout-admin-sidebar-width-wide)_1fr]">
+      {/* Левая колонка в потоке, правая sticky до нижней границы сетки — как .detail-grid. */}
+      <div className="admin-workspace page-container grid grid-cols-1 gap-6 py-6 sm:gap-8 sm:py-8 lg:grid-cols-[var(--layout-admin-sidebar-width)_minmax(0,1fr)] lg:gap-5 lg:py-5 xl:grid-cols-[var(--layout-admin-sidebar-width-wide)_minmax(0,1fr)]">
         <motion.aside
           initial={reduce ? false : { opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
@@ -180,21 +172,18 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
           className="hidden lg:block"
         >
           <div
-            data-admin-sidebar-scroll
-            className="sticky top-[calc(var(--layout-nav-height)+1.25rem)] overflow-y-auto overscroll-contain pr-2 scroll-smooth scrollbar-none"
-            style={
-              {
-                maxHeight: 'calc(100dvh - var(--layout-nav-height) - 1.5rem)',
-                height: 'calc(100dvh - var(--layout-nav-height) - 1.5rem)',
-                scrollbarGutter: 'stable',
-              } as React.CSSProperties
-            }
+            className="admin-sidebar-panel py-2 lg:pr-4"
           >
             <AdminSidebar groups={groups} variant="desktop" />
           </div>
         </motion.aside>
 
-        <main ref={mainRef} id={site.mainContentId} className="min-w-0">
+        <main
+          ref={mainRef}
+          id={site.mainContentId}
+          tabIndex={-1}
+          className="admin-content-panel min-w-0"
+        >
           <div className="pb-2">{children}</div>
         </main>
       </div>

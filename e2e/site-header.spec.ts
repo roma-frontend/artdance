@@ -13,7 +13,8 @@ import { raw } from '../src/design/tokens';
 /** Английская локаль: у неё в каталоге эталонные строки. */
 const HOME = '/en';
 
-const header = (page: Page): Locator => page.getByRole('banner');
+// A hidden header is intentionally inert and absent from the accessibility tree.
+const header = (page: Page): Locator => page.locator('.site-header');
 const dock = (page: Page): Locator => page.locator('.mobile-dock');
 const menuButton = (page: Page): Locator =>
   page.getByRole('button', { name: en.nav.openMenu, exact: true });
@@ -52,6 +53,88 @@ test.describe('SiteHeader', () => {
     /* Возврат наверх обязан вернуть прозрачность: состояние двустороннее. */
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await expect(header(page)).toHaveAttribute('data-state', 'top');
+  });
+
+  test('full → hidden → island → full: плавная геометрия и защита от мелкого скролла', async ({ page }) => {
+    test.skip(await isMobileLayout(page), 'Остров — desktop-поведение, как в эталоне');
+    // The scroll listeners attach during hydration; SSR markup alone is not readiness.
+    await expect(page.locator('[data-slot="pointer-glow"]')).toHaveCount(1);
+    await page.mouse.move(10, 500);
+    const nav = header(page);
+    const surface = nav.locator('.site-header-surface');
+    await expect(nav).toHaveAttribute('data-mode', 'full');
+    const fullWidth = await surface.evaluate(node => node.getBoundingClientRect().width);
+    await page.evaluate(() => window.scrollTo({ top: 400, behavior: 'instant' }));
+    await expect(nav).toHaveAttribute('inert', '');
+    await expect(nav).toHaveAttribute('data-mode', 'full');
+    await expect.poll(() => nav.evaluate(node => node.getBoundingClientRect().bottom)).toBeLessThan(0);
+    await page.evaluate(() => window.scrollTo({ top: 395, behavior: 'instant' }));
+    await expect(nav).toHaveAttribute('inert', '');
+    await page.evaluate(() => window.scrollTo({ top: 360, behavior: 'instant' }));
+    await expect(nav).not.toHaveAttribute('inert');
+    await expect(nav).toHaveAttribute('data-mode', 'island');
+    await expect.poll(() => surface.evaluate(node => node.getBoundingClientRect().width)).toBeLessThan(fullWidth - 40);
+    await expect.poll(() => surface.evaluate(node => node.getBoundingClientRect().top)).toBeGreaterThan(10);
+    await expect(surface).toHaveCSS('overflow', 'visible');
+
+    // The island's menus remain anchored to its bottom edge.
+    await nav.getByRole('navigation').locator('a[aria-haspopup="menu"]').first().hover();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.evaluate(() => window.scrollTo({ top: 500, behavior: 'instant' }));
+    await expect(nav).not.toHaveAttribute('inert');
+    await page.keyboard.press('Escape');
+    await page.mouse.move(10, 500);
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await page.evaluate(() => window.scrollTo({ top: 600, behavior: 'instant' }));
+    await expect(nav).toHaveAttribute('inert', '');
+    await expect(nav).toHaveAttribute('data-mode', 'island');
+    await page.evaluate(() => window.scrollTo({ top: 560, behavior: 'instant' }));
+    await expect(nav).not.toHaveAttribute('inert');
+    // Wait for the reveal before measuring the distinct expansion animation.
+    await expect.poll(() => nav.evaluate(node => Math.round(node.getBoundingClientRect().top))).toBe(0);
+    await expect.poll(() => surface.evaluate(node => Math.round(node.getBoundingClientRect().width))).toBe(1140);
+    const widths = await page.evaluate(async () => {
+      const card = document.querySelector('.site-header-surface')!;
+      const nav = document.querySelector<HTMLElement>('.site-header')!;
+      const samples: number[] = [card.getBoundingClientRect().width];
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      await new Promise<void>((resolve, reject) => {
+        const deadline = performance.now() + 10_000;
+        let started: number | undefined;
+        const tick = () => {
+          const now = performance.now();
+          if (nav.dataset.mode === 'full') started ??= now;
+          samples.push(card.getBoundingClientRect().width);
+          if (started !== undefined && now - started >= 700) resolve();
+          else if (now > deadline) reject(new Error('Header did not expand at the top'));
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      return samples;
+    });
+    expect(new Set(widths.map(Math.round)).size).toBeGreaterThan(2);
+    expect(widths.at(-1)!).toBeGreaterThan(widths[0]! + 40);
+    await expect(nav).toHaveAttribute('data-mode', 'full');
+    await expect(nav).toHaveAttribute('data-state', 'top');
+    await expect.poll(() => surface.evaluate(node => node.getBoundingClientRect().width)).toBe(fullWidth);
+  });
+
+  test('фокус, узкий экран и reduced motion не теряют навигацию', async ({ page }) => {
+    const nav = header(page);
+    await nav.getByRole('link').first().focus();
+    await page.evaluate(() => window.scrollTo({ top: 400, behavior: 'instant' }));
+    await expect(nav).not.toHaveAttribute('inert');
+    await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.evaluate(() => window.scrollTo({ top: 600, behavior: 'instant' }));
+    await expect(nav).not.toHaveAttribute('inert');
+    await expect(nav).toHaveAttribute('data-mode', 'full');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.evaluate(() => window.scrollTo({ top: 800, behavior: 'instant' }));
+    await expect(nav).not.toHaveAttribute('inert');
+    await expect(nav).toHaveAttribute('data-mode', 'full');
   });
 
   test('переход через границу hero не вызывает цикл рендеров шапки', async ({ page }) => {

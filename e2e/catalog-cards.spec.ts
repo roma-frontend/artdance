@@ -192,13 +192,10 @@ test.describe('InstructorCard', () => {
   });
 
   /*
-   * «Записаться» меняется с ценой крестфейдом в слоте постоянной высоты.
-   *
-   * Проверяются обе стороны: полоса действительно видна при наведении И
-   * высота карточки не меняется — раньше раскрытие дёргало сетку, и соседи
-   * по строке прыгали. Высота меряется до, во время и после наведения.
+   * Стрелка появляется рядом с ценой, но не заменяет её.
+   * Проверяются видимость фактов и стабильная высота до, во время и после hover.
    */
-  test('CTA меняется с ценой крестфейдом, высота карточки не прыгает', async ({ page }) => {
+  test('стрелка проявляется, цена остаётся видимой и высота карточки не прыгает', async ({ page }) => {
     test.skip((page.viewportSize()?.width ?? 0) < 768, 'На touch цена видна всегда');
 
     const first = demoInstructors[0]!;
@@ -213,6 +210,7 @@ test.describe('InstructorCard', () => {
     expect(heightBefore).toBeGreaterThan(20);
 
     await expect(cta).toHaveCSS('opacity', '1');
+    await expect(card.locator('.card-foot-line:not(.card-cta)')).toHaveCSS('opacity', '1');
     const heightHovered = await foot.evaluate((node) => node.getBoundingClientRect().height);
     expect(heightHovered).toBeCloseTo(heightBefore, 0);
 
