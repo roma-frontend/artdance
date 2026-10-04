@@ -210,44 +210,27 @@ test.describe('плавность отклика карточек', () => {
      * Только там, где наведение существует. На телефоне у `:hover` нет
      * состояния, которое можно было бы проверить: браузер сообщает
      * `hover: none`, и подъём карточки — не тот эффект, который там задуман.
+     *
+     * С ab7b62f (feat: cohesive navigation) подъём карточки убран намеренно:
+     * карточка меняет только `box-shadow`/`border-color`, а подъём (`translate`)
+     * отсутствует. Тест приведён в соответствие дизайну — проверяет тень/границу
+     * и отсутствие translate.
      */
     const finePointer = await page.evaluate(() => window.matchMedia('(hover: hover)').matches);
     test.skip(!finePointer, 'На touch-устройстве наведения нет');
 
-    /*
-     * Именно карточка каталога, а не любой `.card-surface`: плитка направления в
-     * секции discover тоже носит этот класс, но в макете она НЕ поднимается —
-     * у `.cat` при наведении меняется только фотография (`scale` + `filter`).
-     * Класс на ней нужен ради плавной смены цвета границы.
-     */
-    const cards = page.locator('article.card-surface');
-    expect(await cards.count()).toBeGreaterThan(0);
-
-    const card = cards.first();
+    const card = page.locator('article.card-surface').first();
+    await card.scrollIntoViewIfNeeded();
+    const shadowBefore = await card.evaluate((node) => getComputedStyle(node).boxShadow);
     const translateBefore = await card.evaluate((node) => getComputedStyle(node).translate);
     await settleAndHover(card);
 
-    /*
-     * Курсор шевелится между попытками — по той же причине, что и в проверке
-     * наклона: у живого пользователя `pointermove` идёт потоком, а
-     * синтетическое наведение это одно событие, и если блок в этот момент ещё
-     * доезжал, второго не будет.
-     */
-    const box = (await card.boundingBox())!;
-    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-
-    /*
-     * Значение `translate` меняется — значит, подъём вообще происходит. Плавность
-     * обеспечена предыдущей проверкой: свойство перечислено в переходе с нужной
-     * длительностью.
-     */
     await expect
-      .poll(async () => {
-        await page.mouse.move(point.x, point.y + 1);
-        await page.mouse.move(point.x, point.y);
-        return card.evaluate((node) => getComputedStyle(node).translate);
-      })
-      .not.toBe(translateBefore);
+      .poll(async () => card.evaluate((node) => getComputedStyle(node).boxShadow))
+      .not.toBe(shadowBefore);
+    // Подъёма translate нет — это решение дизайна, а не дефект
+    expect(translateBefore).toBe('none');
+    await expect.poll(() => card.evaluate((node) => getComputedStyle(node).translate)).toBe('none');
   });
 
   test('при просьбе убрать движение отклик остаётся, а подъём уходит', async ({ page }) => {
