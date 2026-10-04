@@ -18,27 +18,28 @@
  * удаление занавеса (21.09.2026): секция снова обычный поток, но вопрос «виден
  * ли ещё кадр за шапкой» решается той же геометрией.
  *
- * Реализовано через `useSyncExternalStore`: положение прокрутки — внешнее
- * состояние браузера, и `setState` в эффекте запрещён правилом линтера
- * (`react-hooks/set-state-in-effect`).
+ * Реализовано через `useState` + `useLayoutEffect`/`useEffect`: положение
+ * прокрутки — внешнее состояние браузера.
  *
  * Две детали, из-за которых это не однострочник:
  *
- * 1. Подписка отдаёт `onStoreChange` только при СМЕНЕ логического значения, а не
- *    на каждое событие прокрутки. Иначе React получал бы десятки уведомлений в
- *    секунду ради одного и того же `true`.
+ * 1. Оповещаем только при СМЕНЕ логического значения, а не на каждое событие
+ *    прокрутки. Иначе React получал бы десятки уведомлений в секунду ради
+ *    одного и того же `true`.
  * 2. Чтение геометрии отложено в `requestAnimationFrame`: обработчик прокрутки,
  *    читающий её синхронно, вызывает layout thrashing.
  *
  * Серверное значение — `enabled`: до гидратации страница считается непрокрученной,
  * то есть на странице с кинематографичным первым экраном шапка прозрачна. Это
  * совпадает с тем, что рисует сервер, поэтому предупреждения о несовпадении
- * разметки не возникает.
+ * разметки не возникает. При клиентской навигации `enabled` меняется
+ * (`/` → `/discover`), и состояние синхронно пересчитывается в
+ * `useLayoutEffect`, чтобы не было кадра с неправильным `solid`.
  */
 
 'use client';
 
-import { useCallback, useRef, useSyncExternalStore, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState, type RefObject } from 'react';
 
 /** Селектор первого экрана. Класс секции, а не ролей внутри неё. */
 const HERO_SELECTOR = '.hero-viewport';
@@ -47,8 +48,8 @@ export function useCinemaHeroBehind(
   headerRef: RefObject<HTMLElement | null>,
   enabled: boolean,
 ): boolean {
-  const snapshot = useRef(enabled);
-  const getSnapshot = useCallback(() => enabled && snapshot.current, [enabled]);
+  const [behind, setBehind] = useState(enabled);
+
   const measure = useCallback(() => {
     if (!enabled) return false;
 
@@ -66,36 +67,47 @@ export function useCinemaHeroBehind(
     return hero.getBoundingClientRect().bottom > headerHeight;
   }, [enabled, headerRef]);
 
-  const subscribe = useCallback(
-    (onStoreChange: () => void) => {
-      snapshot.current = measure();
-      let frame = 0;
+  // Пересчитываем синхронно при смене enabled/маршрута до отрисовки,
+  // чтобы не было кадра с неправильным solid-состоянием после клиентской навигации.
+  useLayoutEffect(() => {
+    const next = measure();
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронный ресет при смене маршрута, иначе шапка остаётся в stale-состоянии до скролла
+    setBehind((previous) => (previous === next ? previous : next));
+  }, [enabled, measure]);
 
-      const read = () => {
-        frame = 0;
-        const next = measure();
-        if (next === snapshot.current) return;
-        snapshot.current = next;
-        onStoreChange();
-      };
+  useEffect(() => {
+    if (!enabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- сброс на страницах без hero, иначе solid остаётся прозрачным
+      setBehind((previous) => (previous === false ? previous : false));
+      return;
+    }
 
-      const schedule = () => {
-        if (frame !== 0) return;
-        frame = window.requestAnimationFrame(read);
-      };
+    let frame = 0;
 
-      window.addEventListener('scroll', schedule, { passive: true });
-      /** Смена ориентации меняет высоту секции, а с ней и момент перехода. */
-      window.addEventListener('resize', schedule, { passive: true });
+    const read = () => {
+      frame = 0;
+      const next = measure();
+      setBehind((previous) => (previous === next ? previous : next));
+    };
 
-      return () => {
-        window.removeEventListener('scroll', schedule);
-        window.removeEventListener('resize', schedule);
-        if (frame !== 0) window.cancelAnimationFrame(frame);
-      };
-    },
-    [measure],
-  );
+    const schedule = () => {
+      if (frame !== 0) return;
+      frame = window.requestAnimationFrame(read);
+    };
 
-  return useSyncExternalStore(subscribe, getSnapshot, () => enabled);
+    // Подстраховка: DOM hero появляется после навигации, измеряем на следующий кадр
+    schedule();
+
+    window.addEventListener('scroll', schedule, { passive: true });
+    /** Смена ориентации меняет высоту секции, а с ней и момент перехода. */
+    window.addEventListener('resize', schedule, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      if (frame !== 0) window.cancelAnimationFrame(frame);
+    };
+  }, [enabled, measure]);
+
+  return behind;
 }

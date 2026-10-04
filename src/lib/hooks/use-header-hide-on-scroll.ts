@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useState, type RefObject } from 'react';
 
 /** Preserve the current shape while hiding; morph only on reveal or at the top. */
 export function useHeaderHideOnScroll(
@@ -10,6 +10,14 @@ export function useHeaderHideOnScroll(
   resetKey = '',
 ): { hidden: boolean; island: boolean } {
   const [state, setState] = useState({ hidden: false, island: false });
+
+  // Сброс при клиентской навигации: без него island/hidden с предыдущей страницы
+  // остаются до первого скролла, и шапка на новой странице моргает не тем режимом.
+  // Перезагрузка сбрасывает state к начальному — отсюда эффект "после перезагрузки нормализуется".
+  useLayoutEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронный ресет при смене маршрута, иначе stale остров уезжает на другую страницу
+    setState({ hidden: false, island: false });
+  }, [resetKey]);
 
   useEffect(() => {
     let frame = 0;
