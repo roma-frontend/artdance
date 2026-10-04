@@ -11,16 +11,25 @@ export function useHeaderHideOnScroll(
 ): { hidden: boolean; island: boolean } {
   const [state, setState] = useState({ hidden: false, island: false });
 
-  // Сброс при клиентской навигации: без него island/hidden с предыдущей страницы
-  // остаются до первого скролла, и шапка на новой странице моргает не тем режимом.
-  // Перезагрузка сбрасывает state к начальному — отсюда эффект "после перезагрузки нормализуется".
+  // При клиентской навигации сохраняем компактность, если на новой странице
+  // уже прокручено (scroll-restoration). Иначе "остров" сбрасывается в full
+  // и появляется только после первого скролла — эффект "после перезагрузки нормализуется".
   useLayoutEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронный ресет при смене маршрута, иначе stale остров уезжает на другую страницу
-    setState({ hidden: false, island: false });
-  }, [resetKey]);
+    const y = Math.max(0, window.scrollY);
+    const shouldBeIsland = y > 120 && islandEnabled;
+    const nextHidden = false;
+    const nextIsland = shouldBeIsland;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронный апдейт при смене маршрута
+    setState((previous) =>
+      previous.hidden === nextHidden && previous.island === nextIsland
+        ? previous
+        : { hidden: nextHidden, island: nextIsland },
+    );
+  }, [resetKey, islandEnabled]);
 
   useEffect(() => {
     let frame = 0;
+    // Синхронизируем lastY с текущим scrollY после возможного ресета выше
     let lastY = Math.max(0, window.scrollY);
     let down = 0;
     let up = 0;

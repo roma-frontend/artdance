@@ -62,44 +62,27 @@ export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminS
     activeRef.current = node;
   }, []);
 
-  // активная ссылка всегда в центре видимости сайдбара — даже если скроллбара визуально нет
+  // активная ссылка всегда в центре видимости — без инверсии
   useEffect(() => {
     const el = activeRef.current;
-    // Desktop navigation is now part of the document, not a nested scroller.
-    if (!el || !isDrawer) return;
+    if (!el) return;
     const behavior: ScrollBehavior = reduce ? 'auto' : 'smooth';
 
     const doScroll = () => {
-      const container =
-        (el.closest('[data-admin-sidebar-scroll]') as HTMLElement | null) ??
-        (el.closest('div.overflow-y-auto') as HTMLElement | null);
-
-      if (container) {
-        // если контент помещается — скролл не нужен, выходим без вычислений
-        if (container.scrollHeight <= container.clientHeight + 2) return;
-
-        const cRect = container.getBoundingClientRect();
-        const eRect = el.getBoundingClientRect();
-        const delta = eRect.top + eRect.height / 2 - (cRect.top + cRect.height / 2);
-        // порог меньше — иначе пункт остаётся у края и не центрируется
-        if (Math.abs(delta) < 4) return;
-
-        const maxScroll = container.scrollHeight - container.clientHeight;
-        const next = Math.min(maxScroll, Math.max(0, container.scrollTop + delta));
-        container.scrollTo({ top: next, behavior });
-        return;
-      }
+      // scrollIntoView центрирует внутри ближайшего скролл-контейнера
+      // (десктоп: [data-admin-sidebar-scroll], drawer: div.overflow-y-auto)
+      // — без ручного дельта-расчёта, который давал инверсию
       el.scrollIntoView({ behavior, block: 'center', inline: 'nearest' });
     };
 
-    // stagger групп до 400мс — ждём окончания анимации, иначе координаты съезжают
+    // stagger групп до ~400мс — ждём окончания анимации, иначе координаты съезжают
     const t = window.setTimeout(() => requestAnimationFrame(doScroll), 420);
     const id = requestAnimationFrame(() => requestAnimationFrame(doScroll));
     return () => {
       clearTimeout(t);
       cancelAnimationFrame(id);
     };
-  }, [pathname, reduce, isDrawer]);
+  }, [pathname, reduce]);
 
   return (
     <nav aria-label={t('sectionNav')} className={isDrawer ? '' : 'contents'}>
