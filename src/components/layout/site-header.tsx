@@ -47,6 +47,17 @@ export function SiteHeader() {
   const onMenuOpenChange = useCallback((open: boolean) => setMenuOpen(open), []);
   const { hidden, island } = useHeaderHideOnScroll(headerRef, menuOpen, pathname === routes.home(), pathname);
 
+  // мега-меню не должно оставаться открытым после клиентской навигации — иначе
+  // header остаётся в paused (menuOpen=true) и не компактится до перезагрузки
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- сброс меню при смене маршрута
+    setMenuOpen(false);
+    // фокус внутри шапки (клик по ссылке в шапке) блокирует island — снимаем
+    if (headerRef.current?.contains(document.activeElement) && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+  }, [pathname]);
+
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     if (!snapshot) {

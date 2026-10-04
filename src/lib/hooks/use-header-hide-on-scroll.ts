@@ -15,22 +15,52 @@ export function useHeaderHideOnScroll(
   // уже прокручено (scroll-restoration). Иначе "остров" сбрасывается в full
   // и появляется только после первого скролла — эффект "после перезагрузки нормализуется".
   useLayoutEffect(() => {
-    const y = Math.max(0, window.scrollY);
-    const shouldBeIsland = y > 120 && islandEnabled;
-    const nextHidden = false;
-    const nextIsland = shouldBeIsland;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронный апдейт при смене маршрута
-    setState((previous) =>
-      previous.hidden === nextHidden && previous.island === nextIsland
-        ? previous
-        : { hidden: nextHidden, island: nextIsland },
-    );
+    // next-intl делает scroll-to-top на новой странице асинхронно в том же тике —
+    // если читать window.scrollY синхронно, он ещё старый (например 400) и island
+    // успевает закоммититься на один кадр, а потом сбрасывается вторым ререндером.
+    // Поэтому читаем на следующий кадр + ищем BFCache/restoration tick.
+    let cancelled = false;
+    const apply = () => {
+      if (cancelled) return;
+      const y = Math.max(0, window.scrollY);
+      const locked =
+        document.body.style.overflow === 'hidden' ||
+        document.documentElement.contains(document.activeElement) === false;
+      void locked;
+      const shouldBeIsland = y > 18 && y > 8 && islandEnabled;
+      // на главной: island только если действительно прокручено; иначе full до скролла
+      // на остальных страницах: heroBehind=false, но island всё равно по y (см. SiteHeader solid=island||!heroBehind)
+      let nextHidden = false;
+      let nextIsland = shouldBeIsland;
+      // на вершине страницы island всегда выключен — иначе compact появляется на 0px
+      if (y <= 18) {
+        nextHidden = false;
+        nextIsland = false;
+      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронный апдейт при смене маршрута
+      setState((previous) =>
+        previous.hidden === nextHidden && previous.island === nextIsland
+          ? previous
+          : { hidden: nextHidden, island: nextIsland },
+      );
+    };
+    // два rAF — дожидаемся scroll-restoration от next-intl/next
+    let id1 = requestAnimationFrame(() => {
+      id1 = requestAnimationFrame(apply);
+    });
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(id1);
+    };
   }, [resetKey, islandEnabled]);
 
   useEffect(() => {
     let frame = 0;
-    // Синхронизируем lastY с текущим scrollY после возможного ресета выше
+    // после навигации scrollY может асинхронно сброситься в 0 — синхронизируем на след. кадре
     let lastY = Math.max(0, window.scrollY);
+    queueMicrotask(() => {
+      lastY = Math.max(0, window.scrollY);
+    });
     let down = 0;
     let up = 0;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
