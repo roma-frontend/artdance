@@ -104,8 +104,15 @@ export function SiteHeader() {
       className={cn('site-header fixed inset-x-0 top-0 z-header will-change-transform', hidden && 'pointer-events-none')}
       style={{ transform: hidden ? 'translateY(calc(-100% - 20px))' : 'translateY(0)' }}
     >
-      <div className={cn('site-header-surface relative overflow-hidden', solid ? 'border-border-default bg-surface-canvas/85 backdrop-blur-xl' : 'border-transparent bg-transparent')}>
-      {!lite && <ScrollProgress />}
+      <div className={cn('site-header-surface relative', solid ? 'border-border-default bg-surface-canvas/85 backdrop-blur-xl' : 'border-transparent bg-transparent')}>
+      {!lite && (
+        <div
+          aria-hidden
+          className="scroll-progress-clip pointer-events-none absolute inset-x-0 bottom-0 h-(--scroll-progress-height) overflow-hidden [border-radius:inherit]"
+        >
+          <ScrollProgress />
+        </div>
+      )}
       <div className="site-header-content page-container flex h-full items-center justify-between gap-4">
         <Link
           href={routes.home()}

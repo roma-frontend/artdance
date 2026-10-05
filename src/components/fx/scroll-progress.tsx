@@ -14,10 +14,12 @@
  * • `aria-hidden`: это декоративное отражение позиции прокрутки, а не индикатор
  *   выполнения задачи. `role="progressbar"` заставил бы скринридер зачитывать
  *   бессмысленные проценты при каждом движении.
- * • полоса рендерится внутри `.site-header-surface` (absolute, bottom:0) и
- *   наследует скругление острова (`overflow-hidden` на родителе): линия никогда
- *   не выходит за радиус компактного header. В полноразмерной шапке тот же
- *   контейнер = 100vw без скругления, и линия занимает всю ширину окна.
+ * • полоса рендерится в `.scroll-progress-clip` внутри `.site-header-surface`:
+ *   клип `overflow-hidden` + `border-radius:inherit` обрезает линию по радиусу
+ *   острова, но сам `.site-header-surface` clip не имеет — иначе popover'ы
+ *   Locale/Lite (`absolute` внутри header, `z-40`) отрезались бы кромкой острова
+ *   и выглядели бы «обрезанными сверху». В полноразмерной шапке клип = 100vw
+ *   без скругления.
  *
  * Обновление идёт мимо состояния React: 60 рендеров в секунду ради одного
  * `scaleX` не нужны никому.
@@ -84,8 +86,7 @@ export function ScrollProgress() {
       aria-hidden
       data-slot="scroll-progress"
       className={cn(
-        'pointer-events-none absolute inset-x-0 bottom-0 z-0 origin-left',
-        'h-(--scroll-progress-height)',
+        'pointer-events-none absolute inset-0 origin-left',
         'bg-gradient-to-r from-accent to-metal',
         'transition-[transform,opacity] duration-(--scroll-progress-transition) ease-linear',
       )}
