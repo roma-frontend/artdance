@@ -42,10 +42,10 @@ export function HeaderThemeToggle({ solid }: { solid: boolean }) {
       onClick={() => setTheme(next)}
       aria-label={label}
       title={label}
-      data-slot="header-theme-toggle"
+      data-slot="theme-toggle"
       data-theme-choice={current}
       className={cn(
-        'relative inline-flex size-9 items-center justify-center rounded-full border',
+        'relative inline-flex size-9 shrink-0 items-center justify-center rounded-full border',
         'transition-colors duration-normal ease-brand',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
         solid

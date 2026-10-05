@@ -94,16 +94,16 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
           </div>
 
           <div className="hidden items-center gap-2 lg:flex">
-            <HeaderLiteToggle solid />
-            <HeaderThemeToggle solid />
-            <span className="mx-1 hidden h-6 w-px shrink-0 bg-border-default/40 xl:block" aria-hidden />
             <span className="max-w-[14ch] truncate text-body-sm text-content-secondary xl:max-w-none">{userName}</span>
             <Badge variant="metal" size="md" className="shrink-0">{roleLabel}</Badge>
+            <HeaderLiteToggle solid />
+            <HeaderThemeToggle solid />
             <Button asChild variant="ghost" size="sm"><Link href={routes.home()}>{backToSiteLabel}</Link></Button>
             <SignOutButton />
           </div>
 
           <div className="hidden items-center gap-1.5 sm:flex lg:hidden">
+            <Badge variant="metal" size="sm" className="shrink-0 max-w-[10ch] truncate">{roleLabel}</Badge>
             <HeaderLiteToggle solid />
             <HeaderThemeToggle solid />
           </div>

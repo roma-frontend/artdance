@@ -52,6 +52,11 @@ export function useCursorFollow(ref: RefObject<HTMLElement | null>, selector?: s
       const next = selector
         ? (event.target instanceof Element ? event.target.closest<HTMLElement>(selector) : null)
         : root;
+      // Кнопки с всплывающими меню не должны магнититься — иначе клик промахивается по цели.
+      if (next?.hasAttribute('aria-haspopup')) {
+        reset();
+        return;
+      }
       if (!next || !root.contains(next) || next.matches(':focus-visible') || next.querySelector(':focus-visible')) {
         reset();
         return;

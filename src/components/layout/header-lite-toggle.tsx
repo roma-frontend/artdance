@@ -46,7 +46,7 @@ export function HeaderLiteToggle({ solid }: { solid: boolean }) {
   ];
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative shrink-0">
       <button
         type="button"
         aria-label={t('liteModeLabel')}

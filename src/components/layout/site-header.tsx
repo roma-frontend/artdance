@@ -177,13 +177,13 @@ export function SiteHeader() {
 
           <LocaleSwitcher solid={solid} />
 
-          <span aria-hidden className="hidden h-6 w-px shrink-0 bg-border-default/40 lg:block" />
-
-          <HeaderLiteToggle solid={solid} />
-          <HeaderThemeToggle solid={solid} />
+          <span className="hidden shrink-0 items-center gap-2 lg:flex">
+            <HeaderLiteToggle solid={solid} />
+            <HeaderThemeToggle solid={solid} />
+          </span>
 
           <Button asChild size="sm" className="max-lg:hidden">
-            <Link data-magnetic="" href={headerCta.href}>
+            <Link href={headerCta.href}>
               {t(headerCta.labelKey)}
             </Link>
           </Button>
