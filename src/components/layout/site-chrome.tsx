@@ -38,7 +38,7 @@ import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 // Декоративные pointer/scroll эффекты — строго ленивые, не влияют на LCP.
 // В лёгком режиме не монтируются вообще: экономия rAF, слушателей и видеопамяти.
-const ScrollProgress = dynamic(() => import('@/components/fx/scroll-progress').then((m) => m.ScrollProgress), { ssr: false });
+// ScrollProgress теперь живёт внутри SiteHeader (привязан к компактному острову), а не к окну.
 const PointerGlow = dynamic(() => import('@/components/fx/pointer-glow').then((m) => m.PointerGlow), { ssr: false });
 const OrbitCursor = dynamic(() => import('@/components/fx/orbit-cursor').then((m) => m.OrbitCursor), { ssr: false });
 const Magnetic = dynamic(() => import('@/components/fx/magnetic').then((m) => m.Magnetic), { ssr: false });
@@ -59,7 +59,6 @@ export function SiteChrome({ children }: { children: ReactNode }) {
 
   return (
     <PortalTransitionProvider>
-      {showPublicChrome && !lite && <ScrollProgress />}
       {showPublicChrome && !lite && <PointerGlow />}
       {showPublicChrome && !lite && <OrbitCursor />}
       {showPublicChrome && !lite && <Magnetic />}

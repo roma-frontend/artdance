@@ -1,5 +1,5 @@
 /**
- * SCROLL PROGRESS — полоса прочитанного в верхней кромке окна.
+ * SCROLL PROGRESS — полоса прочитанного вдоль нижней кромки компактного header.
  *
  * Отличия от прототипа, где полоса создаётся через `document.createElement` с
  * инлайновыми стилями и пересчитывается на каждое событие прокрутки:
@@ -14,6 +14,10 @@
  * • `aria-hidden`: это декоративное отражение позиции прокрутки, а не индикатор
  *   выполнения задачи. `role="progressbar"` заставил бы скринридер зачитывать
  *   бессмысленные проценты при каждом движении.
+ * • полоса рендерится внутри `.site-header-surface` (absolute, bottom:0) и
+ *   наследует скругление острова (`overflow-hidden` на родителе): линия никогда
+ *   не выходит за радиус компактного header. В полноразмерной шапке тот же
+ *   контейнер = 100vw без скругления, и линия занимает всю ширину окна.
  *
  * Обновление идёт мимо состояния React: 60 рендеров в секунду ради одного
  * `scaleX` не нужны никому.
@@ -80,7 +84,7 @@ export function ScrollProgress() {
       aria-hidden
       data-slot="scroll-progress"
       className={cn(
-        'pointer-events-none fixed inset-x-0 top-0 z-scroll-progress origin-left',
+        'pointer-events-none absolute inset-x-0 bottom-0 z-0 origin-left',
         'h-(--scroll-progress-height)',
         'bg-gradient-to-r from-accent to-metal',
         'transition-[transform,opacity] duration-(--scroll-progress-transition) ease-linear',

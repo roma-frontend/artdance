@@ -37,7 +37,7 @@ export function ScrollToTopButton() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={reduce ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.96 }}
           transition={reduce ? { duration: 0.15 } : (designMotion.admin.spring as unknown as Record<string, unknown>)}
-          className="fixed bottom-24 right-6 z-sticky"
+          className="fixed bottom-14 right-6 z-sticky"
           style={{ willChange: 'transform, opacity' }}
         >
           <Button

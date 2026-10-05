@@ -28,7 +28,7 @@ export function StyleTileGrid({ tiles, locale }: StyleTileGridProps) {
   const t = useTranslations();
   const tCommon = useTranslations('common');
   return (
-    <Reveal as="ul" variant="stagger" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <Reveal as="ul" variant="stagger" className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
       {tiles.map((tile, index) => {
         const href = routes.style(tile.slug);
         return (

@@ -89,7 +89,7 @@ export default async function AccountPage({ params }: PageProps) {
             <p className="text-body-sm mt-1 text-content-secondary">{user.email}</p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Badge variant="metal" size="md">
               {tRoot(userRoleLabelKey(user.role))}
             </Badge>
