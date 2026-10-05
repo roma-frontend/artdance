@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button';
 import { routes, site } from '@/config';
 import { motion as designMotion } from '@/design/motion';
 import { Link, usePathname } from '@/i18n/routing';
+import { HeaderLiteToggle } from '@/components/layout/header-lite-toggle';
+import { HeaderThemeToggle } from '@/components/layout/header-theme-toggle';
 
 interface Props {
   groups: readonly SidebarGroup[];
@@ -92,10 +94,18 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
           </div>
 
           <div className="hidden items-center gap-2 lg:flex">
+            <HeaderLiteToggle solid />
+            <HeaderThemeToggle solid />
+            <span className="mx-1 hidden h-6 w-px shrink-0 bg-border-default/40 xl:block" aria-hidden />
             <span className="max-w-[14ch] truncate text-body-sm text-content-secondary xl:max-w-none">{userName}</span>
             <Badge variant="metal" size="md" className="shrink-0">{roleLabel}</Badge>
             <Button asChild variant="ghost" size="sm"><Link href={routes.home()}>{backToSiteLabel}</Link></Button>
             <SignOutButton />
+          </div>
+
+          <div className="hidden items-center gap-1.5 sm:flex lg:hidden">
+            <HeaderLiteToggle solid />
+            <HeaderThemeToggle solid />
           </div>
 
           <div className="flex items-center gap-2 lg:hidden">

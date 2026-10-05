@@ -9,6 +9,8 @@ import { DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitl
 import { headerCta, headerMegaGroups, isActiveNavPath } from '@/config/navigation';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
+import { HeaderLiteToggle } from '@/components/layout/header-lite-toggle';
+import { HeaderThemeToggle } from '@/components/layout/header-theme-toggle';
 
 export function MobileMenuSheetContent() {
   const t = useTranslations();
@@ -62,6 +64,14 @@ export function MobileMenuSheetContent() {
           ))}
         </div>
       </nav>
+
+      <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-border-default bg-surface-raised px-3 py-2.5">
+        <span className="text-caption font-semibold text-content-secondary">{t('common.perf.liteModeLabel')}</span>
+        <span className="flex items-center gap-1.5">
+          <HeaderLiteToggle solid />
+          <HeaderThemeToggle solid />
+        </span>
+      </div>
 
       <div className="mt-3 shrink-0">
         <LocaleSwitcher variant="sheet" />

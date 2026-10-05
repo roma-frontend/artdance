@@ -25,6 +25,8 @@ import { useHeaderHideOnScroll } from '@/lib/hooks/use-header-hide-on-scroll';
 
 import { BrandMark } from '@/components/brand/brand-mark';
 import { HeaderMegaMenu } from '@/components/layout/header-mega-menu';
+import { HeaderLiteToggle } from '@/components/layout/header-lite-toggle';
+import { HeaderThemeToggle } from '@/components/layout/header-theme-toggle';
 import { LocaleSwitcher } from '@/components/layout/locale-switcher';
 import { navIcons } from '@/components/layout/nav-icons';
 import { useSearchOverlay } from '@/components/search/search-overlay';
@@ -174,6 +176,11 @@ export function SiteHeader() {
           })}
 
           <LocaleSwitcher solid={solid} />
+
+          <span aria-hidden className="hidden h-6 w-px shrink-0 bg-border-default/40 lg:block" />
+
+          <HeaderLiteToggle solid={solid} />
+          <HeaderThemeToggle solid={solid} />
 
           <Button asChild size="sm" className="max-lg:hidden">
             <Link data-magnetic="" href={headerCta.href}>

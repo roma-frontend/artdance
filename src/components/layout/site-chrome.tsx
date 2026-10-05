@@ -32,7 +32,6 @@ import type { ReactNode } from 'react';
 import { PortalTransitionProvider } from '@/components/fx/portal-transition';
 import { MobileDock } from '@/components/layout/mobile-dock';
 import { SiteHeader } from '@/components/layout/site-header';
-import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { isAdminPath } from '@/config';
 import { usePathname } from '@/i18n/routing';
 import { useIsLiteMode } from '@/lib/perf/lite-mode';
@@ -67,7 +66,6 @@ export function SiteChrome({ children }: { children: ReactNode }) {
       {showPublicChrome && <SiteHeader />}
       {children}
       {showPublicChrome && <MobileDock />}
-      <ThemeToggle />
     </PortalTransitionProvider>
   );
 }
