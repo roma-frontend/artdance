@@ -235,7 +235,14 @@ export const auth = betterAuth({
       if (ctx.request) {
         const operation = rateLimitedPaths[ctx.path];
         if (operation) {
-          const limit = await checkRateLimit(operation, clientIdentifier(ctx.headers ?? new Headers()));
+          const ip = clientIdentifier(ctx.headers ?? new Headers());
+          // Офис за NAT делит один IP: общий bucket 20/300 вешает коллег.
+          // Изолируем по ip:email — lockout по email (lockout.ts) остаётся
+          // защитой от перебора одного аккаунта, rate limit страхует частоту.
+          // Нормализуем email: case/пробелы не должны дробить bucket.
+          const emailKey = operation === 'signIn' ? bodyEmail(ctx.body)?.trim().toLowerCase() : null;
+          const identifier = emailKey ? `${ip}:${emailKey}` : ip;
+          const limit = await checkRateLimit(operation, identifier);
           if (!limit.allowed) {
             throw new APIError('TOO_MANY_REQUESTS', {
               code: 'RATE_LIMITED',

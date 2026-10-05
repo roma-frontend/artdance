@@ -14,7 +14,7 @@
 
 import { ArrowUpRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { PortalLink } from '@/components/fx/portal-link';
 import { Media } from '@/components/ui/media';
@@ -40,8 +40,19 @@ interface StyleAccordionProps {
 export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps) {
   const t = useTranslations();
   const tCommon = useTranslations('common');
+  const [isCoarse, setIsCoarse] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(hover: none), (pointer: coarse)').matches : false,
+  );
   // По умолчанию активна средняя карточка (Salsa)
   const [activeIndex, setActiveIndex] = useState<number>(2);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(hover: none), (pointer: coarse)');
+    const update = () => setIsCoarse(mql.matches);
+    update();
+    mql.addEventListener('change', update);
+    return () => mql.removeEventListener('change', update);
+  }, []);
 
   return (
     <div
@@ -53,6 +64,16 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
           const isActive = activeIndex === index;
           const href = routes.style(tile.slug);
 
+          const handleSelect = () => setActiveIndex(index);
+          const handleLinkClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+            // На touch первый тап — раскрыть кулису и показать эффект, второй — переход.
+            // На desktop hover уже раскрыл, поэтому сразу лететь порталом.
+            if (isCoarse && !isActive) {
+              event.preventDefault();
+              handleSelect();
+            }
+          };
+
           return (
             <li
               key={tile.style}
@@ -61,6 +82,7 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
               data-active={isActive ? 'true' : 'false'}
               onMouseEnter={() => setActiveIndex(index)}
               onFocus={() => setActiveIndex(index)}
+              onClick={handleSelect}
               style={{ flex: isActive ? '3.5 1 0%' : '1 1 0%' }}
               className={cn(
                 'dance-style-panel relative h-full overflow-hidden rounded-2xl border cursor-pointer transition-[flex,opacity,border-color,box-shadow] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
@@ -71,6 +93,7 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
             >
               <PortalLink
                 href={href}
+                onClick={handleLinkClick}
                 data-cursor-label={tCommon('actions.explore')}
                 className="group relative flex size-full items-end p-6 select-none"
               >
