@@ -86,13 +86,11 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
               }}
               onFocus={() => setActiveIndex(index)}
               onClick={handleSelect}
-              style={{ flex: isActive ? '3.5 1 0%' : '1 1 0%', willChange: isCoarse ? undefined : 'flex-basis' }}
+              style={{ flex: isActive ? '3.5 1 0%' : '1 1 0%' }}
               className={cn(
                 'dance-style-panel relative h-full overflow-hidden rounded-2xl border cursor-pointer [transform:translateZ(0)] [contain:layout_paint]',
-                // На coarse (iPhone) — только compositor-свойства, без filter/box-shadow анимации: иначе 700ms filter + flex + blur = дроп кадров.
-                isCoarse
-                  ? 'transition-[flex-basis] duration-[420ms] ease-out'
-                  : 'transition-[flex,opacity,border-color,box-shadow] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                // Одна кинематографичная кривая везде — мощная плавность. На coarse filter убран ниже (compositor-only), поэтому 700ms не дропает на iPhone 14.
+                'transition-[flex,opacity,border-color,box-shadow] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
                 isActive
                   ? 'border-accent/80 shadow-[0_12px_40px_-10px_var(--accent-glow)]'
                   : 'border-border-default/60 hover:border-accent/40 opacity-75 hover:opacity-100',
@@ -104,31 +102,24 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
                 data-cursor-label={tCommon('actions.explore')}
                 className="group relative flex size-full items-end p-6 select-none"
               >
-                {/* Фоновое фото — на coarse убираем filter-анимацию: она самая дорогая на iOS (paint на каждый кадр). Вместо brightness/grayscale — статичный градиент-оверлей ниже. */}
+                {/* Кадр — только transform+opacity на всех устройствах: compositor, без paint. На coarse filter отключён (см. globals coarse-override) — образ идёт чистым зумом, а кинематографику даёт flex + градиент. */}
                 <Media
                   {...resolveMedia(tile.image, locale)}
                   preset="categoryCard"
                   fill
                   className="absolute inset-0 size-full"
                   imageClassName={cn(
-                    'dance-style-image size-full object-cover [transform:translateZ(0)] [backface-visibility:hidden]',
-                    isCoarse
-                      ? 'will-change-auto transition-transform duration-[420ms] ease-out'
-                      : 'will-change-transform transition-[transform,filter] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
-                    isActive ? 'scale-[1.03]' : 'scale-100',
-                    // filter только на fine pointer — на coarse оба состояния без фильтра чтобы не анимировать paint
-                    !isCoarse && (isActive ? 'filter-none' : 'brightness-75 grayscale-[25%]'),
+                    'dance-style-image size-full object-cover [transform:translateZ(0)] [backface-visibility:hidden] will-change-transform transition-[transform,filter] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                    // filter-цепочка только на fine pointer — на coarse globals снимает её и оставляет только transform (scale переопределяется mood-правилами)
+                    isActive ? 'scale-105 filter-none' : 'scale-100 brightness-75 grayscale-[25%]',
                   )}
                 />
 
-                {/* Затемнение через opacity (только compositor, без paint). На coarse — короче и без 700ms чтобы не тянуть flex одновременно. */}
+                {/* Затемнение — мощная 700ms волна вместе с flex. */}
                 <div
                   aria-hidden="true"
                   className={cn(
-                    'absolute inset-0',
-                    isCoarse
-                      ? 'transition-opacity duration-[360ms] ease-out'
-                      : 'transition-opacity duration-700 ease-out',
+                    'absolute inset-0 transition-opacity duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
                     isActive
                       ? 'bg-gradient-to-t from-surface-cinema/95 via-surface-cinema/40 to-transparent'
                       : 'bg-gradient-to-t from-surface-cinema/90 via-surface-cinema/50 to-surface-cinema/20',
