@@ -152,6 +152,15 @@ const en = {
       switchToDark: 'Switch to dark theme',
       switchToSystem: 'Follow system theme',
     },
+    perf: {
+      liteModeLabel: 'Performance mode',
+      liteAuto: 'Auto',
+      liteAutoHint: 'Auto-detect weak device and enable lite mode',
+      liteOn: 'Lite',
+      liteOnHint: 'Lite mode — fewer effects, faster',
+      liteOff: 'Full',
+      liteOffHint: 'Full effects',
+    },
   },
 
   nav: {

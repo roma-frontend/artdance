@@ -48,6 +48,7 @@ import { useBackgroundVideo } from '@/lib/hooks/use-background-video';
 import { usePrefersStillImage } from '@/lib/hooks/use-motion-preferences';
 import { pickDecodableSource } from '@/lib/media/video-source';
 import type { Locale } from '@/i18n/config';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 export interface EditorialVideoProps {
   video: VideoRef | null;
@@ -62,13 +63,14 @@ export function EditorialVideo({ video, poster, locale, loop = 'editorial' }: Ed
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const stillImage = usePrefersStillImage();
+  const lite = useIsLiteMode();
 
   /**
    * До гидратации `stillImage` равен `true`, поэтому сервер и клиент отдают
    * одинаковую разметку с одним постером, а видео появляется после того, как
    * стали известны предпочтения.
    */
-  const playable = hasPlayableVideo(video) && !stillImage;
+  const playable = hasPlayableVideo(video) && !stillImage && !lite;
 
   const [source, setSource] = useState<string | null>(null);
 

@@ -3216,6 +3216,55 @@ html:has(body[data-scroll-locked]) {
 .dance-intent { transition: border-color var(--duration-normal) var(--ease-brand), background var(--duration-normal) var(--ease-brand); }
 .dance-intent:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
 .dance-intent:has(input:focus-visible), .first-lesson-tip summary:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 3px; }
+.first-lesson-tip { overflow: clip; interpolate-size: allow-keywords; }
+/* Chrome 131+ — details рендерит содержимое в ::details-content; без этого
+   псевдо-элемент держит content-visibility:hidden и ломает анимируемый grid.
+   Исп. отдельный easing для естественного close/open. */
+.first-lesson-tip::details-content {
+  display: block;
+  block-size: 0;
+  overflow: clip;
+  content-visibility: visible;
+  /* close: быстрее; open: мягкий out с overshoot-оттенком */
+  transition:
+    block-size 380ms var(--ease-exit),
+    content-visibility 380ms var(--ease-exit) allow-discrete;
+  interpolate-size: allow-keywords;
+}
+.first-lesson-tip[data-open='true']::details-content,
+.first-lesson-tip[open]::details-content {
+  block-size: auto;
+  transition-timing-function: var(--ease-brand), var(--ease-brand);
+  transition-duration: var(--duration-slow), var(--duration-slow);
+}
+.first-lesson-tip > .first-lesson-body { display: grid !important; }
+.first-lesson-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  will-change: grid-template-rows, opacity;
+  interpolate-size: allow-keywords;
+  /* close — чуть быстрее и с ease-in, чтобы не тянулось */
+  transition:
+    grid-template-rows 380ms var(--ease-exit),
+    opacity 220ms var(--ease-standard);
+  transition-behavior: allow-discrete;
+}
+.first-lesson-body-inner { overflow: hidden; min-height: 0; transform: translateY(-4px); transition: transform 380ms var(--ease-exit); }
+.first-lesson-tip[data-open='true'] > .first-lesson-body,
+.first-lesson-tip[open] > .first-lesson-body {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  /* open — медленнее, мягкий cubic-brand */
+  transition:
+    grid-template-rows var(--duration-slow) var(--ease-brand),
+    opacity var(--duration-normal) var(--ease-brand);
+}
+.first-lesson-tip[data-open='true'] .first-lesson-body-inner,
+.first-lesson-tip[open] .first-lesson-body-inner { transform: translateY(0); transition-timing-function: var(--ease-brand); transition-duration: var(--duration-slow); }
+@supports not selector(::details-content) {
+  .first-lesson-tip::details-content { transition: none; }
+}
 .dance-finder-select { width: 100%; min-height: calc(var(--space-10) + var(--space-1)); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--surface-card); color: var(--content-primary); padding-inline: var(--space-3); }
 .dance-finder-select:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
 .event-spotlight-image { width: 100%; height: 100%; object-fit: cover; transition: transform var(--duration-slow) var(--ease-brand); }
@@ -3234,6 +3283,42 @@ html:has(body[data-scroll-locked]) {
   .event-spotlight:hover .event-poster-light, .event-spotlight:focus-within .event-poster-light { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dance-intent, .dance-style-panel, .dance-style-panel *, .event-spotlight-image, .event-poster-light { transition: none !important; }
+  .dance-intent, .dance-style-panel, .dance-style-panel *, .event-spotlight-image, .event-poster-light, .first-lesson-body, .first-lesson-tip::details-content { transition: none !important; }
   .dance-style-image, .event-spotlight-image { transform: none !important; scale: none !important; }
+}
+
+/* ── Лёгкий режим: отключаем дорогие эффекты без ожидания JS ── */
+[data-lite='true'] .hero-mythic-dust,
+[data-lite='true'] .hero-mythic-rays,
+[data-lite='true'] .hero-mythic-vignette,
+[data-lite='true'] .hero-mythic-grain,
+[data-lite='true'] .hero-light-sweep,
+[data-lite='true'] .footer-light-sweep,
+[data-lite='true'] .instructors-spotlight-layer,
+[data-lite='true'] .card-cursor-light,
+[data-lite='true'] .reviews-stage-light,
+[data-lite='true'] .portal-sweep,
+[data-lite='true'] .portal-vignette {
+  display: none !important;
+}
+
+[data-lite='true'] .editorial-video,
+[data-lite='true'] .hero-video-wrap {
+  display: none !important;
+}
+
+[data-lite='true'] [data-reveal],
+[data-lite='true'] [data-stagger] > * {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+[data-lite='true'] .final-cta-video-container {
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+[data-lite='true'] .reviews-stage-light::before {
+  animation: none !important;
 }

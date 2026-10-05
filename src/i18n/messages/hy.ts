@@ -150,6 +150,15 @@ const hy: Messages = {
       switchToDark: "Միացնել մուգ թեման",
       switchToSystem: "Հետևել համակարգային թեմային",
     },
+    perf: {
+      liteModeLabel: "Արտադրողականության ռեժիմ",
+      liteAuto: "Ավտո",
+      liteAutoHint: "Ավտո՝ թեթև ռեժիմ թույլ սարքերում",
+      liteOn: "Թեթև",
+      liteOnHint: "Թեթև ռեժիմ՝ ավելի արագ",
+      liteOff: "Լրիվ",
+      liteOffHint: "Բոլոր էֆեկտները",
+    },
   },
 
   nav: {

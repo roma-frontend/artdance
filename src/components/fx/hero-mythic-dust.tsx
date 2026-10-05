@@ -14,6 +14,7 @@ import { useEffect, useRef } from 'react';
 
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion, usePrefersStillImage } from '@/lib/hooks/use-motion-preferences';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 interface Particle {
   x: number;
@@ -31,9 +32,10 @@ export function HeroMythicDust() {
   const still = usePrefersStillImage();
   const reduced = usePrefersReducedMotion();
   const wide = useMediaQuery('(min-width: 768px)');
+  const lite = useIsLiteMode();
 
   useEffect(() => {
-    if (still || reduced) return;
+    if (still || reduced || lite) return;
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d', { alpha: true });
@@ -116,9 +118,9 @@ export function HeroMythicDust() {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', onResize);
     };
-  }, [still, reduced, wide]);
+  }, [still, reduced, wide, lite]);
 
-  if (still || reduced) return null;
+  if (still || reduced || lite) return null;
 
   return (
     <canvas

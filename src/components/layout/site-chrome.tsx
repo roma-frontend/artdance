@@ -35,8 +35,10 @@ import { SiteHeader } from '@/components/layout/site-header';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
 import { isAdminPath } from '@/config';
 import { usePathname } from '@/i18n/routing';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 // Декоративные pointer/scroll эффекты — строго ленивые, не влияют на LCP.
+// В лёгком режиме не монтируются вообще: экономия rAF, слушателей и видеопамяти.
 const ScrollProgress = dynamic(() => import('@/components/fx/scroll-progress').then((m) => m.ScrollProgress), { ssr: false });
 const PointerGlow = dynamic(() => import('@/components/fx/pointer-glow').then((m) => m.PointerGlow), { ssr: false });
 const OrbitCursor = dynamic(() => import('@/components/fx/orbit-cursor').then((m) => m.OrbitCursor), { ssr: false });
@@ -54,13 +56,14 @@ export function SiteChrome({ children }: { children: ReactNode }) {
   const isAdmin = isAdminPath(pathname);
   const isAuth = isAuthPath(pathname);
   const showPublicChrome = !isAdmin && !isAuth;
+  const lite = useIsLiteMode();
 
   return (
     <PortalTransitionProvider>
-      {showPublicChrome && <ScrollProgress />}
-      {showPublicChrome && <PointerGlow />}
-      {showPublicChrome && <OrbitCursor />}
-      {showPublicChrome && <Magnetic />}
+      {showPublicChrome && !lite && <ScrollProgress />}
+      {showPublicChrome && !lite && <PointerGlow />}
+      {showPublicChrome && !lite && <OrbitCursor />}
+      {showPublicChrome && !lite && <Magnetic />}
       {showPublicChrome && <SiteHeader />}
       {children}
       {showPublicChrome && <MobileDock />}

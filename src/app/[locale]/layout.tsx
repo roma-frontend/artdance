@@ -11,6 +11,8 @@ import { ThemeColorSync } from '@/components/layout/theme-color-sync';
 import { ThemeProvider } from '@/components/layout/theme-provider';
 import { fontVariables } from '@/design/fonts';
 import { CommandPalette } from '@/components/layout/command-palette';
+import { LiteModeProvider, STORAGE_KEY } from '@/lib/perf/lite-mode';
+import { liteModeInlineScript } from '@/lib/perf/detect-weak-device';
 import { FavoritesSync } from '@/components/favorites/favorites-sync';
 import { SearchOverlayProvider } from '@/components/search/search-overlay';
 import { JsonLdScript } from '@/components/seo/json-ld';
@@ -131,6 +133,10 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
       suppressHydrationWarning
       className={fontVariables}
     >
+      <head>
+        {/* Лёгкий режим: детекция слабого устройства до первого paint — тяжёлые эффекты не монтируются */}
+        <script dangerouslySetInnerHTML={{ __html: liteModeInlineScript(STORAGE_KEY) }} />
+      </head>
       <body className="has-mobile-dock">
         {/*
           Organization и WebSite — схемы уровня сайта, поэтому они в layout, а не
@@ -144,21 +150,23 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
         <ThemeProvider>
           <ThemeColorSync />
           <NextIntlClientProvider>
-            {/*
-              Поиск оборачивает шапку и страницу: оверлей монтируется один раз на
-              приложение (у него глобальное сочетание Cmd/Ctrl+K), а открывает его
-              иконка в шапке — она `compact`, то есть остаётся видимой и на
-              телефоне. Плитка «Поиск» в шторке разделов осталась обычной ссылкой
-              на каталог: открывать диалог поверх закрывающейся шторки означало бы
-              передавать фокус между двумя модальными слоями одновременно.
-            */}
-            <SearchOverlayProvider>
-              <CommandPalette />
-              <FavoritesSync />
-              <Toaster position="top-center" />
-              <SkipToContent />
-              <SiteChrome>{children}</SiteChrome>
-            </SearchOverlayProvider>
+            <LiteModeProvider>
+              {/*
+                Поиск оборачивает шапку и страницу: оверлей монтируется один раз на
+                приложение (у него глобальное сочетание Cmd/Ctrl+K), а открывает его
+                иконка в шапке — она `compact`, то есть остаётся видимой и на
+                телефоне. Плитка «Поиск» в шторке разделов осталась обычной ссылкой
+                на каталог: открывать диалог поверх закрывающейся шторки означало бы
+                передавать фокус между двумя модальными слоями одновременно.
+              */}
+              <SearchOverlayProvider>
+                <CommandPalette />
+                <FavoritesSync />
+                <Toaster position="top-center" />
+                <SkipToContent />
+                <SiteChrome>{children}</SiteChrome>
+              </SearchOverlayProvider>
+            </LiteModeProvider>
           </NextIntlClientProvider>
         </ThemeProvider>
       </body>

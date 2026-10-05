@@ -33,17 +33,19 @@ import { motion } from '@/design/motion';
 import { heroDepthFrame } from '@/lib/animations/parallax';
 import { useFinePointer, useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 export function HeroParallaxFX() {
   const anchorRef = useRef<HTMLDivElement>(null);
   const finePointer = useFinePointer();
   const reducedMotion = usePrefersReducedMotion();
+  const lite = useIsLiteMode();
   const wide = useMediaQuery('(min-width: 768px)');
   const { scrollY } = useScroll();
 
   useEffect(() => {
     const anchor = anchorRef.current;
-    if (!anchor || reducedMotion) return;
+    if (!anchor || reducedMotion || lite) return;
 
     const root = anchor.parentElement;
     if (!root) return;
@@ -171,9 +173,9 @@ export function HeroParallaxFX() {
       root.style.removeProperty('--hero-parallax-x');
       root.style.removeProperty('--hero-parallax-y');
     };
-  }, [finePointer, reducedMotion, scrollY, wide]);
+  }, [finePointer, reducedMotion, lite, scrollY, wide]);
 
-  if (reducedMotion) return null;
+  if (reducedMotion || lite) return null;
 
   return <div ref={anchorRef} aria-hidden className="contents" data-slot="hero-fx" />;
 }

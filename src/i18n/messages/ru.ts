@@ -150,6 +150,15 @@ const ru: Messages = {
       switchToDark: 'Включить тёмную тему',
       switchToSystem: 'Следовать системной теме',
     },
+    perf: {
+      liteModeLabel: 'Режим производительности',
+      liteAuto: 'Авто',
+      liteAutoHint: 'Авто: лёгкий режим на слабых устройствах',
+      liteOn: 'Легко',
+      liteOnHint: 'Лёгкий режим — меньше эффектов, быстрее',
+      liteOff: 'Полно',
+      liteOffHint: 'Все эффекты',
+    },
   },
 
   nav: {

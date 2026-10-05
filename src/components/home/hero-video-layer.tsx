@@ -7,6 +7,7 @@ import { useBackgroundVideo } from '@/lib/hooks/use-background-video';
 import { usePrefersStillImage } from '@/lib/hooks/use-motion-preferences';
 import { pickDecodableSource } from '@/lib/media/video-source';
 import { cn } from '@/lib/utils';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 function onIdle(cb: () => void): () => void {
   const w = window as unknown as {
@@ -25,7 +26,8 @@ export function HeroVideoLayer({ video }: { video: VideoRef | null }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const stillImage = usePrefersStillImage();
-  const playable = hasPlayableVideo(video) && !stillImage;
+  const lite = useIsLiteMode();
+  const playable = hasPlayableVideo(video) && !stillImage && !lite;
   const [source, setSource] = useState<string | null>(null);
   const [idle, setIdle] = useState(false);
 

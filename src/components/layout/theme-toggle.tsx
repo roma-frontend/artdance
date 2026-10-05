@@ -25,6 +25,7 @@ import { useTheme } from 'next-themes';
 import { useTranslations } from 'next-intl';
 
 import { useIsHydrated } from '@/lib/hooks/use-is-hydrated';
+import { useLiteMode } from '@/lib/perf/lite-mode';
 import { cn } from '@/lib/utils';
 
 /** Порядок обхода. Системная — последняя, чтобы к ней всегда можно было вернуться. */
@@ -56,8 +57,10 @@ function isThemeChoice(value: string | undefined): value is ThemeChoice {
 
 export function ThemeToggle() {
   const t = useTranslations('common.theme');
+  const tp = useTranslations('common.perf');
   const { theme, setTheme } = useTheme();
   const hydrated = useIsHydrated();
+  const { enabled: liteEnabled, mode: liteMode, setMode: setLiteMode } = useLiteMode();
 
   /* До гидратации выбор неизвестен — показываем нейтральное «как в системе». */
   const current: ThemeChoice = hydrated && isThemeChoice(theme) ? theme : 'system';
@@ -66,23 +69,53 @@ export function ThemeToggle() {
   const Icon = ICONS[current];
   const label = t(LABEL_KEYS[next]);
 
+  const liteNext = liteMode === 'auto' ? 'on' : liteMode === 'on' ? 'off' : 'auto';
+  const liteLabel =
+    liteNext === 'auto' ? tp('liteAuto') : liteNext === 'on' ? tp('liteOn') : tp('liteOff');
+
   return (
-    <button
-      type="button"
-      onClick={() => setTheme(next)}
-      aria-label={label}
-      title={label}
-      data-slot="theme-toggle"
-      data-theme-choice={current}
-      className={cn(
-        'above-mobile-dock fixed right-6 z-sticky grid size-13 place-items-center rounded-full',
-        'border-3 border-surface-card bg-accent text-content-on-accent shadow-lg',
-        'transition-transform duration-slow ease-brand',
-        'hover:scale-110 hover:rotate-30',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
-      )}
-    >
-      <Icon className="size-5" aria-hidden />
-    </button>
+    <>
+      <div className="above-mobile-dock fixed right-6 z-sticky flex flex-col items-end gap-2">
+        {/* Лёгкий режим — над переключателем темы */}
+        <button
+          type="button"
+          onClick={() => setLiteMode(liteNext)}
+          aria-label={tp('liteModeLabel') + ': ' + liteLabel}
+          title={liteEnabled ? tp('liteOnHint') : tp('liteOffHint')}
+          data-slot="lite-toggle"
+          data-lite-active={liteEnabled ? '' : undefined}
+          className={cn(
+            'grid size-10 place-items-center rounded-full border-2 shadow-md',
+            'transition-colors duration-normal ease-brand',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
+            liteEnabled
+              ? 'border-accent bg-accent text-accent-contrast'
+              : 'border-border-default bg-surface-card text-content-secondary hover:border-accent hover:text-content-accent',
+          )}
+        >
+          <span className="text-caption font-bold tracking-widest">
+            {liteMode === 'auto' ? 'A' : liteMode === 'on' ? 'L' : 'F'}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTheme(next)}
+          aria-label={label}
+          title={label}
+          data-slot="theme-toggle"
+          data-theme-choice={current}
+          className={cn(
+            'grid size-13 place-items-center rounded-full',
+            'border-3 border-surface-card bg-accent text-content-on-accent shadow-lg',
+            'transition-transform duration-slow ease-brand',
+            'hover:scale-110 hover:rotate-30',
+            'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
+          )}
+        >
+          <Icon className="size-5" aria-hidden />
+        </button>
+      </div>
+    </>
   );
 }

@@ -8,6 +8,7 @@ import { useCursorFollow } from '@/hooks/use-cursor-follow';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { revealTransition } from '@/lib/animations/scroll-reveal';
 import { cn } from '@/lib/utils';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 interface CardTiltLiteProps {
   children: ReactNode;
@@ -19,6 +20,9 @@ export function CardTilt({ children, className, index = 0 }: CardTiltLiteProps) 
   const ref = useRef<HTMLDivElement>(null);
   const cursor = useCursorFollow(ref);
   const reducedMotion = usePrefersReducedMotion();
+  const lite = useIsLiteMode();
+  // В лёгком режиме — никакой 3D-магии, только появление.
+  const motionDisabled = reducedMotion || lite;
   const rotateX = useTransform(cursor.y, (value) => -value * motion.cardTilt.maxRotateDeg);
   const rotateY = useTransform(cursor.x, (value) => value * motion.cardTilt.maxRotateDeg);
   const x = useTransform(cursor.x, (value) => value * motion.cardTilt.pointerTravelPx);
@@ -60,7 +64,7 @@ export function CardTilt({ children, className, index = 0 }: CardTiltLiteProps) 
   }, [cursor.x, cursor.y]);
 
   useEffect(() => {
-    if (reducedMotion) {
+    if (motionDisabled) {
       controls.stop();
       controls.set({ opacity: 1, scale: 1 });
       return;
@@ -77,7 +81,7 @@ export function CardTilt({ children, className, index = 0 }: CardTiltLiteProps) 
     } else {
       controls.set({ opacity: 0, scale: 0.94 });
     }
-  }, [controls, inView, index, reducedMotion]);
+  }, [controls, inView, index, motionDisabled]);
 
   return (
     <animated.div
