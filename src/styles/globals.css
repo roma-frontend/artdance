@@ -3275,6 +3275,11 @@ html:has(body[data-scroll-locked]) {
   .dance-style-panel[data-dance-mood='flow'] { transition-duration: 1200ms; }
   .dance-style-panel[data-dance-mood='pulse'] { transition-duration: 500ms; }
   .dance-style-panel[data-dance-mood='stage'] { transition-duration: 800ms; }
+  /* На coarse (iPhone) — короткие мягкие длительности и почти статичный кадр: 6 нагрузок по filter/flex одновременно = дроп кадров. */
+  @media (hover: none), (pointer: coarse) {
+    .dance-style-panel[data-dance-mood] { transition-duration: 420ms !important; }
+    .dance-style-panel[data-active='true'] .dance-style-image { transform: scale(1.03) !important; }
+  }
   .dance-style-panel[data-active='true'][data-dance-mood='flow'] .dance-style-image { transform: scale(1.06) translateY(-1%); }
   .dance-style-panel[data-active='true'][data-dance-mood='embrace'] .dance-style-image { transform: scale(1.07) translateX(1%); }
   .dance-style-panel[data-active='true'][data-dance-mood='pulse'] .dance-style-image { transform: scale(1.04) rotate(-0.5deg); }
