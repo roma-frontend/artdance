@@ -81,7 +81,7 @@ export function HeaderLiteToggle({ solid }: { solid: boolean }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-[calc(100%+8px)] z-40 min-w-52 rounded-xl border border-border-default bg-surface-card p-1 shadow-lg"
+          className="absolute right-0 top-[calc(100%+8px)] z-40 w-72 rounded-xl border border-border-default bg-surface-card p-1 shadow-lg"
         >
           {options.map((opt) => {
             const active = mode === opt.value;
@@ -103,15 +103,15 @@ export function HeaderLiteToggle({ solid }: { solid: boolean }) {
               >
                 <span
                   className={cn(
-                    'grid size-7 place-items-center rounded-full border',
+                    'grid size-7 shrink-0 place-items-center rounded-full border',
                     active ? 'border-accent bg-accent text-accent-contrast' : 'border-border-default bg-surface-raised',
                   )}
                 >
-                  <Icon className="size-3.5" aria-hidden />
+                  <Icon className="size-3.5 shrink-0" aria-hidden />
                 </span>
-                <span className="flex flex-col">
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-sm font-semibold leading-none">{opt.label}</span>
-                  <span className="text-caption leading-none text-content-tertiary">{opt.hint}</span>
+                  <span className="text-caption leading-tight text-content-tertiary [overflow-wrap:anywhere]">{opt.hint}</span>
                 </span>
               </button>
             );
