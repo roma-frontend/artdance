@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useSyncExternalStore, useCallback, useMemo } from 'react';
 
-const STORAGE_KEY = 'ARTDANCE_LITE_MODE';
+import { STORAGE_KEY } from './detect-weak-device';
 
 type LiteModeValue = 'auto' | 'on' | 'off';
 
@@ -117,4 +117,4 @@ export function useIsLiteMode(): boolean {
   return ctx.enabled;
 }
 
-export { STORAGE_KEY };
+

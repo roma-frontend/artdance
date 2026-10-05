@@ -51,11 +51,15 @@ export function isWeakDevice(signals: WeakDeviceSignals = collectSignals()): boo
   return false;
 }
 
+export const STORAGE_KEY = 'ARTDANCE_LITE_MODE';
+
 /**
  * Inline-скрипт для <head>: ставит data-lite до первого paint,
  * чтобы тяжёлые эффекты не монтировались на слабом устройстве.
  * Дублирует логику isWeakDevice без импорта.
  */
 export function liteModeInlineScript(storageKey: string): string {
-  return `(function(){try{var k='${storageKey}';var v=localStorage.getItem(k);if(v==='true'){document.documentElement.setAttribute('data-lite','true');return}if(v==='false'){document.documentElement.setAttribute('data-lite','false');return}var c=navigator.hardwareConcurrency;var m=navigator.deviceMemory;var conn=navigator.connection;var weak=false;if(conn&&conn.saveData)weak=true;else if(conn&&(conn.effectiveType==='2g'||conn.effectiveType==='slow-2g'))weak=true;else if(typeof m==='number'&&m<=4)weak=true;else if(typeof c==='number'&&c<=4)weak=true;if(weak){document.documentElement.setAttribute('data-lite','true');localStorage.setItem(k,'auto:true')}}catch(e){}})();`;
+  // экранируем ключ для безопасной вставки в single-quoted JS-строку
+  const safeKey = storageKey.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  return `(function(){try{var k='${safeKey}';var v=localStorage.getItem(k);if(v==='true'){document.documentElement.setAttribute('data-lite','true');return}if(v==='false'){document.documentElement.setAttribute('data-lite','false');return}var c=navigator.hardwareConcurrency;var m=navigator.deviceMemory;var conn=navigator.connection;var weak=false;if(conn&&conn.saveData)weak=true;else if(conn&&(conn.effectiveType==='2g'||conn.effectiveType==='slow-2g'))weak=true;else if(typeof m==='number'&&m<=4)weak=true;else if(typeof c==='number'&&c<=4)weak=true;if(weak){document.documentElement.setAttribute('data-lite','true');localStorage.setItem(k,'auto:true')}}catch(e){}})();`;
 }
