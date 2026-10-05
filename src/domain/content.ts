@@ -177,6 +177,8 @@ export interface ClassCardItem {
 }
 
 export interface InstructorCardItem {
+  /** Spoken languages from the profile; absent in older cached cards. */
+  languages?: readonly Locale[];
   slug: string;
   name: string;
   /** Направления одной строкой: `Salsa · Latin · Bachata`. */

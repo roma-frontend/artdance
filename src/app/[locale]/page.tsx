@@ -26,6 +26,9 @@ import { CompetitionSection } from '@/components/home/competition-section';
 import { DisciplineSections } from '@/components/home/discipline-sections';
 import { StyleMarquee } from '@/components/home/style-marquee';
 import { TestimonialCard } from '@/components/home/testimonial-card';
+import { TestimonialsCarousel } from '@/components/home/testimonials-carousel';
+import { DanceFinder } from '@/components/home/dance-finder';
+import { EventSpotlight } from '@/components/home/event-spotlight';
 import { CardTilt } from '@/components/fx/card-tilt-lite';
 import { Reveal } from '@/components/fx/reveal';
 import { StyleAccordion } from '@/components/home/style-accordion';
@@ -108,6 +111,7 @@ export default async function HomePage({ params }: PageProps) {
           </Reveal>
 
           <StyleAccordion tiles={content.styleTiles} locale={locale as Locale} />
+          <DanceFinder styles={content.styleTiles.map(({ style, classCount }) => ({ style, classCount }))} />
         </div>
       </section>
 
@@ -284,8 +288,9 @@ export default async function HomePage({ params }: PageProps) {
               />
             </Reveal>
 
+            {content.events[0] && <EventSpotlight item={content.events[0]} locale={locale as Locale} />}
             <Reveal as="ul" variant="stagger" className="grid gap-2 md:gap-5 grid-cols-2 md:grid-cols-3">
-              {content.events.map((item, index) => (
+              {content.events.slice(1).map((item, index) => (
                 <li key={item.slug}>
                   <CardTilt index={index}>
                     <EventCard item={item} locale={locale as Locale} />
@@ -316,13 +321,11 @@ export default async function HomePage({ params }: PageProps) {
             />
           </Reveal>
 
-          <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          <TestimonialsCarousel label={t('testimonials.title')}>
             {content.testimonials.map((item) => (
-              <li key={item.id}>
-                <TestimonialCard item={item} locale={locale as Locale} />
-              </li>
+              <TestimonialCard key={item.id} item={item} locale={locale as Locale} />
             ))}
-          </Reveal>
+          </TestimonialsCarousel>
         </div>
       </section>
 

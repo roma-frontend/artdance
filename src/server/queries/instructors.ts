@@ -63,6 +63,7 @@ export const instructorSelect = {
   bio: true,
   styles: true,
   specializations: true,
+  languages: true,
   yearsExperience: true,
   hourlyRateFrom: true,
   isVerified: true,
@@ -94,6 +95,7 @@ export interface InstructorRow {
   bio: string;
   styles: DanceStyle[];
   specializations: string[];
+  languages?: InstructorCardItem['languages'];
   yearsExperience: number;
   hourlyRateFrom: number;
   isVerified: boolean;
@@ -116,6 +118,7 @@ export function toInstructorCard(row: InstructorRow): InstructorCardItem {
     name: row.user.name,
     headline: row.headline,
     styles: row.styles,
+    languages: row.languages,
     yearsExperience: row.yearsExperience,
     hourlyRateFrom: row.hourlyRateFrom,
     ratingAverage: ratingNumber(row.ratingAverage),

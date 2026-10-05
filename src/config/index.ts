@@ -180,3 +180,14 @@ export {
   parseHomeContentBlock,
   type HomeContentBlock,
 } from './home-content';
+
+export {
+  danceIntents,
+  danceFinderLevels,
+  firstLessonTopics,
+  suggestedDanceStyles,
+  danceMood,
+  instructorLanguageKeys,
+  type DanceIntent,
+  type DanceMood,
+} from './dance-experience';

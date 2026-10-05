@@ -111,6 +111,7 @@ export const presetBudget: Record<ImagePresetKey, MediaBudgetGroup> = {
   classCard: 'card',
   instructorCard: 'card',
   studioCard: 'card',
+  eventSpotlight: 'card',
   productCard: 'card',
   avatar: 'thumbnail',
   avatarLarge: 'thumbnail',

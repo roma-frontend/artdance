@@ -20,7 +20,7 @@ import { Media } from '@/components/ui/media';
 import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Price } from '@/components/ui/price';
 import { RatingStars } from '@/components/ui/rating-stars';
-import { routes } from '@/config';
+import { instructorLanguageKeys, routes } from '@/config';
 import { resolveMedia, type InstructorCardItem } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
 import { cn } from '@/lib/utils';
@@ -102,6 +102,12 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
           <span>{t('common.units.yearsExperience', { count: item.yearsExperience })}</span>
         </div>
 
+        {item.languages && item.languages.length > 0 && (
+          <p data-instructor-languages="" className="text-caption mt-3 text-content-secondary">
+            {t('home.teacher.languageLabel')}: {item.languages.map((language) => t(instructorLanguageKeys[language])).join(' · ')}
+          </p>
+        )}
+        <p className="text-caption mt-3 text-content-secondary">{t('home.teacher.scheduleHint')}</p>
         <div className="mt-auto">
           {/*
             Цена остаётся видимой; стрелка проявляется в отдельном слоте.

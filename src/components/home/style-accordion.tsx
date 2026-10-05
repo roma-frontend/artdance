@@ -18,7 +18,7 @@ import { useState } from 'react';
 
 import { PortalLink } from '@/components/fx/portal-link';
 import { Media } from '@/components/ui/media';
-import { routes } from '@/config';
+import { danceMood, routes } from '@/config';
 import { danceStyleLabelKey } from '@/domain/enums';
 import { resolveMedia, type MediaRef } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
@@ -57,12 +57,13 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
             <li
               key={tile.style}
               data-style-panel=""
+              data-dance-mood={danceMood(tile.style)}
               data-active={isActive ? 'true' : 'false'}
               onMouseEnter={() => setActiveIndex(index)}
               onFocus={() => setActiveIndex(index)}
               style={{ flex: isActive ? '3.5 1 0%' : '1 1 0%' }}
               className={cn(
-                'relative h-full overflow-hidden rounded-2xl border cursor-pointer transition-[flex,opacity,border-color,box-shadow] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                'dance-style-panel relative h-full overflow-hidden rounded-2xl border cursor-pointer transition-[flex,opacity,border-color,box-shadow] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
                 isActive
                   ? 'border-accent/80 shadow-[0_12px_40px_-10px_var(--accent-glow)]'
                   : 'border-border-default/60 hover:border-accent/40 opacity-75 hover:opacity-100',
@@ -80,7 +81,7 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
                   fill
                   className="absolute inset-0 size-full"
                   imageClassName={cn(
-                    'size-full object-cover transition-[translate,scale,rotate,transform,filter] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                    'dance-style-image size-full object-cover transition-[translate,scale,rotate,transform,filter] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
                     isActive ? 'scale-105 filter-none' : 'scale-100 brightness-75 grayscale-[25%]',
                   )}
                 />

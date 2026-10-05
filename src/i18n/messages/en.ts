@@ -235,6 +235,51 @@ const en = {
   },
 
   home: {
+    finder: {
+      "title": "Find your dance. Start with a feeling.",
+      "subtitle": "Choose a mood, your experience and an optional date. Explore real classes in the catalog — availability is confirmed there.",
+      "badge": "Your first step",
+      "intentLabel": "How do you want to move?",
+      "styleLabel": "Suggested direction",
+      "levelLabel": "Your experience",
+      "dateLabel": "Preferred date (optional)",
+      "allStyles": "Explore all directions",
+      "allClasses": "Explore the class catalog",
+      "hint": "These are suggestions, not a test. You can change the direction and filters in the catalog.",
+      "empty": "No featured classes in this mood yet. Explore the full catalog instead.",
+      "cta": "Find classes",
+      "intents": {
+        "energy": {
+          "title": "With energy",
+          "body": "Groove, rhythm and sharp accents"
+        },
+        "flow": {
+          "title": "With flow",
+          "body": "Lines, balance and expression"
+        },
+        "partner": {
+          "title": "Together",
+          "body": "Connection and partner dancing"
+        },
+        "stage": {
+          "title": "For the stage",
+          "body": "Technique, tradition and performance"
+        }
+      }
+    },
+    eventSpotlight: {
+      "eyebrow": "In the spotlight",
+      "cta": "Explore the event"
+    },
+    teacher: {
+      "languageLabel": "Teaching languages",
+      "scheduleHint": "Open the profile for classes, levels and available booking times.",
+      "languages": {
+        "hy": "Armenian",
+        "ru": "Russian",
+        "en": "English"
+      }
+    },
     hero: {
       badge: "Yerevan's #1 Dance Platform",
       titleLine1: 'Move',
@@ -302,6 +347,15 @@ const en = {
       cta: 'Meet the federations',
     },
     testimonials: {
+      previous: 'Previous story',
+      next: 'Next story',
+      navigation: 'Choose a story',
+      goTo: 'Go to story {number}',
+      play: 'Play stories',
+      pause: 'Pause stories',
+      dragHint: 'Drag or swipe to explore',
+      position: 'Story {number} of {total}',
+
       eyebrow: 'Testimonials',
       title: 'What our dancers say.',
       subtitle: 'Real stories from the community.',
@@ -332,6 +386,22 @@ const en = {
       text: 'Dance is not a timetable or a membership. It is the moment the music reaches your body and you stop thinking about how you look. We brought everything into one place so that moment happens more often.',
     },
     journey: {
+      firstLesson: {
+        "title": "Your first class, without the guesswork.",
+        "subtitle": "A few things to check before you book. Each teacher and class can have different requirements.",
+        "partner": {
+          "question": "Do I need a partner?",
+          "answer": "Not always. Check the class description: some partner classes rotate partners, while others require a pair. Confirm with the teacher before booking."
+        },
+        "wear": {
+          "question": "What should I wear?",
+          "answer": "Choose clothes you can move in. Check the class requirements for footwear — studio floors and dance styles may need different shoes."
+        },
+        "experience": {
+          "question": "Can I start with no experience?",
+          "answer": "Look for a beginner class and read its requirements. If you are unsure, ask the teacher which group fits your experience."
+        }
+      },
       eyebrow: 'How it works',
       title: 'Four steps to the floor.',
       subtitle: 'From first curiosity to first performance — on one platform.',

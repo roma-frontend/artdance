@@ -42,19 +42,28 @@ const PointerGlow = dynamic(() => import('@/components/fx/pointer-glow').then((m
 const OrbitCursor = dynamic(() => import('@/components/fx/orbit-cursor').then((m) => m.OrbitCursor), { ssr: false });
 const Magnetic = dynamic(() => import('@/components/fx/magnetic').then((m) => m.Magnetic), { ssr: false });
 
+const AUTH_PREFIXES = ['/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/verify-email'] as const;
+
+function isAuthPath(pathWithoutLocale: string): boolean {
+  return AUTH_PREFIXES.some((p) => pathWithoutLocale === p || pathWithoutLocale.startsWith(`${p}/`));
+}
+
 export function SiteChrome({ children }: { children: ReactNode }) {
   /* `usePathname` next-intl отдаёт путь без префикса локали — как ждёт `isAdminPath`. */
-  const isAdmin = isAdminPath(usePathname());
+  const pathname = usePathname();
+  const isAdmin = isAdminPath(pathname);
+  const isAuth = isAuthPath(pathname);
+  const showPublicChrome = !isAdmin && !isAuth;
 
   return (
     <PortalTransitionProvider>
-      {!isAdmin && <ScrollProgress />}
-      {!isAdmin && <PointerGlow />}
-      {!isAdmin && <OrbitCursor />}
-      {!isAdmin && <Magnetic />}
-      {!isAdmin && <SiteHeader />}
+      {showPublicChrome && <ScrollProgress />}
+      {showPublicChrome && <PointerGlow />}
+      {showPublicChrome && <OrbitCursor />}
+      {showPublicChrome && <Magnetic />}
+      {showPublicChrome && <SiteHeader />}
       {children}
-      {!isAdmin && <MobileDock />}
+      {showPublicChrome && <MobileDock />}
       <ThemeToggle />
     </PortalTransitionProvider>
   );

@@ -66,6 +66,12 @@ export const imagePresets = {
     quality: imageQuality.editorial,
     priority: true,
   },
+  eventSpotlight: {
+    aspectRatio: raw.aspectRatio.landscape,
+    sizes: `(max-width: ${raw.breakpoint.md}px) 100vw, 50vw`,
+    quality: imageQuality.standard,
+    priority: false,
+  },
   studioCard: {
     aspectRatio: raw.aspectRatio.landscape,
     sizes: `(max-width: ${raw.breakpoint.md}px) 100vw, (max-width: ${raw.breakpoint.lg}px) 50vw, 33vw`,

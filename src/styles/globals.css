@@ -3111,3 +3111,129 @@ html:has(body[data-scroll-locked]) {
     display: none;
   }
 }
+
+/* TESTIMONIAL STAGE — warm light and camera-depth on a native swipe rail. */
+.reviews-stage {
+  container-type: inline-size;
+  position: relative;
+  isolation: isolate;
+  --review-depth: 0;
+  --review-turn: 0deg;
+  --review-light-x: 50%;
+  --review-light-y: 50%;
+  --review-tilt-x: 0deg;
+  --review-tilt-y: 0deg;
+}
+.reviews-stage-light {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, var(--accent-soft), transparent 65%);
+}
+.reviews-stage-light::before {
+  content: '';
+  position: absolute;
+  inset: 5% 20%;
+  background: conic-gradient(from 190deg at 50% 0%, transparent 35%, var(--accent-soft) 48%, transparent 62%);
+  transform-origin: 50% 0;
+  animation: review-stage-sweep 16s ease-in-out infinite alternate;
+}
+@keyframes review-stage-sweep {
+  from { transform: rotate(-12deg) scale(1.1); }
+  to { transform: rotate(12deg) scale(1.2); }
+}
+.reviews-rail {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-6);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  padding-block: var(--space-8);
+  padding-inline: max(var(--space-6), calc((100% - 38rem) / 2));
+  cursor: grab;
+  touch-action: pan-x pan-y;
+  outline-offset: -4px;
+}
+.reviews-rail:focus-visible { outline: 2px solid var(--border-focus); }
+.reviews-rail[data-animating='true'] { scroll-snap-type: none; }
+.reviews-rail[data-dragging='true'] { scroll-snap-type: none; cursor: grabbing; user-select: none; }
+.reviews-rail img { pointer-events: none; }
+.review-slide {
+  flex: 0 0 min(38rem, calc(100cqw - var(--space-12)));
+  min-width: 0;
+  scroll-snap-align: center;
+  perspective: 1200px;
+}
+.review-card-depth {
+  height: 100%;
+  transform: scale(calc(1 - var(--review-depth) * 0.1)) rotateY(var(--review-turn));
+  opacity: calc(1 - var(--review-depth) * 0.35);
+}
+.review-quote-card {
+  padding: clamp(var(--space-6), 4vw, var(--space-10));
+  border-radius: var(--space-6);
+  box-shadow: 0 24px 60px -36px var(--accent-glow);
+  transition: transform var(--duration-slow) var(--ease-brand), border-color var(--duration-normal) var(--ease-brand);
+}
+.review-quote-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at var(--review-light-x) var(--review-light-y), var(--accent-soft), transparent 65%);
+  transition: opacity var(--duration-slow) var(--ease-brand);
+}
+.review-quote-card blockquote { flex: 1; font-size: clamp(1.125rem, 2.2vw, 1.75rem); line-height: 1.6; overflow-wrap: anywhere; }
+.review-quote-card figcaption { padding-top: var(--space-6); border-top: 1px solid var(--border-default); }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .review-slide[data-selected='true']:hover .review-quote-card {
+    transform: rotateX(var(--review-tilt-x)) rotateY(var(--review-tilt-y)) translateY(-4px);
+    border-color: var(--accent);
+  }
+  .review-slide[data-selected='true']:hover .review-quote-card::after { opacity: 1; }
+}
+.reviews-controls { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: var(--space-2); padding-inline: var(--space-2); }
+.reviews-dots { display: flex; justify-content: center; flex-wrap: wrap; max-width: 45%; }
+.review-dot { display: grid; place-items: center; min-width: 24px; height: 44px; border-radius: var(--space-2); }
+.review-dot span { width: 6px; height: 6px; border-radius: 99px; background: var(--content-secondary); transition: width var(--duration-slow) var(--ease-brand), background var(--duration-normal) var(--ease-brand); }
+.review-dot[aria-current='true'] { min-width: 36px; }
+.review-dot[aria-current='true'] span { width: 24px; background: var(--accent); }
+.review-dot:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.reviews-caption { margin-top: var(--space-3); text-align: center; }
+@media (prefers-reduced-motion: reduce) {
+  .reviews-stage-light::before { animation: none; }
+  .review-card-depth { transform: none; opacity: 1; }
+  .review-quote-card, .review-dot span { transition: none; }
+}
+
+/* Dance experience: the interface stays stable; the photographic gesture changes by style. */
+.dance-finder { background-image: radial-gradient(ellipse at 100% 0%, var(--metal-soft), transparent 55%); }
+.dance-intent { transition: border-color var(--duration-normal) var(--ease-brand), background var(--duration-normal) var(--ease-brand); }
+.dance-intent:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.dance-intent:has(input:focus-visible), .first-lesson-tip summary:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 3px; }
+.dance-finder-select { width: 100%; min-height: calc(var(--space-10) + var(--space-1)); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--surface-card); color: var(--content-primary); padding-inline: var(--space-3); }
+.dance-finder-select:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.event-spotlight-image { width: 100%; height: 100%; object-fit: cover; transition: transform var(--duration-slow) var(--ease-brand); }
+.event-poster-light { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(120deg, transparent 30%, var(--metal-soft), transparent 70%); opacity: 0; transition: opacity var(--duration-slow) var(--ease-brand); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .dance-style-panel[data-dance-mood='embrace'] { transition-duration: 1000ms; }
+  .dance-style-panel[data-dance-mood='flow'] { transition-duration: 1200ms; }
+  .dance-style-panel[data-dance-mood='pulse'] { transition-duration: 500ms; }
+  .dance-style-panel[data-dance-mood='stage'] { transition-duration: 800ms; }
+  .dance-style-panel[data-active='true'][data-dance-mood='flow'] .dance-style-image { transform: scale(1.06) translateY(-1%); }
+  .dance-style-panel[data-active='true'][data-dance-mood='embrace'] .dance-style-image { transform: scale(1.07) translateX(1%); }
+  .dance-style-panel[data-active='true'][data-dance-mood='pulse'] .dance-style-image { transform: scale(1.04) rotate(-0.5deg); }
+  .dance-style-panel[data-active='true'][data-dance-mood='stage'] .dance-style-image { transform: scale(1.05); }
+  .event-spotlight:hover .event-spotlight-image, .event-spotlight:focus-within .event-spotlight-image { transform: scale(1.03); }
+  .event-spotlight:hover .event-poster-light, .event-spotlight:focus-within .event-poster-light { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dance-intent, .dance-style-panel, .dance-style-panel *, .event-spotlight-image, .event-poster-light { transition: none !important; }
+  .dance-style-image, .event-spotlight-image { transform: none !important; scale: none !important; }
+}

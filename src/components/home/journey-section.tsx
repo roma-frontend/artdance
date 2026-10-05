@@ -16,7 +16,7 @@ import { StackCards } from '@/components/fx/stack-cards';
 import { JourneyTrack } from '@/components/home/journey-track';
 import { Media } from '@/components/ui/media';
 import { SectionHeading } from '@/components/ui/section-heading';
-import { routes } from '@/config';
+import { firstLessonTopics, routes } from '@/config';
 import { resolveMedia, type MediaRef } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
@@ -91,6 +91,18 @@ export function JourneySection({ images, locale }: JourneySectionProps) {
             );
           })}
         </StackCards>
+        <aside data-slot="first-lesson" className="mt-10 rounded-2xl border border-border-default bg-surface-card p-6 sm:p-8">
+          <h3 className="text-heading-3">{t('firstLesson.title')}</h3>
+          <p className="text-body-sm mt-2 text-content-secondary">{t('firstLesson.subtitle')}</p>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {firstLessonTopics.map((topic) => (
+              <details key={topic} className="first-lesson-tip rounded-xl border border-border-default p-4">
+                <summary className="text-body-sm cursor-pointer font-semibold">{t(`firstLesson.${topic}.question`)}</summary>
+                <p className="text-body-sm mt-3 text-content-secondary">{t(`firstLesson.${topic}.answer`)}</p>
+              </details>
+            ))}
+          </div>
+        </aside>
       </div>
     </section>
   );

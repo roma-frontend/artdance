@@ -14,7 +14,7 @@ import { describe, expect, it } from 'vitest';
 import { sortByOption } from '@/domain/catalog';
 import { computeRankingScore } from '@/domain/ranking';
 
-import { instructorSortKeys, rankingSignals, type InstructorRankingRow } from './instructors';
+import { instructorSortKeys, rankingSignals, type InstructorRankingRow, type InstructorRow } from './instructors';
 
 const now = new Date('2026-09-08T12:00:00Z');
 const longAgo = new Date('2020-01-01T00:00:00Z');
@@ -113,5 +113,19 @@ describe('порядок листинга', () => {
     const early = sortByOption(rows, 'relevance', instructorSortKeys(new Date('2026-01-01T00:00:00Z')));
     const late = sortByOption(rows, 'relevance', instructorSortKeys(new Date('2027-01-01T00:00:00Z')));
     expect(early.map((item) => item.slug)).toEqual(late.map((item) => item.slug));
+  });
+});
+
+describe('языки карточки преподавателя', () => {
+  it('передаёт настоящие языки профиля и не предполагает язык при отсутствии данных', async () => {
+    const { toInstructorCard } = await import('./instructors');
+    const source = {
+      slug: 'teacher', headline: 'Salsa', bio: '', styles: ['SALSA'], specializations: [],
+      yearsExperience: 4, hourlyRateFrom: 5000, isVerified: true, acceptsTravel: false,
+      ratingAverage: null, ratingCount: 0, studentCount: 0, createdAt: now,
+      user: { name: 'Teacher' }, media: [], languages: ['hy', 'en'],
+    } satisfies InstructorRow;
+    expect(toInstructorCard(source).languages).toEqual(['hy', 'en']);
+    expect(toInstructorCard({ ...source, languages: undefined }).languages).toBeUndefined();
   });
 });
