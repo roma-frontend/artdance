@@ -44,6 +44,9 @@
   ],
   "exclude": [
     "node_modules",
-    "index.ts"
+    "index.ts",
+    ".open-next",
+    ".wrangler",
+    "cloudflare-env.d.ts"
   ]
 }

@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "artdance",
+  "compatibility_date": "2026-09-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "vars": {
+    "NEXT_PUBLIC_APP_URL": "https://artdance.pages.dev",
+    "NEXT_PUBLIC_APP_ENV": "production",
+    "NEXT_PUBLIC_DEFAULT_LOCALE": "hy",
+    "NEXT_PUBLIC_FEATURE_SHOP": "true",
+    "NEXT_PUBLIC_FEATURE_COURSES": "false",
+    "NEXT_PUBLIC_FEATURE_EVENTS": "true",
+    "NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS": "true",
+    "NEXT_PUBLIC_FEATURE_VIDEO": "false"
+  }
+}
