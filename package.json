@@ -47,7 +47,11 @@
     "verify:headers": "node scripts/verify-headers.mjs",
     "verify:auth": "tsx scripts/verify-auth.mjs",
     "verify:admin": "node --conditions=react-server --import tsx scripts/verify-admin-write.ts",
-    "perf:budget": "tsx scripts/check-performance-budget.ts"
+    "perf:budget": "tsx scripts/check-performance-budget.ts",
+    "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy:cf": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf:typegen": "wrangler types cloudflare-env.d.ts",
+    "postinstall": "node scripts/patch-noble.cjs || true"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -65,10 +69,6 @@
     "пишем мы сами; тем не менее исправленная версия совместима.",
     "Проверено после перекрытия: prisma validate, prisma generate, build, verify."
   ],
-  "overrides": {
-    "mysql2": "3.24.3",
-    "deepmerge-ts": "8.0.2"
-  },
   "dependencies": {
     "@date-fns/tz": "1.5.0",
     "@higgsfield/client": "^0.2.6",
@@ -107,6 +107,7 @@
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@eslint/eslintrc": "^3.3.6",
+    "@opennextjs/cloudflare": "1.20.8",
     "@playwright/test": "1.62.1",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "26.4.0",
@@ -120,6 +121,11 @@
     "tailwindcss": "4.3.3",
     "tsx": "4.23.13",
     "typescript": "6.0.3",
-    "vitest": "3.2.7"
+    "vitest": "3.2.7",
+    "wrangler": "4.147.0"
+  },
+  "overrides": {
+    "mysql2": "3.24.3",
+    "deepmerge-ts": "8.0.2"
   }
 }
