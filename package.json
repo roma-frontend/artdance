@@ -9,6 +9,7 @@
   },
   "packageManager": "npm@11.13.0",
   "scripts": {
+    "postinstall": "node scripts/patch-noble.cjs || true",
     "dev": "next dev",
     "//build": "Prisma 7 не генерирует клиент на postinstall, а src/generated/ не в репозитории. Хостинг запускает только install+build, и кеш node_modules на Vercel сохраняется, а src/generated — нет: генерация обязана быть частью сборки, а не отдельным шагом CI.",
     "build": "prisma generate && next build",
@@ -50,8 +51,7 @@
     "perf:budget": "tsx scripts/check-performance-budget.ts",
     "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy:cf": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf:typegen": "wrangler types cloudflare-env.d.ts",
-    "postinstall": "node scripts/patch-noble.cjs || true"
+    "cf:typegen": "wrangler types cloudflare-env.d.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -85,7 +85,7 @@
     "framer-motion": "^13.4.1",
     "input-otp": "1.5.0",
     "lucide-react": "1.38.0",
-    "next": "16.3.4",
+    "next": "16.3.8",
     "next-intl": "4.14.1",
     "next-safe-action": "8.6.1",
     "next-themes": "0.4.6",
@@ -116,7 +116,7 @@
     "axe-core": "4.13.0",
     "dotenv": "^17.4.2",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.3.4",
+    "eslint-config-next": "16.3.8",
     "prisma": "7.10.0",
     "tailwindcss": "4.3.3",
     "tsx": "4.23.13",
@@ -126,6 +126,19 @@
   },
   "overrides": {
     "mysql2": "3.24.3",
-    "deepmerge-ts": "8.0.2"
+    "deepmerge-ts": "8.0.2",
+    "cloudflare": "4.4.1"
+  },
+  "allowScripts": {
+    "workerd@1.20261001.1": true,
+    "esbuild@0.25.4": true,
+    "esbuild@0.28.2": true,
+    "esbuild@0.28.1": true,
+    "@prisma/engines@7.10.0": true,
+    "prisma@7.10.0": true,
+    "@sentry/cli@2.58.6": true,
+    "@swc/core@1.16.1": true,
+    "unrs-resolver@1.12.2": true,
+    "@parcel/watcher@2.6.0": true
   }
 }
