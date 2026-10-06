@@ -425,6 +425,15 @@ export const adminMotion = {
 export const portalTransition = {
   flightMs: 1350,
   revealMs: 1100,
+  /** Footage is only a moving colour field during navigation, never a fullscreen screening. */
+  optics: {
+    diffusionMaxPx: 28,
+    diffusionFloorPx: 18,
+    veilOpacity: 0.52,
+    detailFadeEnd: 0.7,
+    lightOpacity: 0.06,
+    vignetteOpacity: 0.28,
+  },
   /** Медленный доезд камеры во время загрузки: не замирает стоп-кадром. */
   settleMs: 2600,
   /** Страховка: сеть упала — оверлей не должен висеть вечно. */

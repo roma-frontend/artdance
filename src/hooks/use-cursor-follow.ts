@@ -52,8 +52,8 @@ export function useCursorFollow(ref: RefObject<HTMLElement | null>, selector?: s
       const next = selector
         ? (event.target instanceof Element ? event.target.closest<HTMLElement>(selector) : null)
         : root;
-      // Кнопки с всплывающими меню не должны магнититься — иначе клик промахивается по цели.
-      if (next?.hasAttribute('aria-haspopup')) {
+      // Только диалоги (поиск) не должны магнититься — иначе клик промахивается; меню оставляем магнитным.
+      if (next?.getAttribute('aria-haspopup') === 'dialog') {
         reset();
         return;
       }

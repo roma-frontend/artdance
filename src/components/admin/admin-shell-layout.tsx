@@ -109,7 +109,9 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
           </div>
 
           <div className="flex items-center gap-2 lg:hidden">
-            <Badge variant="metal" size="sm" className="shrink-0 lg:max-w-[10ch] truncate">{roleLabel}</Badge>
+            <HeaderLiteToggle solid />
+            <HeaderThemeToggle solid />
+            <Badge variant="metal" size="sm" className="hidden shrink-0 lg:max-w-[10ch] truncate sm:inline-flex">{roleLabel}</Badge>
             <Link href={routes.home()} className="inline-flex size-9 items-center justify-center rounded-full border border-border-default bg-surface-card text-content-secondary">
               <span className="sr-only">{backToSiteLabel}</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>

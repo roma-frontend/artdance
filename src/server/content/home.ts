@@ -12,6 +12,7 @@ import type { HomeContent, MediaRef, VideoRef } from '@/domain/content';
 import { videoLoops } from '@/design/video-loops.generated';
 import type { Locale } from '@/i18n/config';
 import { getHomePageContent } from '@/server/queries/home';
+import { getStyleTileVideo } from '@/server/content/style-tile-videos';
 
 function videoLoop(loop: VideoLoopKey, poster: MediaRef): VideoRef | null {
   const { sources, durationSeconds } = videoLoops[loop];
@@ -36,6 +37,7 @@ export async function getHomeContent(locale: Locale): Promise<HomeContent> {
 
   return {
     ...content,
+    styleTiles: content.styleTiles.map((tile) => ({ ...tile, video: getStyleTileVideo(tile.style) })),
     hero: {
       ...content.hero,
       video: videoLoop('hero', content.hero.image),

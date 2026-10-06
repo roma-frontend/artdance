@@ -110,7 +110,9 @@ export function SiteHeader() {
           aria-hidden
           className="scroll-progress-clip pointer-events-none absolute inset-x-0 bottom-0 h-(--scroll-progress-height) overflow-hidden [border-radius:inherit]"
         >
-          <ScrollProgress />
+          <div className="scroll-progress-inner absolute inset-0 overflow-hidden [border-radius:inherit]">
+            <ScrollProgress />
+          </div>
         </div>
       )}
       <div className="site-header-content page-container flex h-full items-center justify-between gap-4">
@@ -188,7 +190,7 @@ export function SiteHeader() {
 
           <LocaleSwitcher solid={solid} />
 
-          <span className="hidden shrink-0 items-center gap-2 lg:flex">
+          <span className="flex shrink-0 items-center gap-2">
             <HeaderLiteToggle solid={solid} />
             <HeaderThemeToggle solid={solid} />
           </span>

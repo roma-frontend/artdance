@@ -27,9 +27,10 @@ import { motion as animated } from 'framer-motion';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { motion } from '@/design/motion';
+import { lightColors } from '@/design/tokens/semantic';
 import { usePathname, useRouter } from '@/i18n/routing';
 import { playTactileClick } from '@/lib/audio/tactile-click';
-import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
+import { usePrefersStillImage } from '@/lib/hooks/use-motion-preferences';
 
 type Phase = 'idle' | 'flight' | 'hold' | 'reveal';
 
@@ -45,6 +46,7 @@ interface PortalState {
   card: HTMLElement | null;
   /** Размер карточки в раскладке, до перспективы и масштабов предков. */
   cardSize: { width: number; height: number } | null;
+  video: HTMLVideoElement | null;
 }
 
 interface PortalContextValue {
@@ -52,7 +54,7 @@ interface PortalContextValue {
   triggerPortal: (rect: DOMRect, imageSrc: string, href: string, card?: HTMLElement) => void;
 }
 
-const IDLE: PortalState = { phase: 'idle', rect: null, imageSrc: '', href: '', card: null, cardSize: null };
+const IDLE: PortalState = { phase: 'idle', rect: null, imageSrc: '', href: '', card: null, cardSize: null, video: null };
 
 const PortalContext = createContext<PortalContextValue | null>(null);
 
@@ -75,9 +77,10 @@ const directionOf = (rect: DOMRect) => (rect.top + rect.height / 2 >= window.inn
 export function PortalTransitionProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const reducedMotion = usePrefersReducedMotion();
+  const reducedMotion = usePrefersStillImage();
   const [portal, setPortal] = useState<PortalState>(IDLE);
   const timers = useRef<number[]>([]);
+  const busy = useRef(false);
   const sceneAnimation = useRef<Animation | null>(null);
 
   const later = useCallback((fn: () => void, ms: number) => {
@@ -109,18 +112,20 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
     later(() => {
       // Если навигация сорвалась, главная возвращается в покой под уже прозрачным оверлеем.
       releaseScene();
+      busy.current = false;
       setPortal(IDLE);
     }, motion.portal.revealMs);
   }, [later, releaseScene]);
 
   const triggerPortal = (rect: DOMRect, imageSrc: string, href: string, source?: HTMLElement) => {
-    if (portal.phase !== 'idle') return;
+    if (busy.current) return;
 
     if (reducedMotion) {
       router.push(href);
       return;
     }
 
+    busy.current = true;
     try {
       playTactileClick();
       navigator.vibrate?.(18);
@@ -135,8 +140,9 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
     const dir = directionOf(rect);
 
     // Сцена: главная уплывает навстречу камере, наклоняется и наезжает. Web Animations — без рендеров React.
+    const video = source?.querySelector<HTMLVideoElement>('video[data-tile-video]') ?? null;
     const scene = document.querySelector('main');
-    if (scene) {
+    if (scene && !video) {
       const box = scene.getBoundingClientRect();
       const [x1, y1, x2, y2] = config.ease;
       const lift = -dir * config.scene.lift * window.innerHeight;
@@ -158,7 +164,7 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
      */
     let card: HTMLElement | null = null;
     let cardSize: PortalState['cardSize'] = null;
-    if (source) {
+    if (source && !video) {
       card = source.cloneNode(true) as HTMLElement;
       card.removeAttribute('id');
       card.setAttribute('tabindex', '-1');
@@ -168,7 +174,8 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
       cardSize = { width: source.offsetWidth, height: source.offsetHeight };
     }
 
-    setPortal({ phase: 'flight', rect, imageSrc, href, card, cardSize });
+    setPortal({ phase: 'flight', rect, imageSrc, href, card, cardSize, video });
+    if (video) return;
     later(() => {
       setPortal((current) => (current.phase === 'flight' ? { ...current, phase: 'hold' } : current));
       router.push(href);
@@ -185,7 +192,13 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
     return () => cancelAnimationFrame(frame);
   }, [pathname, portal.phase, portal.href, reveal]);
 
-  const { phase, rect, imageSrc, card, cardSize } = portal;
+  const finishVideo = useCallback(() => {
+    setPortal((current) => ({ ...current, phase: 'hold' }));
+    router.push(portal.href);
+    later(reveal, motion.portal.holdMaxMs);
+  }, [later, portal.href, reveal, router]);
+
+  const { phase, rect, imageSrc, card, cardSize, video } = portal;
   const config = motion.portal;
   const seconds = config.flightMs / 1000;
   const ease = [...config.ease] as Bezier;
@@ -210,7 +223,7 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
           aria-hidden="true"
           data-slot="portal-transition"
           data-phase={phase}
-          className="pointer-events-none fixed inset-0 z-popover overflow-hidden"
+          className="fixed inset-0 z-popover overflow-hidden"
           style={{ perspective: `${config.perspective}px` }}
           initial={{ opacity: 1 }}
           animate={{ opacity: phase === 'reveal' ? 0 : 1 }}
@@ -224,7 +237,9 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
             transition={flight}
           />
 
-          {card && cardSize ? (
+          {video ? (
+            <VideoFlight video={video} rect={rect} onComplete={finishVideo} />
+          ) : card && cardSize ? (
             <CardFlight
               card={card}
               rect={rect}
@@ -308,6 +323,189 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
       )}
     </PortalContext.Provider>
   );
+}
+
+interface VideoFlightProps {
+  video: HTMLVideoElement;
+  rect: DOMRect;
+  onComplete: () => void;
+}
+
+/** A viewport-sized camera film behind an opening mask, as in motion.html. */
+function VideoFlight({ video, rect, onComplete }: VideoFlightProps) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const completeRef = useRef(onComplete);
+  useEffect(() => { completeRef.current = onComplete; }, [onComplete]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) { completeRef.current(); return; }
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+    const optics = motion.portal.optics;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    // Capture the decoded frame; cloneNode does not preserve video playback state.
+    const snapshot = document.createElement('canvas');
+    snapshot.width = Math.max(1, Math.round(rect.width * 2));
+    snapshot.height = Math.max(1, Math.round(rect.height * 2));
+    const snapshotContext = snapshot.getContext('2d');
+    const hasSnapshot = video.readyState >= 2 && video.videoWidth > 0 && Boolean(snapshotContext);
+    if (hasSnapshot && snapshotContext) {
+      const transform = getComputedStyle(video).transform;
+      const zoom = transform === 'none' ? 1 : new DOMMatrixReadOnly(transform).a;
+      const scale = Math.max(snapshot.width / video.videoWidth, snapshot.height / video.videoHeight) * zoom;
+      snapshotContext.drawImage(video, (snapshot.width - video.videoWidth * scale) / 2, (snapshot.height - video.videoHeight * scale) / 2, video.videoWidth * scale, video.videoHeight * scale);
+    }
+    const poster = new Image();
+    poster.src = video.poster;
+    const radius = parseFloat(getComputedStyle(video.closest('[data-portal-card]') ?? video).borderTopLeftRadius) || 16;
+    const clip = document.createElement('video');
+    clip.muted = true;
+    clip.playsInline = true;
+    clip.preload = 'auto';
+    const cameraSrc = video.dataset.portalVideoSrc;
+    clip.src = cameraSrc || video.currentSrc || video.src;
+    canvas.dataset.videoSrc = clip.src;
+    clip.playbackRate = cameraSrc ? 1.3 : 1;
+    const continueFrame = () => {
+      if (!cameraSrc && Number.isFinite(clip.duration)) {
+        // Continue from the clicked frame rather than restarting the style loop.
+        clip.currentTime = Math.min(video.currentTime, Math.max(0, clip.duration - 1.2));
+      }
+    };
+    clip.addEventListener('loadedmetadata', continueFrame);
+    const started = performance.now();
+    let clipStart = 0;
+    let failed = false;
+    let playing = false;
+    let frame = 0;
+    let finished = false;
+    let finalFrame: HTMLCanvasElement | null = null;
+    const startClip = () => {
+      if (playing || failed || finished) return;
+      playing = true;
+      clip.play().then(() => { clipStart = performance.now(); }).catch(() => { failed = true; });
+    };
+    const fail = () => { failed = true; };
+    clip.addEventListener('canplay', startClip);
+    clip.addEventListener('error', fail);
+    clip.load();
+    const cover = (media: CanvasImageSource, mw: number, mh: number, x: number, y: number, w: number, h: number) => {
+      const scale = Math.max(w / mw, h / mh);
+      ctx.drawImage(media, x + (w - mw * scale) / 2, y + (h - mh * scale) / 2, mw * scale, mh * scale);
+    };
+    const draw = (now: number) => {
+      if (finished && finalFrame) {
+        ctx.drawImage(finalFrame, 0, 0, width, height);
+        return;
+      }
+      const elapsed = now - started;
+      const p = Math.min(1, elapsed / 1100);
+      const e = p < 0.5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2;
+      const x = rect.left * (1 - e);
+      const y = rect.top * (1 - e);
+      const w = rect.width + (width - rect.width) * e;
+      const h = rect.height + (height - rect.height) * e;
+      ctx.clearRect(0, 0, width, height);
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, radius * (1 - e));
+      ctx.clip();
+      ctx.fillStyle = lightColors['surface-cinema'];
+      ctx.fillRect(x, y, w, h);
+      // Destroy detail before fullscreen: footage supplies motion and colour, not pixels.
+      const mediaWidth = clip.videoWidth || video.videoWidth || snapshot.width;
+      const mediaHeight = clip.videoHeight || video.videoHeight || snapshot.height;
+      const upsample = Math.max((cameraSrc ? width : w) / mediaWidth, (cameraSrc ? height : h) / mediaHeight);
+      const detailFade = Math.min(1, Math.max(0, (e - 0.05) / (optics.detailFadeEnd - 0.05)));
+      const effectProgress = detailFade * detailFade * (3 - 2 * detailFade);
+      const softness = effectProgress * Math.min(optics.diffusionMaxPx, optics.diffusionFloorPx + Math.max(0, upsample - 1) * 4);
+      // Apply to the composited output, not just one drawImage pass. This also
+      // stays on the moving video and retained landing frame throughout reveal.
+      canvas.style.filter = `blur(${softness.toFixed(2)}px)`;
+      if (hasSnapshot) cover(snapshot, snapshot.width, snapshot.height, x, y, w, h);
+      else if (poster.complete && poster.naturalWidth) cover(poster, poster.naturalWidth, poster.naturalHeight, x, y, w, h);
+      if (clipStart && clip.readyState >= 2) {
+        ctx.globalAlpha = Math.min(1, (now - clipStart) / 360);
+        if (cameraSrc) cover(clip, clip.videoWidth, clip.videoHeight, 0, 0, width, height);
+        else cover(clip, clip.videoWidth, clip.videoHeight, x, y, w, h);
+        ctx.globalAlpha = 1;
+      }
+      // Keep the moving background subordinate to the passage through dark glass.
+      const veil = optics.veilOpacity * effectProgress;
+      ctx.globalAlpha = veil;
+      ctx.fillStyle = lightColors['surface-cinema'];
+      ctx.fillRect(x, y, w, h);
+      // A broad, quiet lens reflection — no flashing, glitching or RGB separation.
+      const lightX = width * (0.2 + 0.5 * p);
+      const glow = ctx.createRadialGradient(lightX, height * 0.25, 0, lightX, height * 0.25, width * 0.7);
+      glow.addColorStop(0, lightColors['content-on-cinema']);
+      glow.addColorStop(1, 'transparent');
+      ctx.globalCompositeOperation = 'screen';
+      ctx.globalAlpha = optics.lightOpacity * e;
+      ctx.fillStyle = glow;
+      ctx.fillRect(x, y, w, h);
+      ctx.globalCompositeOperation = 'source-over';
+      const vignette = ctx.createRadialGradient(width / 2, height / 2, Math.min(width, height) * 0.2, width / 2, height / 2, Math.hypot(width, height) / 2);
+      vignette.addColorStop(0, 'transparent');
+      vignette.addColorStop(1, lightColors['surface-cinema']);
+      ctx.globalAlpha = optics.vignetteOpacity * e;
+      ctx.fillStyle = vignette;
+      ctx.fillRect(x, y, w, h);
+      const shade = ctx.createLinearGradient(0, height * 0.52, 0, height);
+      shade.addColorStop(0, 'transparent');
+      shade.addColorStop(1, lightColors['surface-sunken']);
+      ctx.globalAlpha = 0.55 * e;
+      ctx.fillStyle = shade;
+      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
+      canvas.dataset.expansion = e.toFixed(3);
+      canvas.dataset.optics = 'dark-glass';
+      canvas.dataset.diffusion = softness.toFixed(2);
+      canvas.dataset.veil = veil.toFixed(2);
+      if (p === 1 && (clip.ended || failed || (!clipStart && elapsed > 2500) || elapsed > 8000)) {
+        finished = true;
+        finalFrame = document.createElement('canvas');
+        finalFrame.width = canvas.width;
+        finalFrame.height = canvas.height;
+        finalFrame.getContext('2d')?.drawImage(canvas, 0, 0);
+        canvas.dataset.result = clip.ended ? 'ended' : 'fallback';
+        completeRef.current();
+        return;
+      }
+      frame = requestAnimationFrame(draw);
+    };
+    const onResize = () => { if (finished) draw(performance.now()); };
+    window.addEventListener('resize', onResize);
+    frame = requestAnimationFrame(draw);
+    return () => {
+      finished = true;
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', onResize);
+      clip.removeEventListener('loadedmetadata', continueFrame);
+      clip.removeEventListener('canplay', startClip);
+      clip.removeEventListener('error', fail);
+      clip.pause();
+      clip.removeAttribute('src');
+      clip.load();
+    };
+  }, [video, rect]);
+
+  return <canvas ref={canvasRef} data-slot="portal-video-aperture" className="absolute inset-0 size-full" />;
 }
 
 type Transition = Record<string, unknown>;

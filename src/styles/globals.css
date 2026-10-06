@@ -395,6 +395,28 @@
     padding-inline: var(--space-2);
   }
 
+  /* ScrollProgress: линия внутри контейнера, а не от края острова.
+     Внешний .scroll-progress-clip (inset-x-0) — clip по радиусу islands.
+     Внутренний .scroll-progress-inner — отступ как у page-container, но
+     без overflow на surface (dropdown-ы не режутся). */
+  .scroll-progress-inner {
+    inset: 0;
+    margin-inline: var(--space-4);
+  }
+
+  .site-header:not([data-mode='island']) .scroll-progress-inner {
+    /* full: ширина как у контента — page-container gutters */
+    margin-inline: max(var(--layout-gutter), env(safe-area-inset-left));
+  }
+
+  /* правая сторона симметрична — max() слева/справа */
+  @supports (margin-inline: max(1px, 1px)) {
+    .site-header:not([data-mode='island']) .scroll-progress-inner {
+      margin-inline: max(var(--layout-gutter), env(safe-area-inset-left))
+        max(var(--layout-gutter), env(safe-area-inset-right));
+    }
+  }
+
   .site-header[data-mode='island'] .site-header-secondary-action {
     display: none;
   }

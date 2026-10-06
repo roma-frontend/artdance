@@ -56,6 +56,8 @@ export type VideoFormat = 'av1' | 'vp9' | 'h264';
  */
 export interface VideoRef {
   sources: ReadonlyArray<{ format: VideoFormat; width: number; url: string }>;
+  /** Optional dedicated camera footage; otherwise the portal continues this style's clip. */
+  transitionSources?: VideoRef['sources'];
   /** Постер обязателен: без него первый кадр — пустой прямоугольник. */
   poster: MediaRef;
   durationSeconds: number;
@@ -113,6 +115,7 @@ export interface StyleTileItem {
    */
   slug: string;
   image: MediaRef;
+  video?: VideoRef | null;
   classCount: number;
 }
 

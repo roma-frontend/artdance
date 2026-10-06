@@ -20,6 +20,8 @@
 import type { ReactNode } from 'react';
 
 import { BrandMark } from '@/components/brand/brand-mark';
+import { HeaderLiteToggle } from '@/components/layout/header-lite-toggle';
+import { HeaderThemeToggle } from '@/components/layout/header-theme-toggle';
 import { routes, site } from '@/config';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
@@ -37,8 +39,12 @@ export function AuthShell({ title, subtitle, footer, children, className }: Auth
   return (
     <main
       id={site.mainContentId}
-      className="flex min-h-dvh flex-col items-center justify-center gap-8 bg-surface-canvas px-4 py-12"
+      className="relative flex min-h-dvh flex-col items-center justify-center gap-8 bg-surface-canvas px-4 py-12"
     >
+      <div className="absolute right-4 top-4 flex items-center gap-2">
+        <HeaderLiteToggle solid />
+        <HeaderThemeToggle solid />
+      </div>
       <Link href={routes.home()} aria-label={site.name} className="text-content-primary">
         <BrandMark />
       </Link>

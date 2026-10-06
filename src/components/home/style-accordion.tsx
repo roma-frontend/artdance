@@ -18,9 +18,10 @@ import { useEffect, useState } from 'react';
 
 import { PortalLink } from '@/components/fx/portal-link';
 import { Media } from '@/components/ui/media';
+import { TileVideo } from '@/components/ui/tile-video';
 import { danceMood, routes } from '@/config';
 import { danceStyleLabelKey } from '@/domain/enums';
-import { resolveMedia, type MediaRef } from '@/domain/content';
+import { resolveMedia, type MediaRef, type VideoRef } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +29,7 @@ export interface StyleTile {
   style: string;
   slug: string;
   image: MediaRef;
+  video?: VideoRef | null;
   classCount: number;
 }
 
@@ -68,7 +70,7 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
           const handleLinkClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
             // На touch первый тап — раскрыть кулису и показать эффект, второй — переход.
             // На desktop hover уже раскрыл, поэтому сразу лететь порталом.
-            if (isCoarse && !isActive) {
+            if (isCoarse && event.detail !== 0 && !isActive) {
               event.preventDefault();
               event.stopPropagation();
               handleSelect();
@@ -79,12 +81,16 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
             <li
               key={tile.style}
               data-style-panel=""
+              data-portal-card=""
               data-dance-mood={danceMood(tile.style)}
               data-active={isActive ? 'true' : 'false'}
               onMouseEnter={() => {
                 if (!isCoarse) setActiveIndex(index);
               }}
-              onFocus={() => setActiveIndex(index)}
+              onFocus={(event) => {
+                // Touch focus precedes click; it must not bypass the first-tap preview.
+                if (!isCoarse || event.target.matches(':focus-visible')) setActiveIndex(index);
+              }}
               onClick={handleSelect}
               style={{ flex: isActive ? '3.5 1 0%' : '1 1 0%' }}
               className={cn(
@@ -98,6 +104,7 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
             >
               <PortalLink
                 href={href}
+                flight="media"
                 onClick={handleLinkClick}
                 data-cursor-label={tCommon('actions.explore')}
                 className="group relative flex size-full items-end p-6 select-none"
@@ -114,6 +121,16 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
                     isActive ? 'scale-105 filter-none' : 'scale-100 brightness-75 grayscale-[25%]',
                   )}
                 />
+
+                {tile.video && (
+                  <TileVideo
+                    video={tile.video}
+                    posterAlt={resolveMedia(tile.image, locale).alt}
+                    isActive={isActive}
+                    className={cn('dance-style-image transition-transform duration-700', isActive ? 'scale-105' : 'scale-100')}
+                  />
+                )}
+                <span data-portal-media="" aria-hidden className="pointer-events-none absolute inset-0" />
 
                 {/* Затемнение — мощная 700ms волна вместе с flex. */}
                 <div

@@ -38,6 +38,7 @@ import { defineQuery } from '@/server/query';
 
 import { classCardsBy } from './classes';
 import { firstMediaRef, mediaSelect, type MediaRow } from './media';
+import { styleHeroImageFor } from '@/server/content/style-hero-media';
 import { toInstructorCard } from './instructors';
 import { toVenueCard } from './venues';
 import { activeRoomsRelation, mediaRelation, notTrashed } from './relations';
@@ -68,11 +69,12 @@ async function loadSummaries(): Promise<Map<DanceStyle, StyleSummary>> {
   for (const style of danceStyles) {
     const classes = classRows.filter((row) => row.style === style);
     const withMedia = classes.find((row) => row.media.length > 0);
+    const heroOverride = styleHeroImageFor(style);
 
     summaries.set(style, {
       style,
       slug: danceStyleSlug(style),
-      image: withMedia ? firstMediaRef(withMedia.media as MediaRow[]) : null,
+      image: heroOverride ?? (withMedia ? firstMediaRef(withMedia.media as MediaRow[]) : null),
       classCount: classes.length,
       instructorCount: instructorRows.filter((row) => row.styles.includes(style)).length,
     });

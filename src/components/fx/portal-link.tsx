@@ -36,14 +36,19 @@ export function PortalLink({ href, onClick, flight = 'media', ...props }: Portal
     const link = event.currentTarget;
     const card = link.closest<HTMLElement>('[data-portal-card]') ?? link;
     const media = card.querySelector<HTMLElement>('[data-portal-media]') ?? card;
-    const img = media.querySelector('img');
+    // На карточках стилей играет видео, но переход должен быть картинкой — той же что в видео, высокого качества
+    const video = card.querySelector<HTMLVideoElement>('video[data-tile-video]');
+    const img = media.querySelector('img') ?? card.querySelector('img');
+    const poster = video?.poster || video?.getAttribute('poster') || '';
+    const imageSrc = poster || img?.currentSrc || img?.src || '';
 
     event.preventDefault();
     if (flight === 'card') {
-      portal.triggerPortal(card.getBoundingClientRect(), img?.currentSrc || img?.src || '', href, card);
+      portal.triggerPortal(card.getBoundingClientRect(), imageSrc, href, card);
       return;
     }
-    portal.triggerPortal(media.getBoundingClientRect(), img?.currentSrc || img?.src || '', href);
+    // flight="media" для всех 5 карточек: окно растёт из media, без VideoFlight, той же картинкой что видео на карточке
+    portal.triggerPortal(media.getBoundingClientRect(), imageSrc, href);
   };
 
   return <Link href={href} onClick={handleClick} {...props} />;
