@@ -46,12 +46,27 @@ export function HeroMythicDust() {
     let particles: Particle[] = [];
     let raf = 0;
     let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let width = 0;
+    let height = 0;
+    let visible = false;
     const count = wide ? 56 : 32;
+
+    // Одна текстура вместо 56 градиентов и path/arc на каждом кадре.
+    const sprite = document.createElement('canvas');
+    sprite.width = sprite.height = 32;
+    const spriteContext = sprite.getContext('2d');
+    if (!spriteContext) return;
+    const gradient = spriteContext.createRadialGradient(16, 16, 0, 16, 16, 16);
+    gradient.addColorStop(0, 'rgba(255,233,165,1)');
+    gradient.addColorStop(0.45, 'rgba(212,175,55,0.55)');
+    gradient.addColorStop(1, 'rgba(212,175,55,0)');
+    spriteContext.fillStyle = gradient;
+    spriteContext.fillRect(0, 0, 32, 32);
 
     const resize = () => {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = hero.clientWidth;
-      const h = hero.clientHeight;
+      const w = width = hero.clientWidth;
+      const h = height = hero.clientHeight;
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       canvas.style.width = w + 'px';
@@ -78,12 +93,10 @@ export function HeroMythicDust() {
     const tick = (now: number) => {
       const dt = Math.min(32, now - last);
       last = now;
-      const w = hero.clientWidth;
-      const h = hero.clientHeight;
-      if (document.hidden) {
-        raf = requestAnimationFrame(tick);
-        return;
-      }
+      raf = 0;
+      if (document.hidden || !visible) return;
+      const w = width;
+      const h = height;
       ctx.clearRect(0, 0, w, h);
       for (const p of particles) {
         p.x += p.vx * (dt / 16);
@@ -97,26 +110,39 @@ export function HeroMythicDust() {
         if (p.x > w + 4) p.x = -4;
         const tw = 0.55 + 0.45 * Math.sin(p.twinkle);
         const a = p.opacity * tw;
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 2.2);
-        g.addColorStop(0, 'rgba(255,233,165,' + (a * 1.0).toFixed(3) + ')');
-        g.addColorStop(0.45, 'rgba(212,175,55,' + (a * 0.55).toFixed(3) + ')');
-        g.addColorStop(1, 'rgba(212,175,55,0)');
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r * 2.2, 0, Math.PI * 2);
-        ctx.fill();
+        const radius = p.r * 2.2;
+        ctx.globalAlpha = a;
+        ctx.drawImage(sprite, p.x - radius, p.y - radius, radius * 2, radius * 2);
       }
       raf = requestAnimationFrame(tick);
     };
 
     resize();
     init();
-    raf = requestAnimationFrame(tick);
+    const syncPlayback = () => {
+      if (visible && !document.hidden) {
+        if (!raf) {
+          last = performance.now();
+          raf = requestAnimationFrame(tick);
+        }
+      } else {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      visible = Boolean(entry?.isIntersecting);
+      syncPlayback();
+    });
+    observer.observe(hero);
     const onResize = () => resize();
     window.addEventListener('resize', onResize, { passive: true });
+    document.addEventListener('visibilitychange', syncPlayback);
     return () => {
       cancelAnimationFrame(raf);
+      observer.disconnect();
       window.removeEventListener('resize', onResize);
+      document.removeEventListener('visibilitychange', syncPlayback);
     };
   }, [still, reduced, wide, lite]);
 

@@ -17,17 +17,19 @@ interface TileVideoProps {
 }
 
 /** Style-tile variant of the background layer, with the same motion/data safeguards. */
-export function TileVideo({ video, className }: TileVideoProps) {
+export function TileVideo({ video, isActive, className }: TileVideoProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const stillImage = usePrefersStillImage();
+  const lite = useIsLiteMode();
+  const enabled = isActive && !stillImage && !lite;
   const [source, setSource] = useState<string | null>(null);
   const { near } = useBackgroundVideo({
     videoRef,
     containerRef,
-    enabled: !stillImage,
+    enabled,
     ready: source !== null,
-    preloadAheadViewports: 1,
+    preloadAheadViewports: 0,
   });
   useEffect(() => {
     if (!near) return;
@@ -57,8 +59,8 @@ export function TileVideo({ video, className }: TileVideoProps) {
         loop
         playsInline
         poster={video.poster.key}
-        src={!stillImage ? source ?? undefined : undefined}
-        preload={source && !stillImage ? 'auto' : 'none'}
+        src={enabled ? source ?? undefined : undefined}
+        preload={source && enabled ? 'auto' : 'none'}
         tabIndex={-1}
         className={cn('absolute inset-0 size-full object-cover', className)}
       />

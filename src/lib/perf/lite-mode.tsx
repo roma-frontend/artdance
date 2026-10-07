@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useSyncExternalStore, useCallback, useMemo } from 'react';
+import { createContext, useContext, useSyncExternalStore, useCallback, useMemo } from 'react';
 
 import { STORAGE_KEY } from './detect-weak-device';
 
@@ -77,10 +77,9 @@ export function LiteModeProvider({ children }: { children: React.ReactNode }): R
     () => false,
   );
 
-  // Синхронизируем атрибут после гидратации (на случай если inline-скрипт не сработал)
-  useEffect(() => {
-    document.documentElement.setAttribute('data-lite', enabled ? 'true' : 'false');
-  }, [enabled]);
+  // Атрибут задают ранний inline-скрипт и writeMode. Нельзя записывать сюда
+  // SSR snapshot enabled=false: первый effect затирал true до чтения store,
+  // из-за чего слабое устройство самопроизвольно включало тяжёлые эффекты.
 
   const setMode = useCallback((next: LiteModeValue) => {
     // для auto — пересчитываем weak детекцию

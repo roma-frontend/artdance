@@ -121,6 +121,12 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
       className={cn('relative h-full', className)}
       initial={false}
       animate={controls}
+      onPointerDownCapture={() => {
+        // Между down/up карточка не должна двигаться из-за reveal: иначе
+        // браузер получает отпускание над другой целью и не создаёт click.
+        revealed.current = true;
+        controls.stop();
+      }}
       onFocusCapture={(event) => {
         // Pointer-down фокусирует ссылку до pointer-up. Сброс масштаба в этот
         // момент передвигает цель и браузер отменяет click. Раскрываем немедленно

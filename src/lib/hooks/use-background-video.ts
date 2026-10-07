@@ -145,11 +145,15 @@ export function useBackgroundVideo({
 
     if (element.readyState >= element.HAVE_FUTURE_DATA) {
       start();
-      return;
+    } else {
+      element.addEventListener('canplay', start, { once: true });
     }
-
-    element.addEventListener('canplay', start, { once: true });
-    return () => element.removeEventListener('canplay', start);
+    return () => {
+      element.removeEventListener('canplay', start);
+      // Размонтирование, смена карточки и выключение режима останавливают
+      // декодер сразу, даже если новый effect уже не видит старый videoRef.
+      element.pause();
+    };
   }, [active, videoRef]);
 
   /**
