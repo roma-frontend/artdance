@@ -13,6 +13,7 @@ const config = [
   {
     ignores: [
       '.next/**',
+      '.open-next/**',
       'node_modules/**',
       'src/generated/**',
       /*
@@ -21,6 +22,8 @@ const config = [
        */
       '.kilo/**',
       'next-env.d.ts',
+      // postinstall-патчи: require обязателен, в src не используется
+      'scripts/patch-noble.cjs',
     ],
   },
 
