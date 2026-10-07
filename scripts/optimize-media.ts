@@ -294,9 +294,9 @@ async function main(): Promise<void> {
     }
   }
 
-  /* Файлы, которых нет в манифесте: мусор, который попадёт в деплой. */
+  /* Файлы, которых нет в манифесте: мусор, который попадёт в деплой. После миграции на R2 локальная папка может отсутствовать — проверяем только если она есть. */
   const knownFiles = new Set(entries.map((entry) => entry.file));
-  for (const file of readdirSync(SEED_DIR)) {
+  if (existsSync(SEED_DIR)) for (const file of readdirSync(SEED_DIR)) {
     if (!knownFiles.has(file)) {
       problems.push(`${file}: нет в манифесте ассетов — файл лишний или манифест устарел`);
     }
