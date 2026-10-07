@@ -6,13 +6,21 @@
  * причина проваленного LCP. Все presets описаны здесь и проверяются в одном месте.
  */
 
-import { clientEnv } from './env';
 // Относительный импорт: этот модуль читается из next.config.ts, где алиасы
 // путей ещё не разрешаются.
 import { raw } from '../design/tokens';
 
-/** База для публичных URL медиа: R2/CDN, иначе локальный `/public`. */
-export const mediaBaseUrl = clientEnv.NEXT_PUBLIC_MEDIA_CDN_URL ?? '';
+/**
+ * База для публичных URL медиа: R2/CDN, иначе локальный `/public`.
+ *
+ * Читается напрямую из process.env, а не из clientEnv: next.config.ts
+ * импортирует этот модуль на этапе загрузки конфига (next build → load
+ * next.config.ts → import media.ts). Если media.ts тянет валидацию env.ts,
+ * сборка падает до компиляции при любом отсутствующем NEXT_PUBLIC_* —
+ * именно это ломал Cloudflare Workers Builds, где vars доступны только
+ * в рантайме Worker, а NEXT_PUBLIC_* инлайнятся на этапе сборки.
+ */
+export const mediaBaseUrl = (process.env.NEXT_PUBLIC_MEDIA_CDN_URL ?? '').trim() || '';
 
 /** Ширины, для которых генерируются варианты. Совпадают с `next.config` deviceSizes. */
 export const imageWidths = [320, 420, 640, 768, 1024, 1280, 1600, 1920, 2560] as const;

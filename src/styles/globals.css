@@ -395,12 +395,17 @@
     padding-inline: var(--space-2);
   }
 
-  /* ScrollProgress: линия внутри контейнера, а не от края острова.
-     Внешний .scroll-progress-clip (inset-x-0) — clip по радиусу islands.
-     Внутренний .scroll-progress-inner — отступ как у page-container, но
-     без overflow на surface (dropdown-ы не режутся). */
+  /* ScrollProgress — как в Desktop/office (landing/Navbar.tsx):
+     внешний .scroll-progress-clip = inset-0 + [border-radius:inherit] + overflow-hidden
+     на ПОЛНОЙ высоте острова (иначе узкая 2px полоса схлопнет углы к 1px и
+     старт будет прямым углом). Внутренний .scroll-progress-inner — полка
+     2–3px внизу с margin-inline как у page-container; overflow только внутри,
+     чтобы dropdown-ы Locale/Lite на surface не резались. Сам бар rounded-full. */
+  .scroll-progress-clip {
+    z-index: 2;
+  }
+
   .scroll-progress-inner {
-    inset: 0;
     margin-inline: var(--space-4);
   }
 

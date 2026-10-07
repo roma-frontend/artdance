@@ -108,9 +108,10 @@ export function SiteHeader() {
       {!lite && (
         <div
           aria-hidden
-          className="scroll-progress-clip pointer-events-none absolute inset-x-0 bottom-0 h-(--scroll-progress-height) overflow-hidden [border-radius:inherit]"
+          data-testid="scroll-progress-clip"
+          className="scroll-progress-clip pointer-events-none absolute inset-0 overflow-hidden [border-radius:inherit]"
         >
-          <div className="scroll-progress-inner absolute inset-0 overflow-hidden [border-radius:inherit]">
+          <div className="scroll-progress-inner pointer-events-none absolute inset-x-0 bottom-0 h-(--scroll-progress-height) overflow-hidden">
             <ScrollProgress />
           </div>
         </div>

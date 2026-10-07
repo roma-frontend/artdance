@@ -1,28 +1,15 @@
 /**
  * SCROLL PROGRESS — полоса прочитанного вдоль нижней кромки компактного header.
  *
- * Отличия от прототипа, где полоса создаётся через `document.createElement` с
- * инлайновыми стилями и пересчитывается на каждое событие прокрутки:
- *
- * • ширина меняется через `transform: scaleX()`, а не `width`. Анимация ширины
- *   вызывает layout на каждом кадре, `transform` — только композитинг;
- * • чтение геометрии отложено в `requestAnimationFrame`: обработчик прокрутки,
- *   читающий `scrollHeight` синхронно, заставляет браузер пересчитывать layout
- *   посреди прокрутки;
- * • на короткой странице полоса скрыта. Индикатор, который не может дойти до
- *   конца, дезинформирует;
- * • `aria-hidden`: это декоративное отражение позиции прокрутки, а не индикатор
- *   выполнения задачи. `role="progressbar"` заставил бы скринридер зачитывать
- *   бессмысленные проценты при каждом движении.
- * • полоса рендерится в `.scroll-progress-clip` внутри `.site-header-surface`:
- *   клип `overflow-hidden` + `border-radius:inherit` обрезает линию по радиусу
- *   острова, но сам `.site-header-surface` clip не имеет — иначе popover'ы
- *   Locale/Lite (`absolute` внутри header, `z-40`) отрезались бы кромкой острова
- *   и выглядели бы «обрезанными сверху». В полноразмерной шапке клип = 100vw
- *   без скругления.
- *
- * Обновление идёт мимо состояния React: 60 рендеров в секунду ради одного
- * `scaleX` не нужны никому.
+ * Как в Desktop/office (landing/Navbar.tsx):
+ * • внешний декоративный слой — `absolute inset-0 overflow-hidden [border-radius:inherit]`
+ *   клипает полосу по скруглению острова на ПОЛНОЙ высоте карточки (не узкой
+ *   2px-полосой — иначе браузер схлопывает углы к 1px и старт выглядит прямым);
+ *   только этот слоисто-clipped слой — dropdown-ы Locale/Lite остаются visible;
+ * • внутренняя полка `scroll-progress-inner` — `inset-x-0 bottom-0 h-2/3px` с
+ *   margin-inline как у page-container;
+ * • сам бар — `rounded-full` (pill), чтобы ведущий и ведомый край были скруглены
+ *   даже до достижения угла острова; scaleX(progress) — compositing, rAF, hidden на короткой странице.
  */
 
 'use client';
@@ -86,17 +73,19 @@ export function ScrollProgress() {
       aria-hidden
       data-slot="scroll-progress"
       className={cn(
-        'pointer-events-none absolute inset-0 origin-left',
+        'pointer-events-none absolute inset-0 origin-left will-change-transform',
         'bg-gradient-to-r from-accent to-metal',
         'transition-[transform,opacity] duration-(--scroll-progress-transition) ease-linear',
+        'rounded-full',
       )}
       /*
        * Начальное состояние задано тем же свойством, которым его меняет JS.
        * Через утилиту `scale-x-0` не получится: в Tailwind v4 она пишет в
        * отдельное CSS-свойство `scale`, а не в `transform`, — и полоса на каждой
        * загрузке страницы успевала мигнуть на всю ширину, прежде чем `transform`
-       * из скрипта доезжал до нуля. Двух источников для одной величины быть не
-       * должно даже когда оба «работают».
+       * из скрипта доезжал до нуля.
+       * rounded-full — pill-скругление ведущего/ведомого края; полный clip
+       * у родителя (inset-0) дополнительно подгоняет нижние углы к острову.
        */
       style={{ transform: 'scaleX(0)' }}
     />
