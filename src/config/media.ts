@@ -161,11 +161,25 @@ export const mediaPaths = {
   editorial: (slug: string, fileId: string) => `editorial/${slug}/${fileId}`,
 } as const;
 
-/** Публичный URL по ключу бакета. */
+/** Публичный URL по ключу бакета или пути из `public/media`. */
 export function mediaUrl(key: string): string {
   if (!key) return '';
-  if (key.startsWith('http') || key.startsWith('/')) return key;
-  return `${mediaBaseUrl.replace(/\/$/, '')}/${key}`;
+  if (key.startsWith('http')) return key;
+  // `/media/...` — файлы из `public/media`, теперь тоже на CDN.
+  // Локально (mediaBaseUrl пуст) — относительный путь, как раньше.
+  // На проде (mediaBaseUrl = https://pub-xxx.r2.dev) — абсолютный CDN URL.
+  if (key.startsWith('/')) {
+    if (key.startsWith('/media/') && mediaBaseUrl) {
+      return `${mediaBaseUrl.replace(/\/$/, '')}${key}`;
+    }
+    return key;
+  }
+  return mediaBaseUrl ? `${mediaBaseUrl.replace(/\/$/, '')}/${key}` : `/${key}`;
+}
+
+/** URL для ассетов из `public/media/...` — оборачивает `mediaUrl` для читаемости. */
+export function publicMediaUrl(path: string): string {
+  return mediaUrl(path);
 }
 
 /**

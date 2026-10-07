@@ -2,8 +2,44 @@
 
 ## Схема
 
+Для альтернативного запуска непосредственно на Workers нужен Workers Paid:
+Free ограничивает CPU до 10 мс и отклоняет `limits.cpu_ms` с кодом `100328`.
+Cloudflare-сборка использует Webpack, Prisma edge-клиент и binding `HYPERDRIVE`
+из `wrangler.jsonc`. Hyperdrive `artdance-db` создан без кеширования SQL-ответов.
+Node.js-сборка продолжает использовать обычный Prisma-клиент и `DATABASE_URL`.
+
+После включения Workers Paid выполнить `npm run deploy:cf`, затем проверить
+`/hy`, `/en` и `/ru`. Preview/deploy загружают локальное окружение и передают
+`DATABASE_URL` только в окружение процесса для локальной настройки Hyperdrive;
+строку подключения не добавлять в `wrangler.jsonc`. Runtime-секреты Worker
+по-прежнему должны быть настроены отдельно. `NEXT_PUBLIC_APP_URL` при сборке
+должен совпадать с фактическим production-origin.
+
+Workers не поддерживает нативный sharp: загрузку и обработку фотографий нужно
+вынести в совместимый сервис. Отложенный импорт sharp предотвращает падение
+страниц при загрузке OG-метаданных, но не делает upload-конвейер совместимым.
+
 Cloudflare DNS/CDN → HTTPS reverse proxy / балансировщик хостинга → `next start`.
 PostgreSQL остаётся отдельной БД; медиа production хранятся в R2.
+
+### Медиа на R2, приложение на Vercel
+
+- Бакет: `artdance`; публичная база: `https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev`.
+- На Vercel в Preview и Production задать `NEXT_PUBLIC_MEDIA_CDN_URL` и
+  `R2_PUBLIC_BASE_URL` равными публичной базе, `R2_BUCKET=artdance`, а также
+  `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` для новых загрузок.
+  Имена `R2_BUCKET_NAME` и `R2_PUBLIC_URL` приложение не использует.
+- `npm run media:r2:sync` загружает фото и видео из `public/media` под ключами
+  `media/...`, а видео-исходники из `manual/generated-style-videos` под
+  `originals/generated-style-videos/...`. Секреты и JSON-файлы заданий не загружаются.
+- `npm run media:r2:check` проверяет публичную доступность, размер и MIME каждого файла.
+  Реестр `design/media-r2-manifest.json` позволяет запускать проверку без локальных копий.
+- `media:check` проверяет изображения прямо из R2, включая отпечатки и бюджеты;
+  `video:check` проверяет комплектность и бюджеты видео по реестру R2.
+- CORS для публичного чтения: `npx wrangler r2 bucket cors set artdance --file scripts/r2-cors.json --force`.
+- `.vercelignore` исключает локальное медиа и артефакты Workers из загрузки Vercel.
+  Локальные фото и видео удалены после проверки всех объектов R2.
+  После замены CDN-переменных нужен новый build.
 Это **не** Cloudflare Pages и **не** Workers: `wrangler.jsonc` и `deploy:cf`
 относятся к альтернативному OpenNext-пути и для этого запуска не используются.
 Нативный sharp, загрузка фотографий, OG-шрифты, SSR, API и ISR работают на Node.js.

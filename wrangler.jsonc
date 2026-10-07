@@ -4,6 +4,15 @@
   "name": "artdance",
   "compatibility_date": "2026-09-18",
   "compatibility_flags": ["nodejs_compat"],
+  "limits": {
+    "cpu_ms": 30000
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "3715175947ce40f0bfa4b69bf59fda1e"
+    }
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",

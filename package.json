@@ -27,6 +27,8 @@
     "design:check": "tsx scripts/design-status.ts --strict",
     "media:optimize": "tsx scripts/optimize-media.ts",
     "media:check": "tsx scripts/optimize-media.ts --check",
+    "media:r2:sync": "node --conditions=react-server --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/sync-media-r2.ts",
+    "media:r2:check": "npm run media:r2:sync -- --check",
     "video:encode": "tsx scripts/encode-video-loops.ts",
     "video:check": "tsx scripts/encode-video-loops.ts --check",
     "video:generate:seedance": "tsx index.ts",
@@ -51,8 +53,8 @@
     "verify:admin": "node --conditions=react-server --import tsx scripts/verify-admin-write.ts",
     "perf:budget": "tsx scripts/check-performance-budget.ts",
     "build:cf": "opennextjs-cloudflare build",
-    "preview:cf": "npm run build:cf && opennextjs-cloudflare preview",
-    "deploy:cf": "npm run build:cf && opennextjs-cloudflare deploy",
+    "preview:cf": "npm run build:cf && tsx scripts/run-cloudflare.ts preview",
+    "deploy:cf": "npm run build:cf && tsx scripts/run-cloudflare.ts deploy",
     "cf:typegen": "wrangler types cloudflare-env.d.ts"
   },
   "prisma": {

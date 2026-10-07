@@ -1,0 +1,830 @@
+[
+  {
+    "key": "media/app-icon-192-maskable.png",
+    "contentType": "image/png",
+    "bytes": 1994,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/app-icon-192-maskable.png"
+  },
+  {
+    "key": "media/app-icon-192.png",
+    "contentType": "image/png",
+    "bytes": 3641,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/app-icon-192.png"
+  },
+  {
+    "key": "media/app-icon-512-maskable.png",
+    "contentType": "image/png",
+    "bytes": 6111,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/app-icon-512-maskable.png"
+  },
+  {
+    "key": "media/app-icon-512.png",
+    "contentType": "image/png",
+    "bytes": 11074,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/app-icon-512.png"
+  },
+  {
+    "key": "media/warp/warp-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 285133,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/warp/warp-1280-av1.webm"
+  },
+  {
+    "key": "media/warp/warp-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 893494,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/warp/warp-1280-h264.mp4"
+  },
+  {
+    "key": "media/warp/warp-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 458214,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/warp/warp-1280-vp9.webm"
+  },
+  {
+    "key": "media/warp/warp-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 561165,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/warp/warp-1920-av1.webm"
+  },
+  {
+    "key": "media/warp/warp-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2733390,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/warp/warp-1920-h264.mp4"
+  },
+  {
+    "key": "media/warp/warp-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 1058128,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/warp/warp-1920-vp9.webm"
+  },
+  {
+    "key": "media/video/competition-loop-1280-086c39b0.webm",
+    "contentType": "video/webm",
+    "bytes": 2133228,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/competition-loop-1280-086c39b0.webm"
+  },
+  {
+    "key": "media/video/competition-loop-1280-1d8b5d76.av1.mp4",
+    "contentType": "video/mp4",
+    "bytes": 1573095,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/competition-loop-1280-1d8b5d76.av1.mp4"
+  },
+  {
+    "key": "media/video/competition-loop-1280-3c3cc9b8.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2890616,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/competition-loop-1280-3c3cc9b8.mp4"
+  },
+  {
+    "key": "media/video/competition-loop-1920-77beb2e8.av1.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2798735,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/competition-loop-1920-77beb2e8.av1.mp4"
+  },
+  {
+    "key": "media/video/competition-loop-1920-7c92b69f.mp4",
+    "contentType": "video/mp4",
+    "bytes": 5171264,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/competition-loop-1920-7c92b69f.mp4"
+  },
+  {
+    "key": "media/video/competition-loop-1920-e77d36dc.webm",
+    "contentType": "video/webm",
+    "bytes": 3658656,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/competition-loop-1920-e77d36dc.webm"
+  },
+  {
+    "key": "media/video/editorial-loop-1280-7f8f6733.webm",
+    "contentType": "video/webm",
+    "bytes": 1843805,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/editorial-loop-1280-7f8f6733.webm"
+  },
+  {
+    "key": "media/video/editorial-loop-1280-96883526.mp4",
+    "contentType": "video/mp4",
+    "bytes": 3104140,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/editorial-loop-1280-96883526.mp4"
+  },
+  {
+    "key": "media/video/editorial-loop-1280-b60fa751.av1.mp4",
+    "contentType": "video/mp4",
+    "bytes": 1619635,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/editorial-loop-1280-b60fa751.av1.mp4"
+  },
+  {
+    "key": "media/video/editorial-loop-1920-56ce5fb6.av1.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2966201,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/editorial-loop-1920-56ce5fb6.av1.mp4"
+  },
+  {
+    "key": "media/video/editorial-loop-1920-69211906.mp4",
+    "contentType": "video/mp4",
+    "bytes": 5393144,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/editorial-loop-1920-69211906.mp4"
+  },
+  {
+    "key": "media/video/editorial-loop-1920-be9b1c94.webm",
+    "contentType": "video/webm",
+    "bytes": 3276840,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/editorial-loop-1920-be9b1c94.webm"
+  },
+  {
+    "key": "media/video/hero-loop-1280-2a4f8897.webm",
+    "contentType": "video/webm",
+    "bytes": 3409931,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-1280-2a4f8897.webm"
+  },
+  {
+    "key": "media/video/hero-loop-1280-9b5fb78f.mp4",
+    "contentType": "video/mp4",
+    "bytes": 5450406,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-1280-9b5fb78f.mp4"
+  },
+  {
+    "key": "media/video/hero-loop-1280-ce454f78.av1.mp4",
+    "contentType": "video/mp4",
+    "bytes": 3036740,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-1280-ce454f78.av1.mp4"
+  },
+  {
+    "key": "media/video/hero-loop-1920-01e8f3f0.av1.mp4",
+    "contentType": "video/mp4",
+    "bytes": 4875840,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-1920-01e8f3f0.av1.mp4"
+  },
+  {
+    "key": "media/video/hero-loop-1920-ac8e6fb1.mp4",
+    "contentType": "video/mp4",
+    "bytes": 9583500,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-1920-ac8e6fb1.mp4"
+  },
+  {
+    "key": "media/video/hero-loop-1920-b90e154a.webm",
+    "contentType": "video/webm",
+    "bytes": 5876064,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-1920-b90e154a.webm"
+  },
+  {
+    "key": "media/video/hero-loop-2560-94ad97c2.mp4",
+    "contentType": "video/mp4",
+    "bytes": 13819830,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-2560-94ad97c2.mp4"
+  },
+  {
+    "key": "media/video/hero-loop-2560-9e75b8f3.webm",
+    "contentType": "video/webm",
+    "bytes": 9012172,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-2560-9e75b8f3.webm"
+  },
+  {
+    "key": "media/video/hero-loop-2560-aedf6740.av1.mp4",
+    "contentType": "video/mp4",
+    "bytes": 6889162,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-2560-aedf6740.av1.mp4"
+  },
+  {
+    "key": "media/video/hero-loop-3840-12d6ba78.webm",
+    "contentType": "video/webm",
+    "bytes": 14389928,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-3840-12d6ba78.webm"
+  },
+  {
+    "key": "media/video/hero-loop-3840-15b9baad.av1.mp4",
+    "contentType": "video/mp4",
+    "bytes": 11522525,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-3840-15b9baad.av1.mp4"
+  },
+  {
+    "key": "media/video/hero-loop-3840-ff44fec9.mp4",
+    "contentType": "video/mp4",
+    "bytes": 24277999,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/video/hero-loop-3840-ff44fec9.mp4"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 1214962,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-1280-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2337815,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-1280-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 1774682,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-1280-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 2130388,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-1920-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 4801453,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-1920-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 3141583,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-1920-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-alt-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 1171175,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-alt-1280-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-alt-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2329868,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-alt-1280-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-alt-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 1720363,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-alt-1280-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-alt-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 2028543,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-alt-1920-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-alt-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 4697908,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-alt-1920-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-alt-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 2990751,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-alt-1920-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-poster.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 231181,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-poster.jpg"
+  },
+  {
+    "key": "media/style-tiles/salsa/salsa-poster.webp",
+    "contentType": "image/webp",
+    "bytes": 137746,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/salsa/salsa-poster.webp"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 498058,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-1280-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 1111972,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-1280-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 725653,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-1280-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 992286,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-1920-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2716049,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-1920-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 1497518,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-1920-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-alt-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 246626,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-alt-1280-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-alt-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 653647,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-alt-1280-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-alt-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 362478,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-alt-1280-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-alt-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 551953,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-alt-1920-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-alt-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 1715421,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-alt-1920-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-alt-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 812080,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-alt-1920-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-poster.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 150227,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-poster.jpg"
+  },
+  {
+    "key": "media/style-tiles/hiphop/hiphop-poster.webp",
+    "contentType": "image/webp",
+    "bytes": 83378,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/hiphop/hiphop-poster.webp"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 680186,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-1280-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 731531,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-1280-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 949643,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-1280-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 1341678,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-1920-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 1665449,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-1920-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 1918879,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-1920-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-alt-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 640674,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-alt-1280-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-alt-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 696979,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-alt-1280-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-alt-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 904058,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-alt-1280-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-alt-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 1356307,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-alt-1920-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-alt-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 1678753,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-alt-1920-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-alt-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 1955276,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-alt-1920-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-poster.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 145849,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-poster.jpg"
+  },
+  {
+    "key": "media/style-tiles/heels/heels-poster.webp",
+    "contentType": "image/webp",
+    "bytes": 76644,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/heels/heels-poster.webp"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 638698,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-1280-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 692767,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-1280-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 902982,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-1280-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 1295984,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-1920-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 1587576,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-1920-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 1822808,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-1920-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-alt-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 701638,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-alt-1280-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-alt-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 740213,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-alt-1280-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-alt-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 959121,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-alt-1280-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-alt-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 1399397,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-alt-1920-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-alt-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 1646793,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-alt-1920-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-alt-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 1919529,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-alt-1920-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-poster.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 171210,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-poster.jpg"
+  },
+  {
+    "key": "media/style-tiles/contemporary/contemporary-poster.webp",
+    "contentType": "image/webp",
+    "bytes": 94960,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/contemporary/contemporary-poster.webp"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 373140,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-1280-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 840317,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-1280-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 565887,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-1280-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 692921,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-1920-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2043887,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-1920-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 1088852,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-1920-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-alt-1280-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 371198,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-alt-1280-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-alt-1280-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 863685,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-alt-1280-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-alt-1280-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 581926,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-alt-1280-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-alt-1920-av1.webm",
+    "contentType": "video/webm",
+    "bytes": 675347,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-alt-1920-av1.webm"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-alt-1920-h264.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2041634,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-alt-1920-h264.mp4"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-alt-1920-vp9.webm",
+    "contentType": "video/webm",
+    "bytes": 1109195,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-alt-1920-vp9.webm"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-alt-poster.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 154270,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-alt-poster.jpg"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-alt-poster.webp",
+    "contentType": "image/webp",
+    "bytes": 83352,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-alt-poster.webp"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-poster.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 125016,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-poster.jpg"
+  },
+  {
+    "key": "media/style-tiles/ballet/ballet-poster.webp",
+    "contentType": "image/webp",
+    "bytes": 63408,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-tiles/ballet/ballet-poster.webp"
+  },
+  {
+    "key": "media/style-hero/ballet.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 205351,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-hero/ballet.jpg"
+  },
+  {
+    "key": "media/style-hero/contemporary.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 160905,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-hero/contemporary.jpg"
+  },
+  {
+    "key": "media/style-hero/heels.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 240883,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-hero/heels.jpg"
+  },
+  {
+    "key": "media/style-hero/hiphop.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 221083,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-hero/hiphop.jpg"
+  },
+  {
+    "key": "media/style-hero/salsa.jpg",
+    "contentType": "image/jpeg",
+    "bytes": 163985,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/style-hero/salsa.jpg"
+  },
+  {
+    "key": "media/seed/class-latin-fusion-cover.f4fca815.webp",
+    "contentType": "image/webp",
+    "bytes": 63980,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/class-latin-fusion-cover.f4fca815.webp"
+  },
+  {
+    "key": "media/seed/competition-loop-poster.f6c5502c.webp",
+    "contentType": "image/webp",
+    "bytes": 55650,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/competition-loop-poster.f6c5502c.webp"
+  },
+  {
+    "key": "media/seed/editorial-loop-poster.5165a09e.webp",
+    "contentType": "image/webp",
+    "bytes": 41572,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/editorial-loop-poster.5165a09e.webp"
+  },
+  {
+    "key": "media/seed/editorial-rhythm.8049c5ea.webp",
+    "contentType": "image/webp",
+    "bytes": 38450,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/editorial-rhythm.8049c5ea.webp"
+  },
+  {
+    "key": "media/seed/hero-dancer.0a566d95.webp",
+    "contentType": "image/webp",
+    "bytes": 68474,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/hero-dancer.0a566d95.webp"
+  },
+  {
+    "key": "media/seed/hero-loop-poster.b7727ba7.webp",
+    "contentType": "image/webp",
+    "bytes": 53800,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/hero-loop-poster.b7727ba7.webp"
+  },
+  {
+    "key": "media/seed/instructor-anna-mkrtchyan.9c857022.webp",
+    "contentType": "image/webp",
+    "bytes": 38002,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/instructor-anna-mkrtchyan.9c857022.webp"
+  },
+  {
+    "key": "media/seed/instructor-arman-harutyunyan.d8c9f723.webp",
+    "contentType": "image/webp",
+    "bytes": 95520,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/instructor-arman-harutyunyan.d8c9f723.webp"
+  },
+  {
+    "key": "media/seed/instructor-nare-grigoryan.a3abb381.webp",
+    "contentType": "image/webp",
+    "bytes": 31208,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/instructor-nare-grigoryan.a3abb381.webp"
+  },
+  {
+    "key": "media/seed/product-dance-bag.f332ff31.webp",
+    "contentType": "image/webp",
+    "bytes": 38248,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/product-dance-bag.f332ff31.webp"
+  },
+  {
+    "key": "media/seed/product-dance-shoes.5b764624.webp",
+    "contentType": "image/webp",
+    "bytes": 63896,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/product-dance-shoes.5b764624.webp"
+  },
+  {
+    "key": "media/seed/product-gift-card.96e23c03.webp",
+    "contentType": "image/webp",
+    "bytes": 69760,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/product-gift-card.96e23c03.webp"
+  },
+  {
+    "key": "media/seed/product-training-apparel.847dbe44.webp",
+    "contentType": "image/webp",
+    "bytes": 58920,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/product-training-apparel.847dbe44.webp"
+  },
+  {
+    "key": "media/seed/studio-flow-studio.1b4e039a.webp",
+    "contentType": "image/webp",
+    "bytes": 75478,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/studio-flow-studio.1b4e039a.webp"
+  },
+  {
+    "key": "media/seed/studio-pulse-dance-studio.bac37556.webp",
+    "contentType": "image/webp",
+    "bytes": 74178,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/studio-pulse-dance-studio.bac37556.webp"
+  },
+  {
+    "key": "media/seed/studio-rhythm-space.bdb34110.webp",
+    "contentType": "image/webp",
+    "bytes": 49606,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/studio-rhythm-space.bdb34110.webp"
+  },
+  {
+    "key": "media/seed/style-ballet.a3abb381.webp",
+    "contentType": "image/webp",
+    "bytes": 31208,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/style-ballet.a3abb381.webp"
+  },
+  {
+    "key": "media/seed/style-ballroom.a3abb381.webp",
+    "contentType": "image/webp",
+    "bytes": 31208,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/style-ballroom.a3abb381.webp"
+  },
+  {
+    "key": "media/seed/style-contemporary.6c64c3ed.webp",
+    "contentType": "image/webp",
+    "bytes": 20708,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/style-contemporary.6c64c3ed.webp"
+  },
+  {
+    "key": "media/seed/style-heels.597acd43.webp",
+    "contentType": "image/webp",
+    "bytes": 39034,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/style-heels.597acd43.webp"
+  },
+  {
+    "key": "media/seed/style-hip-hop.048f58d7.webp",
+    "contentType": "image/webp",
+    "bytes": 93488,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/style-hip-hop.048f58d7.webp"
+  },
+  {
+    "key": "media/seed/style-salsa.ba306342.webp",
+    "contentType": "image/webp",
+    "bytes": 51178,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/style-salsa.ba306342.webp"
+  },
+  {
+    "key": "media/seed/style-tango.ba306342.webp",
+    "contentType": "image/webp",
+    "bytes": 51178,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/style-tango.ba306342.webp"
+  },
+  {
+    "key": "originals/generated-style-videos/contemporary-4k-master.mp4",
+    "contentType": "video/mp4",
+    "bytes": 6163753,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/originals/generated-style-videos/contemporary-4k-master.mp4"
+  },
+  {
+    "key": "originals/generated-style-videos/contemporary-alt-prepared.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2143268,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/originals/generated-style-videos/contemporary-alt-prepared.mp4"
+  },
+  {
+    "key": "originals/generated-style-videos/contemporary-prepared.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2159535,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/originals/generated-style-videos/contemporary-prepared.mp4"
+  },
+  {
+    "key": "originals/generated-style-videos/contemporary-tile-prepared.mp4",
+    "contentType": "video/mp4",
+    "bytes": 2157257,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/originals/generated-style-videos/contemporary-tile-prepared.mp4"
+  }
+]

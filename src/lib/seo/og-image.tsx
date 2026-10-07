@@ -40,7 +40,6 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { ImageResponse } from 'next/og';
-import sharp from 'sharp';
 
 import { mediaUrl, seo, site } from '@/config';
 import { mediaProcessing } from '@/config/media-processing';
@@ -147,10 +146,7 @@ function toArrayBuffer(buffer: Buffer): ArrayBuffer {
  * сделать), остальное приходит из бакета по абсолютному адресу.
  */
 async function sourceBytes(key: string): Promise<Buffer | null> {
-  const seed = seedMediaPath(key);
-  if (seed) return readFile(join(process.cwd(), 'public', seed));
-
-  const url = mediaUrl(key);
+  const url = seedMediaPath(key) || mediaUrl(key);
   if (url.startsWith('/')) return readFile(join(process.cwd(), 'public', url));
 
   if (url.startsWith('http')) {
@@ -173,6 +169,7 @@ async function cardPhoto(key: string | null | undefined): Promise<ArrayBuffer | 
   if (!key) return null;
 
   try {
+    const { default: sharp } = await import('sharp');
     const source = await sourceBytes(key);
     if (!source) return null;
 

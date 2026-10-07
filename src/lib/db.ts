@@ -22,20 +22,30 @@
 
 import 'server-only';
 
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient as RuntimePrismaClient } from '@prisma/client';
+import { PrismaClient as WorkerPrismaClient } from '@prisma/client/edge';
 
 import { getServerEnv, isProduction } from '@/config/env';
 import { readArgsWithoutTrashed } from '@/domain/trash';
-import { PrismaClient } from '@/generated/prisma/client';
+import type { PrismaClient } from '@/generated/prisma/client';
 
 function createBaseClient(): PrismaClient {
   const env = getServerEnv();
-  const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
+  const isWorker = globalThis.navigator?.userAgent === 'Cloudflare-Workers';
+  const connectionString = isWorker
+    ? getCloudflareContext().env.HYPERDRIVE.connectionString
+    : env.DATABASE_URL;
+  const adapter = new PrismaPg({ connectionString, ...(isWorker ? { maxUses: 1 } : {}) });
+  const Client = isWorker
+    ? WorkerPrismaClient
+    : RuntimePrismaClient;
 
-  return new PrismaClient({
+  return new Client({
     adapter,
     log: isProduction ? ['error', 'warn'] : ['query', 'error', 'warn'],
-  });
+  }) as unknown as PrismaClient;
 }
 
 /**

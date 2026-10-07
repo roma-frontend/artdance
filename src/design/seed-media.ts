@@ -10,6 +10,8 @@
  * ассеты в WebP, и знание формата не должно расползаться по компонентам.
  */
 
+import { mediaUrl } from '@/config/media';
+
 import { seedMedia as generated, type SeedMediaEntry } from './seed-media.generated';
 
 export type { SeedMediaEntry };
@@ -35,7 +37,7 @@ export interface ResolvedSeedMedia extends SeedMediaEntry {
 export function seedMedia(name: string): ResolvedSeedMedia | undefined {
   const entry = generated[name as SeedMediaName];
   if (!entry) return undefined;
-  return { ...entry, src: `/media/seed/${entry.file}` };
+  return { ...entry, src: mediaUrl(`/media/seed/${entry.file}`) };
 }
 
 /** Путь к оптимизированному файлу. Пустая строка, если такого ассета нет. */

@@ -24,6 +24,12 @@ generator client {
   previewFeatures = ["partialIndexes"]
 }
 
+generator runtimeClient {
+  provider        = "prisma-client-js"
+  engineType      = "client"
+  previewFeatures = ["partialIndexes"]
+}
+
 // Prisma 7: строки подключения вынесены из схемы в `prisma.config.ts`.
 datasource db {
   provider = "postgresql"

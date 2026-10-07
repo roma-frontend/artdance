@@ -21,6 +21,7 @@
 
 import { createHash } from 'node:crypto';
 import {
+  existsSync,
   readdirSync,
   readFileSync,
   renameSync,
@@ -32,6 +33,7 @@ import { dirname, extname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { designAssets } from '../design/asset-manifest.ts';
+import r2Inventory from '../design/media-r2-manifest.json';
 import { mediaProcessing, presetBudget } from '../src/config/media-processing.ts';
 import { budgetFor, describeImage, processImage, withinBudget } from '../src/lib/media/ingest.ts';
 
@@ -92,7 +94,11 @@ function kb(bytes: number): string {
  * базового имени его больше не находит.
  */
 function filesFor(name: string): string[] {
-  return readdirSync(SEED_DIR).filter((file) => {
+  const local = existsSync(SEED_DIR) ? readdirSync(SEED_DIR) : [];
+  const files = checkOnly && local.length === 0
+    ? r2Inventory.filter((entry) => entry.key.startsWith('media/seed/')).map((entry) => entry.key.slice('media/seed/'.length))
+    : local;
+  return files.filter((file) => {
     const base = file.slice(0, file.length - extname(file).length);
     return base === name || base.startsWith(`${name}.`);
   });
@@ -177,7 +183,18 @@ async function main(): Promise<void> {
 
     /* ── Уже оптимизирован: описываем файл как есть, без ре-энкода ── */
     if (optimized !== undefined && originals.length === 0) {
-      const data = readFileSync(join(SEED_DIR, optimized));
+      const localPath = join(SEED_DIR, optimized);
+      let data: Buffer;
+      if (existsSync(localPath)) {
+        data = readFileSync(localPath);
+      } else {
+        const remote = r2Inventory.find((entry) => entry.key === `media/seed/${optimized}`);
+        if (!remote) throw new Error(`R2 inventory missing: ${optimized}`);
+        const response = await fetch(remote.url, { signal: AbortSignal.timeout(30_000) });
+        if (!response.ok) throw new Error(`R2 GET ${response.status}: ${optimized}`);
+        data = Buffer.from(await response.arrayBuffer());
+        if (data.length !== remote.bytes) throw new Error(`R2 size mismatch: ${optimized}`);
+      }
       const described = await describeImage(data);
       const fingerprint = fingerprintOf(data);
       const expected = seedFileName(asset.name, fingerprint);

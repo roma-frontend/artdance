@@ -2,7 +2,7 @@ import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
 import { buildCacheHeaderRules } from './src/config/cache';
-import { imageQuality, imageWidths } from './src/config/media';
+import { imageQuality, imageWidths, mediaBaseUrl } from './src/config/media';
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
@@ -51,8 +51,7 @@ const nextConfig: NextConfig = {
      * SSRF через `next/image`. Хост R2 задаётся точно.
      */
     remotePatterns: [
-      { protocol: 'https', hostname: '*.r2.dev' },
-      { protocol: 'https', hostname: '*.r2.cloudflarestorage.com' },
+      ...(mediaBaseUrl ? [new URL(`${mediaBaseUrl.replace(/\/$/, '')}/**`)] : []),
     ],
     /** SVG из внешних источников — вектор XSS. Иконки поставляются как компоненты. */
     dangerouslyAllowSVG: false,
@@ -79,7 +78,7 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: true,
 
 
-  serverExternalPackages: ['@prisma/adapter-pg', 'pg-cloudflare', 'pg'],
+  serverExternalPackages: ['@prisma/client', '@prisma/adapter-pg', 'pg-cloudflare', 'pg'],
 
   async headers() {
     return buildCacheHeaderRules();

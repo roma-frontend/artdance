@@ -10,6 +10,8 @@
 
 import type { MetadataRoute } from 'next';
 
+import { mediaUrl } from '@/config/media';
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'ArtDance',
@@ -29,16 +31,16 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ['lifestyle', 'sports', 'education', 'shopping'],
     prefer_related_applications: false,
     icons: [
-      { src: '/media/app-icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+      { src: mediaUrl('/media/app-icon-192.png'), sizes: '192x192', type: 'image/png', purpose: 'any' },
       {
-        src: '/media/app-icon-192-maskable.png',
+        src: mediaUrl('/media/app-icon-192-maskable.png'),
         sizes: '192x192',
         type: 'image/png',
         purpose: 'maskable',
       },
-      { src: '/media/app-icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+      { src: mediaUrl('/media/app-icon-512.png'), sizes: '512x512', type: 'image/png', purpose: 'any' },
       {
-        src: '/media/app-icon-512-maskable.png',
+        src: mediaUrl('/media/app-icon-512-maskable.png'),
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',
@@ -50,21 +52,21 @@ export default function manifest(): MetadataRoute.Manifest {
         short_name: 'Занятия',
         description: 'Найти занятия по стилю и району',
         url: '/classes',
-        icons: [{ src: '/media/app-icon-192.png', sizes: '192x192', type: 'image/png' }],
+        icons: [{ src: mediaUrl('/media/app-icon-192.png'), sizes: '192x192', type: 'image/png' }],
       },
       {
         name: 'Преподаватели',
         short_name: 'Инструкторы',
         description: 'Преподаватели танцев в Ереване',
         url: '/instructors',
-        icons: [{ src: '/media/app-icon-192.png', sizes: '192x192', type: 'image/png' }],
+        icons: [{ src: mediaUrl('/media/app-icon-192.png'), sizes: '192x192', type: 'image/png' }],
       },
       {
         name: 'Студии',
         short_name: 'Студии',
         description: 'Залы и площадки',
         url: '/studios',
-        icons: [{ src: '/media/app-icon-192.png', sizes: '192x192', type: 'image/png' }],
+        icons: [{ src: mediaUrl('/media/app-icon-192.png'), sizes: '192x192', type: 'image/png' }],
       },
     ],
   };

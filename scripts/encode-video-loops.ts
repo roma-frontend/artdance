@@ -35,6 +35,7 @@ import {
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import r2Inventory from '../design/media-r2-manifest.json';
 import {
   videoLoopKeys,
   videoLoopPolicy,
@@ -689,12 +690,11 @@ function relink(): void {
    ──────────────────────────────────────────────────────────────────────────── */
 
 function checkOnly(): void {
-  if (!existsSync(OUT_DIR)) {
-    console.error(`video:check — ${OUT_DIR} отсутствует. Выполните: npm run video:encode`);
-    process.exit(1);
-  }
-
-  const files = readdirSync(OUT_DIR);
+  const local = existsSync(OUT_DIR) ? readdirSync(OUT_DIR) : [];
+  const remote = new Map(r2Inventory
+    .filter((entry) => entry.key.startsWith('media/video/'))
+    .map((entry) => [entry.key.slice('media/video/'.length), entry]));
+  const files = local.length > 0 ? local : [...remote.keys()];
   const problems: string[] = [];
   let counted = 0;
   let total = 0;
@@ -746,7 +746,7 @@ function checkOnly(): void {
     }
 
     for (const name of own) {
-      const bytes = statSync(join(OUT_DIR, name)).size;
+      const bytes = local.length > 0 ? statSync(join(OUT_DIR, name)).size : remote.get(name)!.bytes;
       counted += 1;
       total += bytes;
       if (bytes > loop.maxBytes) {

@@ -7,6 +7,7 @@
 
 import 'server-only';
 
+import { mediaUrl } from '@/config/media';
 import type { VideoLoopKey } from '@/config/media-processing';
 import type { HomeContent, MediaRef, VideoRef } from '@/domain/content';
 import { videoLoops } from '@/design/video-loops.generated';
@@ -24,7 +25,7 @@ function videoLoop(loop: VideoLoopKey, poster: MediaRef): VideoRef | null {
     sources: sources.map((item) => ({
       format: item.format,
       width: item.width,
-      url: `/media/video/${item.file}`,
+      url: mediaUrl(`/media/video/${item.file}`),
     })),
     poster,
     durationSeconds,
