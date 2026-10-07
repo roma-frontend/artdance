@@ -41,12 +41,26 @@ npm run dev                   # http://localhost:3000/hy
 
 ## Деплой
 
+Основной путь — **Node.js-сервис (`next start`) за Cloudflare DNS/CDN**:
+[настройки сборки, секретов, домена и проверок](./docs/launch/node-deployment.md).
+Cloudflare Pages/Workers не заменяет Node.js для текущих sharp/OG/upload-функций.
+Существующие `deploy:cf`/`wrangler.jsonc` — альтернативный путь, не команда
+деплоя Node.js-сервиса. Для Workers Builds: build command `npm run build:cf`,
+deploy command `npx opennextjs-cloudflare deploy`. Публичные NEXT_PUBLIC_* и
+DATABASE_URL/AUTH_SECRET нужны в Build environment, серверные секреты — также
+в runtime. Этот путь требует проверки совместимости sharp/OG/upload в Workers.
+
 Хостинг запускает только `install` и `build`, поэтому `npm run build` сам вызывает
 `prisma generate`: сгенерированный клиент (`src/generated/`) не хранится в
 репозитории, Prisma 7 не создаёт его на `postinstall`, а кеш сборки на Vercel
 сохраняет `node_modules`, но не исходники. Генерация не требует базы: блок
 `datasource` в `prisma.config.ts` объявляется только при наличии URL, иначе
 `generate` падал бы на разрешении переменной, ничего не пытаясь подключить.
+
+Перед компиляцией `npm run env:check` валидирует окружение теми же схемами,
+что и приложение; отсутствие секретов видно сразу, а не после компиляции OG.
+Проверка формата не проверяет соединение: сама сборка каталога требует доступной БД
+с актуальными миграциями.
 
 `.env.local` в репозиторий не попадает — переменные задаются в панели хостинга
 отдельно для Production и Preview. Без этих сборка падает:
@@ -56,7 +70,7 @@ npm run dev                   # http://localhost:3000/hy
 | `NEXT_PUBLIC_APP_URL` | абсолютный адрес деплоя |
 | `NEXT_PUBLIC_APP_ENV` | `production` / `preview` |
 | `NEXT_PUBLIC_DEFAULT_LOCALE` | `hy` |
-| `DATABASE_URL` | пререндер страниц оформления читает серверное окружение |
+| `DATABASE_URL` | статический каталог и OG читают реальную БД при сборке |
 | `AUTH_SECRET` | ≥32 символов |
 
 `NEXT_PUBLIC_*` подставляются на этапе сборки, а не рантайма: добавление
@@ -69,7 +83,8 @@ npm run dev                   # http://localhost:3000/hy
 | | |
 |---|---|
 | `npm run dev` | dev-сервер |
-| `npm run build` | production-сборка: `prisma generate` + `next build`, включает проверку типов |
+| `npm run build` | production-сборка: проверка env + `prisma generate` + `next build`, включает проверку типов |
+| `npm run env:check` | проверка обязательного build/runtime-окружения без вывода секретов |
 | `npm run verify` | **полная проверка перед коммитом**: токены, переводы, медиа, типы, линтер, тесты |
 | `npm run verify:quick` | только типы и линтер |
 | `npm run verify:headers` | поднимает сборку и сверяет фактические CSP, security-заголовки, кеш и CSRF |

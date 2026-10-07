@@ -121,7 +121,11 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
       className={cn('relative h-full', className)}
       initial={false}
       animate={controls}
-      onFocusCapture={() => {
+      onFocusCapture={(event) => {
+        // Pointer-down фокусирует ссылку до pointer-up. Сброс масштаба в этот
+        // момент передвигает цель и браузер отменяет click. Раскрываем немедленно
+        // только при клавиатурном фокусе; мышь/касание не меняют геометрию.
+        if (!(event.target instanceof HTMLElement) || !event.target.matches(':focus-visible')) return;
         revealed.current = true;
         controls.stop();
         controls.set({ opacity: 1, scale: 1 });

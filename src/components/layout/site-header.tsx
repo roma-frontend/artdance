@@ -119,6 +119,7 @@ export function SiteHeader() {
       <div className="site-header-content page-container flex h-full items-center justify-between gap-4">
         <Link
           href={routes.home()}
+          aria-label={t('brand.name')}
           aria-current={pathname === routes.home() ? 'page' : undefined}
           className="group/logo flex shrink-0 items-center gap-3"
         >
@@ -131,7 +132,7 @@ export function SiteHeader() {
           <span
             translate="no"
             className={cn(
-              'text-card-title transition-colors duration-slow ease-standard',
+              'text-card-title hidden sm:inline transition-colors duration-slow ease-standard',
               solid ? 'text-content-primary' : 'text-content-on-cinema',
             )}
           >

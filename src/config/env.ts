@@ -45,27 +45,14 @@ const boolFlag = z
 /* ──────────────────────────── CLIENT ──────────────────────────── */
 
 /**
- * Cloudflare Workers Builds: NEXT_PUBLIC_* инлайнятся на этапе next build,
- * а в wrangler.jsonc vars — только рантайм. Поэтому на этапе сборки эти
- * переменные могут быть undefined и валить загрузку next.config.ts
- * (next.config.ts → src/config/media.ts → src/config/env.ts). Клиентский
- * env валидируется лениво: при отсутствии vars на сборке используются
- * безопасные дефолты из wrangler.jsonc (production/https://artdance.pages.dev),
- * а реальная валидация срабатывает в рантайме воркера.
+ * Публичные значения обязательны и при сборке, и в браузере. Next встраивает
+ * их в JS: runtime vars хостинга не исправят бандл, собранный без окружения.
+ * Дефолт чужого домена здесь ломает canonical URL, OAuth и проверку Origin.
  */
-const isBuildPhase =
-  typeof process !== 'undefined' &&
-  (process.env.NEXT_PHASE === 'phase-production-build' ||
-    process.argv.some((a) => a.includes('next build') || a.includes('opennextjs')));
-
 const clientSchema = z.object({
-  NEXT_PUBLIC_APP_URL: isBuildPhase ? z.url().default('https://artdance.pages.dev') : z.url(),
-  NEXT_PUBLIC_APP_ENV: isBuildPhase
-    ? z.enum(['local', 'preview', 'staging', 'production']).default('production')
-    : z.enum(['local', 'preview', 'staging', 'production']),
-  NEXT_PUBLIC_DEFAULT_LOCALE: isBuildPhase
-    ? z.enum(['hy', 'ru', 'en']).default('hy')
-    : z.enum(['hy', 'ru', 'en']),
+  NEXT_PUBLIC_APP_URL: z.url(),
+  NEXT_PUBLIC_APP_ENV: z.enum(['local', 'preview', 'staging', 'production']),
+  NEXT_PUBLIC_DEFAULT_LOCALE: z.enum(['hy', 'ru', 'en']),
   NEXT_PUBLIC_SENTRY_DSN: optionalString,
   NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: optionalString,
   NEXT_PUBLIC_SENTRY_REPLAY_ON_ERROR: optionalString,

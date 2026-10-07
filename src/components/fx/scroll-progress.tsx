@@ -8,8 +8,9 @@
  *   только этот слоисто-clipped слой — dropdown-ы Locale/Lite остаются visible;
  * • внутренняя полка `scroll-progress-inner` — `inset-x-0 bottom-0 h-2/3px` с
  *   margin-inline как у page-container;
- * • сам бар — `rounded-full` (pill), чтобы ведущий и ведомый край были скруглены
- *   даже до достижения угла острова; scaleX(progress) — compositing, rAF, hidden на короткой странице.
+ * • сам бар — прямоугольный `w-full h-2/3px` с `scaleX(progress)` (как в office);
+ *   кривой старт даёт внешний `inset-0` clip с `[border-radius:inherit]`, а не pill-скругление;
+ *   узкая 2px полоса не может иметь свой радиус — клип только полноразмерным слоем.
  */
 
 'use client';
@@ -75,8 +76,8 @@ export function ScrollProgress() {
       className={cn(
         'pointer-events-none absolute inset-0 origin-left will-change-transform',
         'bg-gradient-to-r from-accent to-metal',
-        'transition-[transform,opacity] duration-(--scroll-progress-transition) ease-linear',
         'rounded-full',
+        'transition-[transform,opacity] duration-(--scroll-progress-transition) ease-linear',
       )}
       /*
        * Начальное состояние задано тем же свойством, которым его меняет JS.
@@ -84,8 +85,7 @@ export function ScrollProgress() {
        * отдельное CSS-свойство `scale`, а не в `transform`, — и полоса на каждой
        * загрузке страницы успевала мигнуть на всю ширину, прежде чем `transform`
        * из скрипта доезжал до нуля.
-       * rounded-full — pill-скругление ведущего/ведомого края; полный clip
-       * у родителя (inset-0) дополнительно подгоняет нижние углы к острову.
+       * rounded-full — pill 1.5px радиус при высоте 3px: в island левый край дополнительно клипает внешний inset-0 [border-radius:inherit] (как в office), в full gutter-режиме pill даёт кривой старт/конец без опила на clip.
        */
       style={{ transform: 'scaleX(0)' }}
     />

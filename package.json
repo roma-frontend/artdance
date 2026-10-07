@@ -12,7 +12,8 @@
     "postinstall": "node scripts/patch-noble.cjs || true",
     "dev": "next dev",
     "//build": "Prisma 7 не генерирует клиент на postinstall, а src/generated/ не в репозитории. Хостинг запускает только install+build, и кеш node_modules на Vercel сохраняется, а src/generated — нет: генерация обязана быть частью сборки, а не отдельным шагом CI.",
-    "build": "prisma generate && next build",
+    "build": "npm run env:check && prisma generate && next build",
+    "env:check": "tsx scripts/check-build-env.ts",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -49,8 +50,9 @@
     "verify:auth": "tsx scripts/verify-auth.mjs",
     "verify:admin": "node --conditions=react-server --import tsx scripts/verify-admin-write.ts",
     "perf:budget": "tsx scripts/check-performance-budget.ts",
-    "preview:cf": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy:cf": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "build:cf": "opennextjs-cloudflare build",
+    "preview:cf": "npm run build:cf && opennextjs-cloudflare preview",
+    "deploy:cf": "npm run build:cf && opennextjs-cloudflare deploy",
     "cf:typegen": "wrangler types cloudflare-env.d.ts"
   },
   "prisma": {

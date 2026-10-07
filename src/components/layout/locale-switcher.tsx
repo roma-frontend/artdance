@@ -56,11 +56,18 @@ export function LocaleSwitcher({
 }
 
 function LocaleSwitcherFallback({ variant }: { variant?: Variant; solid?: boolean }) {
-  // Скелет для Suspense — пока не смонтирован searchParams
+  const locale = useLocale() as Locale;
+  // Та же геометрия, что у настоящей кнопки: фиксированный w-20 сдвигал
+  // иконки шапки после гидратации, особенно при открытии/закрытии диалога.
   if (variant === 'sheet') {
     return <div className="rounded-xl border border-border-default bg-surface-card p-3 h-24" aria-hidden />;
   }
-  return <span className="inline-flex h-9 w-20 rounded-full border border-transparent" aria-hidden />;
+  return (
+    <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-transparent px-3 text-xs font-semibold tracking-wide" aria-hidden>
+      <GlobeIcon className="size-3.5" />
+      <span>{localeMeta[locale].shortLabel}</span>
+    </span>
+  );
 }
 
 function LocaleSwitcherInner({
