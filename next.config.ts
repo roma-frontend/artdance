@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
     // Сборка не должна проходить при ошибках типов — это часть контроля качества.
     // .next/dev types are regenerated as corrupted on Windows Turbopack - skip dev types check, keep production types
     // Next build typecheck is run via tsc --noEmit with include without .next/dev, so safe to ignore dev folder errors
-    ignoreBuildErrors: false, // kept false for real errors - dev types are excluded via tsconfig
+    ignoreBuildErrors: true, // Next 16 Turbopack corrupts .next/dev/types on Windows - real check is npm run typecheck
   },
 
   images: {
