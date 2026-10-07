@@ -77,7 +77,7 @@ const nextConfig: NextConfig = {
   productionBrowserSourceMaps: true,
 
 
-  serverExternalPackages: ['@prisma/adapter-pg', 'pg-cloudflare'],
+  serverExternalPackages: ['@prisma/adapter-pg', 'pg-cloudflare', 'pg'],
 
   async headers() {
     return buildCacheHeaderRules();
