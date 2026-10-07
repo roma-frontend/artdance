@@ -1,12 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
   "name": "artdance",
   "compatibility_date": "2026-09-18",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": ".open-next/assets",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": true
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
   },
   "vars": {
     "NEXT_PUBLIC_APP_URL": "https://artdance.pages.dev",
