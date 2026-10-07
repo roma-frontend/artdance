@@ -22,6 +22,7 @@ env:
   NEXT_PUBLIC_FEATURE_EVENTS: 'true'
   NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS: 'true'
   NEXT_PUBLIC_FEATURE_VIDEO: 'false'
+  NEXT_PUBLIC_MEDIA_CDN_URL: https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artdance
   DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artdance
   AUTH_SECRET: ci-only-secret-value-at-least-32-characters-long
