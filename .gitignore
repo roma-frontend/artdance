@@ -37,3 +37,10 @@ next-env.d.ts
 .dev.vars
 .wrangler/
 cloudflare-env.d.ts
+
+# All public media lives on R2 + DB (MediaAsset.storageKey), not in git —
+# как в builder-studio /public/media/generated: локальная папка для проверки
+# и кодирования петель создаётся при необходимости, но не коммитится.
+# Лёгкие seed-ресурсы тоже на R2: их URL строит mediaUrl() через
+# NEXT_PUBLIC_MEDIA_CDN_URL, а размеры/blur — из seed-media.generated.ts.
+/public/media/

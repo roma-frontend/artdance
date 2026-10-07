@@ -12,6 +12,9 @@
 node_modules
 .open-next
 .wrangler
+# Static media served from R2/CDN via NEXT_PUBLIC_MEDIA_CDN_URL + DB
+# (как в builder-studio: public/media — на R2). Локальной папки public/media
+# на деплое нет; все URL строит mediaUrl() -> https://pub-*.r2.dev/media/...
 public/media
 manual
 

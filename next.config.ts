@@ -45,14 +45,28 @@ const nextConfig: NextConfig = {
     qualities: [...new Set(Object.values(imageQuality))].sort((a, b) => a - b),
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60 * 60 * 24 * 30,
-    /**
-     * Никаких wildcard в remotePatterns: `hostname: '**'` превращает приложение
-     * в открытый прокси оптимизации изображений для чужих хостов и открывает
-     * SSRF через `next/image`. Хост R2 задаётся точно.
-     */
-    remotePatterns: [
-      ...(mediaBaseUrl ? [new URL(`${mediaBaseUrl.replace(/\/$/, '')}/**`)] : []),
-    ],
+    remotePatterns: (() => {
+      // Как в builder-studio: разрешаем R2-хосты wildcard, + точный хост из env.
+      // Это гарантирует, что `next/image` с удалённым `NEXT_PUBLIC_MEDIA_CDN_URL`
+      // не получит 400 INVALID_IMAGE_OPTIMIZE_REQUEST даже если mediaBaseUrl
+      // был пуст в момент сборки (Vercel инлайнит NEXT_PUBLIC_* на сборке).
+      const patterns: Array<{ protocol: 'https'; hostname: string }> = [
+        { protocol: 'https', hostname: '*.r2.dev' },
+        { protocol: 'https', hostname: '*.r2.cloudflarestorage.com' },
+      ];
+      // mediaBaseUrl читается на этапе загрузки next.config — в Vercel он уже
+      // доступен, но для локальной разработки без CDN wildcard-ов достаточно.
+      const raw = mediaBaseUrl || process.env.R2_PUBLIC_BASE_URL || process.env.R2_PUBLIC_URL || '';
+      if (raw) {
+        try {
+          const h = new URL(raw.replace(/\/$/, '')).hostname;
+          if (h && !patterns.some((p) => p.hostname === h)) patterns.push({ protocol: 'https', hostname: h });
+        } catch {
+          /* ignore malformed env */
+        }
+      }
+      return patterns;
+    })(),
     /** SVG из внешних источников — вектор XSS. Иконки поставляются как компоненты. */
     dangerouslyAllowSVG: false,
   },
