@@ -47,6 +47,8 @@
     "index.ts",
     ".open-next",
     ".wrangler",
-    "cloudflare-env.d.ts"
+    "cloudflare-env.d.ts",
+    ".next/dev",
+    ".next/dev/types"
   ]
 }
