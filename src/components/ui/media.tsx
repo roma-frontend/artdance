@@ -29,7 +29,7 @@ import NextImage from 'next/image';
 import { CalendarDays, GraduationCap, Music4, ShoppingBag, User, Warehouse } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
-import { blurDataUrl, imagePresets, type ImagePresetKey, type MediaFallbackKind } from '@/config/media';
+import { blurDataUrl, imagePresets, mediaUrl, type ImagePresetKey, type MediaFallbackKind } from '@/config/media';
 import { seedMedia } from '@/design/seed-media';
 import { cn } from '@/lib/utils';
 
@@ -114,8 +114,11 @@ function resolve(
   fromData: { width?: number; height?: number; blurDataUrl?: string },
 ): ResolvedSource | null {
   if (fromData.width !== undefined && fromData.height !== undefined) {
+    // src уже прошёл через БД (storageKey вида "/media/seed/...")
+    // или пришёл как абсолютный R2 URL — mediaUrl() сделает из него CDN URL на проде.
+    const url = src.startsWith('http') ? src : mediaUrl(src);
     return {
-      url: src,
+      url,
       width: fromData.width,
       height: fromData.height,
       blur: fromData.blurDataUrl ?? blurDataUrl,
@@ -127,12 +130,13 @@ function resolve(
     return { url: seed.src, width: seed.width, height: seed.height, blur: seed.blurDataUrl };
   }
 
-  // Invalid semantic name (doesn't exist in manifest and not a valid path/URL)
-  if (!src.startsWith('/') && !src.startsWith('http://') && !src.startsWith('https://')) {
-    return null;
+  if (src.startsWith('/') || src.startsWith('http://') || src.startsWith('https://')) {
+    const url = src.startsWith('http') ? src : mediaUrl(src);
+    return { url, blur: fromData.blurDataUrl ?? blurDataUrl };
   }
 
-  return { url: src, blur: fromData.blurDataUrl ?? blurDataUrl };
+  // Invalid semantic name (doesn't exist in manifest and not a valid path/URL)
+  return null;
 }
 
 export function Media({
