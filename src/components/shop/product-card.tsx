@@ -20,6 +20,7 @@ import { useTranslations } from 'next-intl';
 
 import { PortalLink } from '@/components/fx/portal-link';
 import { Badge } from '@/components/ui/badge';
+import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
 import { ProductQuickAdd } from '@/components/shop/product-quick-add';
@@ -85,6 +86,13 @@ export function ProductCard({ item, locale, className }: ProductCardProps) {
           )
         )}
 
+        <FavoriteButton
+          target="product"
+          slug={item.slug}
+          name={item.title}
+          onMedia
+          className="absolute top-2.5 right-2.5 z-20"
+        />
         {!soldOut && item.variantId && (
           <div className="absolute inset-x-3 bottom-3 z-20 flex justify-end opacity-0 transition-opacity duration-300 ease-brand group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100">
             <ProductQuickAdd variantId={item.variantId} title={item.title} />

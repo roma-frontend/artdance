@@ -145,41 +145,42 @@ export function HeaderMegaMenu({ solid, onOpenChange }: Props) {
               scheduleClose();
             }}
           >
-            <Link
-              href={group.href}
-              data-magnetic=""
-              aria-expanded={open}
-              aria-haspopup="menu"
-              aria-current={active ? 'page' : undefined}
-              onClick={(e) => {
-                if (!open) {
-                  e.preventDefault();
-                  setOpenId(group.id);
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowDown' || e.key === 'Enter') {
-                  e.preventDefault();
-                  setOpenId(group.id);
-                }
-              }}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-label transition-colors duration-normal ease-brand',
-                open
-                  ? cn('bg-signal-soft', solid ? 'text-content-primary' : 'text-content-on-accent')
-                  : active
-                    ? 'bg-signal-soft text-content-accent'
-                    : solid
-                      ? 'text-content-primary hover:bg-signal-soft hover:text-content-accent'
-                      : 'text-content-on-accent hover:bg-signal-soft hover:text-content-accent',
-              )}
-            >
-              {t(group.labelKey)}
-              <ChevronDownIcon
-                className={cn('size-3.5 opacity-60 transition-transform duration-normal', open && 'rotate-180')}
-                aria-hidden
-              />
-            </Link>
+              <Link
+                href={group.href}
+                data-magnetic=""
+                aria-expanded={open}
+                aria-haspopup="menu"
+                aria-current={active ? 'page' : undefined}
+                onClick={(e) => {
+                  if (!open) {
+                    e.preventDefault();
+                    setOpenId(group.id);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown' || e.key === 'Enter') {
+                    e.preventDefault();
+                    setOpenId(group.id);
+                  }
+                }}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-label transition-colors duration-normal ease-brand',
+                  'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
+                  open
+                    ? cn('bg-signal-soft', solid ? 'text-content-primary' : 'text-content-on-accent')
+                    : active
+                      ? 'bg-signal-soft text-content-accent'
+                      : solid
+                        ? 'text-content-primary hover:bg-signal-soft hover:text-content-accent'
+                        : 'text-content-on-accent hover:bg-signal-soft hover:text-content-accent',
+                )}
+              >
+                {t(group.labelKey)}
+                <ChevronDownIcon
+                  className={cn('size-3.5 shrink-0 opacity-60 transition-transform duration-normal', open && 'rotate-180')}
+                  aria-hidden
+                />
+              </Link>
           </div>
         );
       })}
@@ -212,7 +213,7 @@ export function HeaderMegaMenu({ solid, onOpenChange }: Props) {
               <Link
                 href={activeGroup.href}
                 onClick={() => setOpenId(null)}
-                className="text-caption font-semibold text-content-accent hover:underline"
+                className="text-caption rounded-full px-2 py-1 font-semibold text-content-accent outline-none hover:bg-accent-soft focus-visible:ring-2 focus-visible:ring-border-focus"
               >
                 {t('common.actions.viewAll' as never)}
               </Link>
@@ -224,18 +225,19 @@ export function HeaderMegaMenu({ solid, onOpenChange }: Props) {
                   : null;
                 const childActive = isActiveNavPath(pathname, child.href);
                 return (
-                  <Link
-                    key={child.id}
-                    href={child.href}
-                    role="menuitem"
-                    onClick={() => setOpenId(null)}
-                    className={cn(
-                      'group/item flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors',
-                      childActive
-                        ? 'bg-accent-soft text-content-accent'
-                        : 'hover:bg-surface-sunken text-content-primary',
-                    )}
-                  >
+                    <Link
+                      key={child.id}
+                      href={child.href}
+                      role="menuitem"
+                      onClick={() => setOpenId(null)}
+                      className={cn(
+                        'group/item flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus',
+                        childActive
+                          ? 'bg-accent-soft text-content-accent'
+                          : 'hover:bg-surface-sunken text-content-primary',
+                      )}
+                    >
                     {Icon && (
                       <span
                         className={cn(

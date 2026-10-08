@@ -112,11 +112,11 @@ export function EditorialVideo({ video, poster, locale, loop = 'editorial' }: Ed
       */}
       <Media
         {...resolveMedia(poster, locale)}
-        /* Фон, а не иллюстрация: описание не нужно, нужен только кадр. */
         alt=""
         preset="editorialFullBleed"
         fill
         className="editorial-backdrop absolute inset-0 size-full"
+        imageClassName="opacity-95 transition-opacity duration-slow"
       />
 
       {playable && hasPlayableVideo(video) && (

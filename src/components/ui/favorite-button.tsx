@@ -93,12 +93,16 @@ export function FavoriteButton({ target, slug, name, onMedia, className }: Favor
       }}
       className={cn(
         'favorite-motion relative inline-flex size-9 items-center justify-center rounded-full',
-        'transition-[background-color,color,scale] duration-normal ease-brand',
+        'transition-[background-color,color,scale,box-shadow] duration-normal ease-brand',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus',
         onMedia
-          ? 'bg-surface-card/85 shadow-sm backdrop-blur-sm hover:bg-surface-card'
-          : 'hover:bg-surface-sunken',
-        isFavorite ? 'text-content-accent' : 'text-content-tertiary hover:text-content-accent',
+          ? isFavorite
+            ? 'bg-accent text-white shadow-md hover:bg-accent-hover ring-1 ring-white/20'
+            : 'bg-surface-card/90 shadow-sm backdrop-blur-sm hover:bg-surface-card hover:shadow-md'
+          : isFavorite
+            ? 'bg-accent-soft text-content-accent ring-1 ring-accent/20 hover:bg-accent-soft'
+            : 'hover:bg-surface-sunken text-content-tertiary hover:text-content-accent hover:shadow-sm',
+        isFavorite && !onMedia && 'shadow-sm',
         className,
       )}
     >

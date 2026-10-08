@@ -78,8 +78,8 @@ export function EditorialStatement({ video, image, locale }: EditorialStatementP
 
         {/* Содержимое идёт втрое медленнее кадра, заголовок — ещё медленнее. */}
         <div data-parallax="content" className="relative">
-          <Reveal variant="scale" className="page-container">
-            <h2 data-parallax="heading" className="text-display-editorial uppercase">
+          <Reveal variant="scale" className="page-container px-4">
+            <h2 data-parallax="heading" className="text-display-editorial uppercase text-balance">
               <TextReveal>{`${t('titleLine1')} ${t('titleLine2')}`}</TextReveal>{' '}
               <span className="editorial-accent text-accent-on-cinema"><TextReveal>{t('titleAccent')}</TextReveal></span>
             </h2>

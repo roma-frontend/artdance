@@ -16,6 +16,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 
 import { PortalLink } from '@/components/fx/portal-link';
 import { Badge } from '@/components/ui/badge';
+import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
 import { SpotsLeft } from '@/components/ui/spots-left';
@@ -56,10 +57,17 @@ export function EventCard({ item, locale, className }: EventCardProps) {
         />
         <span aria-hidden data-cursor-light="" className="card-cursor-light" />
 
+        <FavoriteButton
+          target="event"
+          slug={item.slug}
+          name={item.title}
+          onMedia
+          className="absolute top-2.5 right-2.5 z-20"
+        />
         {/* Декоративный штамп ADMIT ONE */}
         <div
           aria-hidden="true"
-          className="ticket-stamp absolute top-3 right-3 rounded border border-metal-soft bg-surface-cinema/70 px-2 py-0.5 text-3xs font-mono font-bold tracking-widest text-metal uppercase backdrop-blur-xs"
+          className="ticket-stamp pointer-events-none absolute top-3 right-14 rounded border border-metal-soft bg-surface-cinema/70 px-2 py-0.5 text-3xs font-mono font-bold tracking-widest text-metal uppercase backdrop-blur-xs"
         >
           ADMIT ONE
         </div>

@@ -65,8 +65,9 @@ export function HeroVideo({ video, poster, locale }: HeroVideoProps) {
         priority
         fill
         className="absolute inset-0 size-full"
+        imageClassName="opacity-100 transition-opacity duration-slow"
       />
-      {/* Видео грузится только после idle/интеракции — не конкурирует с LCP. */}
+      {/* Видео грузится только после idle/интеракции — не конкурирует с LCP; постер остаётся под ним. */}
       <HeroVideoLayer video={video} />
     </div>
   );

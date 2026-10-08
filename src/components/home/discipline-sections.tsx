@@ -11,20 +11,20 @@
  * взаимодействия, ни состояния здесь нет.
  */
 
-import { useTranslations } from "next-intl";
+import { useTranslations } from 'next-intl';
 
-import { Reveal } from "@/components/fx/reveal";
-import { SectionHeading } from "@/components/ui/section-heading";
-import { routes } from "@/config";
+import { Reveal } from '@/components/fx/reveal';
+import { SectionHeading } from '@/components/ui/section-heading';
+import { routes } from '@/config';
 import {
   disciplineLabelKey,
   latineDisciplines,
   standardDisciplines,
   type Discipline,
-} from "@/domain/dancesport";
-import { danceStyleSlug } from "@/domain/enums";
-import type { Locale } from "@/i18n/config";
-import { Link } from "@/i18n/routing";
+} from '@/domain/dancesport';
+import { danceStyleSlug } from '@/domain/enums';
+import type { Locale } from '@/i18n/config';
+import { Link } from '@/i18n/routing';
 
 interface DisciplineSectionsProps {
   locale: Locale;
@@ -32,20 +32,19 @@ interface DisciplineSectionsProps {
 
 export function DisciplineSections({ locale }: DisciplineSectionsProps) {
   void locale;
-  const t = useTranslations("dancesport");
-  const tHome = useTranslations("home");
-  /** Корневой переводчик — для ключей, собранных из данных (`MessageKey`). */
+  const t = useTranslations('dancesport');
+  const tHome = useTranslations('home');
   const tRoot = useTranslations();
 
   const groups = [
     {
-      title: t("standardTitle"),
-      note: t("standardNote"),
+      title: t('standardTitle'),
+      note: t('standardNote'),
       items: standardDisciplines,
     },
     {
-      title: t("latineTitle"),
-      note: t("latineNote"),
+      title: t('latineTitle'),
+      note: t('latineNote'),
       items: latineDisciplines,
     },
   ] as const;
@@ -82,18 +81,18 @@ export function DisciplineSections({ locale }: DisciplineSectionsProps) {
                 {group.items.map((discipline: Discipline) => (
                   <li
                     key={discipline.slug}
-                    className="flex items-center justify-between gap-3"
+                    className="flex items-center justify-between gap-3 py-1"
                   >
-                    <span className="text-body">
+                    <span className="text-body font-medium">
                       {tRoot(disciplineLabelKey(discipline.id))}
                     </span>
                     <Link
                       href={routes.classes({
                         style: danceStyleSlug(discipline.style),
                       })}
-                      className="text-label text-content-accent hover:underline"
+                      className="text-label shrink-0 rounded-full border border-transparent px-2 py-1 text-content-accent transition-colors hover:border-accent hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                     >
-                      {t("viewSchedule")}
+                      {t('viewSchedule')}
                     </Link>
                   </li>
                 ))}

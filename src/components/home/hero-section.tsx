@@ -56,7 +56,6 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
       {/* Золотая пыль в луче — canvas screen-blend, уважает reduced motion. */}
       <HeroMythicDust />
 
-      {/* Кнопка поиска в самом правом верхнем углу первого экрана */}
       {children !== undefined && (
         <div className="absolute top-24 right-5 z-20 md:top-28 md:right-8 lg:right-12">
           {children}

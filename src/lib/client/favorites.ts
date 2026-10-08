@@ -147,6 +147,15 @@ export function useFavorite(target: FavoriteTarget, slug: string): {
 }
 
 /**
+ * Totale Anzahl der Favoriten — für Badge in Header/Mobile-Dock.
+ * Leerer Server-Snapshot vermeidet Hydration-Mismatch: Badge erscheint erst nach Hydration.
+ */
+export function useFavoritesCount(): number {
+  const raw = useSyncExternalStore(subscribe, read, serverSnapshot);
+  return parse(raw).filter(Boolean).length;
+}
+
+/**
  * Весь набор отметок гостя — для переноса в аккаунт при входе.
  *
  * Возвращает разобранные пары, а не строки: серверному действию нужны тип и

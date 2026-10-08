@@ -23,7 +23,7 @@ import { CatalogPagination } from '@/components/catalog/catalog-pagination';
 import { DiscoverFilters, type FilterFacets } from '@/components/catalog/discover-filters';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { listingRoute, type ListingSection } from '@/config/routes';
+import { listingRoute, routes, type ListingSection } from '@/config/routes';
 import { hasActiveFilters, type CatalogQuery, type CatalogSort } from '@/domain/catalog';
 import type { CatalogPage } from '@/domain/content';
 import { Link } from '@/i18n/routing';
@@ -73,15 +73,19 @@ export function CatalogShell<T>({
 
       {result.total === 0 ? (
         <EmptyState
-          icon={<SearchX aria-hidden className="size-8" />}
+          icon={<SearchX aria-hidden className="size-10" />}
           title={filtered ? t('catalog.empty.title') : t('common.states.empty')}
           description={
             filtered ? t('catalog.empty.description') : t('common.states.noResultsHint')
           }
           action={
-            filtered && (
+            filtered ? (
               <Button asChild variant="outline">
                 <Link href={buildHref({})}>{t('catalog.filters.reset')}</Link>
+              </Button>
+            ) : (
+              <Button asChild variant="ghost">
+                <Link href={routes.home()}>{t('common.actions.explore')}</Link>
               </Button>
             )
           }

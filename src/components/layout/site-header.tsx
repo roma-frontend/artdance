@@ -21,6 +21,7 @@ import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react
 
 import { useCartStore } from '@/lib/cart/store';
 import { fetchCart } from '@/lib/cart/api';
+import { useFavoritesCount } from '@/lib/client/favorites';
 import { useHeaderHideOnScroll } from '@/lib/hooks/use-header-hide-on-scroll';
 
 import { BrandMark } from '@/components/brand/brand-mark';
@@ -45,8 +46,11 @@ export function SiteHeader() {
   const heroBehind = useCinemaHeroBehind(headerRef, hasCinemaHero(pathname));
   const { openSearch } = useSearchOverlay();
   const snapshot = useCartStore((s) => s.snapshot);
+  const favCount = useFavoritesCount();
   const [bump, setBump] = useState(false);
+  const [favBump, setFavBump] = useState(false);
   const prevCount = useRef<number>(snapshot?.totals.itemCount ?? 0);
+  const prevFavCount = useRef<number>(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const onMenuOpenChange = useCallback((open: boolean) => setMenuOpen(open), []);
   const lite = useIsLiteMode();
@@ -91,6 +95,18 @@ export function SiteHeader() {
       if (timer) clearTimeout(timer);
     };
   }, [snapshot]);
+
+  useEffect(() => {
+    if (favCount !== prevFavCount.current) {
+      const grew = favCount > prevFavCount.current;
+      prevFavCount.current = favCount;
+      if (grew && favCount > 0) {
+        queueMicrotask(() => setFavBump(true));
+        const t = setTimeout(() => setFavBump(false), 420);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [favCount]);
 
   const solid = island || !heroBehind;
 
@@ -149,12 +165,17 @@ export function SiteHeader() {
             const Icon = navIcons[item.icon];
             const isCart = item.id === 'cart';
             const cartCount = isCart ? (snapshot?.totals.itemCount ?? 0) : 0;
-            const showBadge = isCart && cartCount > 0;
+            const showCartBadge = isCart && cartCount > 0;
+            const isFav = item.id === 'favorites';
+            const showFavBadge = isFav && favCount > 0;
+            const showBadge = showCartBadge || showFavBadge;
+            const badgeCount = isCart ? cartCount : favCount;
+            const badgeBump = isCart ? bump : favBump;
             return (
               <Link
                 key={item.id}
                 href={item.href}
-                aria-label={showBadge ? `${String(t(item.labelKey))} — ${cartCount}` : String(t(item.labelKey))}
+                aria-label={showBadge ? `${String(t(item.labelKey))} — ${badgeCount}` : String(t(item.labelKey))}
                 {...(item.opensSearch
                   ? {
                       'aria-haspopup': 'dialog' as const,
@@ -171,19 +192,20 @@ export function SiteHeader() {
                   solid
                     ? 'border-transparent text-content-secondary hover:border-accent hover:bg-accent-soft hover:text-content-accent'
                     : 'border-white/10 text-content-on-cinema-muted hover:border-border-on-cinema hover:text-content-on-cinema',
+                  isFav && favCount > 0 && (solid ? 'text-content-accent' : 'text-content-on-cinema'),
                 )}
               >
-                <Icon className="size-5" aria-hidden />
+                <Icon className="size-5" aria-hidden fill={isFav && favCount > 0 ? 'currentColor' : 'none'} />
                 {showBadge && (
                   <span
                     aria-hidden
                     className={cn(
                       'absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-accent px-1 py-0.5 text-caption font-bold leading-none text-white',
                       'transition-transform duration-normal ease-brand',
-                      bump ? 'scale-110' : 'scale-100',
+                      badgeBump ? 'scale-110' : 'scale-100',
                     )}
                   >
-                    {cartCount > 99 ? '99+' : String(cartCount)}
+                    {badgeCount > 99 ? '99+' : String(badgeCount)}
                   </span>
                 )}
               </Link>

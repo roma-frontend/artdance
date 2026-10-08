@@ -40,14 +40,14 @@ export function MobileMenuSheetContent() {
                   return (
                     <li key={item.id}>
                       <DrawerClose asChild>
-                        <Link
-                          href={item.href}
-                          aria-current={active ? 'page' : undefined}
-                          className={cn(
-                            'flex h-full flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-colors active:scale-98',
-                            active ? 'border-accent bg-accent-soft text-content-accent' : 'border-border-default bg-surface-raised text-content-primary',
-                          )}
-                        >
+                          <Link
+                            href={item.href}
+                            aria-current={active ? 'page' : undefined}
+                            className={cn(
+                              'flex h-full flex-col items-center justify-center gap-1.5 rounded-xl border p-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus active:scale-98',
+                              active ? 'border-accent bg-accent-soft text-content-accent' : 'border-border-default bg-surface-raised text-content-primary',
+                            )}
+                          >
                           {Icon && (
                             <span className="grid size-9 place-items-center rounded-lg bg-surface-card">
                               <Icon aria-hidden className="size-4" />
