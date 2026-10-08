@@ -179,22 +179,23 @@ export async function checkRateLimit(
   if (config) {
     const result = await redisLimit(config, key, rule.requests, windowMs);
     if (result) return result;
+    /**
+     * Redis настроен, но недоступен. В production лучше отклонить, чем снять
+     * защиту от брутфорса — это transient-ошибка инфраструктуры.
+     */
+    if (isProduction) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetAt: Date.now() + windowMs,
+        retryAfterSeconds: rule.windowSeconds,
+        backend: 'fail-closed',
+      };
+    }
   }
 
-  /**
-   * Redis не настроен или недоступен. В production это означает отказ: лучше
-   * отклонить запрос, чем остаться без защиты от брутфорса.
-   */
-  if (isProduction) {
-    return {
-      allowed: false,
-      remaining: 0,
-      resetAt: Date.now() + windowMs,
-      retryAfterSeconds: rule.windowSeconds,
-      backend: 'fail-closed',
-    };
-  }
-
+  // Redis не настроен — локальный in-memory fallback даже в production.
+  // Иначе без Upstash production полностью блокирует брони (600s на первом клике).
   return memoryLimit(key, rule.requests, windowMs);
 }
 
