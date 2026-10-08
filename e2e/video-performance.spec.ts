@@ -67,13 +67,26 @@ test('Full и Lite сохраняются после reload и использу�
   });
   await page.goto('/en');
   const toggle = page.locator('[data-slot="header-lite-toggle"]');
+  // Шапка прячется при скролле (useHeaderHideOnScroll) — в тесте она может
+  // оказаться с hidden/inert после parallel-прогонов. Поднимаем скролл к верху.
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toBeEnabled();
   await toggle.click();
-  await page.getByRole('menuitemradio', { name: /^Lite/ }).click();
+  const liteOption = page.getByRole('menuitemradio', { name: /^Lite/ });
+  await expect(liteOption).toBeVisible();
+  await liteOption.click();
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-lite', 'true');
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+  await expect(toggle).toBeVisible();
   await toggle.click();
-  await expect(page.getByRole('menuitemradio', { name: /^Lite/ })).toHaveAttribute('aria-checked', 'true');
-  await page.getByRole('menuitemradio', { name: /^Full/ }).click();
+  const liteOption2 = page.getByRole('menuitemradio', { name: /^Lite/ });
+  await expect(liteOption2).toBeVisible();
+  await expect(liteOption2).toHaveAttribute('aria-checked', 'true');
+  const fullOption = page.getByRole('menuitemradio', { name: /^Full/ });
+  await expect(fullOption).toBeVisible();
+  await fullOption.click();
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-lite', 'false');
   await page.locator(tiles).scrollIntoViewIfNeeded();
