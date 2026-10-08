@@ -1,14 +1,14 @@
 # План внедрения upload в админке (все сущности — файл, не ссылка)
 
-> Запросил: все что создается в админке должно иметь input для upload (не ссылка из интернета). Логика берется из `Desktop/online-shop` (четкая реализация, много опций). Продолжение — из дома. Файл — единственный источник плана.
+> Запросил: все что создается в админке должно иметь input для upload (не ссылка из интернета). Логика берется из `Desktop/caron` (четкая реализация, много опций). Продолжение — из дома. Файл — единственный источник плана.
 
 ## 1. Контекст и цель
 
 - Сейчас `artdance` уже грузит файлами `instructors/venues/rooms/classes/products/events` через `PhotoUploader → POST /api/media/upload (FormData file+kind+altText+ownerId) → validateUpload + sharp(inspect/process) → R2 (AWS SigV4, без SDK) → MediaAsset`.
 - Разрывы (текстовый `kind:'text'` вместо загрузки): `BlogPost.coverKey+coverAlt`, `Banner.imageKey`, `Course.coverKey`, `CourseLesson.videoAssetId`, `User.avatarKey` (+ `ProductCategory/Review.photoAssetIds` как строки). `mediaOwners` покрывает только 6 сущностей, `storage.ts: mediaPaths` без путей `blogCover/banner/courseCover/avatar`.
-- Цель: все создаваемое в админке получает **upload-input** (single или gallery), строки-URL остаются только как deprecated-зеркало один релиз. Логика бэка/валидации/доставки/тестов переносится из `Desktop/online-shop`.
+- Цель: все создаваемое в админке получает **upload-input** (single или gallery), строки-URL остаются только как deprecated-зеркало один релиз. Логика бэка/валидации/доставки/тестов переносится из `Desktop/caron`.
 
-## 2. Что переносим из online-shop (референс: `C:\Users\namel\Desktop\online-shop`)
+## 2. Что переносим из caron (референс: `C:\Users\namel\Desktop\caron`)
 
 - `src/hooks/useUpload.ts` — `useUpload(endpoint)` → `FormData file → fetch → {publicUrl} + uploading`.
 - UI-паттерны: **gallery** (`products` — `grid-cols-4` превью, чекбоксы `✓/+`, `✕`, bulk `Select All/Delete Selected/Delete All`, `onDrop/onDragOver/setDragActive`, скрытый `input[type=file] multiple accept="image/*"` + `fileRef.click()`, цикл `for(f of files){await upload(f)}`) и **single-cover** (`categories/brands/promotions` — `border-dashed aspect-video/square` кнопка, preview+`✕`).
@@ -33,7 +33,7 @@
 
 ### Фаза 3 — Общие UI-компоненты
 
-- Новый `src/hooks/useUpload.ts` (копия `online-shop:useUpload`, парам. endpoint).
+- Новый `src/hooks/useUpload.ts` (копия `caron:useUpload`, парам. endpoint).
 - Новый `src/components/form/file-dropzone.tsx` (режимы `gallery`/`single`, dragActive, `grid` vs `dashed`).
 - Модифицировать `src/components/form/photo-uploader.tsx:38` — добавить dragActive, bulk-toolbar, `router.refresh()` после успеха, поддержка новых `kind`.
 - Создать `src/components/form/single-image-uploader.tsx` для `kind:'image'` single-полей (обертка над PhotoUploader с `maxPerEntity=1`).
@@ -45,7 +45,7 @@
 
 ### Фаза 5 — Тесты и CI-страж
 
-- Расширить `src/lib/security/uploads.test.ts` (новые kinds, `TOO_MANY_FILES` с `1`, `gif` reject), `src/lib/media/ingest.test.ts` (thumb sibling), добавить `src/app/api/media/upload/route.test.ts` (аналог `online-shop/r2-image.test.ts: 401/400/429/413/unsupported/too_many`) и `src/components/form/photo-uploader.test.tsx` (drag-drop, sequential halt on first fail).
+- Расширить `src/lib/security/uploads.test.ts` (новые kinds, `TOO_MANY_FILES` с `1`, `gif` reject), `src/lib/media/ingest.test.ts` (thumb sibling), добавить `src/app/api/media/upload/route.test.ts` (аналог `caron/r2-image.test.ts: 401/400/429/413/unsupported/too_many`) и `src/components/form/photo-uploader.test.tsx` (drag-drop, sequential halt on first fail).
 - `npm run media:check/video:check/design:check` — считать `blog/banner/course MediaAsset` вместо строкового `storageKey`.
 
 ### Фаза 6 — Доставка, GC, доки
@@ -72,4 +72,4 @@ npm run typecheck && npm test && npm run i18n:check && npm run design:check
 ## 6. Источники
 
 - `artdance`: `prisma/schema.prisma:254,778,1984,2044,1541` · `src/config/admin.ts:1045,1093` · `src/components/admin/media-section.tsx:24` · `src/components/form/photo-uploader.tsx:38` · `src/app/api/media/upload/route.ts:40` · `src/lib/media/storage.ts:48` · `src/lib/media/ingest.ts:44` · `src/lib/security/uploads.ts:20` · `src/server/queries/blog.ts:95`.
-- `online-shop`: `src/hooks/useUpload.ts:4` · `src/app/api/upload/route.ts:9,40` · `src/app/api/review-upload/route.ts:16` · `src/lib/optimizeImage.ts:8` · `src/lib/thumb.ts:9` · `convex/r2Actions.ts:46` · `src/app/admin/products/add/page.tsx:88` · `src/app/admin/categories/add/page.tsx:25`.
+- `caron`: `src/hooks/useUpload.ts:4` · `src/app/api/upload/route.ts:9,40` · `src/app/api/review-upload/route.ts:16` · `src/lib/optimizeImage.ts:8` · `src/lib/thumb.ts:9` · `convex/r2Actions.ts:46` · `src/app/admin/products/add/page.tsx:88` · `src/app/admin/categories/add/page.tsx:25`.

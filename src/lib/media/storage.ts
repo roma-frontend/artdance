@@ -106,7 +106,7 @@ async function putToLocalDisk(key: string, data: Buffer): Promise<StoredObject> 
   await mkdir(dirname(target), { recursive: true });
   await writeFile(target, data);
 
-  return { key, url: mediaUrl(`${LOCAL_PREFIX}/${key}`), bytes: data.byteLength };
+  return { key, url: mediaUrl(key), bytes: data.byteLength };
 }
 
 /* ─────────────────────────────── R2 ─────────────────────────────── */
@@ -135,9 +135,14 @@ function encodeR2Key(key: string): string {
 function r2PublicUrl(key: string): string {
   const env = getServerEnv();
   if (env.R2_PUBLIC_BASE_URL) {
-    return `${env.R2_PUBLIC_BASE_URL.replace(/\/$/, '')}/${key}`;
+    const base = env.R2_PUBLIC_BASE_URL.trim();
+    return `${base.replace(/\/$/, '')}/${key}`;
   }
   return mediaUrl(key);
+}
+
+export function buildR2ImageUrl(key: string): string {
+  return r2PublicUrl(key);
 }
 
 function r2Endpoint(accountId: string, bucket: string, key: string): { url: string; host: string; canonicalUri: string } {

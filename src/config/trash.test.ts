@@ -62,8 +62,18 @@ const models = parseModels(source);
  * означают, что окончательное удаление одной уносит файл у другой, и
  * восстановленная запись покажет битую картинку. Файл принадлежит записи один к
  * одному, и ограничение так и говорит.
+ *
+ * `MediaAsset.*Id` с `@unique` — связь upload-картинки 1:1 (например,
+ * `bannerId` хранит единственную обложку баннера). Требование задачи: одна
+ * картинка для карточки/фона на сущность.
  */
-const fullUniqueExceptions: ReadonlyArray<`${string}.${string}`> = ['MediaAsset.storageKey'];
+const fullUniqueExceptions: ReadonlyArray<`${string}.${string}`> = [
+  'MediaAsset.storageKey',
+  'MediaAsset.bannerId',
+  'MediaAsset.blogPostId',
+  'MediaAsset.courseId',
+  'MediaAsset.avatarOwnerId',
+];
 
 describe('модели корзины', () => {
   it('схема прочитана', () => {

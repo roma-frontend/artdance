@@ -802,29 +802,5 @@
     "contentType": "image/webp",
     "bytes": 51178,
     "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/style-tango.ba306342.webp"
-  },
-  {
-    "key": "originals/generated-style-videos/contemporary-4k-master.mp4",
-    "contentType": "video/mp4",
-    "bytes": 6163753,
-    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/originals/generated-style-videos/contemporary-4k-master.mp4"
-  },
-  {
-    "key": "originals/generated-style-videos/contemporary-alt-prepared.mp4",
-    "contentType": "video/mp4",
-    "bytes": 2143268,
-    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/originals/generated-style-videos/contemporary-alt-prepared.mp4"
-  },
-  {
-    "key": "originals/generated-style-videos/contemporary-prepared.mp4",
-    "contentType": "video/mp4",
-    "bytes": 2159535,
-    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/originals/generated-style-videos/contemporary-prepared.mp4"
-  },
-  {
-    "key": "originals/generated-style-videos/contemporary-tile-prepared.mp4",
-    "contentType": "video/mp4",
-    "bytes": 2157257,
-    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/originals/generated-style-videos/contemporary-tile-prepared.mp4"
   }
 ]

@@ -4,6 +4,7 @@ export async function register(): Promise<void> {
   // Temporarily disabled for Cloudflare/OpenNext compatibility testing.
 }
 
-export async function onRequestError(..._args: unknown[]): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function onRequestError(..._rest: unknown[]): Promise<void> {
   // Temporarily disabled for Cloudflare/OpenNext compatibility testing.
 }

@@ -179,6 +179,10 @@ export function resourceCacheTags(resource: AdminResource): readonly string[] {
         cacheTags.events(), cacheTags.content('media')];
     case 'blog-posts':
       return [cacheTags.blog()];
+    case 'banners':
+      return [cacheTags.content('banners')];
+    case 'users':
+      return [];
     case 'promo-codes':
     case 'gift-cards':
       /* Промо не участвует в кешируемых списках: скидка считается при заказе. */
@@ -832,6 +836,61 @@ export async function listResource(resource: AdminResource, query: AdminListPara
         throw err;
       }
     }
+
+    case 'banners': {
+      const where = baseWhere(spec, query, ['title', 'key']) as Prisma.BannerWhereInput;
+      const [rows, total] = await Promise.all([
+        db.banner.findMany({
+          where,
+          skip,
+          take,
+          orderBy: { order: 'asc' },
+          select: { id: true, title: true, key: true, href: true, isActive: true, updatedAt: true },
+        }),
+        db.banner.count({ where }),
+      ]);
+      return result(
+        rows.map((row) => ({
+          id: row.id,
+          title: row.title,
+          key: row.key,
+          href: row.href,
+          isActive: row.isActive,
+          updatedAt: iso(row.updatedAt),
+        })),
+        total,
+        page,
+      );
+    }
+
+    case 'users': {
+      const where = baseWhere(spec, query, ['name', 'email']) as Prisma.UserWhereInput;
+      const [rows, total] = await Promise.all([
+        db.user.findMany({
+          where,
+          skip,
+          take,
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, name: true, email: true, role: true, isActive: true, createdAt: true },
+        }),
+        db.user.count({ where }),
+      ]);
+      return result(
+        rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          role: row.role,
+          isActive: row.isActive,
+          createdAt: iso(row.createdAt),
+        })),
+        total,
+        page,
+      );
+    }
+
+    default:
+      return result([], 0, page);
   }
 }
 
@@ -1231,6 +1290,8 @@ export async function relationOptions(source: AdminRelationSource): Promise<read
     case 'gift-cards':
     case 'media':
     case 'blog-posts':
+    case 'banners':
+    case 'users':
       return [];
   }
 }

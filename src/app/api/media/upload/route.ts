@@ -38,7 +38,18 @@ import { checkRateLimit, clientIdentifier } from '@/lib/security/rate-limit';
 import { validateUpload } from '@/lib/security/uploads';
 
 /** Поля-владельцы `MediaAsset`. Ключ формы = имя поля Prisma. */
-const ownerFields = ['instructorId', 'venueId', 'roomId', 'classId', 'productId', 'eventId'] as const;
+const ownerFields = [
+  'instructorId',
+  'venueId',
+  'roomId',
+  'classId',
+  'productId',
+  'eventId',
+  'bannerId',
+  'blogPostId',
+  'courseId',
+  'avatarOwnerId',
+] as const;
 type OwnerField = (typeof ownerFields)[number];
 
 /** Какой каталог хранилища и какой пресет соответствуют роли загрузки. */
@@ -58,6 +69,12 @@ function storageKeyFor(kind: UploadKind, ownerId: string, fileId: string): strin
       return mediaPaths.avatar(ownerId, fileId);
     case 'courseVideo':
       return mediaPaths.courseCover(ownerId, fileId);
+    case 'bannerImage':
+      return mediaPaths.bannerImage(ownerId, fileId);
+    case 'blogCover':
+      return mediaPaths.blogCover(ownerId, fileId);
+    case 'courseCover':
+      return mediaPaths.courseCover(ownerId, fileId);
   }
 }
 
@@ -76,6 +93,12 @@ function presetFor(kind: UploadKind): ImagePresetKey {
     case 'avatar':
       return 'avatar';
     case 'courseVideo':
+      return 'classCard';
+    case 'bannerImage':
+      return 'heroFullBleed';
+    case 'blogCover':
+      return 'editorialFullBleed';
+    case 'courseCover':
       return 'classCard';
   }
 }
@@ -99,6 +122,9 @@ export async function POST(request: Request): Promise<Response> {
 
     const altText = String(form.get('altText') ?? '').trim();
     if (altText.length === 0) throw domainErrors.validationFailed('altText');
+
+    const purposeRaw = String(form.get('purpose') ?? '').trim();
+    const purpose = purposeRaw === 'card' || purposeRaw === 'background' ? purposeRaw : null;
 
     /* Владелец: ровно одно поле, иначе непонятно, к чему привязан кадр. */
     const owner = ownerFields
@@ -172,6 +198,7 @@ export async function POST(request: Request): Promise<Response> {
         blurDataUrl: image.blurDataUrl,
         sortOrder: existingCount,
         uploadedById: caller.id,
+        ...(purpose ? { purpose } : {}),
         [ownerEntry.field]: ownerEntry.id,
       },
       select: { id: true, storageKey: true, width: true, height: true, bytes: true },

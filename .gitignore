@@ -38,12 +38,13 @@ next-env.d.ts
 .wrangler/
 cloudflare-env.d.ts
 
-# All public media lives on R2 + DB (MediaAsset.storageKey), not in git —
-# как в builder-studio /public/media/generated: локальная папка для проверки
-# и кодирования петель создаётся при необходимости, но не коммитится.
-# Лёгкие seed-ресурсы тоже на R2: их URL строит mediaUrl() через
-# NEXT_PUBLIC_MEDIA_CDN_URL, а размеры/blur — из seed-media.generated.ts.
-/public/media/
+# Uploads живут только на R2 + DB (MediaAsset.storageKey), не в git.
+# Seed-статика (`public/media/seed`, `video`, `warp`, `style-*`) нужна для
+# локальных проверок `npm run media:check` / `video:check` и CI consistency
+# job'а — без файлов эти проверки нечем сверять.
+# Исключение — именно seed и производные видео, а не произвольные загрузки.
+/public/media/uploads/
+/public/media/og/
 
 # Договорные приложения — локальные документы для подписи, не попадают в git
 /docs/contracts/

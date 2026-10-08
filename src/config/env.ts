@@ -131,12 +131,18 @@ const serverSchema = z.object({
   STRIPE_WEBHOOK_SECRET: optionalString,
   STRIPE_PUBLISHABLE_KEY: optionalString,
 
-  /* Медиа */
+  /* Медиа — алиасы R2_*_NAME/URL для совместимости с .env.local */
   R2_ACCOUNT_ID: optionalString,
   R2_ACCESS_KEY_ID: optionalString,
   R2_SECRET_ACCESS_KEY: optionalString,
-  R2_BUCKET: optionalString,
-  R2_PUBLIC_BASE_URL: optionalUrl,
+  R2_BUCKET: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : process.env.R2_BUCKET_NAME?.trim() || undefined),
+    z.string().min(1).optional(),
+  ),
+  R2_PUBLIC_BASE_URL: z.preprocess(
+    (v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : process.env.R2_PUBLIC_URL?.trim() || undefined),
+    z.url().optional(),
+  ),
 
   /* Уведомления */
   RESEND_API_KEY: optionalString,

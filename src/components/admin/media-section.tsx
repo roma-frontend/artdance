@@ -14,20 +14,25 @@ import { getFormatter, getTranslations } from 'next-intl/server';
 
 import { PhotoDeleteButton } from '@/components/admin/photo-delete-button';
 import { PhotoUploader } from '@/components/form/photo-uploader';
+import { SingleImageUploader } from '@/components/form/single-image-uploader';
 import { Media } from '@/components/ui/media';
 import { mediaUrl, routes, type AdminResource } from '@/config';
-import type { UploadKind } from '@/config/security';
+import { uploadPolicies, type UploadKind } from '@/config/security';
 import { Link } from '@/i18n/routing';
 import { db } from '@/lib/db';
 
 /** Какие разделы владеют кадрами и в какой роли они загружаются. */
-const mediaOwners: Partial<Record<AdminResource, { field: string; kind: UploadKind }>> = {
+export const mediaOwners: Partial<Record<AdminResource, { field: string; kind: UploadKind }>> = {
   instructors: { field: 'instructorId', kind: 'instructorPhoto' },
   venues: { field: 'venueId', kind: 'venuePhoto' },
   rooms: { field: 'roomId', kind: 'venuePhoto' },
   classes: { field: 'classId', kind: 'classPhoto' },
   products: { field: 'productId', kind: 'productImage' },
   events: { field: 'eventId', kind: 'eventPhoto' },
+  'blog-posts': { field: 'blogPostId', kind: 'blogCover' },
+  courses: { field: 'courseId', kind: 'courseCover' },
+  banners: { field: 'bannerId', kind: 'bannerImage' },
+  users: { field: 'avatarOwnerId', kind: 'avatar' },
 };
 
 export function ownsMedia(resource: AdminResource): boolean {
@@ -64,6 +69,7 @@ export async function MediaSection({ resource, id, canUpload, canDelete }: Media
       height: true,
       bytes: true,
       blurDataUrl: true,
+      purpose: true,
     },
   });
 
@@ -84,7 +90,7 @@ export async function MediaSection({ resource, id, canUpload, canDelete }: Media
             >
               <Media
                 preset="thumbnail"
-                src={mediaUrl(asset.storageKey)}
+                src={asset.storageKey}
                 alt={asset.altText}
                 {...(asset.width ? { width: asset.width } : {})}
                 {...(asset.height ? { height: asset.height } : {})}
@@ -94,7 +100,12 @@ export async function MediaSection({ resource, id, canUpload, canDelete }: Media
               <p className="text-caption text-content-secondary">{asset.altText}</p>
               <p className="text-caption text-content-tertiary">
                 {asset.width && asset.height ? `${asset.width}×${asset.height} · ` : ''}
-                {format.number(Math.round(asset.bytes / 1024), 'plain')} KB
+                {format.number(Math.round(asset.bytes / 1024), 'plain')} KB ·{' '}
+                {asset.purpose === 'background'
+                  ? t('media.purposeBackground')
+                  : asset.purpose === 'card'
+                    ? t('media.purposeCard')
+                    : t('media.purposeUnknown')}
               </p>
 
               <div className="mt-auto flex flex-wrap items-center justify-between gap-2">
@@ -115,12 +126,23 @@ export async function MediaSection({ resource, id, canUpload, canDelete }: Media
       )}
 
       {canUpload ? (
-        <PhotoUploader
-          kind={owner.kind}
-          ownerField={owner.field}
-          ownerId={id}
-          existingCount={assets.length}
-        />
+        uploadPolicies[owner.kind].maxPerEntity === 1 ? (
+          <SingleImageUploader
+            kind={owner.kind}
+            ownerField={owner.field}
+            ownerId={id}
+            currentUrl={assets[0] ? mediaUrl(assets[0].storageKey) : null}
+            currentAlt={assets[0]?.altText ?? null}
+            purpose={(assets[0]?.purpose as 'card' | 'background' | null) ?? null}
+          />
+        ) : (
+          <PhotoUploader
+            kind={owner.kind}
+            ownerField={owner.field}
+            ownerId={id}
+            existingCount={assets.length}
+          />
+        )
       ) : null}
     </section>
   );

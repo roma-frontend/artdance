@@ -37,7 +37,7 @@ import {
   toInstructorCard,
   type InstructorRow,
 } from './instructors';
-import { mediaSelect, toMediaRef, type MediaRow } from './media';
+import { firstMediaRef, mediaSelect, toMediaRef, type MediaRow } from './media';
 import {
   productSelect,
   publicProductWhere,
@@ -203,22 +203,42 @@ async function loadHomeContent(locale: Locale): Promise<HomeContent> {
   const mediaByKey = new Map(
     (mediaRows as MediaRow[]).map((row) => [row.storageKey, toMediaRef(row)]),
   );
+  const normalizeStorageKey = (value: string): string => {
+    const withoutHash = value.indexOf('#') === -1 ? value : value.slice(0, value.indexOf('#'));
+    try {
+      const url = new URL(withoutHash);
+      if (url.hostname.endsWith('r2.dev') || url.hostname.endsWith('r2.cloudflarestorage.com')) {
+        return decodeURIComponent(url.pathname || '/');
+      }
+    } catch {
+      /* not a URL — local /media/seed/... */
+    }
+    return withoutHash;
+  };
+  const mediaByNormalized = new Map(
+    (mediaRows as MediaRow[]).map((row) => [normalizeStorageKey(row.storageKey), toMediaRef(row)]),
+  );
   const requireMedia = (storageKey: string): MediaRef => {
-    const media = mediaByKey.get(storageKey);
-    if (!media) throw new Error(`home content references missing media ${storageKey}`);
-    return media;
+    const direct = mediaByKey.get(storageKey);
+    if (direct) return direct;
+    const byFile = mediaByNormalized.get(normalizeStorageKey(storageKey));
+    if (byFile) return byFile;
+    throw new Error(`home content references missing media ${storageKey}`);
   };
 
   const summariesByStyle = new Map(styleSummaries.map((summary) => [summary.style, summary]));
 
   const classes = classRows.map((row) => {
     const translation = translationOf(row.translations);
-    return toClassCard({
+    const withoutCoverFallback = {
       ...row,
       title: translation?.title ?? row.title,
       description: translation?.description ?? row.description,
       learningPoints: translation?.learningPoints ?? row.learningPoints,
-    } as unknown as ClassRow);
+    } as unknown as ClassRow;
+    const base = toClassCard(withoutCoverFallback);
+    const uploaded = firstMediaRef((row as unknown as { media: MediaRow[] }).media ?? []);
+    return uploaded ? { ...base, image: uploaded } : base;
   });
 
   const instructors = instructorRows.map((row) => {

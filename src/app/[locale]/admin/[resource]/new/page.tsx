@@ -9,13 +9,14 @@
  * должно открывать форму с уже выбранной площадкой, иначе выбор делается дважды.
  */
 
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
 
 import { AdminForm } from '@/components/admin/admin-form';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { adminResourceSpecs, isAdminResource, routes } from '@/config';
+import { ownsMedia } from '@/components/admin/media-section';
 import { emptyValues, translationLocales } from '@/domain/admin/schema';
 import type { Locale } from '@/i18n/config';
 import { adminAccess } from '@/server/admin/access';
@@ -44,6 +45,7 @@ export default async function AdminResourceCreatePage({ params, searchParams }: 
   if (spec.parent && parentId) values[spec.parent.field] = parentId;
 
   const options = await loadRelationOptions(spec);
+  const t = await getTranslations('admin');
 
   return (
     <>
@@ -52,6 +54,12 @@ export default async function AdminResourceCreatePage({ params, searchParams }: 
         subtitleKey={spec.subtitleKey}
         parent={{ href: routes.adminResource(resource), labelKey: spec.titleKey }}
       />
+
+      {ownsMedia(resource) ? (
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          {t('form.mediaAfterCreateHint')}
+        </div>
+      ) : null}
 
       <AdminForm
         resource={resource}

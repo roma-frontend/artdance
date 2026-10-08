@@ -122,6 +122,9 @@ export const uploadKinds = [
   'eventPhoto',
   'productImage',
   'courseVideo',
+  'bannerImage',
+  'blogCover',
+  'courseCover',
 ] as const;
 export type UploadKind = (typeof uploadKinds)[number];
 
@@ -131,31 +134,48 @@ export interface UploadPolicy {
   extensions: readonly string[];
   maxBytes: number;
   maxPerEntity: number;
+  /** Человекочитаемая подсказка для UI: рекомендуемые размеры/формат. */
+  hint?: string;
 }
 
 const IMAGE_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'] as const;
 const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'webp', 'avif'] as const;
 const MB = 1024 * 1024;
 
+/**
+ * Лимит 5 MB — требование продукта (единый потолок для всех изображений).
+ * Аватар 2 MB — исключение: квадрат 512×512 не нуждается в большем.
+ */
 export const uploadPolicies: Record<UploadKind, UploadPolicy> = {
-  avatar: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 2 * MB, maxPerEntity: 1 },
-  instructorPhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 8 * MB, maxPerEntity: 12 },
-  venuePhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 8 * MB, maxPerEntity: 12 },
+  avatar: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 2 * MB, maxPerEntity: 1, hint: 'Квадрат 512×512, до 2 MB' },
+  instructorPhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 5 * MB, maxPerEntity: 12, hint: 'Портрет 800×1000, до 5 MB' },
+  venuePhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 5 * MB, maxPerEntity: 12, hint: 'Альбом 1600×900, до 5 MB' },
   /**
    * Кадры занятия и события. Отдельные роли, а не «фотография вообще»: предел на
    * сущность у них разный по смыслу — у занятия это галерея, у события обычно
    * одна афиша, и сваливать их в одну политику значит потерять это различие.
    */
-  classPhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 8 * MB, maxPerEntity: 8 },
-  eventPhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 8 * MB, maxPerEntity: 4 },
-  productImage: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 8 * MB, maxPerEntity: 12 },
+  classPhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 5 * MB, maxPerEntity: 8, hint: 'Карточка 640×360, до 5 MB' },
+  eventPhoto: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 5 * MB, maxPerEntity: 4, hint: 'Афиша 1280×720, до 5 MB' },
+  productImage: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 5 * MB, maxPerEntity: 12, hint: 'Карточка товара 800×1000, до 5 MB' },
   courseVideo: {
     mimeTypes: ['video/mp4', 'video/quicktime'],
     extensions: ['mp4', 'mov'],
     maxBytes: 512 * MB,
     maxPerEntity: 1,
+    hint: 'MP4/MOV до 512 MB',
   },
+  bannerImage: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 5 * MB, maxPerEntity: 1, hint: 'Баннер/фон 1920×600, до 5 MB' },
+  blogCover: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 5 * MB, maxPerEntity: 1, hint: 'Обложка блога 1280×720, до 5 MB' },
+  courseCover: { mimeTypes: IMAGE_MIME, extensions: IMAGE_EXT, maxBytes: 5 * MB, maxPerEntity: 1, hint: 'Обложка курса 1280×720, до 5 MB' },
 };
+
+/** Константа лимита для UI: единый потолок изображений. */
+export const UPLOAD_MAX_MB = 5;
+
+/** Допустимые назначения кадра: card = превью карточки, background = фон страницы/герой. */
+export const mediaPurposes = ['card', 'background'] as const;
+export type MediaPurpose = (typeof mediaPurposes)[number];
 
 /* ───────────────────────── Webhook-подписи ───────────────────────── */
 

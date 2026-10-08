@@ -21,9 +21,10 @@ describe('media storage R2', () => {
     vi.resetModules();
     const { mediaUrl } = await import('@/config/media');
     expect(mediaUrl('/media/seed/photo.webp')).toBe('https://media.example.com/media/seed/photo.webp');
+    expect(mediaUrl('/media/uploads/photo.webp')).toBe('https://media.example.com/media/uploads/photo.webp');
     expect(mediaUrl('avatars/photo.webp')).toBe('https://media.example.com/avatars/photo.webp');
     expect(mediaUrl('https://other.example.com/photo.webp')).toBe('https://other.example.com/photo.webp');
-    expect(mediaUrl('/favicon.ico')).toBe('/favicon.ico');
+    expect(mediaUrl('/favicon.ico')).toBe('https://media.example.com/favicon.ico');
   });
 
   it('keeps public media local when no CDN is configured', async () => {

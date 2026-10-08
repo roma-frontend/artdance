@@ -113,10 +113,13 @@ function resolve(
   src: string,
   fromData: { width?: number; height?: number; blurDataUrl?: string },
 ): ResolvedSource | null {
+  const isBareKey = !src.startsWith('/') && !src.startsWith('http');
+  // Снять фрагмент владельца до проверки — иначе "#class:..." считается частью пути
+  // и contentBlock keys с фрагментом не находятся; mediaUrl тоже снимет, но seed-
+  // проверка должна видеть имя до фрагмента.
+  const cleanSrc = src.indexOf('#') === -1 ? src : src.slice(0, src.indexOf('#'));
   if (fromData.width !== undefined && fromData.height !== undefined) {
-    // src уже прошёл через БД (storageKey вида "/media/seed/...")
-    // или пришёл как абсолютный R2 URL — mediaUrl() сделает из него CDN URL на проде.
-    const url = src.startsWith('http') ? src : mediaUrl(src);
+    const url = cleanSrc.startsWith('http') ? cleanSrc : mediaUrl(cleanSrc);
     return {
       url,
       width: fromData.width,
@@ -125,17 +128,16 @@ function resolve(
     };
   }
 
-  const seed = seedMedia(src);
+  const seed = seedMedia(cleanSrc);
   if (seed) {
     return { url: seed.src, width: seed.width, height: seed.height, blur: seed.blurDataUrl };
   }
 
-  if (src.startsWith('/') || src.startsWith('http://') || src.startsWith('https://')) {
-    const url = src.startsWith('http') ? src : mediaUrl(src);
+  if (cleanSrc.startsWith('/') || cleanSrc.startsWith('http://') || cleanSrc.startsWith('https://') || isBareKey) {
+    const url = cleanSrc.startsWith('http') ? cleanSrc : mediaUrl(cleanSrc);
     return { url, blur: fromData.blurDataUrl ?? blurDataUrl };
   }
 
-  // Invalid semantic name (doesn't exist in manifest and not a valid path/URL)
   return null;
 }
 

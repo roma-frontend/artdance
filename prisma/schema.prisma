@@ -292,6 +292,7 @@ model User {
   marketingConsentAt DateTime?
   athleteProfile  AthleteProfile?
   blogPosts         BlogPost[]
+  avatarMedia     MediaAsset?         @relation("UserAvatar")
 
   @@index([role, isActive])
   @@index([createdAt])
@@ -797,6 +798,7 @@ model Course {
   lessons      CourseLesson[]
   enrollments  CourseEnrollment[]
   reviews      Review[]
+  media        MediaAsset?
 
   @@unique([slug], where: raw("\"deletedAt\" IS NULL"))
   @@index([style, level, isPublished])
@@ -1562,6 +1564,13 @@ model MediaAsset {
   classId      String?
   productId    String?
   eventId      String?
+  // Новые владельцы для upload-фаз (additive-only, deprecated строки остаются)
+  bannerId      String? @unique
+  blogPostId    String? @unique
+  courseId      String? @unique
+  avatarOwnerId String? @unique
+  // Назначение кадра (card = обложка карточки, background = фон страницы/герой, куда ведёт клик)
+  purpose       String?
 
   uploadedById String?
   createdAt    DateTime  @default(now())
@@ -1573,11 +1582,20 @@ model MediaAsset {
   danceClass   DanceClass?             @relation(fields: [classId], references: [id], onDelete: Cascade)
   product      Product?                @relation(fields: [productId], references: [id], onDelete: Cascade)
   event        Event?                  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  banner       Banner?                 @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+  blogPost     BlogPost?               @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+  course       Course?                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  avatarOwner  User?                   @relation("UserAvatar", fields: [avatarOwnerId], references: [id], onDelete: Cascade)
   translations MediaAssetTranslation[]
 
   @@index([instructorId, sortOrder])
   @@index([productId, sortOrder])
   @@index([classId, sortOrder])
+  @@index([bannerId])
+  @@index([blogPostId])
+  @@index([courseId])
+  @@index([avatarOwnerId])
+  @@index([purpose])
   /**
    * Ключ файла остаётся уникальным ЦЕЛИКОМ, а не только среди живых записей.
    * Две записи на один объект в хранилище означают, что окончательное удаление
@@ -1992,6 +2010,7 @@ model Banner {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   adSlots   AdSlot[]
+  media     MediaAsset?
 }
 
 // DS-08 рекламный слот: куда ставить баннер (hero, catalog-top, checkout-sidebar)
@@ -2063,6 +2082,7 @@ model BlogPost {
 
   translations BlogPostTranslation[]
   author       User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  media        MediaAsset?
 
   @@unique([slug], where: raw("\"deletedAt\" IS NULL"))
   @@index([isPublished, publishedAt])

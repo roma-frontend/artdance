@@ -142,6 +142,13 @@ export async function listTrash(resource: AdminResource, page: number): Promise<
 
   let rows: Record<string, unknown>[];
   let total: number;
+  // Instructors: `name` живёт в `User`, а не в `InstructorProfile` — для корзины
+  // показываем имя пользователя, а не slug.
+  const isInstructorTrash = resource === 'instructors';
+  const trashSelect: Record<string, unknown> = isInstructorTrash
+    ? { id: true, deletedAt: true, slug: true, user: { select: { name: true } } }
+    : { id: true, deletedAt: true, [spec.primaryField]: true };
+
   try {
     [rows, total] = await Promise.all([
       delegate.findMany({
@@ -149,7 +156,7 @@ export async function listTrash(resource: AdminResource, page: number): Promise<
         orderBy: { deletedAt: 'desc' },
         take,
         skip,
-        select: { id: true, deletedAt: true, [spec.primaryField]: true },
+        select: trashSelect,
       }),
       delegate.count({ where: { ...onlyTrashed } }),
     ]);
@@ -166,7 +173,11 @@ export async function listTrash(resource: AdminResource, page: number): Promise<
     entries: rows.map((row) => ({
       id: String(row.id),
       resource,
-      label: labelOf(row, spec.primaryField),
+      label: isInstructorTrash
+        ? labelOf((row.user as Record<string, unknown> | undefined) ?? row, 'name') !== '—'
+          ? labelOf((row.user as Record<string, unknown> | undefined) ?? row, 'name')
+          : labelOf(row, 'slug')
+        : labelOf(row, spec.primaryField),
       deletedAt: deletedAtOf(row),
     })),
     total,
@@ -205,15 +216,26 @@ export async function trashedSnapshot(
   id: string,
 ): Promise<{ id: string; label: string; deletedAt: Date } | null> {
   const spec = adminResourceSpecs[resource];
+  const isInstructorSnapshot = resource === 'instructors';
+
+  const snapshotSelect: Record<string, unknown> = isInstructorSnapshot
+    ? { id: true, deletedAt: true, slug: true, user: { select: { name: true } } }
+    : { id: true, deletedAt: true, [spec.primaryField]: true };
 
   const row = await trashDelegate(resource).findFirst({
     where: { id, ...onlyTrashed },
-    select: { id: true, deletedAt: true, [spec.primaryField]: true },
+    select: snapshotSelect,
   });
 
   if (!row) return null;
 
-  return { id: String(row.id), label: labelOf(row, spec.primaryField), deletedAt: deletedAtOf(row) };
+  const label = isInstructorSnapshot
+    ? labelOf((row.user as Record<string, unknown> | undefined) ?? row, 'name') !== '—'
+      ? labelOf((row.user as Record<string, unknown> | undefined) ?? row, 'name')
+      : labelOf(row, 'slug')
+    : labelOf(row, spec.primaryField);
+
+  return { id: String(row.id), label, deletedAt: deletedAtOf(row) };
 }
 
 /* ────────────────────────────── Операции ────────────────────────────── */

@@ -63,8 +63,10 @@ interface BlogRow {
   createdAt: Date;
   updatedAt: Date;
   translations: BlogTranslationRow[];
-  // cover media if matched — optional join via coverKey ~ storageKey
+  // cover media if matched — optional join via coverKey ~ storageKey OR via MediaAsset.blogPostId
   coverMedia?: MediaRow | null;
+  blogCoverMedia?: MediaRow | null;
+  media?: MediaRow[] | null;
 }
 
 const blogSelect = {
@@ -75,6 +77,7 @@ const blogSelect = {
   body: true,
   coverKey: true,
   coverAlt: true,
+  media: { where: { deletedAt: null }, select: { storageKey: true, altText: true, width: true, height: true, blurDataUrl: true, focalPoint: true, sortOrder: true, translations: { select: { locale: true, altText: true } } } },
   category: true,
   tags: true,
   authorName: true,
@@ -91,12 +94,23 @@ function toCard(row: BlogRow, locale: Locale): BlogCardItem {
   const t = resolveTranslation({ title: row.title, excerpt: row.excerpt, body: row.body }, row.translations, locale);
   const reading = row.readingMinutes ?? toReadingMinutes(t.body);
 
-  // Обложка: приоритет — найденный MediaAsset по coverKey, затем прямой ключ.
   let image: BlogCardItem['image'] = null;
-  if (row.coverMedia) {
+  if (row.media?.length) {
+    image = firstMediaRef(row.media);
+  } else if (row.coverMedia) {
     image = firstMediaRef([row.coverMedia]);
   } else if (row.coverKey) {
-    image = { key: row.coverKey, alt: { hy: row.coverAlt ?? t.title, ru: row.coverAlt ?? t.title, en: row.coverAlt ?? t.title } };
+    // coverKey может быть R2 URL из ContentBlock — нормализовать к pathname для превью
+    let normalizedKey = row.coverKey;
+    try {
+      const url = new URL(row.coverKey);
+      if (url.hostname.endsWith('r2.dev') || url.hostname.endsWith('r2.cloudflarestorage.com')) {
+        normalizedKey = url.pathname;
+      }
+    } catch {
+      /* local path */
+    }
+    image = { key: normalizedKey, alt: { hy: row.coverAlt ?? t.title, ru: row.coverAlt ?? t.title, en: row.coverAlt ?? t.title } };
   }
 
   return {

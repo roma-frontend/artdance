@@ -20,7 +20,14 @@ import { raw } from '../design/tokens';
  * именно это ломал Cloudflare Workers Builds, где vars доступны только
  * в рантайме Worker, а NEXT_PUBLIC_* инлайнятся на этапе сборки.
  */
-export const mediaBaseUrl = (process.env.NEXT_PUBLIC_MEDIA_CDN_URL ?? '').trim() || '';
+const candidates = [
+  (process.env.NEXT_PUBLIC_MEDIA_CDN_URL ?? '').trim(),
+  (process.env.R2_PUBLIC_BASE_URL ?? '').trim(),
+  (process.env.R2_PUBLIC_URL ?? '').trim(),
+];
+const rawMediaBaseUrl =
+  candidates.find((value) => value.length > 0 && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(value)) ?? '';
+export const mediaBaseUrl = rawMediaBaseUrl;
 
 /** Ширины, для которых генерируются варианты. Совпадают с `next.config` deviceSizes. */
 export const imageWidths = [320, 420, 640, 768, 1024, 1280, 1600, 1920, 2560] as const;
@@ -159,22 +166,38 @@ export const mediaPaths = {
   courseCover: (courseId: string, fileId: string) => `courses/${courseId}/${fileId}`,
   avatar: (userId: string, fileId: string) => `avatars/${userId}/${fileId}`,
   editorial: (slug: string, fileId: string) => `editorial/${slug}/${fileId}`,
+  bannerImage: (bannerId: string, fileId: string) => `banners/${bannerId}/${fileId}`,
+  blogCover: (blogPostId: string, fileId: string) => `blog/${blogPostId}/${fileId}`,
+} as const;
+
+/** Пресеты для новых ролей upload (используются в обработке). */
+export const uploadImagePresets = {
+  bannerImage: 'heroFullBleed' as const,
+  blogCover: 'editorialFullBleed' as const,
+  courseCover: 'classCard' as const,
 } as const;
 
 /** Публичный URL по ключу бакета или пути из `public/media`. */
 export function mediaUrl(key: string): string {
   if (!key) return '';
-  if (key.startsWith('http')) return key;
-  // `/media/...` — файлы из `public/media`, теперь тоже на CDN.
-  // Локально (mediaBaseUrl пуст) — относительный путь, как раньше.
-  // На проде (mediaBaseUrl = https://pub-xxx.r2.dev) — абсолютный CDN URL.
-  if (key.startsWith('/')) {
-    if (key.startsWith('/media/') && mediaBaseUrl) {
-      return `${mediaBaseUrl.replace(/\/$/, '')}${key}`;
+  const hashAt = key.indexOf('#');
+  const cleanKey = hashAt === -1 ? key : key.slice(0, hashAt);
+  if (cleanKey.startsWith('http')) return cleanKey;
+  // R2 public base: из media.ts (NEXT_PUBLIC_MEDIA_CDN_URL) или алиасов процесса (R2_PUBLIC_URL)
+  const cdn =
+    mediaBaseUrl ||
+    (typeof process !== 'undefined' ? (process.env.R2_PUBLIC_BASE_URL?.trim() || process.env.R2_PUBLIC_URL?.trim() || '') : '');
+  if (cleanKey.startsWith('/')) {
+    if (cleanKey.startsWith('/media/')) {
+      if (cdn) return `${cdn.replace(/\/$/, '')}${cleanKey}`;
+      return cleanKey;
     }
-    return key;
+    if (cdn) return `${cdn.replace(/\/$/, '')}${cleanKey}`;
+    return cleanKey;
   }
-  return mediaBaseUrl ? `${mediaBaseUrl.replace(/\/$/, '')}/${key}` : `/${key}`;
+  // Bare R2 key: `instructors/...`, `events/...` → CDN, иначе локально `/media/uploads/...`
+  if (cdn) return `${cdn.replace(/\/$/, '')}/${cleanKey}`;
+  return `/media/uploads/${cleanKey}`;
 }
 
 /** URL для ассетов из `public/media/...` — оборачивает `mediaUrl` для читаемости. */

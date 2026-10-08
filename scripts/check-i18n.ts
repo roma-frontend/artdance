@@ -156,6 +156,8 @@ const ALLOWED_IDENTICAL = [
   /^.*squareMeters$/,
   /^footer\.phonePlaceholder$/,
   /^admin\.integrations\.turnstileName$/,
+  /* Универсальные символы-разделители не переводятся. */
+  /^admin\.media\.purposeUnknown$/,
 ];
 
 for (const locale of locales) {

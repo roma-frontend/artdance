@@ -75,8 +75,12 @@ export function AdminForm({
   const { execute, status, result } = useAction(saveAdminResource, {
     onSuccess: ({ data }) => {
       setSaved(true);
-      if (data?.created === true) router.push(listHref);
-      else router.refresh();
+      if (data?.created === true) {
+        // При создании — сразу в правку, где доступен MediaSection (upload).
+        router.push(`${listHref.replace(/\/$/, '')}/${data.id}`);
+        return;
+      }
+      router.refresh();
     },
   });
 
