@@ -9,10 +9,10 @@ type LiteModeValue = 'auto' | 'on' | 'off';
 function readMode(): LiteModeValue {
   if (typeof window === 'undefined') return 'auto';
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (raw === 'true' || raw === 'auto:true') return 'auto';
+  if (raw === 'auto:true') return 'auto';
   if (raw === 'false') return 'off';
   // legacy: explicit on/off
-  if (raw === 'on' || raw === 'true:force') return 'on';
+  if (raw === 'true' || raw === 'on' || raw === 'true:force') return 'on';
   return 'auto';
 }
 

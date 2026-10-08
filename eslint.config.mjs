@@ -14,6 +14,7 @@ const config = [
     ignores: [
       '.next/**',
       '.open-next/**',
+      '.wrangler/**',
       'node_modules/**',
       'src/generated/**',
       /*
@@ -21,6 +22,7 @@ const config = [
        * проекта, и линтер не должен проходить по ней дважды.
        */
       '.kilo/**',
+      '.freebuff/**',
       'next-env.d.ts',
       // postinstall-патчи: require обязателен, в src не используется
       'scripts/patch-noble.cjs',

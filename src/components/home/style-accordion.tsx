@@ -14,7 +14,10 @@
 
 import { ArrowUpRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 import { PortalLink } from '@/components/fx/portal-link';
 import { Media } from '@/components/ui/media';
@@ -42,9 +45,11 @@ interface StyleAccordionProps {
 export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps) {
   const t = useTranslations();
   const tCommon = useTranslations('common');
-  const [isCoarse, setIsCoarse] = useState(() =>
-    typeof window !== 'undefined' ? window.matchMedia('(hover: none), (pointer: coarse)').matches : false,
-  );
+  const [isCoarse, setIsCoarse] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const reducedMotion = usePrefersReducedMotion();
+  const lite = useIsLiteMode();
+  const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   // По умолчанию активна средняя карточка (Salsa)
   const [activeIndex, setActiveIndex] = useState<number>(2);
 
@@ -56,8 +61,43 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
     return () => mql.removeEventListener('change', update);
   }, []);
 
+  // Keep the raster/video surface at its largest size. Flex only changes the
+  // clipping window, not object-fit or the decoder's output size on every frame.
+  useEffect(() => {
+    const container = containerRef.current;
+    const list = container?.querySelector('ul');
+    if (!container || !list) return;
+    const measure = () => {
+      const horizontal = window.matchMedia('(min-width: 768px)').matches;
+      const gap = Number.parseFloat(getComputedStyle(list).gap) || 0;
+      const available = (horizontal ? list.clientWidth : list.clientHeight) - gap * (tiles.length - 1);
+      const expanded = available * 3.5 / (tiles.length + 2.5);
+      container.style.setProperty('--style-media-width', `${horizontal ? expanded : list.clientWidth}px`);
+      container.style.setProperty('--style-media-height', `${horizontal ? list.clientHeight : expanded}px`);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [tiles.length]);
+
+  // Do not start a network request/decoder while the curtains are resizing.
+  // Rapid selections cancel the pending start, including on touch devices.
+  useEffect(() => {
+    if (reducedMotion || lite) return;
+    const timeout = window.setTimeout(() => setPlayingIndex(activeIndex), 1250);
+    return () => window.clearTimeout(timeout);
+  }, [activeIndex, reducedMotion, lite]);
+
+  const selectPanel = (index: number) => {
+    if (index === activeIndex) return;
+    setPlayingIndex(null);
+    setActiveIndex(index);
+  };
+
   return (
     <div
+      ref={containerRef}
       data-slot="style-accordion"
       className={cn('style-accordion-container relative w-full overflow-hidden my-4', className)}
     >
@@ -66,7 +106,7 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
           const isActive = activeIndex === index;
           const href = routes.style(tile.slug);
 
-          const handleSelect = () => setActiveIndex(index);
+          const handleSelect = () => selectPanel(index);
           const handleLinkClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
             // На touch первый тап — раскрыть кулису и показать эффект, второй — переход.
             // На desktop hover уже раскрыл, поэтому сразу лететь порталом.
@@ -85,21 +125,20 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
               data-dance-mood={danceMood(tile.style)}
               data-active={isActive ? 'true' : 'false'}
               onMouseEnter={() => {
-                if (!isCoarse) setActiveIndex(index);
+                if (!isCoarse) selectPanel(index);
               }}
               onFocus={(event) => {
                 // Touch focus precedes click; it must not bypass the first-tap preview.
-                if (!isCoarse || event.target.matches(':focus-visible')) setActiveIndex(index);
+                if (!isCoarse || event.target.matches(':focus-visible')) selectPanel(index);
               }}
               onClick={handleSelect}
               style={{ flex: isActive ? '3.5 1 0%' : '1 1 0%' }}
               className={cn(
-                'dance-style-panel relative h-full overflow-hidden rounded-2xl border cursor-pointer [transform:translateZ(0)] [contain:layout_paint]',
-                // Одна кинематографичная кривая везде — мощная плавность. На coarse filter убран ниже (compositor-only), поэтому 700ms не дропает на iPhone 14.
-                'transition-[flex,opacity,border-color,box-shadow] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
+                'dance-style-panel relative min-h-0 min-w-0 h-full overflow-hidden rounded-2xl border cursor-pointer [contain:layout_paint]',
+                'transition-[flex-grow,opacity] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
                 isActive
-                  ? 'border-accent/80 shadow-[0_12px_40px_-10px_var(--accent-glow)]'
-                  : 'border-border-default/60 hover:border-accent/40 opacity-75 hover:opacity-100',
+                  ? 'border-accent/80'
+                  : 'border-border-default/60 opacity-75 hover:opacity-100',
               )}
             >
               <PortalLink
@@ -109,27 +148,23 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
                 data-cursor-label={tCommon('actions.explore')}
                 className="group relative flex size-full items-end p-6 select-none"
               >
-                {/* Кадр — только transform+opacity на всех устройствах: compositor, без paint. На coarse filter отключён (см. globals coarse-override) — образ идёт чистым зумом, а кинематографику даёт flex + градиент. */}
-                <Media
-                  {...resolveMedia(tile.image, locale)}
-                  preset="categoryCard"
-                  fill
-                  className="absolute inset-0 size-full"
-                  imageClassName={cn(
-                    'dance-style-image size-full object-cover [transform:translateZ(0)] [backface-visibility:hidden] will-change-transform transition-[transform,filter] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]',
-                    // filter-цепочка только на fine pointer — на coarse globals снимает её и оставляет только transform (scale переопределяется mood-правилами)
-                    isActive ? 'scale-105 filter-none' : 'scale-100 brightness-75 grayscale-[25%]',
-                  )}
-                />
-
-                {tile.video && (
-                  <TileVideo
-                    video={tile.video}
-                    posterAlt={resolveMedia(tile.image, locale).alt}
-                    isActive={isActive}
-                    className={cn('dance-style-image transition-transform duration-700', isActive ? 'scale-105' : 'scale-100')}
+                <div className="dance-style-media dance-style-image" aria-hidden="true">
+                  <Media
+                    {...resolveMedia(tile.video?.poster ?? tile.image, locale)}
+                    preset="categoryCard"
+                    fill
+                    className="absolute inset-0 size-full"
+                    imageClassName="size-full object-cover"
                   />
-                )}
+
+                  {tile.video && (
+                    <TileVideo
+                      video={tile.video}
+                      posterAlt={resolveMedia(tile.video.poster, locale).alt}
+                      isActive={isActive && playingIndex === index && !reducedMotion && !lite}
+                    />
+                  )}
+                </div>
                 <span data-portal-media="" aria-hidden className="pointer-events-none absolute inset-0" />
 
                 {/* Затемнение — мощная 700ms волна вместе с flex. */}
@@ -147,7 +182,7 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
                 <span
                   aria-hidden="true"
                   className={cn(
-                    'absolute top-5 right-5 flex size-10 items-center justify-center rounded-full text-content-on-cinema backdrop-blur-md transition-[opacity,translate,scale,rotate,transform,background-color] duration-500 ease-out',
+                    'absolute top-5 right-5 flex size-10 items-center justify-center rounded-full text-content-on-cinema transition-[opacity,scale] duration-500 ease-out',
                     isActive
                       ? 'bg-accent/80 opacity-100 scale-100'
                       : 'bg-surface-glass-on-cinema opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100',
@@ -158,18 +193,15 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
 
                 {/* Контентная плашка */}
                 <div className="relative z-10 flex w-full flex-col justify-end">
-                  <span className={cn(
-                    "font-display font-bold tracking-tight text-content-on-cinema uppercase transition-[font-size] duration-500 ease-out whitespace-nowrap overflow-hidden text-ellipsis",
-                    isActive ? "text-2xl lg:text-3xl" : "text-lg"
-                  )}>
+                  <span className="font-display font-bold tracking-tight text-content-on-cinema uppercase text-2xl lg:text-3xl whitespace-nowrap overflow-hidden text-ellipsis">
                     {t(danceStyleLabelKey(tile.style as never))}
                   </span>
 
                   {/* Дополнительная информация, плавно раскрывающаяся у активной кулисы */}
                   <div
                     className={cn(
-                      'overflow-hidden flex flex-col transition-[max-height,opacity,margin] duration-500 ease-out',
-                      isActive ? 'max-h-24 opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0',
+                      'overflow-hidden flex flex-col mt-2 transition-[opacity,translate] duration-500 ease-out',
+                      isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',
                     )}
                   >
                     <span data-style-count="" className="text-caption text-content-on-cinema-muted">

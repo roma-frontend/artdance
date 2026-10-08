@@ -24,11 +24,13 @@ export function TileVideo({ video, isActive, className }: TileVideoProps) {
   const lite = useIsLiteMode();
   const enabled = isActive && !stillImage && !lite;
   const [source, setSource] = useState<string | null>(null);
+  const [playing, setPlaying] = useState(false);
   const { near } = useBackgroundVideo({
     videoRef,
     containerRef,
     enabled,
-    ready: source !== null,
+    ready: enabled && source !== null,
+    sourceKey: enabled ? source : null,
     preloadAheadViewports: 0,
   });
   useEffect(() => {
@@ -37,10 +39,11 @@ export function TileVideo({ video, isActive, className }: TileVideoProps) {
     if (!element) return;
     // Vertical clips: choose resolution from the actual rendered height, not viewport width.
     const required = element.getBoundingClientRect().height * 9 / 16 * Math.min(window.devicePixelRatio || 1, 2);
-    const width = required > 720 ? 1080 : 720;
+    const widths = [...new Set(video.sources.map((item) => item.width))].sort((a, b) => a - b);
+    const width = widths.find((item) => item >= required) ?? widths.at(-1);
     const candidates = video.sources.filter((item) => item.width === width);
     const types = { h264: 'video/mp4', vp9: 'video/webm; codecs="vp9"', av1: 'video/webm; codecs="av01.0.05M.08"' };
-    // Prefer the broadly hardware-decoded H.264 path for three simultaneous tile loops.
+    // Prefer broadly hardware-decoded H.264 for the single active tile loop.
     const chosen = (['h264', 'vp9', 'av1'] as const).map((format) => candidates.find((item) => item.format === format && element.canPlayType(types[format]))).find(Boolean);
     setSource(chosen?.url ?? null);
   }, [near, video]);
@@ -54,11 +57,15 @@ export function TileVideo({ video, isActive, className }: TileVideoProps) {
       <video
         ref={videoRef}
         data-tile-video=""
+        data-playing={enabled && playing ? '' : undefined}
+        onPlaying={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+        onEmptied={() => setPlaying(false)}
         data-portal-video-src={portalSrc}
+        poster={video.poster.key}
         muted
         loop
         playsInline
-        poster={video.poster.key}
         src={enabled ? source ?? undefined : undefined}
         preload={source && enabled ? 'auto' : 'none'}
         tabIndex={-1}

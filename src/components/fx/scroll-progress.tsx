@@ -59,6 +59,7 @@ export function ScrollProgress() {
     /** Высота страницы меняется от подгрузки изображений и раскрытия блоков. */
     const observer = new ResizeObserver(schedule);
     observer.observe(document.documentElement);
+    observer.observe(document.body);
 
     return () => {
       window.removeEventListener('scroll', schedule);

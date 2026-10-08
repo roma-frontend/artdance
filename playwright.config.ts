@@ -80,6 +80,9 @@ export default defineConfig({
 
   use: {
     baseURL: BASE_URL,
+    // Visual-effect tests exercise full mode regardless of CI's CPU count.
+    // Lite/auto tests override localStorage and verify the weak-device path.
+    storageState: { cookies: [], origins: [{ origin: BASE_URL, localStorage: [{ name: 'ARTDANCE_LITE_MODE', value: 'false' }] }] },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     /*

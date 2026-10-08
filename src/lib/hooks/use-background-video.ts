@@ -47,6 +47,8 @@ interface BackgroundVideoOptions {
    * воспроизведение выбора источника.
    */
   ready?: boolean;
+  /** Restart playback listeners when a retained element receives a new src. */
+  sourceKey?: string | null;
   /**
    * За сколько высот области просмотра до появления считать петлю «на подходе».
    * `0` — только когда секция действительно видна (первый экран).
@@ -66,6 +68,7 @@ export function useBackgroundVideo({
   containerRef,
   enabled,
   ready = true,
+  sourceKey,
   preloadAheadViewports = 0,
 }: BackgroundVideoOptions): BackgroundVideoState {
   /** Виден ли контейнер. Начальное значение — «нет»: до замера ничего не играем. */
@@ -140,21 +143,27 @@ export function useBackgroundVideo({
      * остаётся постер, а это полноценное состояние секции.
      */
     const start = () => {
+      // Set the DOM property as well as the attribute for WebKit autoplay.
+      element.muted = true;
       void element.play().catch(() => {});
     };
+    element.addEventListener('canplay', start);
+    // Retry after an actual user gesture if browser autoplay was denied.
+    document.addEventListener('pointerdown', start, { passive: true });
+    document.addEventListener('keydown', start);
 
     if (element.readyState >= element.HAVE_FUTURE_DATA) {
       start();
-    } else {
-      element.addEventListener('canplay', start, { once: true });
     }
     return () => {
       element.removeEventListener('canplay', start);
+      document.removeEventListener('pointerdown', start);
+      document.removeEventListener('keydown', start);
       // Размонтирование, смена карточки и выключение режима останавливают
       // декодер сразу, даже если новый effect уже не видит старый videoRef.
       element.pause();
     };
-  }, [active, videoRef]);
+  }, [active, videoRef, sourceKey]);
 
   /**
    * «На подходе». При нулевом запасе упреждения совпадает с видимостью: у

@@ -44,3 +44,6 @@ cloudflare-env.d.ts
 # Лёгкие seed-ресурсы тоже на R2: их URL строит mediaUrl() через
 # NEXT_PUBLIC_MEDIA_CDN_URL, а размеры/blur — из seed-media.generated.ts.
 /public/media/
+
+# Договорные приложения — локальные документы для подписи, не попадают в git
+/docs/contracts/

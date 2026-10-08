@@ -232,11 +232,10 @@ if (!resolved) {
         alt={alt}
         sizes={spec.sizes}
         quality={spec.quality}
-        priority={isPriority}
         loading={isPriority ? 'eager' : 'lazy'}
         // LCP должен быть с максимальным приоритетом сети.
         fetchPriority={isPriority ? 'high' : 'auto'}
-        decoding={isPriority ? 'sync' : 'async'}
+        decoding="async"
         placeholder="blur"
         blurDataURL={resolved.blur}
         className={cn('size-full object-cover', imageClassName)}

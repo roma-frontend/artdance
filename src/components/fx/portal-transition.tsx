@@ -31,6 +31,7 @@ import { lightColors } from '@/design/tokens/semantic';
 import { usePathname, useRouter } from '@/i18n/routing';
 import { playTactileClick } from '@/lib/audio/tactile-click';
 import { usePrefersStillImage } from '@/lib/hooks/use-motion-preferences';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 type Phase = 'idle' | 'flight' | 'hold' | 'reveal';
 
@@ -78,6 +79,7 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
   const router = useRouter();
   const pathname = usePathname();
   const reducedMotion = usePrefersStillImage();
+  const lite = useIsLiteMode();
   const [portal, setPortal] = useState<PortalState>(IDLE);
   const timers = useRef<number[]>([]);
   const busy = useRef(false);
@@ -120,7 +122,7 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
   const triggerPortal = (rect: DOMRect, imageSrc: string, href: string, source?: HTMLElement) => {
     if (busy.current) return;
 
-    if (reducedMotion) {
+    if (reducedMotion || lite) {
       router.push(href);
       return;
     }
@@ -142,7 +144,8 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
     // Сцена: главная уплывает навстречу камере, наклоняется и наезжает. Web Animations — без рендеров React.
     const video = source?.querySelector<HTMLVideoElement>('video[data-tile-video]') ?? null;
     const scene = document.querySelector('main');
-    if (scene && !video) {
+    // Media flights animate one viewport-sized texture, not the entire page.
+    if (scene && source && !video) {
       const box = scene.getBoundingClientRect();
       const [x1, y1, x2, y2] = config.ease;
       const lift = -dir * config.scene.lift * window.innerHeight;
@@ -212,7 +215,6 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
 
   const dir = rect ? directionOf(rect) : 1;
   const pan = config.imagePan * 100;
-  const { tilt, roll } = config.window;
 
   return (
     <PortalContext.Provider value={{ triggerPortal }}>
@@ -231,7 +233,7 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
         >
           {/* Затемнение и блюр уплывающей сцены. */}
           <animated.div
-            className="absolute inset-0 bg-surface-cinema/70 backdrop-blur-md"
+            className="absolute inset-0 bg-surface-cinema/70"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={flight}
@@ -252,27 +254,16 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
           ) : (
           /* Окно карточки: растёт на весь экран, наклоняясь по ходу камеры с креном руки. */
           <animated.div
-            className="absolute overflow-hidden bg-surface-cinema shadow-xl"
-            style={{ transformStyle: 'preserve-3d' }}
+            className="absolute inset-0 overflow-hidden bg-surface-cinema"
+            style={{ transformOrigin: '0 0', willChange: 'transform' }}
             initial={{
-              top: rect.top,
-              left: rect.left,
-              width: rect.width,
-              height: rect.height,
-              borderRadius: 16,
-              rotateX: 0,
-              rotateZ: 0,
+              x: rect.left,
+              y: rect.top,
+              scaleX: rect.width / window.innerWidth,
+              scaleY: rect.height / window.innerHeight,
             }}
-            animate={{
-              top: 0,
-              left: 0,
-              width: window.innerWidth,
-              height: window.innerHeight,
-              borderRadius: 0,
-              rotateX: [0, dir * tilt, 0],
-              rotateZ: [0, -dir * roll, dir * roll * 0.4, 0],
-            }}
-            transition={{ ...flight, rotateX: arc, rotateZ: sway }}
+            animate={{ x: 0, y: 0, scaleX: 1, scaleY: 1 }}
+            transition={flight}
           >
             {imageSrc && (
               // Уже загруженный кадр карточки (`currentSrc`): next/image здесь дал бы второй запрос.
@@ -280,22 +271,16 @@ export function PortalTransitionProvider({ children }: { children: ReactNode }) 
                 src={imageSrc}
                 alt=""
                 className="size-full object-cover"
-                initial={{ scale: config.imageZoom.from, y: '0%', filter: 'blur(0px) brightness(1)' }}
+                initial={{ scale: config.imageZoom.from, y: '0%' }}
                 animate={
                   phase === 'flight'
                     ? {
                         scale: [config.imageZoom.from, config.imageZoom.peak, config.imageZoom.landed],
                         y: ['0%', `${-dir * pan}%`, '0%'],
-                        filter: [
-                          'blur(0px) brightness(1)',
-                          `blur(${config.motionBlur}px) brightness(0.75)`,
-                          `blur(0px) brightness(${config.landingBrightness})`,
-                        ],
                       }
                     : {
                         scale: config.imageZoom.settled,
                         y: '0%',
-                        filter: `blur(0px) brightness(${config.landingBrightness})`,
                       }
                 }
                 transition={phase === 'flight' ? arc : { duration: config.settleMs / 1000, ease: [0.2, 0, 0.2, 1] }}

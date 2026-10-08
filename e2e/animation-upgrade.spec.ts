@@ -66,8 +66,14 @@ test('Магнитная навигация возвращается в исхо
   // Скрытый lg:hidden nav в DOM есть всегда — ищем только видимую группу
   const link = page.locator('nav:visible [data-magnetic]').first();
   await expect(link).toBeVisible();
-  await link.hover({ position: { x: 4, y: 4 } });
-  await expect.poll(() => link.evaluate((node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m41)).not.toBe(0);
+  // SSR visibility is not interaction readiness. Recreate real pointer motion
+  // while polling: a single hover can arrive before the magnetic listener.
+  await expect(page.locator('[data-slot="pointer-glow"]')).toHaveCount(1);
+  await expect.poll(async () => {
+    await link.hover({ position: { x: 5, y: 4 } });
+    await link.hover({ position: { x: 4, y: 4 } });
+    return link.evaluate((node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m41);
+  }).not.toBe(0);
   await page.mouse.move(0, 850);
   await expect(link).toHaveCSS('transform', 'none');
   await link.focus();
