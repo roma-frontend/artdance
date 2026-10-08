@@ -97,8 +97,32 @@ test('автоматический лёгкий режим сохраняетс�
   await panel.locator('a').focus();
   await expect(panel).toHaveAttribute('data-active', 'true');
   await expect(panel.locator('[data-style-count]')).toBeVisible();
-  expect(await panel.evaluate(node => getComputedStyle(node).transitionProperty)).not.toContain('flex');
+  expect(await panel.evaluate(node => getComputedStyle(node).transitionProperty)).toContain('flex');
 });
+
+for (const mode of ['true', 'false']) {
+  test(`hover карточек остаётся плавным в ${mode === 'true' ? 'Lite' : 'Full'}`, async ({ page }) => {
+    await page.addInitScript(value => localStorage.setItem('ARTDANCE_LITE_MODE', value), mode);
+    await page.goto('/en');
+    const accordion = page.locator(tiles);
+    await accordion.scrollIntoViewIfNeeded();
+    const panel = accordion.locator('[data-style-panel]').first();
+    const transition = await panel.evaluate(node => ({
+      property: getComputedStyle(node).transitionProperty,
+      duration: getComputedStyle(node).transitionDuration,
+    }));
+    expect(transition.property).toContain('flex-grow');
+    expect(Math.max(...transition.duration.split(',').map(value => Number.parseFloat(value)))).toBeGreaterThan(0.2);
+    const before = await panel.boundingBox();
+    await panel.locator('a').focus();
+    await expect(panel).toHaveAttribute('data-active', 'true');
+    await expect.poll(async () => {
+      const after = await panel.boundingBox();
+      return Math.max(after!.width / before!.width, after!.height / before!.height);
+    }).toBeGreaterThan(2);
+    if (mode === 'true') await expect(page.locator(`${clips}[src]`)).toHaveCount(0);
+  });
+}
 
 test('переход из карточки увеличивает только transform, без layout и blur', async ({ page }) => {
   await page.goto('/en');

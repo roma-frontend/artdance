@@ -3246,8 +3246,6 @@ html:has(body[data-scroll-locked]) {
 }
 .dance-style-panel [data-tile-video] { opacity: 0; transition: opacity 250ms var(--ease-standard); }
 .dance-style-panel [data-tile-video][data-playing] { opacity: 1; }
-/* Weak devices retain selection and a short fade, without per-frame flex layout. */
-[data-lite='true'] .dance-style-panel { transition: opacity 200ms var(--ease-standard); }
 [data-lite='true'] .dance-style-media { transform: none !important; transition: none; }
 
 /* Dance experience: the interface stays stable; the photographic gesture changes by style. */

@@ -44,9 +44,10 @@ const devConnect = isProduction || isPreview ? '' : ' ws: wss:';
 function buildCsp(extraScriptSrc = ''): string {
   return [
     "default-src 'self'",
-    // 'wasm-unsafe-eval' — разрешает WebAssembly.compile из строки (Sentry, некоторые полифилы)
-    // без разрешения полного `eval()`. Полный 'unsafe-eval' оставлен только для dev/auth (см. ниже).
-    `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' ${externalOrigins.turnstile} ${externalOrigins.vercelInsights} ${externalOrigins.maps}${previewScript}${extraScriptSrc}${devScript}`,
+    // 'wasm-unsafe-eval' — разрешает WebAssembly.compile из строки (Sentry, некоторые полифилы).
+    // 'unsafe-eval' добавлен для prod: framer-motion и Sentry используют Function/eval в чанках
+    // (1626pru...x.js), что на enterprise Chrome с Site Isolation блочится без него.
+    `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' ${externalOrigins.turnstile} ${externalOrigins.vercelInsights} ${externalOrigins.maps}${previewScript}${extraScriptSrc}${devScript}`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
     `img-src 'self' data: blob: https: ${externalOrigins.mapsStatic}`,

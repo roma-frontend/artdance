@@ -26,7 +26,7 @@ import { config as loadEnv } from 'dotenv';
  */
 loadEnv({ path: '.env.local' });
 
-const PORT = 3100;
+const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3100);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 export default defineConfig({

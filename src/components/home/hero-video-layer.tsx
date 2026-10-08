@@ -63,9 +63,11 @@ export function TileVideo({ video, isActive, className }: TileVideoProps) {
         onEmptied={() => setPlaying(false)}
         data-portal-video-src={portalSrc}
         poster={video.poster.key}
+        crossOrigin="anonymous"
         muted
         loop
         playsInline
+        autoPlay
         src={enabled ? source ?? undefined : undefined}
         preload={source && enabled ? 'auto' : 'none'}
         tabIndex={-1}
@@ -153,9 +155,11 @@ export function HeroVideoLayer({ video }: { video: VideoRef | null }) {
         ref={videoRef}
         data-slot="hero-clip"
         className="hero-video-main absolute inset-0 size-full object-cover"
+        crossOrigin="anonymous"
         muted
         loop
         playsInline
+        autoPlay
         src={source ?? undefined}
         preload={source === null ? 'none' : 'auto'}
         aria-hidden

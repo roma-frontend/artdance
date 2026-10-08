@@ -90,8 +90,8 @@ export function LiteModeProvider({ children }: { children: React.ReactNode }): R
       let weak = false;
       if (conn?.saveData) weak = true;
       else if (conn?.effectiveType === '2g' || conn?.effectiveType === 'slow-2g') weak = true;
-      else if (typeof m === 'number' && m <= 4) weak = true;
-      else if (typeof c === 'number' && c <= 4) weak = true;
+      else if (typeof m === 'number' && m <= 2) weak = true;
+      else if (typeof c === 'number' && c <= 2) weak = true;
       writeMode('auto', weak);
     } else {
       writeMode(next, next === 'on');

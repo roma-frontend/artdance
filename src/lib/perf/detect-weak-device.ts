@@ -37,17 +37,19 @@ export function collectSignals(): WeakDeviceSignals {
 }
 
 /**
- * Слабое устройство, если выполняется ЛЮБОЕ:
- *  - ядер <= 4 (большинство бюджетников и старых ноутов)
- *  - памяти <= 4 ГБ
- *  - включён saveData
- *  - сеть 2g / slow-2g
+ * Слабое устройство — только при ЯВНОЙ слабости.
+ *
+ * Пороги <=4 ловили корпоративные 4-ядерные ноуты (i5-8250U, VM 4 vCPU,
+ * 8 ГБ с квантованием deviceMemory=4) — enterprise-ноуты считались
+ * «слабыми» и видео не монтировались вообще. Порог понижен до <=2,
+ * что соответствует реальным бюджетникам, а не офисной технике.
+ * Консервативный подход сохранён только для saveData/2g.
  */
 export function isWeakDevice(signals: WeakDeviceSignals = collectSignals()): boolean {
   if (signals.saveData === true) return true;
   if (signals.effectiveType === '2g' || signals.effectiveType === 'slow-2g') return true;
-  if (typeof signals.deviceMemory === 'number' && signals.deviceMemory <= 4) return true;
-  if (typeof signals.hardwareConcurrency === 'number' && signals.hardwareConcurrency <= 4) return true;
+  if (typeof signals.deviceMemory === 'number' && signals.deviceMemory <= 2) return true;
+  if (typeof signals.hardwareConcurrency === 'number' && signals.hardwareConcurrency <= 2) return true;
   return false;
 }
 
@@ -61,5 +63,5 @@ export const STORAGE_KEY = 'ARTDANCE_LITE_MODE';
 export function liteModeInlineScript(storageKey: string): string {
   // экранируем ключ для безопасной вставки в single-quoted JS-строку
   const safeKey = storageKey.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  return `(function(){try{var k='${safeKey}';var v=localStorage.getItem(k);if(v==='true'||v==='on'||v==='true:force'){document.documentElement.setAttribute('data-lite','true');return}if(v==='false'){document.documentElement.setAttribute('data-lite','false');return}var c=navigator.hardwareConcurrency;var m=navigator.deviceMemory;var conn=navigator.connection;var weak=false;if(conn&&conn.saveData)weak=true;else if(conn&&(conn.effectiveType==='2g'||conn.effectiveType==='slow-2g'))weak=true;else if(typeof m==='number'&&m<=4)weak=true;else if(typeof c==='number'&&c<=4)weak=true;document.documentElement.setAttribute('data-lite',weak?'true':'false');if(weak)localStorage.setItem(k,'auto:true');else if(v==='auto:true')localStorage.removeItem(k)}catch(e){}})();`;
+  return `(function(){try{var k='${safeKey}';var v=localStorage.getItem(k);if(v==='true'||v==='on'||v==='true:force'){document.documentElement.setAttribute('data-lite','true');return}if(v==='false'){document.documentElement.setAttribute('data-lite','false');return}var c=navigator.hardwareConcurrency;var m=navigator.deviceMemory;var conn=navigator.connection;var weak=false;if(conn&&conn.saveData)weak=true;else if(conn&&(conn.effectiveType==='2g'||conn.effectiveType==='slow-2g'))weak=true;else if(typeof m==='number'&&m<=2)weak=true;else if(typeof c==='number'&&c<=2)weak=true;document.documentElement.setAttribute('data-lite',weak?'true':'false');if(weak)localStorage.setItem(k,'auto:true');else if(v==='auto:true')localStorage.removeItem(k)}catch(e){}})();`;
 }

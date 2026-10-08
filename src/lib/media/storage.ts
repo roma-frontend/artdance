@@ -158,6 +158,7 @@ function buildAuthorization(input: {
   accessKeyId: string;
   secretAccessKey: string;
   contentType?: string;
+  extraHeaders?: Record<string, string>;
 }): { authorization: string; signedHeaders: string; canonicalHeaders: string } {
   const headers: Record<string, string> = {
     host: input.host,
@@ -165,6 +166,11 @@ function buildAuthorization(input: {
     'x-amz-date': input.amzDate,
   };
   if (input.contentType) headers['content-type'] = input.contentType;
+  if (input.extraHeaders) {
+    for (const [key, value] of Object.entries(input.extraHeaders)) {
+      headers[key.toLowerCase()] = value;
+    }
+  }
 
   const sortedKeys = Object.keys(headers).sort();
   const signedHeaders = sortedKeys.join(';');
@@ -214,6 +220,14 @@ async function putToR2(key: string, data: Buffer, contentType: string): Promise<
   const payloadHash = sha256Hex(data);
   const { amzDate, dateStamp } = amzDates(new Date());
   const { url, host, canonicalUri } = r2Endpoint(accountId, bucket, key);
+  // Stored object must be cross-origin readable — document has CORP:same-origin
+  const corsHeaders = {
+    'access-control-allow-origin': '*',
+    'access-control-expose-headers': 'content-length, content-type, content-disposition',
+    'cross-origin-resource-policy': 'cross-origin',
+    'timing-allow-origin': '*',
+    'cache-control': 'public, max-age=31536000, immutable',
+  } as const;
   const { authorization } = buildAuthorization({
     method: 'PUT',
     canonicalUri,
@@ -224,6 +238,7 @@ async function putToR2(key: string, data: Buffer, contentType: string): Promise<
     accessKeyId,
     secretAccessKey,
     contentType,
+    extraHeaders: corsHeaders,
   });
 
   const response = await fetch(url, {
@@ -234,6 +249,7 @@ async function putToR2(key: string, data: Buffer, contentType: string): Promise<
       'x-amz-date': amzDate,
       'content-type': contentType,
       'content-length': String(data.byteLength),
+      ...corsHeaders,
       authorization,
     },
     body: data as unknown as BodyInit,

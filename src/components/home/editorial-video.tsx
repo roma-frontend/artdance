@@ -124,10 +124,11 @@ export function EditorialVideo({ video, poster, locale, loop = 'editorial' }: Ed
           ref={videoRef}
           className="editorial-video"
           data-playing={playing ? '' : undefined}
-          /* `autoPlay` нет намеренно: воспроизведением управляет хук. */
+          crossOrigin="anonymous"
           muted
           loop
           playsInline
+          autoPlay
           src={source ?? undefined}
           preload={source === null ? 'none' : 'auto'}
           /** Без описания и без управления фокусом: это фон, а не контент. */
