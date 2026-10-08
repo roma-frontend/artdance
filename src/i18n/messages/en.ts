@@ -765,6 +765,7 @@ const en = {
     alternativesTitle: 'Next available times',
     alternativesHint: 'This group is full — these times are open with the same instructor.',
     holdExpired: 'Your slot hold expired. Please pick a time again.',
+    holdRateLimited: 'Too many attempts — try again in {seconds, plural, one {# second} other {# seconds}}.',
     conflictError: 'This time was just taken. Please choose another slot.',
     recurring: {
       weeks: 'Weeks in series',

@@ -25,7 +25,11 @@ import { fromZonedParts, zonedParts } from '@/lib/time/schedule';
 import type { BookingContent } from '@/server/content/booking';
 
 interface BookingScreenProps { content: BookingContent; }
-type HoldState = { status: 'idle' } | { status: 'holding'; holdId: string; expiresAt: string } | { status: 'error'; justTaken: string | null };
+type HoldState =
+  | { status: 'idle' }
+  | { status: 'holding'; holdId: string; expiresAt: string }
+  | { status: 'error'; justTaken: string | null }
+  | { status: 'rateLimited'; retryAfterSeconds: number };
 
 export function BookingScreen({ content }: BookingScreenProps) {
   const router = useRouter();
@@ -62,10 +66,14 @@ export function BookingScreen({ content }: BookingScreenProps) {
       } catch {}
     };
   }, []);
+  const inFlightRef = useRef(false);
   const holdSlot = useCallback(async (day: Date, slot: string) => {
+    if (inFlightRef.current) return;
     const prevId = prevHoldRef.current;
+    inFlightRef.current = true;
     setSubmitting(true);
-    setHold({ status: 'idle' });
+    // Не сбрасываем rateLimited в idle — клик по другому слоту не должен прятать счётчик до успеха.
+    setHold((prev) => (prev.status === 'rateLimited' ? prev : { status: 'idle' }));
     try {
       const parts = zonedParts(day, site.timeZone);
       const minutes = parseClock(slot);
@@ -82,7 +90,12 @@ export function BookingScreen({ content }: BookingScreenProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: selectedSlot?.sessionId, instructorId: content.instructorId, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), durationMinutes: content.durationMinutes, anonymousId }),
       });
-      const body = (await res.json().catch(() => null)) as { hold?: { id: string; expiresAt: string }; error?: string } | null;
+      const body = (await res.json().catch(() => null)) as { hold?: { id: string; expiresAt: string }; error?: string; params?: { seconds?: number } } | null;
+      if (res.status === 429) {
+        const seconds = body?.params?.seconds ?? Number(res.headers.get('Retry-After')) ?? 30;
+        setHold({ status: 'rateLimited', retryAfterSeconds: Number.isFinite(seconds) ? seconds : 30 });
+        return;
+      }
       if (!res.ok || !body?.hold) {
         const taken = body?.error === 'SLOT_CONFLICT' || body?.error === 'SLOT_UNAVAILABLE' ? slot : null;
         setHold({ status: 'error', justTaken: taken });
@@ -92,7 +105,10 @@ export function BookingScreen({ content }: BookingScreenProps) {
       prevHoldRef.current = body.hold.id;
     } catch {
       setHold({ status: 'error', justTaken: null });
-    } finally { setSubmitting(false); }
+    } finally {
+      inFlightRef.current = false;
+      setSubmitting(false);
+    }
   }, [content.days, content.sessionBooking, content.durationMinutes, content.instructorId, releasePrevHold]);
   useEffect(() => {
     if (preselectedHeldRef.current) return;
@@ -109,7 +125,14 @@ export function BookingScreen({ content }: BookingScreenProps) {
     const key = zonedDateKey(date, site.timeZone);
     return content.days.find((day) => day.dateKey === key)?.slots ?? [];
   }, [content.days, date]);
-  const selectSlot = (start: string) => { setStartTime(start); if (!date) return; void holdSlot(date, start); };
+  const selectSlot = (start: string) => {
+    if (submitting) return;
+    setStartTime(start);
+    if (!date) return;
+    // Ручной выбор отменяет авто-preset как «намерение пользователя» — не даём второму hold конкурировать.
+    preselectedHeldRef.current = true;
+    void holdSlot(date, start);
+  };
   const selectDate = (next: Date | undefined) => {
     setDate(next);
     setStartTime(undefined);
@@ -128,6 +151,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
   const travelFee = location === 'CUSTOMER_LOCATION' ? booking.travelFee : 0;
   const justTaken = hold.status === 'error' ? hold.justTaken : null;
   const effectiveHoldExpiresAt = hold.status === 'holding' ? hold.expiresAt : null;
+  const rateLimitedSeconds = hold.status === 'rateLimited' ? hold.retryAfterSeconds : null;
   const recurringOpts = booking.recurring;
   const handleContinue = async () => {
     if (hold.status !== 'holding' || !hold.holdId || !date || !startTime) return;
@@ -166,6 +190,11 @@ export function BookingScreen({ content }: BookingScreenProps) {
           <BookingCalendar selected={date} onSelect={selectDate} availableDates={availableDates} />
           <div className="mt-6 border-t border-border-default pt-6">
             <TimeSlotPicker slots={slots} selected={startTime} onSelect={selectSlot} date={date} durationMinutes={content.durationMinutes} justTaken={justTaken} />
+            {hold.status === 'rateLimited' && (
+              <p role="status" className="text-caption mt-3 font-medium text-content-warning">
+                {tBooking('holdRateLimited', { seconds: rateLimitedSeconds ?? 30 })}
+              </p>
+            )}
             {hold.status === 'error' && !hold.justTaken && (
               <p role="alert" className="text-caption mt-3 font-medium text-content-signal">
                 {tBooking('holdExpired')}

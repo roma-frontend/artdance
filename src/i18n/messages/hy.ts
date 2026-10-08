@@ -760,6 +760,7 @@ const hy: Messages = {
     alternativesTitle: "Մոտակա ազատ ժամերը",
     alternativesHint: "Խումբը լրացված է. այս ժամերին մարզիչը ազատ է։",
     holdExpired: "Ժամի պահման ժամկետն ավարտվեց։ Ընտրեք ժամը կրկին։",
+    holdRateLimited: "Շատ հաճախակի փորձեր. փորձեք {seconds, plural, one {# վայրկյանից} other {# վայրկյանից}}։",
     conflictError: "Այս ժամը հենց նոր զբաղվեց։ Ընտրեք այլ ժամ։",
     leadTimeError: "Ամրագրել պետք է սկսելուց առնվազն {hours} առաջ։",
     horizonError: "Ամրագրումը բաց է {days} առաջ։",
