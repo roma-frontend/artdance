@@ -30,12 +30,46 @@ function brandSrc(name: 'logo' | 'logoOnDark'): string {
 
 export function BrandMark({ className, compact = false, solid }: BrandMarkProps) {
   if (compact) {
+    const isOverHeroCompact = solid === false;
+    if (isOverHeroCompact) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={brandSrc('logoOnDark')}
+          alt=""
+          width={1151}
+          height={389}
+          aria-hidden
+          fetchPriority="high"
+          decoding="async"
+          className={`h-7 w-auto shrink-0 object-contain ${className ?? ''}`}
+        />
+      );
+    }
     return (
-      <span
-        aria-hidden
-        className={`inline-grid size-8 shrink-0 place-items-center rounded-full bg-accent text-heading-3 leading-none text-white ${className ?? ''}`}
-      >
-        A
+      <span className={`inline-flex shrink-0 items-center ${className ?? ''}`} aria-hidden>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={brandSrc('logo')}
+          alt=""
+          width={1151}
+          height={389}
+          aria-hidden
+          fetchPriority="high"
+          decoding="async"
+          className="block h-7 w-auto object-contain in-[[data-theme=dark]]:hidden"
+        />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={brandSrc('logoOnDark')}
+          alt=""
+          width={1151}
+          height={389}
+          aria-hidden
+          fetchPriority="high"
+          decoding="async"
+          className="hidden h-7 w-auto object-contain in-[[data-theme=dark]]:block"
+        />
       </span>
     );
   }
