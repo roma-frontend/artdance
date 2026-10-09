@@ -53,6 +53,7 @@ export async function BlogCard({ item, locale, featured = false, priority = fals
             fill
             priority={priority}
             fallback="event"
+            className="absolute inset-0"
             imageClassName="transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (

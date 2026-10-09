@@ -113,6 +113,7 @@ test('Full и Lite сохраняются после reload и использу�
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await expect(toggle).toBeVisible();
   await expect(toggle).toBeEnabled();
+  await expect(toggle.locator('svg.lucide-zap')).toBeVisible();
   await toggle.click();
   const liteOption = page.getByRole('menuitemradio', { name: /^Lite/ });
   await expect(liteOption).toBeVisible();
@@ -121,6 +122,7 @@ test('Full и Lite сохраняются после reload и использу�
   await expect(page.locator('html')).toHaveAttribute('data-lite', 'true');
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await expect(toggle).toBeVisible();
+  await expect(toggle.locator('svg.lucide-leaf')).toBeVisible();
   await toggle.click();
   const liteOption2 = page.getByRole('menuitemradio', { name: /^Lite/ });
   await expect(liteOption2).toBeVisible();

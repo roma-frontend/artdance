@@ -97,19 +97,35 @@ test.describe('SiteHeader', () => {
       const card = document.querySelector('.site-header-surface')!;
       const nav = document.querySelector<HTMLElement>('.site-header')!;
       const samples: number[] = [card.getBoundingClientRect().width];
-      window.scrollTo({ top: 0, behavior: 'instant' });
       await new Promise<void>((resolve, reject) => {
-        const deadline = performance.now() + 10_000;
-        let started: number | undefined;
-        const tick = () => {
-          const now = performance.now();
-          if (nav.dataset.mode === 'full') started ??= now;
-          samples.push(card.getBoundingClientRect().width);
-          if (started !== undefined && now - started >= 700) resolve();
-          else if (now > deadline) reject(new Error('Header did not expand at the top'));
-          else requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
+        const observer = new MutationObserver(() => {
+          if (nav.dataset.mode !== 'full') return;
+          observer.disconnect();
+          clearTimeout(timeout);
+          const animations = [...nav.getAnimations(), ...card.getAnimations()];
+          const expansion = card.getAnimations().some(animation =>
+            animation instanceof CSSTransition && animation.transitionProperty === 'max-width',
+          );
+          if (!expansion) {
+            reject(new Error('Header has no width transition'));
+            return;
+          }
+          for (const animation of animations) animation.pause();
+          for (const fraction of [0, 0.25, 0.5, 0.75, 1]) {
+            for (const animation of animations) {
+              animation.currentTime = Number(animation.effect!.getComputedTiming().duration) * fraction;
+            }
+            samples.push(card.getBoundingClientRect().width);
+          }
+          for (const animation of animations) animation.finish();
+          resolve();
+        });
+        const timeout = setTimeout(() => {
+          observer.disconnect();
+          reject(new Error('Header did not expand at the top'));
+        }, 10_000);
+        observer.observe(nav, { attributes: true, attributeFilter: ['data-mode'] });
+        window.scrollTo({ top: 0, behavior: 'instant' });
       });
       return samples;
     });

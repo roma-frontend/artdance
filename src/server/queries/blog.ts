@@ -28,12 +28,11 @@ interface BlogTranslationRow {
   body: string;
 }
 
-function resolveTranslation(
+export function resolveTranslation(
   base: { title: string; excerpt: string; body: string },
   translations: readonly BlogTranslationRow[],
   locale: Locale,
 ) {
-  if (locale === defaultLocale) return base;
   const found = translations.find((t) => t.locale === locale);
   if (!found) return base;
   return {
@@ -100,17 +99,7 @@ function toCard(row: BlogRow, locale: Locale): BlogCardItem {
   } else if (row.coverMedia) {
     image = firstMediaRef([row.coverMedia]);
   } else if (row.coverKey) {
-    // coverKey может быть R2 URL из ContentBlock — нормализовать к pathname для превью
-    let normalizedKey = row.coverKey;
-    try {
-      const url = new URL(row.coverKey);
-      if (url.hostname.endsWith('r2.dev') || url.hostname.endsWith('r2.cloudflarestorage.com')) {
-        normalizedKey = url.pathname;
-      }
-    } catch {
-      /* local path */
-    }
-    image = { key: normalizedKey, alt: { hy: row.coverAlt ?? t.title, ru: row.coverAlt ?? t.title, en: row.coverAlt ?? t.title } };
+    image = { key: row.coverKey, alt: { hy: row.coverAlt ?? t.title, ru: row.coverAlt ?? t.title, en: row.coverAlt ?? t.title } };
   }
 
   return {

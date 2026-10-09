@@ -227,7 +227,7 @@ if (!resolved) {
   return (
     <div
       className={cn('relative overflow-hidden', className)}
-      style={useFill ? undefined : { aspectRatio: spec.aspectRatio }}
+      style={fill ? undefined : { aspectRatio: spec.aspectRatio }}
     >
       <NextImage
         src={resolved.url}
