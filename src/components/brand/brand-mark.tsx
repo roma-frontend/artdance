@@ -12,38 +12,79 @@
  * Геометрия взята из прототипа без изменений.
  */
 
-import { cn } from '@/lib/utils';
+import { mediaBaseUrl } from '@/config/media';
 
 interface BrandMarkProps {
   className?: string;
+  compact?: boolean;
+  /** solid=true → header on light bg (island/scrolled/non-hero); solid=false → over cinema hero (always dark bg) */
+  solid?: boolean;
 }
 
-export function BrandMark({ className }: BrandMarkProps) {
+function brandSrc(name: 'logo' | 'logoOnDark'): string {
+  const key = name === 'logo' ? 'brand/logo.png' : 'brand/logo-on-dark.png';
+  const cdn = (mediaBaseUrl ?? '').trim().replace(/\/$/, '');
+  if (cdn) return `${cdn}/${key}`;
+  return `/${key}`;
+}
+
+export function BrandMark({ className, compact = false, solid }: BrandMarkProps) {
+  if (compact) {
+    return (
+      <span
+        aria-hidden
+        className={`inline-grid size-8 shrink-0 place-items-center rounded-full bg-accent text-heading-3 leading-none text-white ${className ?? ''}`}
+      >
+        A
+      </span>
+    );
+  }
+
+  const isOverHero = solid === false;
+
+  // Over cinema hero: dark bg in both themes → always on-dark variant
+  if (isOverHero) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={brandSrc('logoOnDark')}
+        alt=""
+        width={1151}
+        height={389}
+        aria-hidden
+        fetchPriority="high"
+        decoding="async"
+        className={`h-7 w-auto shrink-0 object-contain sm:h-8 ${className ?? ''}`}
+      />
+    );
+  }
+
+  // Everywhere else (island/scrolled/auth): respect html[data-theme="dark"] — NOT html.dark
+  // Tailwind v4 dark: по умолчанию html.dark, а у нас токены на [data-theme="dark"]
   return (
-    <svg
-      viewBox="0 0 32 32"
-      fill="none"
-      aria-hidden
-      focusable="false"
-      className={cn('size-8 shrink-0', className)}
-    >
-      <circle cx="16" cy="6" r="3.2" fill="currentColor" />
-      <path
-        d="M16 10.5C16 10.5 9 13.8 7.5 21C6 28 11.5 29.5 14.5 28C17.5 26.5 16 22.5 16 22.5C16 22.5 14.5 26.5 17.5 28C20.5 29.5 26 28 24.5 21C23 13.8 16 10.5 16 10.5Z"
-        fill="currentColor"
+    <span className={`inline-flex shrink-0 items-center ${className ?? ''}`} aria-hidden>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={brandSrc('logo')}
+        alt=""
+        width={1151}
+        height={389}
+        aria-hidden
+        fetchPriority="high"
+        decoding="async"
+        className="block h-7 w-auto object-contain sm:h-8 in-[[data-theme=dark]]:hidden"
       />
-      <path
-        d="M11 15.5C11 15.5 8 12.5 5 14"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={brandSrc('logoOnDark')}
+        alt=""
+        width={1151}
+        height={389}
+        aria-hidden
+        fetchPriority="high"
+        decoding="async"
+        className="hidden h-7 w-auto object-contain sm:h-8 in-[[data-theme=dark]]:block"
       />
-      <path
-        d="M21 15.5C21 15.5 24 12.5 27 14"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
+    </span>
   );
 }

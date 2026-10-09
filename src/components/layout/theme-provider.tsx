@@ -44,11 +44,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       themes={[...colorSchemes]}
       storageKey={STORAGE_KEY}
       /*
-       * Отключаем переходы на момент переключения: иначе одновременно
-       * анимируются цвета фона, текста, границ и теней у каждого элемента на
-       * странице — это заметная просадка кадров на длинной странице.
+       * НЕ отключаем переходы глобально: `disableTransitionOnChange` вставляет
+       * на 500ms правило `* { transition: none !important }`, и оно ломает
+       * логику шапки: `useHeaderHideOnScroll` считает `scrollY` и `delta`
+       * в rAF, а синхронный сброс переходов на `SiteHeader` (backdrop-filter,
+       * transform) вызывает layout-thrashing и «залипание» island/hidden до
+       * перезагрузки. Переходы токенов (`bg`, `color`, `border`) дешёвые —
+       * оставляем их.
        */
-      disableTransitionOnChange
     >
       {children}
     </NextThemeProvider>

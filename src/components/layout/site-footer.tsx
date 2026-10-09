@@ -14,11 +14,17 @@
 
 import { useFormatter, useTranslations } from 'next-intl';
 
-import { BrandMark } from '@/components/brand/brand-mark';
 import { FooterParallaxFX } from '@/components/layout/footer-parallax-fx';
 import { footerNavGroups, routes, site } from '@/config';
+import { mediaBaseUrl } from '@/config/media';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
+
+function footerLogoSrc(): string {
+  const cdn = (mediaBaseUrl ?? '').trim().replace(/\/$/, '');
+  if (cdn) return `${cdn}/brand/logo-on-dark.png`;
+  return '/brand/logo-on-dark.png';
+}
 
 type SocialKey = keyof typeof site.social;
 
@@ -49,9 +55,9 @@ export function SiteFooter() {
       <div className="footer-content page-container section-y relative z-10 pb-8 md:pb-10">
         <div className="grid gap-10 lg:grid-cols-[2fr_repeat(4,1fr)]">
           <div>
-            <Link href={routes.home()} className="flex items-center gap-3">
-              <BrandMark className="text-accent" />
-              <span className="text-card-title text-content-on-cinema">{t('brand.name')}</span>
+            <Link href={routes.home()} aria-label={t('brand.name')} className="inline-flex items-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={footerLogoSrc()} alt={t('brand.name')} width={1151} height={389} loading="lazy" decoding="async" className="h-8 w-auto object-contain" />
             </Link>
             <p className="text-body-sm mt-4 max-w-(--layout-prose-max-width) text-content-on-cinema-muted">
               {t('footer.description')}

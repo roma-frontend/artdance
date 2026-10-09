@@ -39,7 +39,13 @@ export function HeaderThemeToggle({ solid }: { solid: boolean }) {
   return (
     <button
       type="button"
-      onClick={() => setTheme(next)}
+      onClick={(e) => {
+        // Не оставлять :focus на кнопке после клика мышью — иначе useHeaderHideOnScroll
+        // видит `header.contains(activeElement)` и блокирует hidden/island до blur/перезагрузки.
+        // При клавиатуре blur не делаем — :focus-visible нужен для a11y.
+        if (e.detail !== 0) (e.currentTarget as HTMLButtonElement).blur();
+        setTheme(next);
+      }}
       aria-label={label}
       title={label}
       data-slot="theme-toggle"

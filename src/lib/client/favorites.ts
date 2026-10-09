@@ -22,6 +22,8 @@
 
 import { useCallback, useSyncExternalStore } from 'react';
 
+import { authClient } from '@/lib/auth/auth-client';
+
 /** Ключ в `localStorage`. Стиль тот же, что у ключа темы. */
 const STORAGE_KEY = 'ARTDANCE_FAVORITES';
 
@@ -149,10 +151,17 @@ export function useFavorite(target: FavoriteTarget, slug: string): {
 /**
  * Totale Anzahl der Favoriten — für Badge in Header/Mobile-Dock.
  * Leerer Server-Snapshot vermeidet Hydration-Mismatch: Badge erscheint erst nach Hydration.
+ * Bei Gast (keine Session) immer 0 — sonst Badge aus Gäste-localStorage (ARTDANCE_FAVORITES)
+ * ohne existierenden Nutzer (Bug-Report: „когда в системе нет пользователя, почему сердечко показывает бейдж“).
  */
 export function useFavoritesCount(): number {
   const raw = useSyncExternalStore(subscribe, read, serverSnapshot);
-  return parse(raw).filter(Boolean).length;
+  const count = parse(raw).filter(Boolean).length;
+  const { data: session, isPending } = authClient.useSession();
+  // Vor Hydration / während Laden keine Entscheidung → 0 bis geklärt (verhindert Hydration-Mismatch).
+  if (isPending) return 0;
+  if (!session?.user) return 0;
+  return count;
 }
 
 /**

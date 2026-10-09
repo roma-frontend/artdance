@@ -158,6 +158,8 @@ export type MediaFallbackKind = (typeof mediaFallbackKinds)[number];
 
 /** Ключи бакета — путь к файлу строится только через эти функции. */
 export const mediaPaths = {
+  brandLogo: () => `brand/logo.png`,
+  brandLogoOnDark: () => `brand/logo-on-dark.png`,
   instructorPhoto: (instructorId: string, fileId: string) => `instructors/${instructorId}/${fileId}`,
   studioPhoto: (studioId: string, fileId: string) => `studios/${studioId}/${fileId}`,
   classPhoto: (classId: string, fileId: string) => `classes/${classId}/${fileId}`,
@@ -168,6 +170,12 @@ export const mediaPaths = {
   editorial: (slug: string, fileId: string) => `editorial/${slug}/${fileId}`,
   bannerImage: (bannerId: string, fileId: string) => `banners/${bannerId}/${fileId}`,
   blogCover: (blogPostId: string, fileId: string) => `blog/${blogPostId}/${fileId}`,
+} as const;
+
+/** Ключи статических бренд-ассетов в R2. Хранятся как обычные объекты, без связи с сущностью. */
+export const brandAssetKeys = {
+  logo: 'brand/logo.png',
+  logoOnDark: 'brand/logo-on-dark.png',
 } as const;
 
 /** Пресеты для новых ролей upload (используются в обработке). */

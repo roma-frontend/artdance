@@ -45,6 +45,7 @@ cloudflare-env.d.ts
 # Исключение — именно seed и производные видео, а не произвольные загрузки.
 /public/media/uploads/
 /public/media/og/
+# brand logos живут в R2 (`brand/logo*.png`), а не в `public/` — см. src/components/brand/brand-mark.tsx
 
 # Договорные приложения — локальные документы для подписи, не попадают в git
 /docs/contracts/

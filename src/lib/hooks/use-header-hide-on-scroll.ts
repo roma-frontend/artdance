@@ -57,7 +57,21 @@ export function useHeaderHideOnScroll(
         down = up = 0;
         pendingRestoreIsland = false;
         setState(previous => previous.hidden || previous.island ? { hidden: false, island: false } : previous);
-      } else if (paused || ref.current?.contains(document.activeElement) || document.body.style.overflow === 'hidden') {
+      } else if (
+        paused ||
+        (() => {
+          const active = document.activeElement as HTMLElement | null;
+          if (!active || !ref.current?.contains(active)) return false;
+          // Клик мышью оставляет :focus на кнопке, но :focus-visible — нет.
+          // Блокируем скрытие только при клавиатурном фокусе или в полях ввода,
+          // иначе смена темы (клик по тоглу) навсегда «залипает» header до blur/перезагрузки.
+          if (active.matches(':focus-visible')) return true;
+          const tag = active.tagName;
+          if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || active.isContentEditable) return true;
+          return false;
+        })() ||
+        document.body.style.overflow === 'hidden'
+      ) {
         down = up = 0;
         setState(previous => previous.hidden ? { ...previous, hidden: false } : previous);
       } else if (delta >= 1) {
@@ -87,6 +101,7 @@ export function useHeaderHideOnScroll(
     window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule);
     reducedMotion.addEventListener('change', schedule);
+
     return () => {
       window.removeEventListener('scroll', schedule);
       window.removeEventListener('resize', schedule);

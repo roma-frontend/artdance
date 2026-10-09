@@ -135,14 +135,15 @@ const serverSchema = z.object({
   R2_ACCOUNT_ID: optionalString,
   R2_ACCESS_KEY_ID: optionalString,
   R2_SECRET_ACCESS_KEY: optionalString,
-  R2_BUCKET: z.preprocess(
-    (v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : process.env.R2_BUCKET_NAME?.trim() || undefined),
-    z.string().min(1).optional(),
-  ),
-  R2_PUBLIC_BASE_URL: z.preprocess(
-    (v) => (typeof v === 'string' && v.trim() !== '' ? v.trim() : process.env.R2_PUBLIC_URL?.trim() || undefined),
-    z.url().optional(),
-  ),
+  // В репозитории используется R2_BUCKET_NAME, в проде — R2_BUCKET: поддержка обоих не через
+  // preprocess (он теряет fallback когда ключа нет в объекте и stripUnknown обрезает), а через
+  // два поля + getter. То же для R2_PUBLIC_URL / R2_PUBLIC_BASE_URL / NEXT_PUBLIC_MEDIA_CDN_URL.
+  R2_BUCKET: optionalString,
+  R2_BUCKET_NAME: optionalString,
+  R2_PUBLIC_BASE_URL: optionalUrl,
+  R2_PUBLIC_URL: optionalUrl,
+  // Fallback CDN для dev: NEXT_PUBLIC_* уже валидируется в clientSchema, но нужен и в server для brand
+  R2_CDN_FALLBACK: optionalUrl,
 
   /* Уведомления */
   RESEND_API_KEY: optionalString,
@@ -190,18 +191,31 @@ const IS_BROWSER = typeof window !== 'undefined';
  */
 let serverEnvCache: z.infer<typeof serverSchema> | null = null;
 
-export function getServerEnv(): z.infer<typeof serverSchema> {
+export function getServerEnv(): z.infer<typeof serverSchema> & {
+  /** Нормализованные алиасы: R2_BUCKET_NAME → R2_BUCKET, R2_PUBLIC_URL → R2_PUBLIC_BASE_URL */
+  resolvedR2Bucket: string | undefined;
+  resolvedR2PublicBaseUrl: string | undefined;
+} {
   if (IS_BROWSER) {
     throw new Error('[env] getServerEnv() вызван на клиенте. Секреты недоступны в браузере.');
   }
-  if (serverEnvCache) return serverEnvCache;
+  if (serverEnvCache) return serverEnvCache as unknown as ReturnType<typeof getServerEnv>;
   const parsed = serverSchema.safeParse(process.env);
   if (!parsed.success) fail('сервера', parsed.error);
-  serverEnvCache = parsed.data;
-  return serverEnvCache;
+  const data = parsed.data as z.infer<typeof serverSchema>;
+  const r2BucketAlias = (data as Record<string, unknown>).R2_BUCKET_NAME as string | undefined;
+  const r2PublicAlias = (data as Record<string, unknown>).R2_PUBLIC_URL as string | undefined;
+  const cdnFallback = process.env.NEXT_PUBLIC_MEDIA_CDN_URL?.trim() || undefined;
+  const resolved = {
+    ...data,
+    resolvedR2Bucket: ((data.R2_BUCKET ?? r2BucketAlias) || undefined) as string | undefined,
+    resolvedR2PublicBaseUrl: ((data.R2_PUBLIC_BASE_URL ?? r2PublicAlias ?? cdnFallback) || undefined) as string | undefined,
+  };
+  serverEnvCache = resolved as unknown as typeof serverEnvCache;
+  return resolved;
 }
 
-export type ServerEnv = z.infer<typeof serverSchema>;
+export type ServerEnv = ReturnType<typeof getServerEnv>;
 
 export const isProduction = clientEnv.NEXT_PUBLIC_APP_ENV === 'production';
 export const isPreview = clientEnv.NEXT_PUBLIC_APP_ENV === 'preview';

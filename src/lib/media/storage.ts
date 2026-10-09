@@ -47,13 +47,24 @@ const LOCAL_PREFIX = 'uploads';
  */
 export function storageDriver(): StorageDriver {
   const env = getServerEnv();
+  const bucket = (((env as Record<string, unknown>).resolvedR2Bucket as string | undefined) ?? env.R2_BUCKET) as string | undefined;
   const configured =
     Boolean(env.R2_ACCOUNT_ID) &&
     Boolean(env.R2_ACCESS_KEY_ID) &&
     Boolean(env.R2_SECRET_ACCESS_KEY) &&
-    Boolean(env.R2_BUCKET);
+    Boolean(bucket);
 
   return configured ? 'r2' : 'local';
+}
+
+function r2Bucket(): string {
+  const env = getServerEnv();
+  return ((((env as Record<string, unknown>).resolvedR2Bucket as string | undefined) ?? env.R2_BUCKET ?? '') as string);
+}
+
+function r2PublicBase(): string {
+  const env = getServerEnv();
+  return ((((env as Record<string, unknown>).resolvedR2PublicBaseUrl as string | undefined) ?? env.R2_PUBLIC_BASE_URL ?? '') as string);
 }
 
 export async function putMediaObject(
@@ -133,9 +144,8 @@ function encodeR2Key(key: string): string {
 }
 
 function r2PublicUrl(key: string): string {
-  const env = getServerEnv();
-  if (env.R2_PUBLIC_BASE_URL) {
-    const base = env.R2_PUBLIC_BASE_URL.trim();
+  const base = r2PublicBase();
+  if (base) {
     return `${base.replace(/\/$/, '')}/${key}`;
   }
   return mediaUrl(key);
@@ -214,11 +224,11 @@ async function putToR2(key: string, data: Buffer, contentType: string): Promise<
   const accountId = env.R2_ACCOUNT_ID;
   const accessKeyId = env.R2_ACCESS_KEY_ID;
   const secretAccessKey = env.R2_SECRET_ACCESS_KEY;
-  const bucket = env.R2_BUCKET;
+  const bucket = r2Bucket();
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucket) {
     throw new Error(
-      '[media] R2 не настроен: задайте R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY и R2_BUCKET.',
+      '[media] R2 не настроен: задайте R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY и R2_BUCKET (или R2_BUCKET_NAME).',
     );
   }
 
@@ -273,11 +283,11 @@ async function deleteFromR2(key: string): Promise<void> {
   const accountId = env.R2_ACCOUNT_ID;
   const accessKeyId = env.R2_ACCESS_KEY_ID;
   const secretAccessKey = env.R2_SECRET_ACCESS_KEY;
-  const bucket = env.R2_BUCKET;
+  const bucket = r2Bucket();
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucket) {
     throw new Error(
-      '[media] R2 не настроен: задайте R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY и R2_BUCKET.',
+      '[media] R2 не настроен: задайте R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY и R2_BUCKET (или R2_BUCKET_NAME).',
     );
   }
 

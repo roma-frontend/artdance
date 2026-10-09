@@ -29,6 +29,7 @@
     "media:check": "tsx scripts/optimize-media.ts --check",
     "media:r2:sync": "node --conditions=react-server --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/sync-media-r2.ts",
     "media:r2:check": "npm run media:r2:sync -- --check",
+    "brand:r2:upload": "node --conditions=react-server --env-file=.env.local --env-file-if-exists=.env --import tsx scripts/upload-brand-logos.ts",
     "video:encode": "tsx scripts/encode-video-loops.ts",
     "video:check": "tsx scripts/encode-video-loops.ts --check",
     "video:generate:seedance": "tsx index.ts",

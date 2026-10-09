@@ -139,20 +139,11 @@ export function SiteHeader() {
           aria-current={pathname === routes.home() ? 'page' : undefined}
           className="group/logo flex shrink-0 items-center gap-3"
         >
-          <BrandMark
-            className={cn(
-              'transition-transform duration-slow ease-brand group-hover/logo:-rotate-12',
-              solid ? 'text-content-accent' : 'text-accent-on-cinema',
-            )}
-          />
-          <span
-            translate="no"
-            className={cn(
-              'text-card-title hidden sm:inline transition-colors duration-slow ease-standard',
-              solid ? 'text-content-primary' : 'text-content-on-cinema',
-            )}
-          >
-            {t('brand.name')}
+          <span className="hidden sm:inline group/logo">
+            <BrandMark solid={solid} className="transition-transform duration-slow ease-brand group-hover/logo:scale-105" />
+          </span>
+          <span className="sm:hidden group/logo">
+            <BrandMark compact solid={solid} className="transition-transform duration-slow ease-brand group-hover/logo:scale-105" />
           </span>
         </Link>
 
