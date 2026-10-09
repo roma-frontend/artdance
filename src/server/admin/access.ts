@@ -29,7 +29,7 @@ export async function adminAccess(): Promise<AdminAccess> {
    * страница отличала бы «нет права» от «не сотрудник» только текстом ошибки.
    */
   const caller = await requireRole('SUPPORT');
-  const capabilities = await resolveCapabilities(caller.role);
+  const capabilities = await resolveCapabilities(caller.role, caller.email);
 
   return {
     caller,

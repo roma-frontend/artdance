@@ -28,7 +28,7 @@ import { db } from '@/lib/db';
 import { domainErrors } from '@/domain/errors';
 import { hasAtLeastRole, isUserRole, type UserRole } from '@/domain/enums';
 import { isLocale, type Locale } from '@/i18n/config';
-import { isSupportOwner } from '@/config/security';
+import { isSupportOperator, isSupportOwner } from '@/config/security';
 
 import { auth } from './auth';
 
@@ -67,11 +67,12 @@ export async function getCaller(options: { realActor?: boolean } = {}): Promise<
 
   const storedRole: UserRole = isUserRole(user.role) ? user.role : 'CUSTOMER';
   const owner = isSupportOwner(user);
-  const role: UserRole = owner ? 'SUPPORT' : storedRole;
+  const operator = isSupportOperator(user);
+  const role: UserRole = operator ? 'SUPPORT' : storedRole;
   const locale: Locale = typeof user.locale === 'string' && isLocale(user.locale) ? user.locale : 'hy';
 
   const caller: Caller = { id: user.id, email: user.email, name: user.name, role, locale, supportOwner: owner };
-  if (options.realActor || (role !== 'ADMIN' && role !== 'SUPPORT')) return caller;
+  if (options.realActor || !operator) return caller;
 
   const row = await db.operatorSetting.findUnique({ where: { key: `impersonation.${session.session.id}` } });
   const value = row?.value as { userId?: string; expiresAt?: number } | undefined;
@@ -79,7 +80,7 @@ export async function getCaller(options: { realActor?: boolean } = {}): Promise<
   const target = await db.user.findUnique({ where: { id: value.userId }, select: { id: true, email: true, name: true, role: true, locale: true, isActive: true, emailVerified: true } });
   // No recursive elevation or impersonating staff, even if the target was
   // promoted after this support session started.
-  if (!target?.isActive || target.role === 'ADMIN' || target.role === 'SUPPORT' || isSupportOwner(target)) return caller;
+  if (!target?.isActive || target.role === 'ADMIN' || target.role === 'SUPPORT' || isSupportOperator(target)) return caller;
   const targetGrant = await db.operatorSetting.findUnique({ where: { key: `access.${target.id}` } });
   const tg = targetGrant?.value as { expiresAt?: number; revoked?: boolean } | undefined;
   if (tg?.revoked !== true && typeof tg?.expiresAt === 'number' && tg.expiresAt > Date.now()) return caller;
@@ -90,8 +91,7 @@ export async function getCaller(options: { realActor?: boolean } = {}): Promise<
 export async function requireOperator(): Promise<Caller> {
   const caller = await getCaller({ realActor: true });
   if (!caller) throw domainErrors.unauthorized();
-  const { hasCapability } = await import('./capabilities');
-  if (!(await hasCapability(caller.role, 'settings.edit'))) throw domainErrors.forbidden();
+  if (!isSupportOperator(caller)) throw domainErrors.forbidden();
   return caller;
 }
 
@@ -119,7 +119,7 @@ export async function requireAdmin(): Promise<Caller> {
 export async function requireCapability(capability: Capability): Promise<Caller> {
   const caller = await requireCaller();
   const { hasCapability } = await import('./capabilities');
-  if (!(await hasCapability(caller.role, capability))) throw domainErrors.forbidden();
+  if (!(await hasCapability(caller.role, capability, caller.email))) throw domainErrors.forbidden();
   return caller;
 }
 

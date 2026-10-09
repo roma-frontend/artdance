@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
 import { operatorJobs, operatorExportLimit } from '@/config/operator';
+import { isSupportOperator } from '@/config/security';
 import { locales, type Locale } from '@/i18n/config';
 import { recordAudit } from '@/lib/audit';
 import { db } from '@/lib/db';
@@ -88,7 +89,7 @@ export const startImpersonation = authedAction
     const caller = await requireOperator();
     if (parsedInput.userId === caller.id) throw new Error('Cannot impersonate yourself');
     const target = await db.user.findUnique({ where: { id: parsedInput.userId }, select: { id: true, email: true, name: true, role: true, isActive: true } });
-    if (!target || !target.isActive || target.role === 'ADMIN' || target.role === 'SUPPORT') throw new Error('This account cannot be impersonated');
+    if (!target || !target.isActive || target.role === 'ADMIN' || target.role === 'SUPPORT' || isSupportOperator(target)) throw new Error('This account cannot be impersonated');
     const session = await db.session.findFirst({ where: { userId: caller.id, expiresAt: { gt: new Date() } }, select: { id: true } });
     if (!session) throw new Error('Operator session not found');
     const expiresAt = Date.now() + 30 * 60_000;

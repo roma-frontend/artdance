@@ -4,6 +4,7 @@ import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
 
 const admin = demoAccounts.find(account => account.role === 'ADMIN')!;
+const supportOperator = demoAccounts.find(account => account.email === 'support@demo.artdance.am')!;
 
 test('админка: общий скролл и правая sticky-колонка как у инструктора', async ({ page }, testInfo) => {
   await page.context().setExtraHTTPHeaders({ 'x-forwarded-for': `10.81.${testInfo.parallelIndex}.1` });
@@ -49,5 +50,23 @@ test('админка: общий скролл и правая sticky-колон�
     await page.keyboard.press('Escape');
     await expect(drawer).toHaveCount(0);
   }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('support command center: доступ только allowlisted operator и широкая панель инструментов', async ({ page }, testInfo) => {
+  await page.context().setExtraHTTPHeaders({ 'x-forwarded-for': `10.82.${testInfo.parallelIndex}.1` });
+  await page.goto('/en/admin/support');
+  await page.getByLabel(en.auth.signIn.emailLabel).fill(supportOperator.email);
+  await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
+  await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+  await expect(page.getByRole('heading', { name: en.admin.support.queueTitle })).toBeVisible();
+  await expect(page.getByRole('heading', { name: en.admin.support.toolsTitle })).toBeVisible();
+
+  const queue = page.locator('section[aria-labelledby="support-queue"]');
+  const tools = page.locator('section[aria-labelledby="support-tools"]');
+  await expect(queue).toBeVisible();
+  await expect(tools).toBeVisible();
+  const toolsBox = await tools.boundingBox();
+  expect(toolsBox?.width).toBeGreaterThan(300);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

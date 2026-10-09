@@ -2,17 +2,18 @@
  * Разрешение capability: матрица запретов из БД + временные гранты.
  *
  * Порядок разрешения — важен и зафиксирован здесь как единственная реализация:
- *   1. ADMIN → разрешено всегда;
- *   2. роль не участвует в capability-модели (клиент, инструктор, владелец
+ *   1. operator-права → только email allowlist, независимо от роли и грантов;
+ *   2. ADMIN → остальные права разрешены всегда;
+ *   3. роль не участвует в capability-модели (клиент, инструктор, владелец
  *      площадки) → ЗАПРЕЩЕНО: административного права у неё нет ни одного.
  *      Свои занятия инструктор правит через владение (`assertOwnership`), а не
  *      через capability, и это разные механизмы;
- *   3. базовый набор роли не содержит capability → запрещено;
- *   4. есть живой временный грант → разрешено;
- *   5. в матрице есть запись `enabled = false` → запрещено;
- *   6. иначе → разрешено.
+ *   4. базовый набор роли не содержит capability → запрещено;
+ *   5. есть живой временный грант → разрешено;
+ *   6. в матрице есть запись `enabled = false` → запрещено;
+ *   7. иначе → разрешено.
  *
- * **Почему шаг 2 именно запрет.** Раньше он отвечал «разрешено» с мотивировкой
+ * **Почему шаг 3 именно запрет.** Раньше он отвечал «разрешено» с мотивировкой
  * «владение проверяется отдельно». Пока `capabilityAction` не использовался, это
  * ничего не значило; с первым админским действием это означало бы, что любой
  * вошедший клиент вызывает `updateClass` через curl и получает доступ: гвард
@@ -25,6 +26,7 @@ import 'server-only';
 
 import { db } from '@/lib/db';
 import { defaultRoleCapabilities, type Capability } from '@/config/capabilities';
+import { isSupportOperator } from '@/config/security';
 import type { UserRole } from '@/domain/enums';
 
 /** Роли, для которых capability-матрица вообще применяется. */
@@ -52,7 +54,8 @@ async function deniedCapabilities(role: UserRole): Promise<Set<string>> {
   return new Set(rows.map((r) => r.capability));
 }
 
-export async function hasCapability(role: UserRole, capability: Capability): Promise<boolean> {
+export async function hasCapability(role: UserRole, capability: Capability, email?: string): Promise<boolean> {
+  if ((role === 'SUPPORT' || capability === 'support.manage' || capability === 'users.impersonate') && !isSupportOperator({ email })) return false;
   if (role === 'ADMIN') return true;
   if (!MANAGED_ROLES.includes(role)) return false;
 
@@ -70,8 +73,10 @@ export async function hasCapability(role: UserRole, capability: Capability): Pro
  * Полный набор прав роли — для рендера навигации админки одним запросом,
  * вместо N проверок по одной capability на пункт меню.
  */
-export async function resolveCapabilities(role: UserRole): Promise<Set<Capability>> {
-  if (role === 'ADMIN') return new Set(defaultRoleCapabilities.ADMIN);
+export async function resolveCapabilities(role: UserRole, email?: string): Promise<Set<Capability>> {
+  const operator = isSupportOperator({ email });
+  if (role === 'SUPPORT' && !operator) return new Set();
+  if (role === 'ADMIN') return new Set((defaultRoleCapabilities.ADMIN ?? []).filter((cap) => operator || (cap !== 'support.manage' && cap !== 'users.impersonate')));
   if (!MANAGED_ROLES.includes(role)) return new Set();
 
   const base = defaultRoleCapabilities[role] ?? [];

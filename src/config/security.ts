@@ -37,18 +37,22 @@ const isProduction = clientEnv.NEXT_PUBLIC_APP_ENV === 'production';
 const isPreview = clientEnv.NEXT_PUBLIC_APP_ENV === 'preview';
 
 /**
- * Platform support owner. This is an explicit bootstrap identity, not a
- * client-controlled flag: the exact account email and a valid Better Auth
- * session are required. The session itself still comes from Better Auth.
+ * Support operator identities. Access requires an allowlisted account email
+ * from a valid server session; ADMIN/SUPPORT roles alone cannot grant it.
  */
 export const support = {
   ownerEmail: 'romangulanyan@gmail.com',
+  operatorEmails: ['romangulanyan@gmail.com', 'support@demo.artdance.am'],
   impersonationMinutes: 30,
   maxAccessMinutes: 1440,
 } as const;
 
 export function isSupportOwner(user: { email: string }): boolean {
   return user.email.trim().toLowerCase() === support.ownerEmail;
+}
+
+export function isSupportOperator(user: { email?: string | null }): boolean {
+  return typeof user.email === 'string' && (support.operatorEmails as readonly string[]).includes(user.email.trim().toLowerCase());
 }
 
 /** В dev нужны eval и websocket для HMR; в preview — оверлей Vercel. */

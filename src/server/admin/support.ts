@@ -1,8 +1,10 @@
 import 'server-only';
 
 import { db } from '@/lib/db';
+import { requireOperator } from '@/lib/auth/guards';
 
 export async function getSupportSummary() {
+  await requireOperator();
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 

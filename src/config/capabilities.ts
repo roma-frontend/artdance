@@ -9,8 +9,8 @@
  *
  * 1. **Отсутствие записи = разрешено.** Новая capability не ломает поведение
  *    существующих админов: она просто ещё никем не запрещена.
- * 2. **ADMIN никогда не ограничивается.** Иначе неверная запись в матрице
- *    способна запереть владельца платформы вне админки.
+ * 2. **ADMIN не ограничивается матрицей.** Operator-права дополнительно
+ *    защищены email allowlist на сервере.
  * 3. **Временные гранты перекрывают запрет.** Выдать доступ на два часа, а не
  *    менять роль навсегда и забывать откатить — это то, что реально происходит
  *    в поддержке.
@@ -105,7 +105,7 @@ export const defaultRoleCapabilities: Record<string, readonly Capability[]> = {
      * Support is the platform operator role in ArtDance. It intentionally
      * mirrors ADMIN so one person can resolve a booking, payment, catalog,
      * moderation or account incident without a developer in the loop.
-     * The owner identity is still constrained by the server-side role guard.
+      * The operator identity is constrained by the server-side email allowlist.
      */
     ...capabilities,
   ],

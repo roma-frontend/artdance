@@ -10,6 +10,7 @@ import { flattenMessages, jsonSafe, messageParameters, messageTags, redactRecord
 import { locales, type Locale } from '@/i18n/config';
 import { messageLoaders } from '@/i18n/messages';
 import { db } from '@/lib/db';
+import { requireOperator } from '@/lib/auth/guards';
 import { defineQuery } from '@/server/query';
 
 export interface OperatorDelegate {
@@ -76,6 +77,7 @@ export function modelWorkflow(name: string, id?: string): string | undefined {
 }
 
 export async function browseModel(name: string, q: string, page: number) {
+  await requireOperator();
   const fields = modelFields(name);
   const searchFields = fields.filter((f) => f.type === 'String' && !f.isList).slice(0, 8);
   const where = q ? { OR: searchFields.map((f) => ({ [f.name]: { contains: q, mode: 'insensitive' } })) } : {};
@@ -90,6 +92,7 @@ export async function browseModel(name: string, q: string, page: number) {
 }
 
 export async function exportModel(name: string) {
+  await requireOperator();
   const delegate = operatorDelegate(name);
   const count = await delegate.count({});
   if (count > operatorExportLimit) throw domainErrors.validationFailed('exportTooLarge');
@@ -104,6 +107,7 @@ export async function exportModel(name: string) {
 }
 
 export async function translationCatalog(q: string, page: number) {
+  await requireOperator();
   const bundles = await Promise.all(locales.map(async (locale) => ({ locale, values: flattenMessages((await messageLoaders[locale]()).default) })));
   const all = bundles.find((b) => b.locale === 'en')!.values;
   const matches = Object.keys(all).filter((key) => !q || key.toLowerCase().includes(q.toLowerCase()) || bundles.some((b) => b.values[key]?.toLowerCase().includes(q.toLowerCase())));
@@ -129,6 +133,7 @@ export const getUiOverrides = defineQuery({
 });
 
 export async function operatorPulse() {
+  await requireOperator();
   const since = new Date(Date.now() - 86400000);
   const [sessions, failedPayments, failedNotifications, failedWebhooks, openTickets, activity, jobs, locked] = await Promise.all([
     db.session.count({ where: { expiresAt: { gt: new Date() } } }),
@@ -145,6 +150,7 @@ export async function operatorPulse() {
 }
 
 export async function globalOperatorSearch(q: string) {
+  await requireOperator();
   if (q.length < 2) return [];
   const contains = { contains: q, mode: 'insensitive' as const };
   const [users, bookings, orders, classes, venues, tickets] = await Promise.all([

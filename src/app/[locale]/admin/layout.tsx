@@ -88,7 +88,7 @@ export default async function AdminLayout({ children, params }: LayoutProps) {
     );
   }
 
-  const [capabilities] = await Promise.all([resolveCapabilities(caller.role)]);
+  const [capabilities] = await Promise.all([resolveCapabilities(caller.role, caller.email)]);
   const badges = await getSidebarPendingBadges(capabilities);
 
   const groups: readonly SidebarGroup[] = adminNavigation
