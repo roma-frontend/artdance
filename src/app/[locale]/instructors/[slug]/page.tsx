@@ -18,8 +18,8 @@
  *
  * **Ничего не обещаем за данные.** Нет опыта в профиле — раздела нет, а не
  * пустой заголовок «Опыт». Нет групповых занятий — об этом сказано словами
- * (`instructor.classesEmpty`), потому что частные занятия у инструктора всё
- * равно доступны, и пустая сетка выглядела бы как сбой загрузки.
+ * (`instructor.classesEmpty`). Без опубликованного занятия запись недоступна:
+ * маршрут бронирования показывает объяснение и переходы, а не обещает слоты.
  *
  * **Ближайшего времени на странице нет.** `instructor.quickBookNext` намеренно не
  * используется: страница статическая и живёт в CDN, а «ближайшее: сб, 18:00»,
@@ -293,7 +293,7 @@ export default async function InstructorProfilePage({ params }: PageProps) {
                 >
                   {t('classesEmpty')}
                   <span className="text-body-sm mt-1 block text-content-tertiary">
-                    {t('privateSessionsTitle')}
+                    {tRoot('booking.noClassesDescription')}
                   </span>
                 </p>
               ) : (

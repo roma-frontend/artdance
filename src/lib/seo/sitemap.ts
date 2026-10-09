@@ -235,8 +235,7 @@ function contentSpecs(): SitemapSpec[] {
     spec(routes.becomeInstructorApply()),
     spec(routes.listYourStudio()),
     spec(routes.blog()),
-    // Search alias (A-04) — canonical discover, alias intentionally indexable.
-    spec(routes.search()),
+    // /search redirects to /discover: sitemap contains only canonical pages.
     // Schedule grid (A-02) — weekly.
     spec(routes.schedule()),
     // Gift-cards redeem (A-21) — marketing entry, with shop.

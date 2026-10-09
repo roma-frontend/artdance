@@ -22,6 +22,7 @@ import { motion } from '@/design/motion';
 import { paintStackCover } from '@/lib/animations/stack';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { cn } from '@/lib/utils';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 interface StackCardsProps {
   /** Элементы `<li>`: ступень прилипания каждому раздаёт CSS по `--stack-index`. */
@@ -33,11 +34,12 @@ interface StackCardsProps {
 export function StackCards({ children, className, ...rest }: StackCardsProps) {
   const ref = useRef<HTMLOListElement>(null);
   const reduced = usePrefersReducedMotion();
+  const lite = useIsLiteMode();
   const { scrollY } = useScroll();
 
   useEffect(() => {
     const root = ref.current;
-    if (!root || reduced) return;
+    if (!root || reduced || lite) return;
     const items = Array.from(root.children) as HTMLElement[];
     items.forEach((item, index) => item.style.setProperty('--stack-index', String(index)));
 
@@ -59,7 +61,7 @@ export function StackCards({ children, className, ...rest }: StackCardsProps) {
       if (frame !== 0) window.cancelAnimationFrame(frame);
       items.forEach((item) => item.style.removeProperty('--stack-cover'));
     };
-  }, [reduced, scrollY]);
+  }, [reduced, lite, scrollY]);
 
   return (
     <ol

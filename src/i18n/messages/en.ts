@@ -735,6 +735,11 @@ const en = {
     /** Страница входа в бронирование: сначала инструктор, потом дата и время. */
     startTitle: 'Book a session',
     startSubtitle: 'Pick an instructor and choose a time that works for you.',
+    noClassesTitle: 'Classes are on their way',
+    noClassesSubtitle: '{instructor} has not published any classes yet',
+    noClassesDescription: 'Booking will be available once a class is published. For now, explore classes with other instructors or return to this profile later.',
+    browseClassesCta: 'Explore classes',
+    backToInstructorCta: 'Back to instructor profile',
     subtitleWith: '{title} with {instructor}',
     calendarTitle: '{month}',
     previousMonth: 'Previous month',

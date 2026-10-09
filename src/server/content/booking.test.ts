@@ -37,7 +37,11 @@ beforeEach(() => {
   db.slotHold.findMany.mockResolvedValue([]);
 });
 
-const content = () => getInstructorBookingContent(instructor.slug, now, 'ru');
+const content = async () => {
+  const result = await getInstructorBookingContent(instructor.slug, now, 'ru');
+  if (result && 'kind' in result) throw new Error('Expected a bookable class');
+  return result;
+};
 
 describe('календарь бронирования из БД', () => {
   it('не показывает отсутствующий или непубличный профиль', async () => {
@@ -50,10 +54,20 @@ describe('календарь бронирования из БД', () => {
     expect(db.availabilityRule.findMany).not.toHaveBeenCalled();
   });
 
-  it('без занятия не открывает бронь, а альтернативы пусты', async () => {
+  it('без занятия возвращает публичный профиль для пустого состояния без запросов слотов', async () => {
     db.danceClass.findFirst.mockResolvedValue(null);
-    expect(await content()).toBeNull();
+    expect(await getInstructorBookingContent(instructor.slug, now, 'ru')).toEqual({
+      kind: 'no-classes', instructorSlug: instructor.slug, instructorName: instructor.user.name,
+    });
+    expect(db.availabilityRule.findMany).not.toHaveBeenCalled();
+    expect(db.slotHold.findMany).not.toHaveBeenCalled();
     expect(await getAlternativeSlots(instructor.slug, 3, now)).toEqual([]);
+  });
+
+  it('явно указанное неизвестное занятие не подменяется пустым состоянием', async () => {
+    db.danceClass.findFirst.mockResolvedValue(null);
+    expect(await getInstructorBookingContent(instructor.slug, now, 'ru', 'unknown')).toBeNull();
+    expect(db.classSession.findMany).not.toHaveBeenCalled();
   });
 
   it('читает цену, длительность, переводы и настоящий ID', async () => {
@@ -130,6 +144,7 @@ describe('календарь бронирования из БД', () => {
       { id: 'session-2', ...interval('2026-09-09T14:00:00Z', '2026-09-09T15:00:00Z'), capacity: 5, bookedCount: 2 },
     ]);
     const result = (await getInstructorBookingContent('teacher', now, 'ru', 'lesson'))!;
+    if ('kind' in result) throw new Error('Expected a session booking');
     expect(result.sessionBooking).toBe(true);
     expect(result.days[0]?.slots[0]).toMatchObject({ sessionId: 'session-1', available: false, start: '18:00' });
     expect(result.initialDateKey).toBe('2026-09-09');
@@ -146,9 +161,13 @@ describe('календарь бронирования из БД', () => {
     const times = interval('2026-09-08T14:00:00Z', '2026-09-08T15:00:00Z');
     db.classSession.findMany.mockResolvedValue([{ id: 'session-1', ...times, capacity: 5, bookedCount: 1 }]);
     db.booking.findMany.mockResolvedValue([{ ...times, sessionId: 'session-1' }]);
-    expect((await getInstructorBookingContent('teacher', now, 'ru', 'lesson'))?.days[0]?.slots[0]?.available).toBe(true);
+    const available = await getInstructorBookingContent('teacher', now, 'ru', 'lesson');
+    if (!available || 'kind' in available) throw new Error('Expected a session booking');
+    expect(available.days[0]?.slots[0]?.available).toBe(true);
     db.slotHold.findMany.mockResolvedValue([times]);
-    expect((await getInstructorBookingContent('teacher', now, 'ru', 'lesson'))?.days[0]?.slots[0]?.available).toBe(false);
+    const occupied = await getInstructorBookingContent('teacher', now, 'ru', 'lesson');
+    if (!occupied || 'kind' in occupied) throw new Error('Expected a session booking');
+    expect(occupied.days[0]?.slots[0]?.available).toBe(false);
   });
 
   it('в список входят только публичные профили с неудалёнными занятиями', async () => {

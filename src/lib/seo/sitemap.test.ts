@@ -114,6 +114,12 @@ describe('buildSitemap', () => {
     expect(urls).toContain('/styles/salsa');
   });
 
+  it('не включает редирект поиска: каноническая страница discover уже в карте', () => {
+    const urls = entries.map(entry => new URL(entry.url).pathname);
+    expect(urls.some(path => path.endsWith('/search'))).toBe(false);
+    expect(urls.some(path => path.endsWith('/discover'))).toBe(true);
+  });
+
   it('не приглашает поисковика на направления без предложения', () => {
     const urls = entries.map((entry) => entry.url);
 
@@ -189,7 +195,8 @@ function toTemplate(path: string): string {
  * `noIndexPathPrefixes` и `privatePaths`; появление любого из них в карте
  * означало бы приглашение проиндексировать чужой заказ.
  */
-const NOT_IN_SITEMAP = ['/cart', '/checkout', '/checkout/[step]', '/booking', '/booking/[holdId]/confirm', '/instructors/[slug]/book'];
+// Search is a redirect, not a second indexable page.
+const NOT_IN_SITEMAP = ['/search', '/cart', '/checkout', '/checkout/[step]', '/booking', '/booking/[holdId]/confirm', '/instructors/[slug]/book'];
 
 /**
  * Закрыт ли маршрут от индексации.

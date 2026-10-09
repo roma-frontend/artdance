@@ -29,6 +29,7 @@ import { motion } from '@/design/motion';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { cn } from '@/lib/utils';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 /** Слои секции. Значение атрибута `data-parallax`. */
 export type SectionParallaxRole = 'background' | 'content' | 'heading';
@@ -50,6 +51,7 @@ export function SectionParallax({ children, className, scene }: SectionParallaxP
   const rootRef = useRef<HTMLDivElement>(null);
   const { scrollY } = useScroll();
   const reducedMotion = usePrefersReducedMotion();
+  const lite = useIsLiteMode();
   const wideEnough = useMediaQuery(`(min-width: ${motion.sectionParallax.minViewportWidth}px)`);
 
   /*
@@ -84,7 +86,7 @@ export function SectionParallax({ children, className, scene }: SectionParallaxP
   }, []);
   useEffect(() => {
     const root = rootRef.current;
-    if (!root || reducedMotion || !wideEnough) return;
+    if (!root || reducedMotion || lite || !wideEnough) return;
 
     const {
       backgroundTravelPx,
@@ -154,7 +156,7 @@ export function SectionParallax({ children, className, scene }: SectionParallaxP
       /* Возврат в исходное: следующий монтаж начинает с чистого состояния. */
       for (const element of all) element.style.transform = '';
     };
-  }, [reducedMotion, scrollY, wideEnough]);
+  }, [reducedMotion, lite, scrollY, wideEnough]);
 
   return (
     <div

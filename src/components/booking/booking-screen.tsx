@@ -205,7 +205,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
         <LocationOptionPicker value={location} onChange={setLocation} studioName={content.studioName} acceptsTravel={content.acceptsTravel} acceptsOnline={content.acceptsOnline} />
         {!content.sessionBooking && <div className="rounded-xl border border-border-default bg-surface-card p-5">
           <label className="text-body-sm font-semibold">{tBooking('recurring.weeks' as never)} — {weeks}
-            <input type="range" min={recurringOpts.minWeeks} max={recurringOpts.maxWeeks} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} className="mt-2 w-full" />
+            <input type="range" min={recurringOpts.minWeeks} max={recurringOpts.maxWeeks} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} className="mt-2 min-h-6 w-full cursor-pointer accent-accent" />
           </label>
           <p className="text-caption mt-1 text-content-tertiary">{tBooking('recurring.hint' as never, { weeks } as never)}</p>
         </div>}

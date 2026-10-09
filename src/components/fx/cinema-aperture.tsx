@@ -20,6 +20,7 @@ import { motion } from '@/design/motion';
 import { apertureExit, apertureFlare, apertureOpen } from '@/lib/animations/aperture';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 const config = motion.cinemaAperture;
 
@@ -27,19 +28,21 @@ export function CinemaAperture({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const wide = useMediaQuery(`(min-width: ${config.minViewportWidth}px)`);
   const reduced = usePrefersReducedMotion();
+  const lite = useIsLiteMode();
   const { scrollY } = useScroll();
 
   useEffect(() => {
     const root = ref.current;
-    if (!root || !wide || reduced) return;
+    if (!root || !wide || reduced || lite) return;
     const panels = Array.from(root.children) as HTMLElement[];
 
     let frame = 0;
     const paint = () => {
       frame = 0;
       const viewport = window.innerHeight;
-      for (const panel of panels) {
-        const rect = panel.getBoundingClientRect();
+      const rects = panels.map((panel) => panel.getBoundingClientRect());
+      for (const [index, panel] of panels.entries()) {
+        const rect = rects[index]!;
         const open = apertureOpen(rect.top, viewport, config.openSpan);
         panel.style.setProperty('--aperture-open', open.toFixed(3));
         panel.style.setProperty('--aperture-flare', apertureFlare(open).toFixed(3));
@@ -66,7 +69,7 @@ export function CinemaAperture({ children }: { children: ReactNode }) {
         panel.style.removeProperty('--aperture-exit');
       }
     };
-  }, [wide, reduced, scrollY]);
+  }, [wide, reduced, lite, scrollY]);
 
   return (
     <div

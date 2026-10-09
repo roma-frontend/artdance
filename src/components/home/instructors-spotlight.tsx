@@ -14,6 +14,7 @@ import { useEffect, useRef } from 'react';
 import { useFinePointer } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { cn } from '@/lib/utils';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 interface InstructorsSpotlightProps {
   className?: string;
@@ -23,10 +24,11 @@ export function InstructorsSpotlight({ className }: InstructorsSpotlightProps) {
   const spotlightRef = useRef<HTMLDivElement>(null);
   const finePointer = useFinePointer();
   const reducedMotion = usePrefersReducedMotion();
+  const lite = useIsLiteMode();
 
   useEffect(() => {
     const spotlight = spotlightRef.current;
-    if (!spotlight || !finePointer || reducedMotion) return;
+    if (!spotlight || !finePointer || reducedMotion || lite) return;
 
     const parent = spotlight.parentElement;
     if (!parent) return;
@@ -90,9 +92,9 @@ export function InstructorsSpotlight({ className }: InstructorsSpotlightProps) {
       parent.style.removeProperty('--spotlight-x');
       parent.style.removeProperty('--spotlight-y');
     };
-  }, [finePointer, reducedMotion]);
+  }, [finePointer, reducedMotion, lite]);
 
-  if (!finePointer || reducedMotion) return null;
+  if (!finePointer || reducedMotion || lite) return null;
 
   return (
     <div

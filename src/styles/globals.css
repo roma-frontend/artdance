@@ -675,17 +675,17 @@
 
   @media (width >= theme(--breakpoint-md)) {
     .detail-grid {
-      grid-template-columns: 1fr var(--layout-sidebar-width);
+      grid-template-columns: minmax(0, 1fr) var(--layout-sidebar-width);
       gap: var(--space-12);
     }
 
     .booking-detail-grid {
-      grid-template-columns: 1fr var(--layout-sidebar-width-booking);
+      grid-template-columns: minmax(0, 1fr) var(--layout-sidebar-width-booking);
       gap: var(--space-12);
     }
 
     .checkout-grid {
-      grid-template-columns: 1fr var(--layout-sidebar-width-checkout);
+      grid-template-columns: minmax(0, 1fr) var(--layout-sidebar-width-checkout);
       gap: var(--space-12);
     }
 
@@ -3358,6 +3358,24 @@ html:has(body[data-scroll-locked]) {
   opacity: 1 !important;
 }
 
-[data-lite='true'] .reviews-stage-light::before {
+[data-lite='true'] .reviews-stage-light::before,
+[data-lite='true'] .hero-shine,
+[data-lite='true'] .editorial-light-wave,
+[data-lite='true'] .editorial-backdrop {
   animation: none !important;
+}
+
+[data-lite='true'] .editorial-backdrop {
+  filter: none;
+}
+
+[data-lite='true'] [data-stack-cards] > li {
+  position: static;
+  scale: none;
+  filter: none;
+}
+
+[data-lite='true'] .site-header[data-mode='island'] .site-header-surface {
+  background-color: var(--surface-card);
+  backdrop-filter: none;
 }

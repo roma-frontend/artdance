@@ -100,6 +100,13 @@ export interface BookingContent {
   sessionBooking?: boolean;
 }
 
+/** Публичный инструктор существует, но занятие для записи ещё не опубликовано. */
+export interface InstructorBookingEmpty {
+  kind: 'no-classes';
+  instructorSlug: string;
+  instructorName: string;
+}
+
 async function bookingSubject(slug: string, locale: Locale = defaultLocale, classSlug?: string) {
   const instructor = await db.instructorProfile.findFirst({
     where: { slug, ...publicInstructorWhere },
@@ -183,8 +190,9 @@ async function availabilityInputFor(
 /**
  * Данные для бронирования занятия у инструктора.
  *
- * Возвращает `null`, если инструктора нет или у него нет занятий: страница
- * отвечает 404, а не рисует пустую сводку.
+ * `null` — профиль отсутствует/непубличный или явно запрошенное занятие не найдено.
+ * `no-classes` — существующий публичный профиль без занятия: полноценное пустое
+ * состояние, без выдуманных цен, календаря и запросов удержания.
  *
  * `now` параметром: экран рендерится на сервере, но тест доступности не должен
  * зависеть от дня, в который его запустили.
@@ -194,9 +202,13 @@ export async function getInstructorBookingContent(
   now: Date = new Date(),
   locale: Locale = defaultLocale,
   classSlug?: string,
-): Promise<BookingContent | null> {
+): Promise<BookingContent | InstructorBookingEmpty | null> {
   const subject = await bookingSubject(slug, locale, classSlug);
-  if (!subject?.classItem) return null;
+  if (!subject) return null;
+  if (!subject.classItem) {
+    if (classSlug) return null;
+    return { kind: 'no-classes', instructorSlug: subject.instructor.slug, instructorName: subject.instructor.user.name };
+  }
   const { instructor, classItem } = subject;
   const venue = classItem.venue?.deletedAt === null ? classItem.venue : null;
   if (classSlug) {

@@ -24,6 +24,7 @@
 
 import { MonitorIcon, MapPinIcon, HomeIcon } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
+import { useId } from 'react';
 
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { booking, type BookingLocationOption } from '@/config';
@@ -54,6 +55,7 @@ export function LocationOptionPicker({
 }: LocationOptionPickerProps) {
   const t = useTranslations('booking');
   const format = useFormatter();
+  const headingId = useId();
 
   const options = [
     {
@@ -81,10 +83,12 @@ export function LocationOptionPicker({
   ].filter((option) => option.visible);
 
   return (
-    <fieldset className={cn('rounded-lg border border-border-default bg-surface-card p-6', className)}>
-      <legend className="text-body-sm float-none mb-3 font-semibold">{t('locationTitle')}</legend>
+    <div className={cn('min-w-0 rounded-xl border border-border-default bg-surface-card p-6', className)}>
+      <fieldset className="min-w-0">
+        <legend id={headingId} className="text-body-sm mb-3 font-semibold">{t('locationTitle')}</legend>
 
       <RadioGroup
+        aria-labelledby={headingId}
         value={value}
         onValueChange={(next) => onChange(next as BookingLocationOption)}
         className="gap-2"
@@ -97,7 +101,7 @@ export function LocationOptionPicker({
             <label
               key={option.id}
               className={cn(
-                'flex cursor-pointer items-center gap-3 rounded-md border p-3',
+                'flex cursor-pointer items-center gap-3 rounded-md border p-3 focus-within:border-border-focus',
                 'transition-colors duration-normal ease-brand',
                 checked
                   ? 'border-accent bg-accent-soft'
@@ -124,6 +128,7 @@ export function LocationOptionPicker({
           );
         })}
       </RadioGroup>
-    </fieldset>
+      </fieldset>
+    </div>
   );
 }

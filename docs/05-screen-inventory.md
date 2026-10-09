@@ -41,7 +41,7 @@
 
 | Маршрут | Файл | Есть в макете | Ключевое |
 |---|---|---|---|
-| `/instructors/[slug]/book` | `app/[locale]/instructors/[slug]/book/page.tsx` | ✅ booking | календарь, слоты, место, сводка, `SlotHold` |
+| `/instructors/[slug]/book` | `app/[locale]/instructors/[slug]/book/page.tsx` | ✅ booking | календарь, слоты, место, сводка, `SlotHold`; публичный инструктор без занятия — 200 с локализованным `EmptyState` и ссылками на каталог/профиль; отсутствующий профиль или неверный `?class=` — 404 |
 | `/studios/[slug]/book` | `app/[locale]/studios/[slug]/book/page.tsx` | — | аренда зала, `venue.minRentalMinutes` |
 | `/booking/[holdId]/confirm` | `app/[locale]/booking/[holdId]/confirm/page.tsx` | — | подтверждение до оплаты, таймер удержания |
 | `/cart` | `app/[locale]/cart/page.tsx` | ✅ cart | позиции, промокод, пересчёт на сервере |

@@ -1,8 +1,27 @@
 import { describe, expect, it } from 'vitest';
 
-import { stackCover } from './stack';
+import { paintStackCover, stackCover } from './stack';
 
 describe('Накрытие карточки стопки', () => {
+  it('читает всю геометрию до записи и не перезаписывает неизменившееся накрытие', () => {
+    const operations: string[] = [];
+    const values = [new Map<string, string>(), new Map<string, string>()];
+    const items = [100, 300].map((top, index) => ({
+      getBoundingClientRect: () => { operations.push('read'); return { top }; },
+      get offsetHeight() { operations.push('read'); return 400; },
+      style: {
+        getPropertyValue: (key: string) => values[index]!.get(key) ?? '',
+        setProperty: (key: string, value: string) => { operations.push('write'); values[index]!.set(key, value); },
+      },
+    })) as unknown as HTMLElement[];
+    paintStackCover(items);
+    expect(operations).toEqual(['read', 'read', 'read', 'read', 'write', 'write']);
+    expect(values[0]!.get('--stack-cover')).toBe('0.500');
+    expect(values[1]!.get('--stack-cover')).toBe('0.000');
+    operations.length = 0;
+    paintStackCover(items);
+    expect(operations).toEqual(['read', 'read', 'read', 'read']);
+  });
   it('равно нулю, пока следующая карточка ниже нижней кромки', () => {
     expect(stackCover(100, 400, 500)).toBe(0);
     expect(stackCover(100, 400, 900)).toBe(0);

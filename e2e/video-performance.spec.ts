@@ -3,6 +3,47 @@ import { expect, test } from '@playwright/test';
 const tiles = '[data-slot="style-accordion"]';
 const clips = `${tiles} video[data-tile-video]`;
 
+test('Lite останавливает JS-декорации, снимает дорогие фильтры и сохраняет отклик', async ({ page }) => {
+  await page.goto('/en');
+  await page.locator('footer').scrollIntoViewIfNeeded();
+  await page.evaluate(() => {
+    localStorage.setItem('ARTDANCE_LITE_MODE', 'true');
+    document.documentElement.setAttribute('data-lite', 'true');
+    window.dispatchEvent(new CustomEvent('lite-mode-change'));
+  });
+  await expect(page.locator('[data-slot="footer-fx"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="instructors-spotlight"]')).toHaveCount(0);
+  await expect(page.locator('[data-slot="scroll-seal"]')).toHaveCSS('transform', 'none');
+  await expect(page.locator('.hero-shine').first()).toHaveCSS('animation-name', 'none');
+  const cards = page.locator('[data-stack-cards] > li');
+  for (const card of await cards.all()) {
+    await expect(card).toHaveCSS('position', 'static');
+    await expect(card).toHaveCSS('filter', 'none');
+  }
+  const mutated = await page.evaluate(async () => {
+    let count = 0;
+    const observer = new MutationObserver((records) => { count += records.length; });
+    for (const node of document.querySelectorAll('[data-parallax], [data-slot="scroll-seal"], [data-stack-cards] > li')) {
+      observer.observe(node, { attributes: true, attributeFilter: ['style'] });
+    }
+    for (let step = 0; step < 5; step++) {
+      window.scrollTo(0, step * 200);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    observer.disconnect();
+    return count;
+  });
+  expect(mutated).toBe(0);
+  await page.evaluate(() => {
+    localStorage.setItem('ARTDANCE_LITE_MODE', 'false');
+    document.documentElement.setAttribute('data-lite', 'false');
+    window.dispatchEvent(new CustomEvent('lite-mode-change'));
+  });
+  await expect(page.locator('[data-slot="footer-fx"]')).toHaveCount(1);
+  await page.evaluate(() => window.scrollTo(0, 300));
+  await expect.poll(() => page.locator('[data-slot="scroll-seal"]').evaluate((node) => node.style.transform)).toContain('rotate(');
+});
+
 test('видеокарточки загружают только активный ролик и останавливаются вне экрана', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('ARTDANCE_LITE_MODE', 'false'));
   const requested = new Set<string>();
@@ -163,6 +204,9 @@ test('раскрытие не меняет размер фото и видео �
   await accordion.scrollIntoViewIfNeeded();
   const panel = accordion.locator('[data-style-panel]').first();
   const surface = panel.locator('.dance-style-media');
+  // The SSR percentage fallback precedes the ResizeObserver's fixed geometry.
+  // Measure the actual initialized surface, not that transient fallback.
+  await expect.poll(() => accordion.evaluate(node => node.style.getPropertyValue('--style-media-width'))).toMatch(/px$/);
   await expect.poll(() => surface.evaluate(node => node.clientWidth)).toBeGreaterThan(100);
   const result = await page.evaluate(async () => {
     const panel = document.querySelector<HTMLElement>('[data-slot="style-accordion"] [data-style-panel]')!;

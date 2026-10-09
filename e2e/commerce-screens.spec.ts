@@ -16,6 +16,9 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 
 import en from '../src/i18n/messages/en';
+import ru from '../src/i18n/messages/ru';
+import hy from '../src/i18n/messages/hy';
+import AxeBuilder from '@axe-core/playwright';
 import {
   demoAccounts,
   demoCartTotals,
@@ -133,6 +136,102 @@ test.describe('Бронирование', () => {
       }
       if (holdId) await db.slotHold.deleteMany({ where: { id: holdId } });
       await db.$disconnect();
+    }
+  });
+
+  test('выбор места: заголовок внутри карточки, вся плитка кликабельна, slider брендовый', async ({ page }) => {
+    await page.goto(`/en/instructors/${firstInstructor.slug}/book`);
+    const group = page.getByRole('radiogroup', { name: en.booking.locationTitle });
+    await expect(group).toBeVisible();
+    const fieldset = group.locator('..');
+    const geometry = await fieldset.evaluate((node) => {
+      const card = node.parentElement!.getBoundingClientRect();
+      const heading = node.querySelector('legend')!.getBoundingClientRect();
+      return { inset: heading.top - card.top, overflow: node.scrollWidth > node.clientWidth + 1 };
+    });
+    expect(geometry.inset).toBeGreaterThanOrEqual(20);
+    expect(geometry.overflow).toBe(false);
+    await group.getByText(en.booking.locationCustomer, { exact: true }).click();
+    await expect(group.getByRole('radio', { name: /My location/ })).toHaveAttribute('aria-checked', 'true');
+    await group.getByRole('radio', { name: /My location/ }).focus();
+    // Radix moves focus asynchronously; keep the key held until focus arrives,
+    // as a real keydown does, before sending keyup.
+    await page.keyboard.down('ArrowUp');
+    await expect(group.getByRole('radio', { name: /At the studio/ })).toBeFocused();
+    await expect(group.getByRole('radio', { name: /At the studio/ })).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.up('ArrowUp');
+    const slider = page.getByRole('slider');
+    await expect(slider).toBeVisible();
+    const accent = await slider.evaluate((node) => ({
+      actual: getComputedStyle(node).accentColor,
+      expected: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+    }));
+    expect(accent.actual).not.toBe('auto');
+    expect(accent.expected).toBeTruthy();
+    const initial = Number(await slider.inputValue());
+    await slider.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(slider).toHaveValue(String(initial + 1));
+  });
+
+  for (const [locale, messages] of Object.entries({ en, ru, hy })) {
+    test(`${locale}: инструктор без занятий показывает пустое состояние и рабочие переходы`, async ({ page }) => {
+      const teacher = demoInstructors.find(item => !demoClasses.some(lesson => lesson.instructorSlug === item.slug))!;
+      expect(teacher).toBeDefined();
+      const holdRequests: string[] = [];
+      page.on('request', request => {
+        if (request.url().includes('/api/booking/hold')) holdRequests.push(request.method());
+      });
+      const response = await page.goto(`/${locale}/instructors/${teacher.slug}/book`);
+      expect(response?.status()).toBe(200);
+      expect(response?.headers()['cache-control']).toContain('no-store');
+      await expect(page.getByRole('heading', { level: 1, name: messages.booking.noClassesTitle })).toBeVisible();
+      const empty = page.getByRole('main').getByRole('status');
+      await expect(empty).toContainText(teacher.name);
+      await expect(empty).toContainText(messages.booking.noClassesDescription);
+      await expect(page.getByRole('grid')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: messages.booking.continueCta })).toHaveCount(0);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      const violations = (await new AxeBuilder({ page }).include('main [role="status"]').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations;
+      expect(violations, JSON.stringify(violations)).toEqual([]);
+      await empty.getByRole('link', { name: messages.booking.browseClassesCta }).click();
+      await expect(page).toHaveURL(new RegExp(`/${locale}/classes$`));
+      await page.goBack();
+      await page.getByRole('main').getByRole('status').getByRole('link', { name: messages.booking.backToInstructorCta }).click();
+      await expect(page).toHaveURL(new RegExp(`/${locale}/instructors/${teacher.slug}$`));
+      await expect(page.getByRole('heading', { level: 1, name: teacher.name })).toBeVisible();
+      expect(holdRequests).toEqual([]);
+    });
+  }
+
+  for (const theme of ['light', 'dark'] as const) {
+    for (const width of [360, 480, 768, 1024, 1441]) {
+      test(`пустая запись: ${theme}, ${width}px без переполнения`, async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'desktop', 'Матрица ширин проверяется одним браузером');
+        await page.setViewportSize({ width, height: 900 });
+        await page.emulateMedia({ colorScheme: theme });
+        await page.goto('/hy/instructors/david-sargsyan/book');
+        const empty = page.getByRole('main').getByRole('status');
+        await expect(empty).toBeVisible();
+        const geometry = await empty.getByRole('link').evaluateAll(nodes => nodes.map(node => {
+          const rect = node.getBoundingClientRect();
+          return { height: rect.height, left: rect.left, right: rect.right };
+        }));
+        for (const rect of geometry) {
+          expect(rect.height).toBeGreaterThanOrEqual(44);
+          expect(rect.left).toBeGreaterThanOrEqual(0);
+          expect(rect.right).toBeLessThanOrEqual(width);
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        const violations = (await new AxeBuilder({ page }).include('main [role="status"]').withTags(['wcag2a', 'wcag2aa', 'wcag21aa']).analyze()).violations;
+        expect(violations, `${theme} ${width}: ${JSON.stringify(violations)}`).toEqual([]);
+      });
+    }
+  }
+
+  test('неизвестный инструктор и неверное занятие остаются 404', async ({ page }) => {
+    for (const path of ['/en/instructors/does-not-exist/book', `/en/instructors/${firstInstructor.slug}/book?class=does-not-exist`, `/en/instructors/${firstInstructor.slug}/book?class=`, `/en/instructors/${firstInstructor.slug}/book?class=a&class=b`]) {
+      expect((await page.goto(path))?.status()).toBe(404);
     }
   });
 

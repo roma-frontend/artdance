@@ -6,6 +6,7 @@ import { motion } from '@/design/motion';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { cn } from '@/lib/utils';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 /**
  * STYLE RAIL — приколотая секция, чья лента едет вбок при вертикальном скролле.
@@ -46,7 +47,8 @@ export function StyleRail({ children, className }: StyleRailProps) {
   const ref = useRef<HTMLDivElement>(null);
   const wide = useMediaQuery('(min-width: 1024px)');
   const reduced = usePrefersReducedMotion();
-  const enabled = wide && !reduced;
+  const lite = useIsLiteMode();
+  const enabled = wide && !reduced && !lite;
 
   useEffect(() => {
     const root = ref.current;
@@ -86,7 +88,10 @@ export function StyleRail({ children, className }: StyleRailProps) {
        * плитки стоят на цилиндре, а не едут строкой.
        */
       const overflow = Math.round(Math.max(0, count - 1) * window.innerHeight * styleRail.stepViewports);
-      root.style.setProperty('--rail-overflow', `${overflow}px`);
+      const overflowValue = `${overflow}px`;
+      if (root.style.getPropertyValue('--rail-overflow') !== overflowValue) {
+        root.style.setProperty('--rail-overflow', overflowValue);
+      }
 
       const rect = root.getBoundingClientRect();
       target = Math.min(overflow, Math.max(0, -rect.top));

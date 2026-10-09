@@ -5,6 +5,8 @@ import { useEffect, useId, useRef } from 'react';
 import { motion } from '@/design/motion';
 import { animationConfig } from '@/lib/animations/parallax';
 import { cn } from '@/lib/utils';
+import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 /**
  * SCROLL SEAL — декоративная печать, вращающаяся от прокрутки.
@@ -35,15 +37,14 @@ interface ScrollSealProps {
 
 export function ScrollSeal({ text = 'ARTDANCE · YEREVAN · ', scope = 'page', className }: ScrollSealProps) {
   const ref = useRef<HTMLSpanElement>(null);
+  const reduced = usePrefersReducedMotion();
+  const lite = useIsLiteMode();
   // Печатей на странице несколько: у каждой свой путь, иначе textPath возьмёт первый.
   const pathId = `scroll-seal-${useId().replace(/:/g, '')}`;
 
   useEffect(() => {
     const node = ref.current;
-    if (!node) return;
-
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (reduced.matches) return;
+    if (!node || reduced || lite) return;
 
     const section = scope === 'section' ? node.parentElement : null;
     let frame = 0;
@@ -79,7 +80,7 @@ export function ScrollSeal({ text = 'ARTDANCE · YEREVAN · ', scope = 'page', c
       if (frame !== 0) window.cancelAnimationFrame(frame);
       node.style.transform = '';
     };
-  }, [scope]);
+  }, [scope, reduced, lite]);
 
   return (
     <span
