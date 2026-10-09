@@ -158,6 +158,7 @@ const ALLOWED_IDENTICAL = [
   /^admin\.integrations\.turnstileName$/,
   /* Универсальные символы-разделители не переводятся. */
   /^admin\.media\.purposeUnknown$/,
+  /^footer\.applyEmailPlaceholder$/,
 ];
 
 for (const locale of locales) {

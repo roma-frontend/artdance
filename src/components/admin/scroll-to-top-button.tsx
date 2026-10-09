@@ -8,10 +8,13 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
 
+import { useTranslations } from 'next-intl';
+
 import { Button } from '@/components/ui/button';
 import { motion as designMotion } from '@/design/motion';
 
 export function ScrollToTopButton() {
+  const t = useTranslations('footer');
   const [visible, setVisible] = useState(false);
   const reduce = useReducedMotion();
 
@@ -45,7 +48,7 @@ export function ScrollToTopButton() {
             variant="outline"
             size="sm"
             onClick={scrollToTop}
-            aria-label="Scroll to top"
+            aria-label={t('scrollToTop')}
             className="size-10 rounded-full p-0 shadow-lg backdrop-blur-md border-border-strong bg-surface-card/95 hover:border-accent hover:text-content-accent"
           >
             <ArrowUp className="size-4" />

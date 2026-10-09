@@ -24,10 +24,11 @@ export default async function CityPage({ params }: PageProps) {
   setRequestLocale(locale as Locale);
   if (!cityBySlug(city)) notFound();
   const c = cityBySlug(city)!;
+  const t = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
   return (
     <main id={site.mainContentId} className="page-container inner-page">
-      <h1 className="text-heading-2">{(await getTranslations({ locale: locale as Locale, namespace: 'footer' }))('citiesTitle')} — {city}</h1>
-      <p className="text-body mt-2 text-content-secondary">Координаты: {c.center.lat}, {c.center.lng}{c.districts ? ` · районов: ${c.districts.length}` : ''}</p>
+      <h1 className="text-heading-2">{t('citiesTitle')} — {city}</h1>
+      <p className="text-body mt-2 text-content-secondary">{t('cityCoordinates', { coords: `${c.center.lat}, ${c.center.lng}` })}{c.districts ? ` ${t('cityDistricts', { count: String(c.districts.length) })}` : ''}</p>
       {c.districts && (
         <ul className="mt-4 flex flex-wrap gap-2">
           {c.districts.map((d) => (

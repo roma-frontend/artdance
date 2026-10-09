@@ -4,6 +4,8 @@ import { useRouter } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
 
+import { useTranslations } from 'next-intl';
+
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +17,7 @@ interface BlogFilterProps {
 }
 
 export function BlogFilter({ categories, active, locale, labelAll }: BlogFilterProps) {
+  const t = useTranslations('footer');
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
@@ -33,7 +36,7 @@ export function BlogFilter({ categories, active, locale, labelAll }: BlogFilterP
   }
 
   return (
-    <nav aria-label="Blog categories" className={cn('flex flex-wrap gap-2', pending && 'opacity-60')}>
+    <nav aria-label={t('blogCategoriesLabel')} className={cn('flex flex-wrap gap-2', pending && 'opacity-60')}>
       <Button
         size="sm"
         variant={active === null ? 'accent' : 'outline'}

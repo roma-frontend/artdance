@@ -267,8 +267,61 @@
      «InvalidStateError: ViewTransition opt-in disabled» на каждом router.push.
      Если понадобится нативный MPA-переход — выносить @view-transition
      на верхний уровень, без вложенности в @supports. */
-  @supports (view-transition-name: none) {
+   @supports (view-transition-name: none) {
     ::view-transition-group(root) { animation-duration: 260ms; }
+  }
+
+  /* Печать пропуска: только чек по центру, ровно 1 страница, цвета из токенов. */
+  @media print {
+    @page {
+      margin: 12mm;
+    }
+
+    html:has([data-pass-ticket]),
+    html:has([data-pass-ticket]) body {
+      height: auto !important;
+      overflow: visible !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: var(--surface-canvas) !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body:has([data-pass-ticket]) .site-header,
+    body:has([data-pass-ticket]) header,
+    body:has([data-pass-ticket]) footer,
+    body:has([data-pass-ticket]) nav,
+    body:has([data-pass-ticket]) .mobile-dock {
+      display: none !important;
+    }
+
+    body:has([data-pass-ticket]) main {
+      display: block !important;
+      padding: 0 !important;
+      margin: 0 auto !important;
+      max-width: 560px !important;
+      min-height: auto !important;
+      height: auto !important;
+    }
+
+    body:has([data-pass-ticket]) main > :not([data-pass-ticket-wrap]) {
+      display: none !important;
+    }
+
+    body:has([data-pass-ticket]) [data-pass-ticket] {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body:has([data-pass-ticket]) [data-pass-ticket] * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
   }
 
   /* animation-timeline: прогресс чтения без JS (docs/10 §1) */

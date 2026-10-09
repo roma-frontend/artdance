@@ -49,8 +49,9 @@ export function DisciplineSections({ locale }: DisciplineSectionsProps) {
     },
   ] as const;
 
+  const ariaLabel = (() => { try { return t('danceSportDisciplinesLabel' as never) as string; } catch { return 'DanceSport disciplines'; } })();
   return (
-    <section className="section-y" aria-label="DanceSport disciplines">
+    <section className="section-y" aria-label={ariaLabel}>
       <div className="page-container">
         <Reveal className="mb-12">
           <SectionHeading

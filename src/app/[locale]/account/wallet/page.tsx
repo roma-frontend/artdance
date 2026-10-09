@@ -39,7 +39,7 @@ export default async function AccountWalletPage({ params }: PageProps) {
       <h1 className="text-heading-2">{t('walletTitle')}</h1>
       <p className="text-body mt-2 text-content-secondary">{t('walletHint')}</p>
       <div className="mt-6 rounded-xl border border-border-default bg-surface-card p-6">
-        <p className="text-eyebrow text-content-tertiary">Balance</p>
+        <p className="text-eyebrow text-content-tertiary">{t('walletTitle')}</p>
         <div className="mt-1"><Price amount={balance} unit="perSession" emphasis="total" /></div>
       </div>
       {entries.length > 0 && (

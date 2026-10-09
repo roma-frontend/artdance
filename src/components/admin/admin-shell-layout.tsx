@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { routes, site } from '@/config';
 import { motion as designMotion } from '@/design/motion';
+import { useTranslations } from 'next-intl';
+
 import { Link, usePathname } from '@/i18n/routing';
 import { HeaderLiteToggle } from '@/components/layout/header-lite-toggle';
 import { HeaderThemeToggle } from '@/components/layout/header-theme-toggle';
@@ -28,6 +30,7 @@ const admin = designMotion.admin;
 const adminEase = admin.ease as unknown as Easing;
 
 export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle, backToSiteLabel, children }: Props) {
+  const t = useTranslations('footer');
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const reduce = useReducedMotion();
@@ -75,7 +78,7 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
         <div className="page-container flex items-center gap-3 py-3 sm:py-4">
           <button
             type="button"
-            aria-label="Open navigation"
+            aria-label={t('adminOpenNav')}
             aria-expanded={open}
             aria-controls="admin-drawer"
             onClick={() => setOpen(true)}
@@ -151,7 +154,7 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
             id="admin-drawer"
             role="dialog"
             aria-modal="true"
-            aria-label="Admin navigation"
+            aria-label={t('adminNavLabel')}
             initial={reduce ? { x: 0, opacity: 0 } : { x: '-100%' }}
             animate={{ x: 0, opacity: 1 }}
             exit={reduce ? { opacity: 0 } : { x: '-100%' }}

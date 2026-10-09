@@ -16,7 +16,7 @@ export function DataDeleteSection() {
     try {
       const res = await fetch('/api/account/delete', { method: 'POST' });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(json.error ?? 'Ошибка');
+      if (!res.ok) throw new Error(json.error ?? t('errorFallback'));
       setResult(t('deletionAccepted'));
     } catch (e: unknown) {
       setResult(e instanceof Error ? e.message : (t('common.states.error' as never) as string));
@@ -30,7 +30,7 @@ export function DataDeleteSection() {
     try {
       const res = await fetch('/api/account/delete', { method: 'DELETE' });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) throw new Error(json.error ?? 'Ошибка');
+      if (!res.ok) throw new Error(json.error ?? t('errorFallback'));
       setResult(t('deletionCancelled' as never) as string);
     } catch (e: unknown) {
       setResult(e instanceof Error ? e.message : (t('common.states.error' as never) as string));

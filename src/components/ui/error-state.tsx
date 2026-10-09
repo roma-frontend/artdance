@@ -5,6 +5,8 @@
  * `role=alert` — assertive, в отличие от EmptyState (polite).
  */
 
+import { useTranslations } from 'next-intl';
+
 import { Button } from '@/components/ui/button';
 
 interface ErrorStateProps {
@@ -15,7 +17,9 @@ interface ErrorStateProps {
   retryLabel?: string;
 }
 
-export function ErrorState({ title, description, incidentId, onRetry, retryLabel = 'Повторить' }: ErrorStateProps) {
+export function ErrorState({ title, description, incidentId, onRetry, retryLabel }: ErrorStateProps) {
+  const t = useTranslations('common');
+  const label = retryLabel ?? (t('actions.retry') as string);
   return (
     <div
       role="alert"
@@ -27,7 +31,7 @@ export function ErrorState({ title, description, incidentId, onRetry, retryLabel
       {incidentId !== undefined && <p className="text-caption font-mono text-content-tertiary">ID: {incidentId}</p>}
       {onRetry !== undefined && (
         <Button variant="outline" onClick={onRetry}>
-          {retryLabel}
+          {label}
         </Button>
       )}
     </div>
