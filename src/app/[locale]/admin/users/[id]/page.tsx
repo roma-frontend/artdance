@@ -12,6 +12,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { UserAccessActions } from '@/components/admin/user-access-actions';
+import { ImpersonationButton } from '@/components/admin/operator-actions';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { Badge } from '@/components/ui/badge';
 import { routes } from '@/config';
@@ -104,7 +105,7 @@ export default async function AdminUserPage({ params }: PageProps) {
             {t('accessSection')}
           </h2>
 
-          <UserAccessActions
+           <UserAccessActions
             id={user.id}
             currentRole={user.role}
             isActive={user.isActive}
@@ -112,7 +113,12 @@ export default async function AdminUserPage({ params }: PageProps) {
             isLastAdmin={isLastAdmin}
             canChangeRole={can('users.roleChange')}
             canSuspend={can('users.edit')}
-          />
+           />
+           {can('users.impersonate') && user.id !== caller.id && user.role !== 'ADMIN' && user.role !== 'SUPPORT' ? (
+             <div className="mt-4 border-t border-border-subtle pt-4">
+               <ImpersonationButton userId={user.id} />
+             </div>
+           ) : null}
 
           {user.deletionRequestedAt ? (
             <p className="text-body-sm mt-6 text-content-warning">

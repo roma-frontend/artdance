@@ -1227,7 +1227,10 @@ export const adminNavigation: readonly AdminNavGroupSpec[] = [
   {
     id: 'overview',
     labelKey: adminNavGroupLabelKey.overview,
-    items: [{ labelKey: 'admin.nav.dashboard', href: routes.admin() }],
+    items: [
+      { labelKey: 'admin.nav.dashboard', href: routes.admin() },
+      { labelKey: 'admin.nav.support', href: routes.adminSupport(), capability: 'support.manage' },
+    ],
   },
   {
     id: 'catalog',

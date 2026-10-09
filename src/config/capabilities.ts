@@ -81,6 +81,7 @@ export const capabilities = [
   'application.review',
   'dispute.resolve',
   'boost.manage',
+  'support.manage',
 ] as const;
 
 export type Capability = (typeof capabilities)[number];
@@ -100,21 +101,13 @@ export function isCapability(value: string): value is Capability {
 export const defaultRoleCapabilities: Record<string, readonly Capability[]> = {
   ADMIN: capabilities,
   SUPPORT: [
-    'catalog.view',
-    'bookings.view',
-    'bookings.edit',
-    'bookings.cancel',
-    'orders.view',
-    'payments.view',
-    'users.view',
-    'reviews.moderate',
-    'content.moderate',
-    'audit.view',
     /*
-     * Поддержка видит корзину, но не трогает её: «кто и что удалил» — обычный
-     * вопрос обращения, а решение вернуть или стереть принимает администратор.
+     * Support is the platform operator role in ArtDance. It intentionally
+     * mirrors ADMIN so one person can resolve a booking, payment, catalog,
+     * moderation or account incident without a developer in the loop.
+     * The owner identity is still constrained by the server-side role guard.
      */
-    'trash.view',
+    ...capabilities,
   ],
   INSTRUCTOR: [],
   VENUE_OWNER: [],

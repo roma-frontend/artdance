@@ -108,15 +108,15 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
 
     await db.auditLog.create({
       data: {
-        actorId: entry.actor?.id ?? null,
-        actorRole: entry.actor?.role ?? null,
+        actorId: entry.actor?.impersonator?.id ?? entry.actor?.id ?? null,
+        actorRole: entry.actor?.impersonator?.role ?? entry.actor?.role ?? null,
         /** Email дублируется строкой: журнал остаётся читаемым после удаления аккаунта. */
-        actorEmail: entry.actor?.email ?? 'system',
+        actorEmail: entry.actor?.impersonator?.email ?? entry.actor?.email ?? 'system',
         action: entry.action,
         entityType: entry.entityType,
         entityId: entry.entityId,
         diff: diff === undefined ? undefined : (diff as object),
-        reason: entry.reason ?? null,
+        reason: entry.actor?.impersonator ? `[acting as ${entry.actor.id}] ${entry.reason ?? ''}` : entry.reason ?? null,
         ipAddress: entry.ipAddress ?? null,
         userAgent: entry.userAgent ?? null,
       },

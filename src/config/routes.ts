@@ -212,6 +212,8 @@ export const routes = {
    * остаются отдельными маршрутами: их нельзя свести к «список + форма».
    */
   admin: () => adminRoot,
+  adminSupport: () => adminPath('support'),
+  adminOperatorTool: (tool: string, params?: Record<string, string | number | undefined>) => withQuery(`${adminPath('support')}/${tool}`, params),
   adminResource: (resource: AdminResource, params?: AdminListParams) =>
     withQuery(adminPath(resource), params),
   adminResourceNew: (resource: AdminResource, parent?: string) =>

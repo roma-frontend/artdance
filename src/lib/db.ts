@@ -63,7 +63,13 @@ function createBaseClient(): PrismaClient {
  */
 const globalForPrisma = globalThis as unknown as { prismaBase?: PrismaClient };
 
-const base = globalForPrisma.prismaBase ?? createBaseClient();
+/* A generated model can be added while `next dev` is running. The connection
+ * pool is intentionally cached, but the old instance then lacks its delegate.
+ * Recreate that instance once instead of keeping an unusable client forever. */
+const cachedBase = globalForPrisma.prismaBase;
+const base = cachedBase && 'supportTicket' in cachedBase && 'operatorSetting' in cachedBase ? cachedBase : createBaseClient();
+
+if (cachedBase && cachedBase !== base) void cachedBase.$disconnect();
 
 if (!isProduction) globalForPrisma.prismaBase = base;
 

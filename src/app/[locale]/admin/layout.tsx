@@ -105,7 +105,7 @@ export default async function AdminLayout({ children, params }: LayoutProps) {
     .filter((group) => group.items.length > 0);
 
   return (
-    <AdminShell groups={groups} userName={caller.name} role={caller.role}>
+    <AdminShell groups={groups} userName={caller.name} role={caller.role} impersonator={caller.impersonator}>
       {children}
     </AdminShell>
   );

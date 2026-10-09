@@ -13,14 +13,21 @@ import { routing } from './routing';
 import { loadMessages } from './messages';
 import { isLocal } from '@/config/env';
 import { site } from '@/config/site';
+import { getUiOverrides } from '@/server/admin/operator';
+import { setMessage } from '@/domain/operator';
 
 export default getRequestConfig(async ({ requestLocale }) => {
   const requested = await requestLocale;
   const locale = hasLocale(routing.locales, requested) ? requested : defaultLocale;
+  const messages = structuredClone(await loadMessages(locale));
+  const overrides = await getUiOverrides(locale);
+  for (const row of overrides) {
+    if (typeof row.value === 'string') setMessage(messages, row.key.slice(`i18n.${locale}.`.length), row.value);
+  }
 
   return {
     locale,
-    messages: await loadMessages(locale),
+    messages,
     formats,
     /** Все даты/времена трактуются в часовом поясе бизнеса, а не сервера. */
     timeZone: site.timeZone,

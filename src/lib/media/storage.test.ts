@@ -29,6 +29,8 @@ describe('media storage R2', () => {
 
   it('keeps public media local when no CDN is configured', async () => {
     vi.stubEnv('NEXT_PUBLIC_MEDIA_CDN_URL', '');
+    vi.stubEnv('R2_PUBLIC_BASE_URL', '');
+    vi.stubEnv('R2_PUBLIC_URL', '');
     vi.resetModules();
     const { mediaUrl } = await import('@/config/media');
     expect(mediaUrl('/media/seed/photo.webp')).toBe('/media/seed/photo.webp');

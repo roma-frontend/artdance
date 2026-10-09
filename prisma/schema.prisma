@@ -298,6 +298,49 @@ model User {
   @@index([createdAt])
 }
 
+/** Support inbox. Contact requests are retained so an operator can resolve the
+ * issue from the product instead of losing the thread in a mailbox. */
+model SupportTicket {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  topic       String
+  message     String
+  locale      Locale
+  status      String   @default("OPEN")
+  resolvedAt  DateTime?
+  resolvedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  replies SupportReply[]
+
+  @@index([status, createdAt])
+  @@index([email, createdAt])
+}
+
+model SupportReply {
+  id        String   @id @default(cuid())
+  ticketId  String
+  actorId   String
+  body      String
+  internal  Boolean  @default(false)
+  delivered Boolean  @default(false)
+  createdAt DateTime @default(now())
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+}
+
+// Runtime operator configuration: translations, scheduled jobs, maintenance,
+// session-bound impersonation and explicitly expiring per-account grants.
+model OperatorSetting {
+  key       String   @id
+  value     Json
+  updatedBy String
+  updatedAt DateTime @updatedAt
+}
+
 model Session {
   id        String   @id @default(cuid())
   userId    String

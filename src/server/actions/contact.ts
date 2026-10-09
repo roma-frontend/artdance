@@ -31,6 +31,7 @@ import { contactTopics } from '@/domain/contact';
 import { locales, type Locale } from '@/i18n/config';
 import { loadMessages } from '@/i18n/messages';
 import { sendEmail } from '@/lib/email/send';
+import { db } from '@/lib/db';
 import { assertCaptcha, publicAction } from '@/server/safe-action';
 
 const contactSchema = z.object({
@@ -51,6 +52,17 @@ export const sendContactMessage = publicAction
   .inputSchema(contactSchema)
   .action(async ({ parsedInput, ctx }): Promise<ContactOutcome> => {
     await assertCaptcha(parsedInput.captchaToken, ctx.identifier);
+
+    /* Keep a first-class support record; email remains the delivery channel. */
+    await db.supportTicket.create({
+      data: {
+        name: parsedInput.name,
+        email: parsedInput.email,
+        topic: parsedInput.topic,
+        message: parsedInput.message,
+        locale: parsedInput.locale,
+      },
+    });
 
     const result = await sendToSupport(parsedInput);
     return { delivered: result.delivered };
