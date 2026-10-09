@@ -24,13 +24,8 @@ type ProviderFactory = () => PaymentProvider;
 const registry: Partial<Record<PaymentProviderId, ProviderFactory>> = {
   mock: () => mockPaymentProvider,
   stripe: () => createStripeProvider(),
-  /**
-   * TODO(phase-payments): подключить после получения тестовых реквизитов.
-   *  paynet:        () => createPaynetProvider(getServerEnv()),
-   *  'arca-epg':    () => createArcaEpgProvider(getServerEnv()),
-   *  'ameria-vpos': () => createAmeriaVposProvider(getServerEnv()),
-   *  idram:         () => createIdramProvider(getServerEnv()),
-   */
+  // Локальные провайдеры (Paynet/ArCa/Ameria/Idram) добавляются здесь после подписания договоров
+  // (см. docs/launch/banks-acquiring.md). Интерфейс PaymentProvider при этом не меняется.
 };
 
 const cache = new Map<PaymentProviderId, PaymentProvider>();

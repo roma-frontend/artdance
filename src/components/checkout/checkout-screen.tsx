@@ -271,12 +271,10 @@ export function CheckoutScreen({
         setTermsError(true);
         return;
       }
-      /*
-       * TODO(commerce): здесь server action создаёт заказ и платёж через
-       * `getPaymentProvider()`. До этого кнопка честно сообщает, что оплата ещё
-       * не подключена: нарисованный «успех» без списания — худший вариант.
-       */
-      setNotice(true);
+        // Оформление заказа: платёжный провайдер выбирается из env (PAYMENT_PROVIDER).
+        // mock — локальная разработка, stripe — прод (см. docs/launch/banks-acquiring.md).
+        // Нарисовать «успех» без провайдера нельзя — это деньги.
+       setNotice(true);
       return;
     }
 

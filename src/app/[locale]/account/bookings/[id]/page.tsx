@@ -68,9 +68,19 @@ export default async function AccountBookingPage({ params }: PageProps) {
   const bookingStatusKnown = (bookingStatuses as readonly string[]).includes(booking.status);
   const bookingStatus = booking.status as BookingStatus;
 
+  const whenLabel = new Date(booking.startsAt).toLocaleString(locale, {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
   return (
     <>
       <main id={site.mainContentId} className="page-container inner-page">
+        {/* Хлебная крошка + статус */}
         <div className="flex flex-wrap items-center gap-2 text-body-sm">
           <Link href={routes.accountBookings()} className="text-content-tertiary hover:text-content-primary">{t('bookings.title')}</Link>
           <span className="text-content-tertiary">/</span>
@@ -78,29 +88,73 @@ export default async function AccountBookingPage({ params }: PageProps) {
           {bookingStatusKnown ? <StatusBadge kind="booking" status={bookingStatus} size="sm" /> : <Badge variant="neutral" size="sm">{booking.status}</Badge>}
         </div>
 
-        <h1 className="text-heading-2 mt-3">{classTitle ?? t('bookings.title')}</h1>
-        {instructorName && <p className="text-body mt-1 text-content-secondary">{instructorName}{booking.venue ? ` · ${booking.venue.name}` : ''}</p>}
+        {/* Заголовок — плотнее, без «распутанности» */}
+        <h1 className="text-heading-2 mt-3 leading-tight">{classTitle ?? t('bookings.title')}</h1>
+        {(instructorName || booking.venue) && (
+          <p className="text-body mt-1 truncate text-content-secondary">{[instructorName, booking.venue?.name].filter(Boolean).join(' · ')}</p>
+        )}
+        <p className="text-body-sm mt-1 font-medium tabular-nums">{whenLabel}</p>
 
-        <div className="mt-6 rounded-xl border border-border-default bg-surface-card p-6">
-          <dl className="grid gap-2 text-body-sm">
-            <div className="flex justify-between gap-4"><dt className="text-content-tertiary">{tBooking('summaryDate')}</dt><dd className="font-medium">{new Date(booking.startsAt).toLocaleString(locale)}</dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-content-tertiary">{tBooking('summaryTime')}</dt><dd className="font-medium">{new Date(booking.startsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} — {new Date(booking.endsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-content-tertiary">{tCommon('labels.total')}</dt><dd><Price amount={booking.totalPrice} emphasis="total" /></dd></div>
-            {booking.travelFee > 0 && <div className="flex justify-between gap-4"><dt className="text-content-tertiary">{tBooking('locationCustomer')}</dt><dd><Price amount={booking.travelFee} /></dd></div>}
-            {booking.cancelledAt && <div className="flex justify-between gap-4"><dt className="text-content-tertiary">{tBooking('cancelTitle')}</dt><dd>{new Date(booking.cancelledAt).toLocaleString(locale)}</dd></div>}
-          </dl>
-
-          {!isCancelled && booking.status !== 'COMPLETED' && (
-            <div className="mt-4 flex flex-wrap gap-3">
-              <CancelBookingButton bookingId={booking.id} />
-              {canReschedule && <RescheduleBookingButton bookingId={booking.id} />}
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1.7fr_1fr]">
+          {/* Левая — детали как компактная таблица, а не растянутый flex-list */}
+          <div className="rounded-xl border border-border-default bg-surface-card p-5 sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-card-title">{tBooking('summaryTitle')}</h2>
+              {bookingStatusKnown ? <StatusBadge kind="booking" status={bookingStatus} size="sm" /> : null}
             </div>
-          )}
+            <dl className="mt-4 divide-y divide-border-subtle rounded-lg border border-border-subtle">
+              <div className="flex items-center justify-between gap-4 px-3 py-2.5 sm:px-4">
+                <dt className="text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('summaryDate')}</dt>
+                <dd className="text-body-sm font-medium">{new Date(booking.startsAt).toLocaleDateString(locale)}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-4 px-3 py-2.5 sm:px-4">
+                <dt className="text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('summaryTime')}</dt>
+                <dd className="text-body-sm font-medium tabular-nums">{new Date(booking.startsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} — {new Date(booking.endsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</dd>
+              </div>
+              <div className="flex items-center justify-between gap-4 bg-surface-sunken px-3 py-2.5 sm:px-4">
+                <dt className="text-caption font-medium tracking-wide text-content-tertiary uppercase">{tCommon('labels.total')}</dt>
+                <dd><Price amount={booking.totalPrice} emphasis="total" /></dd>
+              </div>
+              {booking.travelFee > 0 ? (
+                <div className="flex items-center justify-between gap-4 px-3 py-2.5 sm:px-4">
+                  <dt className="text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('locationCustomer')}</dt>
+                  <dd><Price amount={booking.travelFee} /></dd>
+                </div>
+              ) : null}
+              {booking.cancelledAt ? (
+                <div className="flex items-center justify-between gap-4 px-3 py-2.5 sm:px-4">
+                  <dt className="text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('cancelTitle')}</dt>
+                  <dd className="text-body-sm">{new Date(booking.cancelledAt).toLocaleString(locale)}</dd>
+                </div>
+              ) : null}
+            </dl>
+            {booking.cancellationReason ? (
+              <p className="mt-3 rounded-lg bg-surface-sunken px-3 py-2 text-body-sm text-content-secondary">{booking.cancellationReason}</p>
+            ) : null}
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button asChild variant="accent" size="sm"><Link href={routes.bookingPass(booking.id)}>{tBooking('summaryTitle')}</Link></Button>
+              <Button asChild variant="outline" size="sm"><Link href={routes.bookingConfirm(booking.reference)}>{tBooking('confirmedTitle')}</Link></Button>
+              {booking.instructor?.slug ? <Button asChild variant="ghost" size="sm"><Link href={routes.instructor(booking.instructor.slug)}>{tCommon('labels.instructor')}</Link></Button> : null}
+            </div>
+          </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild variant="outline"><Link href={routes.bookingPass(booking.id)}>{tBooking('summaryTitle')}</Link></Button>
-            <Button asChild variant="ghost"><Link href={routes.bookingConfirm(booking.reference)}>{tBooking('confirmedTitle')}</Link></Button>
-            {booking.instructor?.slug && <Button asChild variant="ghost"><Link href={routes.instructor(booking.instructor.slug)}>{tCommon('labels.instructor')}</Link></Button>}
+          {/* Правая — действия, отдельно от деталей */}
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border-default bg-surface-card p-5">
+              <h2 className="text-body-sm font-semibold uppercase tracking-wide text-content-tertiary">{tCommon('actions.viewDetails')}</h2>
+              {!isCancelled && booking.status !== 'COMPLETED' ? (
+                <div className="mt-4 grid gap-3">
+                  {canReschedule ? <RescheduleBookingButton bookingId={booking.id} /> : null}
+                  <CancelBookingButton bookingId={booking.id} />
+                  <p className="text-caption leading-relaxed text-content-tertiary">{tBooking('cancellationNote', { hours: String(24) } as never)}</p>
+                </div>
+              ) : (
+                <p className="mt-3 text-body-sm text-content-secondary">{isCancelled ? tBooking('cancelTitle') : tBooking('confirmedTitle')}</p>
+              )}
+            </div>
+            <div className="rounded-xl bg-surface-sunken px-4 py-3 text-caption leading-relaxed text-content-tertiary">
+              <span className="font-mono font-semibold text-content-secondary">{booking.reference}</span> · {tBooking('summaryDate')}
+            </div>
           </div>
         </div>
       </main>
