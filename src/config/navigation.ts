@@ -326,6 +326,8 @@ const footerGroups: readonly NavGroup[] = [
       { id: 'styles', labelKey: 'nav.styles', href: routes.styles() },
       { id: 'instructors', labelKey: 'nav.instructors', href: routes.instructors() },
       { id: 'studios', labelKey: 'nav.studios', href: routes.studios() },
+      { id: 'schedule', labelKey: 'nav.schedule', href: routes.schedule() },
+      { id: 'cities', labelKey: 'footer.citiesTitle', href: routes.cities() },
       { id: 'events', labelKey: 'nav.events', href: routes.events(), feature: 'events' },
       { id: 'shop', labelKey: 'nav.shop', href: routes.shop(), feature: 'shop' },
     ],
@@ -335,14 +337,7 @@ const footerGroups: readonly NavGroup[] = [
     titleKey: 'footer.companyTitle',
     items: [
       { id: 'about', labelKey: 'footer.about', href: routes.about() },
-      /*
-       * Блога в подвале нет, и это решение, а не пропуск. Ни в утверждённом
-       * макете, ни в схеме базы (59 моделей) записей блога не существует:
-       * публикации — часть CMS-lite (A-17 в бэклоге). Ссылка на несуществующий
-       * раздел с каждой страницы сайта — прямой путь к 404 в выдаче, поэтому
-       * маршрут `routes.blog()` остаётся объявленным, а ссылка появится вместе с
-       * первой записью.
-       */
+      { id: 'blog', labelKey: 'footer.blog', href: routes.blog() },
       { id: 'contact', labelKey: 'footer.contact', href: routes.contact() },
     ],
   },
@@ -371,12 +366,8 @@ const footerGroups: readonly NavGroup[] = [
     items: [
       { id: 'help', labelKey: 'footer.help', href: routes.help() },
       { id: 'faq', labelKey: 'footer.faq', href: routes.faq() },
-      {
-        id: 'giftCards',
-        labelKey: 'footer.giftCards',
-        href: routes.giftCards(),
-        feature: 'shop',
-      },
+      { id: 'corporate', labelKey: 'nav.corporate', href: routes.corporate() },
+      { id: 'giftCards', labelKey: 'footer.giftCards', href: routes.giftCards(), feature: 'shop' },
     ],
   },
   {
@@ -384,6 +375,7 @@ const footerGroups: readonly NavGroup[] = [
     titleKey: 'footer.businessTitle',
     items: [
       { id: 'becomeInstructor', labelKey: 'footer.becomeInstructor', href: routes.becomeInstructor() },
+      { id: 'becomeInstructorApply', labelKey: 'nav.applyInstructor', href: routes.becomeInstructorApply() },
       { id: 'listStudio', labelKey: 'footer.listStudio', href: routes.listYourStudio() },
       { id: 'pricing', labelKey: 'nav.pricing', href: routes.pricing(), feature: 'subscriptions' },
     ],

@@ -36,9 +36,8 @@ export async function BlogCard({ item, locale, featured = false, priority = fals
   return (
     <article
       className={cn(
-        'group relative flex flex-col overflow-hidden rounded-xl border border-border-default bg-surface-card',
-        'hover:-translate-y-1 hover:shadow-xl transition-all duration-200',
-        featured && 'md:col-span-2 lg:col-span-2',
+        'group relative flex min-w-0 flex-col overflow-hidden rounded-xl border border-border-default bg-surface-card',
+        'transition-all duration-200 hover:-translate-y-1 hover:shadow-xl',
       )}
     >
       <Link href={routes.blogPost(item.slug)} className="absolute inset-0 z-10" aria-label={item.title}>
@@ -75,30 +74,30 @@ export async function BlogCard({ item, locale, featured = false, priority = fals
         <div aria-hidden className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/15 to-transparent pointer-events-none" />
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex min-w-0 flex-1 flex-col p-5">
         <h3
           className={cn(
-            'font-display font-bold leading-tight text-content-primary line-clamp-2',
+            'font-display break-words font-bold leading-tight text-content-primary [overflow-wrap:anywhere]',
             featured ? 'text-xl md:text-2xl' : 'text-base md:text-lg',
           )}
         >
           {item.title}
         </h3>
 
-        <p className="mt-2 line-clamp-2 text-body-sm text-content-secondary">{item.excerpt}</p>
+        <p className="mt-2 line-clamp-2 break-words text-body-sm text-content-secondary [overflow-wrap:anywhere]">{item.excerpt}</p>
 
-        <div className="mt-3 flex flex-wrap gap-1.5">
+        <div className="mt-3 flex min-w-0 flex-wrap gap-1.5">
           {item.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="rounded-full bg-surface-sunken px-2.5 py-0.5 text-2xs font-medium text-content-secondary"
+              className="max-w-full break-all rounded-full bg-surface-sunken px-2.5 py-0.5 text-2xs font-medium text-content-secondary"
             >
               #{tag}
             </span>
           ))}
         </div>
 
-        <div className="mt-auto flex flex-wrap items-center gap-3 pt-4 text-caption text-content-tertiary">
+        <div className="mt-auto flex min-w-0 flex-wrap items-center gap-3 pt-4 text-caption text-content-tertiary">
           <span className="inline-flex items-center gap-1.5">
             <CalendarDaysIcon aria-hidden className="size-3.5" />
             {dateLabel}

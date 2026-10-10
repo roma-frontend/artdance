@@ -117,20 +117,20 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
 
   return (
     <>
-      <main id={site.mainContentId} className="page-container inner-page">
-        <header className="flex flex-wrap items-start justify-between gap-6 my-4">
-          <div>
+      <main id={site.mainContentId} className="page-container inner-page min-w-0">
+        <header className="flex min-w-0 flex-wrap items-start justify-between gap-4 sm:gap-6 my-4">
+          <div className="min-w-0">
             <p className="text-eyebrow uppercase text-content-tertiary">{tNav('account')}</p>
-            <h1 className="text-heading-2 mt-2">{user.name}</h1>
-            <p className="text-body-sm mt-1 text-content-secondary">{user.email}</p>
+            <h1 className="text-heading-2 mt-2 break-words [overflow-wrap:anywhere]">{user.name}</h1>
+            <p className="text-body-sm mt-1 break-all text-content-secondary [overflow-wrap:anywhere]">{user.email}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <Badge variant="metal" size="md">
+          <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
+            <Badge variant="metal" size="md" className="max-w-full break-words">
               {tRoot(userRoleLabelKey(user.role))}
             </Badge>
             {hasAtLeastRole(user.role, 'SUPPORT') && (
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" size="sm" className="max-w-full">
                 <Link href={routes.admin()}>{t('staffCta')}</Link>
               </Button>
             )}
@@ -138,11 +138,11 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
           </div>
         </header>
 
-        <div className="mt-6 flex items-center justify-end">
+        <div className="mt-6 flex min-w-0 items-center justify-end">
           <ViewToggle value={view} />
         </div>
 
-        <div className={view === 'grid' ? 'mt-6 grid gap-6 md:grid-cols-2' : 'mt-6 grid gap-6'}>
+        <div className={view === 'grid' ? 'mt-6 grid min-w-0 gap-6 md:grid-cols-2' : 'mt-6 grid min-w-0 gap-6'}>
           <section aria-labelledby="account-bookings">
             <div className="mb-4 flex items-center justify-between gap-3">
               <h2 id="account-bookings" className="text-card-title">
@@ -175,45 +175,73 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
                     hour: '2-digit',
                     minute: '2-digit',
                   });
-                  return (
-                    <li key={b.id} className="rounded-xl border border-border-default bg-surface-card p-4 shadow-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-body-sm font-semibold">{b.reference}</span>
-                            {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" /> : <Badge variant="neutral" size="sm">{b.status}</Badge>}
+                    return (
+                      <li key={b.id} className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-4 shadow-sm">
+                        <div className="flex min-w-0 items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
+                              <span className="min-w-0 break-all font-mono text-body-sm font-semibold">{b.reference}</span>
+                              {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="max-w-full" /> : <Badge variant="neutral" size="sm" className="max-w-full break-words">{b.status}</Badge>}
+                            </div>
+                            {(classTitle || instructorName) && <p className="text-body-sm mt-1 break-words text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
+                            <p className="text-body-sm mt-1 break-words font-medium [overflow-wrap:anywhere]">{when}</p>
                           </div>
-                          {(classTitle || instructorName) && <p className="text-body-sm mt-1 truncate text-content-secondary">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
-                          <p className="text-body-sm mt-1 font-medium">{when}</p>
+                          <Price amount={b.totalPrice} emphasis="total" className="shrink-0" />
                         </div>
-                        <Price amount={b.totalPrice} emphasis="total" />
-                      </div>
-                      <div className="mt-3 flex gap-2">
-                        <Button asChild variant="outline" size="sm"><Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link></Button>
-                        <Button asChild variant="ghost" size="sm"><Link href={routes.bookingPass(b.id)}>Pass</Link></Button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button asChild variant="outline" size="sm" className="max-w-full"><Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link></Button>
+                          <Button asChild variant="ghost" size="sm" className="max-w-full"><Link href={routes.bookingPass(b.id)}>Pass</Link></Button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
             ) : (
-              <ul className="divide-y divide-border-default overflow-hidden rounded-xl border border-border-default bg-surface-card">
-                {bookings.map((b) => {
-                  const classTitle = (b as { session?: { danceClass?: { title?: string } } | null }).session?.danceClass?.title;
-                  const whenShort = new Date(b.startsAt).toLocaleString(locale as Locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-                  return (
-                    <li key={b.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-surface-sunken sm:gap-3 sm:px-4">
-                      <span className="shrink-0 font-mono text-caption font-semibold sm:text-body-sm">{b.reference}</span>
-                      {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" /> : <Badge variant="neutral" size="sm">{b.status}</Badge>}
-                      {classTitle ? <span className="hidden min-w-0 truncate text-body-sm text-content-tertiary sm:block">{classTitle}</span> : <span className="hidden sm:block" aria-hidden />}
-                      <span className="ml-auto hidden shrink-0 text-body-sm font-medium tabular-nums sm:block">{whenShort}</span>
-                      <Price amount={b.totalPrice} emphasis="total" />
-                      <Button asChild variant="ghost" size="sm" className="hidden h-7 shrink-0 px-2 sm:inline-flex"><Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link></Button>
-                      <Button asChild variant="outline" size="sm" className="h-7 shrink-0 px-2"><Link href={routes.bookingPass(b.id)}>Pass</Link></Button>
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                {/* Desktop table */}
+                <ul className="hidden divide-y divide-border-default overflow-hidden rounded-xl border border-border-default bg-surface-card sm:block">
+                  {bookings.map((b) => {
+                    const classTitle = (b as { session?: { danceClass?: { title?: string } } | null }).session?.danceClass?.title;
+                    const whenShort = new Date(b.startsAt).toLocaleString(locale as Locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    return (
+                      <li key={b.id} className="flex min-w-0 items-center gap-3 px-4 py-2.5 hover:bg-surface-sunken">
+                        <span className="shrink-0 font-mono text-body-sm font-semibold">{b.reference}</span>
+                        {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" /> : <Badge variant="neutral" size="sm">{b.status}</Badge>}
+                        {classTitle ? <span className="min-w-0 flex-1 truncate text-body-sm text-content-tertiary">{classTitle}</span> : <span className="min-w-0 flex-1" aria-hidden />}
+                        <span className="ml-auto shrink-0 text-body-sm font-medium tabular-nums">{whenShort}</span>
+                        <Price amount={b.totalPrice} emphasis="total" />
+                        <Button asChild variant="ghost" size="sm" className="h-7 shrink-0 px-2"><Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link></Button>
+                        <Button asChild variant="outline" size="sm" className="h-7 shrink-0 px-2"><Link href={routes.bookingPass(b.id)}>Pass</Link></Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                {/* Mobile cards — same data, no hidden columns */}
+                <ul className="grid gap-3 sm:hidden">
+                  {bookings.map((b) => {
+                    const classTitle = (b as { session?: { danceClass?: { title?: string } } | null }).session?.danceClass?.title;
+                    const instructorName = (b as { instructor?: { user?: { name?: string } } | null }).instructor?.user?.name;
+                    const whenShort = new Date(b.startsAt).toLocaleString(locale as Locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    return (
+                      <li key={b.id} className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-3 shadow-sm">
+                        <div className="flex min-w-0 items-center justify-between gap-2">
+                          <span className="min-w-0 break-all font-mono text-caption font-semibold">{b.reference}</span>
+                          {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="max-w-[50%]" /> : <Badge variant="neutral" size="sm" className="max-w-[50%] break-words">{b.status}</Badge>}
+                        </div>
+                        {(classTitle || instructorName) && <p className="mt-1.5 break-words text-body-sm text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
+                        <div className="mt-2 flex min-w-0 items-center justify-between gap-3">
+                          <span className="break-words text-caption font-medium tabular-nums text-content-tertiary [overflow-wrap:anywhere]">{whenShort}</span>
+                          <Price amount={b.totalPrice} emphasis="total" />
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <Button asChild variant="ghost" size="sm" className="flex-1"><Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link></Button>
+                          <Button asChild variant="outline" size="sm" className="flex-1"><Link href={routes.bookingPass(b.id)}>Pass</Link></Button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </>
             )}
           </section>
 
@@ -238,12 +266,12 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
                 }
               />
             ) : view === 'grid' ? (
-              <ul className="grid gap-3">
+              <ul className="grid min-w-0 gap-3">
                 {orders.map((o) => (
-                  <li key={o.id} className="flex items-center justify-between gap-3 rounded-xl border border-border-default bg-surface-card px-4 py-3 shadow-sm">
-                    <div className="min-w-0">
-                      <p className="font-mono text-body-sm font-semibold">{o.orderNumber}</p>
-                      <p className="text-caption text-content-tertiary">{new Date(o.placedAt).toLocaleDateString(locale as Locale)}</p>
+                  <li key={o.id} className="flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-border-default bg-surface-card px-4 py-3 shadow-sm">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-all font-mono text-body-sm font-semibold [overflow-wrap:anywhere]">{o.orderNumber}</p>
+                      <p className="break-words text-caption text-content-tertiary [overflow-wrap:anywhere]">{new Date(o.placedAt).toLocaleDateString(locale as Locale)} · {o.status}</p>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-body-sm font-semibold"><Price amount={o.total} /></p>
@@ -253,17 +281,34 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
                 ))}
               </ul>
             ) : (
-              <ul className="divide-y divide-border-default overflow-hidden rounded-xl border border-border-default bg-surface-card">
-                {orders.map((o) => (
-                  <li key={o.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-surface-sunken sm:gap-3 sm:px-4">
-                    <span className="shrink-0 font-mono text-caption font-semibold sm:text-body-sm">{o.orderNumber}</span>
-                    <Badge variant="neutral" size="sm" className="hidden sm:inline-flex">{o.status}</Badge>
-                    <span className="ml-auto hidden shrink-0 text-caption text-content-tertiary sm:block">{new Date(o.placedAt).toLocaleDateString(locale as Locale)}</span>
-                    <Price amount={o.total} emphasis="total" />
-                    <Button asChild variant="ghost" size="sm" className="h-7 shrink-0 px-2"><Link href={routes.accountOrder(o.orderNumber)}>{tCommon('actions.viewDetails')}</Link></Button>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <ul className="hidden divide-y divide-border-default overflow-hidden rounded-xl border border-border-default bg-surface-card sm:block">
+                  {orders.map((o) => (
+                    <li key={o.id} className="flex min-w-0 items-center gap-3 px-4 py-2.5 hover:bg-surface-sunken">
+                      <span className="shrink-0 font-mono text-body-sm font-semibold">{o.orderNumber}</span>
+                      <Badge variant="neutral" size="sm">{o.status}</Badge>
+                      <span className="ml-auto shrink-0 text-caption text-content-tertiary">{new Date(o.placedAt).toLocaleDateString(locale as Locale)}</span>
+                      <Price amount={o.total} emphasis="total" />
+                      <Button asChild variant="ghost" size="sm" className="h-7 shrink-0 px-2"><Link href={routes.accountOrder(o.orderNumber)}>{tCommon('actions.viewDetails')}</Link></Button>
+                    </li>
+                  ))}
+                </ul>
+                <ul className="grid gap-3 sm:hidden">
+                  {orders.map((o) => (
+                    <li key={o.id} className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-3 shadow-sm">
+                      <div className="flex min-w-0 items-center justify-between gap-2">
+                        <span className="min-w-0 break-all font-mono text-caption font-semibold">{o.orderNumber}</span>
+                        <Badge variant="neutral" size="sm" className="max-w-[50%] break-words">{o.status}</Badge>
+                      </div>
+                      <div className="mt-2 flex min-w-0 items-center justify-between gap-3">
+                        <span className="text-caption text-content-tertiary">{new Date(o.placedAt).toLocaleDateString(locale as Locale)}</span>
+                        <Price amount={o.total} emphasis="total" />
+                      </div>
+                      <Button asChild variant="ghost" size="sm" className="mt-3 w-full"><Link href={routes.accountOrder(o.orderNumber)}>{tCommon('actions.viewDetails')}</Link></Button>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
           </section>
         </div>

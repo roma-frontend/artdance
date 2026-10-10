@@ -53,7 +53,7 @@ export function SiteFooter() {
       <div aria-hidden className="footer-light-sweep absolute inset-0" />
 
       <div className="footer-content page-container section-y relative z-10 pb-8 md:pb-10">
-        <div className="grid gap-10 lg:grid-cols-[2fr_repeat(4,1fr)]">
+        <div className="grid gap-10 lg:grid-cols-2 xl:grid-cols-[2fr_repeat(3,1fr)] 2xl:grid-cols-[2fr_repeat(5,1fr)]">
           <div>
             <Link href={routes.home()} aria-label={t('brand.name')} className="inline-flex items-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
