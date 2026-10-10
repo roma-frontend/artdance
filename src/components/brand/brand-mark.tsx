@@ -42,7 +42,7 @@ export function BrandMark({ className, compact = false, solid }: BrandMarkProps)
           aria-hidden
           fetchPriority="high"
           decoding="async"
-          className={`h-7 w-auto shrink-0 object-contain ${className ?? ''}`}
+          className={`h-6 w-auto shrink-0 object-contain sm:h-7 ${className ?? ''}`}
         />
       );
     }
@@ -57,7 +57,7 @@ export function BrandMark({ className, compact = false, solid }: BrandMarkProps)
           aria-hidden
           fetchPriority="high"
           decoding="async"
-          className="block h-7 w-auto object-contain in-[[data-theme=dark]]:hidden"
+          className="block h-6 w-auto object-contain sm:h-7 in-[[data-theme=dark]]:hidden"
         />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -68,7 +68,7 @@ export function BrandMark({ className, compact = false, solid }: BrandMarkProps)
           aria-hidden
           fetchPriority="high"
           decoding="async"
-          className="hidden h-7 w-auto object-contain in-[[data-theme=dark]]:block"
+          className="hidden h-6 w-auto object-contain sm:h-7 in-[[data-theme=dark]]:block"
         />
       </span>
     );
