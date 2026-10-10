@@ -101,7 +101,7 @@ export function HeroSearchBar({
                       'shadow-[0_30px_90px_rgba(0,0,0,0.9),0_0_50px_var(--accent-glow)] backdrop-blur-3xl',
                     )}
                   >
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex min-w-0 flex-wrap items-center gap-3">
                       <label className="flex min-w-0 flex-1 items-center gap-3 px-3">
                         <SearchIcon className="size-5 shrink-0 text-accent" aria-hidden />
                         <span className="sr-only">{t('search.heroPlaceholder')}</span>

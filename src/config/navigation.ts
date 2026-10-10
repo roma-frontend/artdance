@@ -142,7 +142,7 @@ const iconActions: readonly NavIconItem[] = [
     icon: 'favorites',
     labelKey: 'account.nav.favorites',
     href: routes.accountFavorites(),
-    compact: false,
+    compact: true,
   },
   {
     id: 'account',

@@ -103,7 +103,7 @@ export function FormField({
     [hintKey ? hintId : null, invalid ? errorId : null].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div className={cn('flex flex-col gap-2', className)}>
+    <div className={cn('flex min-w-0 flex-col gap-2', className)}>
       <label
         htmlFor={fieldId}
         className={cn(

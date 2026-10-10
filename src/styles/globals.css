@@ -574,13 +574,16 @@
    */
   .form-input {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
     padding: var(--space-3) var(--space-4);
     border: var(--border-width-thin) solid var(--border-default);
     border-radius: var(--radius-md);
     background-color: var(--surface-card);
     color: var(--content-primary);
     font-family: inherit;
-    font-size: var(--text-sm);
+    font-size: max(16px, var(--text-sm));
     transition: border-color var(--duration-normal) var(--ease-standard);
   }
 
@@ -616,12 +619,14 @@
    */
   .form-2col {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-4);
+    min-width: 0;
   }
 
   @media (width >= theme(--breakpoint-xs)) {
     .form-2col {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 

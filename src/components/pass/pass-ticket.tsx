@@ -75,14 +75,14 @@ export function PassTicket({
   const isBad = qrState === 'expired' || qrState === 'invalid' || qrState === 'cancelled';
 
   return (
-    <div className="mx-auto max-w-prose" data-pass-ticket-wrap>
+    <div className="mx-auto max-w-prose min-w-0" data-pass-ticket-wrap>
       <div
         data-pass-ticket
-        className="overflow-hidden rounded-2xl border border-border-default bg-surface-card shadow-xl"
+        className="min-w-0 overflow-hidden rounded-2xl border border-border-default bg-surface-card shadow-xl"
       >
         {/* Header: бренд + статус */}
-        <div className="flex items-center justify-between gap-3 bg-surface-sunken px-6 py-4">
-          <div className="min-w-0">
+        <div className="flex min-w-0 items-center justify-between gap-3 bg-surface-sunken px-4 py-4 sm:px-6">
+          <div className="min-w-0 flex-1">
             <p className="text-caption font-semibold tracking-widest text-content-tertiary uppercase">ArtDance</p>
             <p className="truncate text-heading-3 leading-none">{passTitle ?? 'Entry pass'}</p>
           </div>
@@ -96,36 +96,36 @@ export function PassTicket({
 
         {/* Название брони — заголовок билета (h1 страницы) */}
         {bookingTitle ? (
-          <div className="px-6 pt-4">
-            <h1 className="text-heading-3 leading-tight">{bookingTitle}</h1>
+          <div className="px-4 pt-4 sm:px-6">
+            <h1 className="text-heading-3 break-words leading-tight [overflow-wrap:anywhere]">{bookingTitle}</h1>
           </div>
         ) : null}
 
         {/* Детали */}
-        <div className="px-6 pt-5">
-          <dl className="grid grid-cols-2 gap-4 text-body-sm">
-            <div className="col-span-2 flex items-center justify-between gap-3 rounded-lg bg-surface-sunken px-3 py-2.5">
-              <dt className="text-content-tertiary">{bookingLabel ?? 'Booking'}</dt>
-              <dd className="font-mono text-sm font-semibold tracking-wide">{reference}</dd>
+        <div className="px-4 pt-5 sm:px-6">
+          <dl className="grid min-w-0 grid-cols-2 gap-4 text-body-sm">
+            <div className="col-span-2 flex min-w-0 items-center justify-between gap-3 rounded-lg bg-surface-sunken px-3 py-2.5">
+              <dt className="shrink-0 text-content-tertiary">{bookingLabel ?? 'Booking'}</dt>
+              <dd className="min-w-0 break-all font-mono text-sm font-semibold tracking-wide">{reference}</dd>
             </div>
-            <div>
+            <div className="min-w-0">
               <dt className="text-caption text-content-tertiary">{startsLabel ?? 'Starts'}</dt>
-              <dd className="mt-1 font-semibold">{startsText}</dd>
+              <dd className="mt-1 break-words font-semibold [overflow-wrap:anywhere]">{startsText}</dd>
             </div>
-            <div>
+            <div className="min-w-0">
               <dt className="text-caption text-content-tertiary">{endsLabel ?? 'Ends'}</dt>
-              <dd className="mt-1 font-semibold">{endsText}</dd>
+              <dd className="mt-1 break-words font-semibold [overflow-wrap:anywhere]">{endsText}</dd>
             </div>
             {venueText ? (
-              <div className="col-span-2">
+              <div className="col-span-2 min-w-0">
                 <dt className="text-caption text-content-tertiary">{venueLabel ?? 'Venue'}</dt>
-                <dd className="mt-1 font-medium">{venueText}</dd>
+                <dd className="mt-1 break-words font-medium [overflow-wrap:anywhere]">{venueText}</dd>
               </div>
             ) : null}
             {instructorText ? (
-              <div className="col-span-2">
+              <div className="col-span-2 min-w-0">
                 <dt className="text-caption text-content-tertiary">{instructorLabel ?? 'Instructor'}</dt>
-                <dd className="mt-1 font-medium">{instructorText}</dd>
+                <dd className="mt-1 break-words font-medium [overflow-wrap:anywhere]">{instructorText}</dd>
               </div>
             ) : null}
           </dl>
@@ -138,15 +138,15 @@ export function PassTicket({
             <span className="size-4 -translate-y-1/2 rounded-full bg-surface-sunken ring-1 ring-border-default" />
             <span className="size-4 -translate-y-1/2 rounded-full bg-surface-sunken ring-1 ring-border-default" />
           </div>
-          <div className="mx-3 rounded-xl border border-dashed border-border-default bg-surface-sunken p-6">
-            <div className="flex flex-col items-center gap-3 text-center">
+          <div className="mx-3 min-w-0 rounded-xl border border-dashed border-border-default bg-surface-sunken p-4 sm:p-6">
+            <div className="flex min-w-0 flex-col items-center gap-3 text-center">
               <div
-                className="relative overflow-hidden rounded-xl bg-white p-3 shadow-sm ring-1 ring-black/5"
-                style={{ width: 208, height: 208 }}
+                className="relative max-w-full overflow-hidden rounded-xl bg-white p-3 shadow-sm ring-1 ring-black/5"
+                style={{ width: 208, height: 208, maxWidth: '100%' }}
                 aria-hidden
                 dangerouslySetInnerHTML={{ __html: qrSvg }}
               />
-              <p className="font-mono text-caption font-semibold tracking-widest text-content-secondary">{qrRef}</p>
+              <p className="max-w-full break-all font-mono text-caption font-semibold tracking-widest text-content-secondary">{qrRef}</p>
               {qrState === 'checkedIn' ? (
                 <p className="rounded-full bg-metal-soft px-3 py-1 text-caption font-semibold text-content-metal">
                   {checkedInLabel ?? 'Checked in'} {checkedInAtText ? `· ${checkedInAtText}` : ''}
@@ -169,7 +169,7 @@ export function PassTicket({
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-3 px-6 py-6 print:hidden">
+        <div className="flex min-w-0 flex-wrap gap-3 px-4 py-6 sm:px-6 print:hidden">
           <Button asChild variant="accent">
             <a href={icsHref}>{addToCalendarLabel}</a>
           </Button>

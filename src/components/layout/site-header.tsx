@@ -132,12 +132,12 @@ export function SiteHeader() {
           </div>
         </div>
       )}
-      <div className="site-header-content page-container flex h-full items-center justify-between gap-4">
-        <Link
+      <div className="site-header-content page-container flex h-full min-w-0 items-center justify-between gap-2 sm:gap-4">
+          <Link
           href={routes.home()}
           aria-label={t('brand.name')}
           aria-current={pathname === routes.home() ? 'page' : undefined}
-          className="group/logo flex shrink-0 items-center gap-3"
+          className="group/logo flex min-w-0 shrink-0 items-center gap-2 sm:gap-3"
         >
           <span className="hidden sm:inline group/logo">
             <BrandMark solid={solid} className="transition-transform duration-slow ease-brand group-hover/logo:scale-105" />
@@ -151,7 +151,7 @@ export function SiteHeader() {
           <HeaderMegaMenu solid={solid} onOpenChange={onMenuOpenChange} />
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 shrink-0 items-center gap-1.5 sm:gap-2">
           {headerIconItems.map((item) => {
             const Icon = navIcons[item.icon];
             const isCart = item.id === 'cart';
@@ -205,7 +205,7 @@ export function SiteHeader() {
 
           <LocaleSwitcher solid={solid} />
 
-          <span className="flex shrink-0 items-center gap-2">
+          <span className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2">
             <HeaderLiteToggle solid={solid} />
             <HeaderThemeToggle solid={solid} />
           </span>

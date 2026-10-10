@@ -142,7 +142,7 @@ function LocaleSwitcherInner({
   }
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative shrink-0">
       <button
         type="button"
         aria-label={t('language')}
@@ -150,15 +150,15 @@ function LocaleSwitcherInner({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'inline-flex h-9 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold tracking-wide',
+          'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold tracking-wide sm:px-3',
           'transition-colors duration-normal ease-brand',
           solid
             ? 'border-border-default bg-surface-card text-content-secondary hover:border-accent hover:bg-accent-soft hover:text-content-accent'
             : 'border-border-on-cinema text-content-on-cinema-muted hover:border-border-on-cinema hover:text-content-on-cinema',
         )}
       >
-        <GlobeIcon className="size-3.5" aria-hidden />
-        <span aria-hidden>{localeMeta[locale].shortLabel}</span>
+        <GlobeIcon className="size-3.5 shrink-0" aria-hidden />
+        <span aria-hidden className="hidden sm:inline">{localeMeta[locale].shortLabel}</span>
         <span className="sr-only">
           {t('language')}: {localeMeta[locale].nativeName}
         </span>

@@ -162,8 +162,8 @@ async function SearchResults({
     candidate === 'all' ? all.length : all.filter((hit) => hit.scope === candidate).length;
 
   return (
-    <div className="page-container py-12 md:py-16">
-      <div className="mb-8 flex flex-wrap items-baseline justify-between gap-3">
+    <div className="page-container min-w-0 py-12 md:py-16">
+      <div className="mb-8 flex min-w-0 flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-heading-3">{t('resultsTitle')}</h2>
         <p className="text-body-sm text-content-secondary" aria-live="polite">
           {tCommon('counts.results', { count: visible.length })}
@@ -240,8 +240,8 @@ async function SearchResultRow({ hit }: { hit: SearchHit }) {
   return (
     <article
       className={cn(
-        'card-surface group relative flex items-center gap-4 rounded-lg p-3',
-        'border border-border-default bg-surface-card',
+        'card-surface group relative flex min-w-0 items-center gap-3 rounded-lg p-3 sm:gap-4',
+        'overflow-hidden border border-border-default bg-surface-card',
         'hover:-translate-y-0.5 hover:shadow-md focus-within:-translate-y-0.5 focus-within:shadow-md',
       )}
     >
@@ -253,12 +253,12 @@ async function SearchResultRow({ hit }: { hit: SearchHit }) {
         className="size-16 shrink-0 rounded-md"
       />
 
-      <div className="min-w-0 flex-1">
-        <Badge size="sm" className="mb-1.5">
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <Badge size="sm" className="mb-1.5 max-w-full">
           {t(searchScopeLabelKey(hit.scope))}
         </Badge>
 
-        <h3 className="text-body truncate font-semibold">
+        <h3 className="text-body truncate font-semibold [overflow-wrap:anywhere]">
           <Link
             href={hit.href}
             className="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
@@ -267,11 +267,11 @@ async function SearchResultRow({ hit }: { hit: SearchHit }) {
           </Link>
         </h3>
 
-        <p className="text-caption truncate text-content-tertiary">{hit.subtitle}</p>
+        <p className="text-caption truncate text-content-tertiary [overflow-wrap:anywhere]">{hit.subtitle}</p>
       </div>
 
       {hit.price !== undefined && (
-        <div className="shrink-0 text-end">
+        <div className="max-w-[40%] shrink-0 text-end">
           <Price amount={hit.price} />
         </div>
       )}

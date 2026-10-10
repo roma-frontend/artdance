@@ -79,57 +79,57 @@ export default async function AccountBookingPage({ params }: PageProps) {
 
   return (
     <>
-      <main id={site.mainContentId} className="page-container inner-page">
+      <main id={site.mainContentId} className="page-container inner-page min-w-0">
         {/* Хлебная крошка + статус */}
-        <div className="flex flex-wrap items-center gap-2 text-body-sm">
-          <Link href={routes.accountBookings()} className="text-content-tertiary hover:text-content-primary">{t('bookings.title')}</Link>
-          <span className="text-content-tertiary">/</span>
-          <span className="font-mono font-semibold">{booking.reference}</span>
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-body-sm">
+          <Link href={routes.accountBookings()} className="shrink-0 text-content-tertiary hover:text-content-primary">{t('bookings.title')}</Link>
+          <span className="shrink-0 text-content-tertiary">/</span>
+          <span className="min-w-0 break-all font-mono font-semibold">{booking.reference}</span>
           {bookingStatusKnown ? <StatusBadge kind="booking" status={bookingStatus} size="sm" /> : <Badge variant="neutral" size="sm">{booking.status}</Badge>}
         </div>
 
         {/* Заголовок — плотнее, без «распутанности» */}
-        <h1 className="text-heading-2 mt-3 leading-tight">{classTitle ?? t('bookings.title')}</h1>
+        <h1 className="text-heading-2 mt-3 break-words leading-tight [overflow-wrap:anywhere]">{classTitle ?? t('bookings.title')}</h1>
         {(instructorName || booking.venue) && (
-          <p className="text-body mt-1 truncate text-content-secondary">{[instructorName, booking.venue?.name].filter(Boolean).join(' · ')}</p>
+          <p className="text-body mt-1 break-words text-content-secondary [overflow-wrap:anywhere]">{[instructorName, booking.venue?.name].filter(Boolean).join(' · ')}</p>
         )}
-        <p className="text-body-sm mt-1 font-medium tabular-nums">{whenLabel}</p>
+        <p className="text-body-sm mt-1 break-words font-medium tabular-nums [overflow-wrap:anywhere]">{whenLabel}</p>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1.7fr_1fr]">
+        <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
           {/* Левая — детали как компактная таблица, а не растянутый flex-list */}
-          <div className="rounded-xl border border-border-default bg-surface-card p-5 sm:p-6">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-card-title">{tBooking('summaryTitle')}</h2>
+          <div className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-4 sm:p-6">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <h2 className="text-card-title min-w-0 break-words [overflow-wrap:anywhere]">{tBooking('summaryTitle')}</h2>
               {bookingStatusKnown ? <StatusBadge kind="booking" status={bookingStatus} size="sm" /> : null}
             </div>
-            <dl className="mt-4 divide-y divide-border-subtle rounded-lg border border-border-subtle">
-              <div className="flex items-center justify-between gap-4 px-3 py-2.5 sm:px-4">
-                <dt className="text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('summaryDate')}</dt>
-                <dd className="text-body-sm font-medium">{new Date(booking.startsAt).toLocaleDateString(locale)}</dd>
+            <dl className="mt-4 min-w-0 divide-y divide-border-subtle overflow-hidden rounded-lg border border-border-subtle">
+              <div className="flex min-w-0 flex-col gap-1 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4">
+                <dt className="shrink-0 text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('summaryDate')}</dt>
+                <dd className="min-w-0 break-words text-body-sm font-medium [overflow-wrap:anywhere]">{new Date(booking.startsAt).toLocaleDateString(locale)}</dd>
               </div>
-              <div className="flex items-center justify-between gap-4 px-3 py-2.5 sm:px-4">
-                <dt className="text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('summaryTime')}</dt>
-                <dd className="text-body-sm font-medium tabular-nums">{new Date(booking.startsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} — {new Date(booking.endsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</dd>
+              <div className="flex min-w-0 flex-col gap-1 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4">
+                <dt className="shrink-0 text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('summaryTime')}</dt>
+                <dd className="min-w-0 break-words text-body-sm font-medium tabular-nums [overflow-wrap:anywhere]">{new Date(booking.startsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} — {new Date(booking.endsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</dd>
               </div>
-              <div className="flex items-center justify-between gap-4 bg-surface-sunken px-3 py-2.5 sm:px-4">
-                <dt className="text-caption font-medium tracking-wide text-content-tertiary uppercase">{tCommon('labels.total')}</dt>
-                <dd><Price amount={booking.totalPrice} emphasis="total" /></dd>
+              <div className="flex min-w-0 items-center justify-between gap-4 bg-surface-sunken px-3 py-2.5 sm:px-4">
+                <dt className="shrink-0 text-caption font-medium tracking-wide text-content-tertiary uppercase">{tCommon('labels.total')}</dt>
+                <dd className="min-w-0"><Price amount={booking.totalPrice} emphasis="total" /></dd>
               </div>
               {booking.travelFee > 0 ? (
-                <div className="flex items-center justify-between gap-4 px-3 py-2.5 sm:px-4">
-                  <dt className="text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('locationCustomer')}</dt>
-                  <dd><Price amount={booking.travelFee} /></dd>
+                <div className="flex min-w-0 items-center justify-between gap-4 px-3 py-2.5 sm:px-4">
+                  <dt className="shrink-0 text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('locationCustomer')}</dt>
+                  <dd className="min-w-0"><Price amount={booking.travelFee} /></dd>
                 </div>
               ) : null}
               {booking.cancelledAt ? (
-                <div className="flex items-center justify-between gap-4 px-3 py-2.5 sm:px-4">
-                  <dt className="text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('cancelTitle')}</dt>
-                  <dd className="text-body-sm">{new Date(booking.cancelledAt).toLocaleString(locale)}</dd>
+                <div className="flex min-w-0 flex-col gap-1 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4">
+                  <dt className="shrink-0 text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('cancelTitle')}</dt>
+                  <dd className="min-w-0 break-words text-body-sm [overflow-wrap:anywhere]">{new Date(booking.cancelledAt).toLocaleString(locale)}</dd>
                 </div>
               ) : null}
             </dl>
             {booking.cancellationReason ? (
-              <p className="mt-3 rounded-lg bg-surface-sunken px-3 py-2 text-body-sm text-content-secondary">{booking.cancellationReason}</p>
+              <p className="mt-3 break-words rounded-lg bg-surface-sunken px-3 py-2 text-body-sm text-content-secondary [overflow-wrap:anywhere]">{booking.cancellationReason}</p>
             ) : null}
             <div className="mt-5 flex flex-wrap gap-2">
               <Button asChild variant="accent" size="sm"><Link href={routes.bookingPass(booking.id)}>{tBooking('summaryTitle')}</Link></Button>
@@ -139,21 +139,21 @@ export default async function AccountBookingPage({ params }: PageProps) {
           </div>
 
           {/* Правая — действия, отдельно от деталей */}
-          <div className="space-y-4">
-            <div className="rounded-xl border border-border-default bg-surface-card p-5">
+          <div className="min-w-0 space-y-4">
+            <div className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-4 sm:p-5">
               <h2 className="text-body-sm font-semibold uppercase tracking-wide text-content-tertiary">{tCommon('actions.viewDetails')}</h2>
               {!isCancelled && booking.status !== 'COMPLETED' ? (
-                <div className="mt-4 grid gap-3">
+                <div className="mt-4 grid min-w-0 gap-3">
                   {canReschedule ? <RescheduleBookingButton bookingId={booking.id} /> : null}
                   <CancelBookingButton bookingId={booking.id} />
-                  <p className="text-caption leading-relaxed text-content-tertiary">{tBooking('cancellationNote', { hours: String(24) } as never)}</p>
+                  <p className="break-words text-caption leading-relaxed text-content-tertiary [overflow-wrap:anywhere]">{tBooking('cancellationNote', { hours: String(24) } as never)}</p>
                 </div>
               ) : (
-                <p className="mt-3 text-body-sm text-content-secondary">{isCancelled ? tBooking('cancelTitle') : tBooking('confirmedTitle')}</p>
+                <p className="mt-3 break-words text-body-sm text-content-secondary [overflow-wrap:anywhere]">{isCancelled ? tBooking('cancelTitle') : tBooking('confirmedTitle')}</p>
               )}
             </div>
-            <div className="rounded-xl bg-surface-sunken px-4 py-3 text-caption leading-relaxed text-content-tertiary">
-              <span className="font-mono font-semibold text-content-secondary">{booking.reference}</span> · {tBooking('summaryDate')}
+            <div className="break-words rounded-xl bg-surface-sunken px-4 py-3 text-caption leading-relaxed text-content-tertiary [overflow-wrap:anywhere]">
+              <span className="break-all font-mono font-semibold text-content-secondary">{booking.reference}</span> · {tBooking('summaryDate')}
             </div>
           </div>
         </div>

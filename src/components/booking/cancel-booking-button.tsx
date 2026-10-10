@@ -19,5 +19,5 @@ export function CancelBookingButton({ bookingId }: { bookingId: string }) {
       router.refresh(); setMsg(t('cancelFree'));
     } finally { setPending(false); }
   };
-  return (<div className="mt-4"><Button variant="outline" disabled={pending} onClick={onCancel}>{pending ? tCommon('states.processing') : t('cancelTitle')}</Button>{msg && <p className="text-body-sm mt-2 text-content-secondary">{msg}</p>}</div>);
+  return (<div className="mt-4 min-w-0"><Button variant="outline" disabled={pending} onClick={onCancel} className="max-w-full">{pending ? tCommon('states.processing') : t('cancelTitle')}</Button>{msg && <p className="text-body-sm mt-2 break-words text-content-secondary [overflow-wrap:anywhere]">{msg}</p>}</div>);
 }

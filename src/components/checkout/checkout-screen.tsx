@@ -614,7 +614,7 @@ function TextField({
   return (
     <FormField name={name} labelKey={labelKey} required={required} errorKey={error ?? null} hintKey={hintKey}>
       {(field) => (
-        <div className="relative">
+        <div className="relative min-w-0">
           <input
             id={field.id}
             name={field.name}
@@ -627,7 +627,7 @@ function TextField({
             onChange={(event) => onChange(event.target.value)}
             aria-describedby={field.describedBy}
             aria-invalid={field.invalid}
-            className="form-input w-full"
+            className="form-input w-full min-w-0"
           />
           {brandHint && (
             <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-content-tertiary">

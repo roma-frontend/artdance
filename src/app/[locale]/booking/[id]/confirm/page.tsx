@@ -100,39 +100,42 @@ export default async function BookingConfirmPage({ params }: PageProps) {
   const classTitle = (resolved as { session?: { danceClass?: { title?: string } } | null }).session?.danceClass?.title;
   const instructorName = (resolved as { instructor?: { user?: { name?: string } } | null }).instructor?.user?.name;
   return (
-    <main id={site.mainContentId} className="page-container inner-page">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-heading-2">{isCancelled ? tBooking('cancelTitle') : tBooking('confirmedTitle')}</h1>
-          <p className="text-body mt-2 text-content-secondary">
-            {tAccount('orders.orderNumber', { number: resolved.reference })} · {(bookingStatuses as readonly string[]).includes(resolved.status) ? <StatusBadge kind="booking" status={resolved.status as BookingStatus} size="sm" /> : <Badge variant="metal" size="sm">{resolved.status}</Badge>}
+    <main id={site.mainContentId} className="page-container inner-page min-w-0">
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-heading-2 break-words [overflow-wrap:anywhere]">{isCancelled ? tBooking('cancelTitle') : tBooking('confirmedTitle')}</h1>
+          <p className="text-body mt-2 flex min-w-0 flex-wrap items-center gap-2 break-words text-content-secondary [overflow-wrap:anywhere]">
+            <span className="min-w-0 break-all">{tAccount('orders.orderNumber', { number: resolved.reference } as never)}</span>
+            {(bookingStatuses as readonly string[]).includes(resolved.status) ? <StatusBadge kind="booking" status={resolved.status as BookingStatus} size="sm" className="max-w-full break-words" /> : <Badge variant="metal" size="sm" className="max-w-full break-words">{resolved.status}</Badge>}
           </p>
           {(classTitle || instructorName) && (
-            <p className="text-body-sm mt-1 text-content-tertiary">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>
+            <p className="text-body-sm mt-1 break-words text-content-tertiary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>
           )}
         </div>
-        {(bookingStatuses as readonly string[]).includes(resolved.status) ? <StatusBadge kind="booking" status={resolved.status as BookingStatus} /> : <Badge variant={isCancelled ? 'warning' : 'success'}>{isCancelled ? tBooking('cancelTitle') : resolved.status}</Badge>}
+        <div className="max-w-full shrink-0">
+          {(bookingStatuses as readonly string[]).includes(resolved.status) ? <StatusBadge kind="booking" status={resolved.status as BookingStatus} className="max-w-full break-words" /> : <Badge variant={isCancelled ? 'warning' : 'success'} className="max-w-full break-words">{isCancelled ? tBooking('cancelTitle') : resolved.status}</Badge>}
+        </div>
       </div>
-      <div className="mt-6 rounded-xl border border-border-default bg-surface-card p-6">
-        <dl className="grid gap-2 text-body-sm">
-          <div className="flex justify-between gap-4"><dt className="text-content-tertiary">{tBooking('summaryDate')}</dt><dd className="font-medium">{new Date(resolved.startsAt).toLocaleString(locale)}</dd></div>
-          <div className="flex justify-between gap-4"><dt className="text-content-tertiary">{tBooking('summaryTime')}</dt><dd className="font-medium">{new Date(resolved.startsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} — {new Date(resolved.endsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</dd></div>
-          <div className="flex justify-between gap-4"><dt className="text-content-tertiary">{tCommon('labels.total')}</dt><dd><Price amount={resolved.totalPrice} emphasis="total" /></dd></div>
+      <div className="mt-6 min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-4 sm:p-6">
+        <dl className="grid min-w-0 gap-2 text-body-sm">
+          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4"><dt className="shrink-0 text-content-tertiary">{tBooking('summaryDate')}</dt><dd className="min-w-0 break-words font-medium [overflow-wrap:anywhere]">{new Date(resolved.startsAt).toLocaleString(locale)}</dd></div>
+          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4"><dt className="shrink-0 text-content-tertiary">{tBooking('summaryTime')}</dt><dd className="min-w-0 break-words font-medium tabular-nums [overflow-wrap:anywhere]">{new Date(resolved.startsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} — {new Date(resolved.endsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</dd></div>
+          <div className="flex min-w-0 items-center justify-between gap-4"><dt className="shrink-0 text-content-tertiary">{tCommon('labels.total')}</dt><dd className="min-w-0"><Price amount={resolved.totalPrice} emphasis="total" /></dd></div>
           {(resolved as { basePrice?: number }).basePrice != null && (resolved as { travelFee?: number }).travelFee! > 0 && (
-            <div className="flex justify-between gap-4"><dt className="text-content-tertiary">{tBooking('locationCustomer')}</dt><dd><Price amount={(resolved as { travelFee: number }).travelFee!} /></dd></div>
+            <div className="flex min-w-0 items-center justify-between gap-4"><dt className="shrink-0 text-content-tertiary">{tBooking('locationCustomer')}</dt><dd className="min-w-0"><Price amount={(resolved as { travelFee: number }).travelFee!} /></dd></div>
           )}
         </dl>
-        <p className="text-caption mt-3 text-content-tertiary">{tBooking('cancellationNote', { hours: String(resolved.cancellationWindowHours) } as never)}</p>
+        <p className="text-caption mt-3 break-words text-content-tertiary [overflow-wrap:anywhere]">{tBooking('cancellationNote', { hours: String(resolved.cancellationWindowHours) } as never)}</p>
         {!isCancelled && resolved.status !== 'COMPLETED' && (
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4 grid min-w-0 gap-3">
             <CancelBookingButton bookingId={resolved.id} />
             {canReschedule && <RescheduleBookingButton bookingId={resolved.id} />}
           </div>
         )}
         <div className="mt-6 flex flex-wrap gap-3">
-          <Button asChild variant="outline"><Link href={routes.bookingPass(resolved.id)}>{tBooking('summaryTitle')}</Link></Button>
-          <Button asChild variant="ghost"><Link href={routes.accountBookings()}>{tAccount('bookings.title')}</Link></Button>
-          <Button asChild variant="accent"><Link href={routes.account()}>{tCommon('actions.continue')}</Link></Button>
+          <Button asChild variant="outline" className="max-w-full break-words"><Link href={routes.bookingPass(resolved.id)}>{tBooking('summaryTitle')}</Link></Button>
+          <Button asChild variant="ghost" className="max-w-full break-words"><Link href={routes.accountBookings()}>{tAccount('bookings.title')}</Link></Button>
+          <Button asChild variant="accent" className="max-w-full break-words"><Link href={routes.account()}>{tCommon('actions.continue')}</Link></Button>
         </div>
       </div>
     </main>
