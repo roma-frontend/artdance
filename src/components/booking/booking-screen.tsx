@@ -38,7 +38,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
   const [date, setDate] = useState<Date | undefined>(() => (initialDay ? new Date(initialDay.dateIso) : undefined));
   const [startTime, setStartTime] = useState<string | undefined>(content.preselectedSlot ?? undefined);
   const [location, setLocation] = useState<BookingLocationOption>('STUDIO');
-  const [weeks, setWeeks] = useState(4);
+  const [weeks, setWeeks] = useState(1);
   const [hold, setHold] = useState<HoldState>({ status: 'idle' });
   const [submitting, setSubmitting] = useState(false);
   const prevHoldRef = useRef<string | null>(null);
@@ -154,6 +154,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
   const rateLimitedSeconds = hold.status === 'rateLimited' ? hold.retryAfterSeconds : null;
   const recurringOpts = booking.recurring;
   const handleContinue = async () => {
+    if (submitting) return;
     if (hold.status !== 'holding' || !hold.holdId || !date || !startTime) return;
     setSubmitting(true);
     try {
@@ -161,8 +162,14 @@ export function BookingScreen({ content }: BookingScreenProps) {
         const weekday = date.getDay();
         const res = await fetch('/api/booking/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ weekday, startTime, durationMinutes: content.durationMinutes, weeks, instructorId: content.instructorId, locationOption: location }) });
         if (res.status === 401) {
-          // Не создано ни одной брони — нужно сначала войти, затем заново создать серию.
-          router.push(routes.signIn(`/instructors/${content.instructorSlug}/book`));
+          // Гостей переводим на вход; используем жёсткий переход как fallback для iOS Safari,
+          // где client-side router.push может не сработать из-за keepalive/race.
+          const target = routes.signIn(`/instructors/${content.instructorSlug}/book`);
+          try { router.push(target); } catch {}
+          // Отложенный hard-redirect если SPA-навигация не сработала
+          window.setTimeout(() => {
+            if (window.location.pathname !== target.split('?')[0]) window.location.href = target;
+          }, 400);
           return;
         }
         const body = (await res.json().catch(() => null)) as { seriesId?: string; bookings?: { id: string; reference?: string }[]; error?: string } | null;
@@ -174,8 +181,11 @@ export function BookingScreen({ content }: BookingScreenProps) {
       }
       const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ holdId: hold.holdId, locationOption: location, anonymousId: getAnonymousId() }) });
       if (res.status === 401) {
-        // Hold ещё жив — возвращаем к экрану бронирования, а не к несуществующему confirm(holdId)
-        router.push(routes.signIn(`/instructors/${content.instructorSlug}/book`));
+        const target = routes.signIn(`/instructors/${content.instructorSlug}/book`);
+        try { router.push(target); } catch {}
+        window.setTimeout(() => {
+          if (window.location.pathname !== target.split('?')[0]) window.location.href = target;
+        }, 400);
         return;
       }
       const body = (await res.json().catch(() => null)) as { booking?: { id: string; reference: string }; error?: string } | null;
@@ -205,9 +215,9 @@ export function BookingScreen({ content }: BookingScreenProps) {
         <LocationOptionPicker value={location} onChange={setLocation} studioName={content.studioName} acceptsTravel={content.acceptsTravel} acceptsOnline={content.acceptsOnline} />
         {!content.sessionBooking && <div className="rounded-xl border border-border-default bg-surface-card p-5">
           <label className="text-body-sm font-semibold">{tBooking('recurring.weeks' as never)} — {weeks}
-            <input type="range" min={recurringOpts.minWeeks} max={recurringOpts.maxWeeks} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} className="mt-2 min-h-6 w-full cursor-pointer accent-accent" />
+            <input type="range" min={1} max={recurringOpts.maxWeeks} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} className="mt-2 min-h-6 w-full cursor-pointer accent-accent" />
           </label>
-          <p className="text-caption mt-1 text-content-tertiary">{tBooking('recurring.hint' as never, { weeks } as never)}</p>
+          <p className="text-caption mt-1 text-content-tertiary">{weeks === 1 ? tBooking('recurring.singleHint' as never) as string : (tBooking('recurring.hint' as never, { weeks } as never) as string)}</p>
         </div>}
       </div>
       <BookingSummary classTitle={content.classTitle} instructorName={content.instructorName} date={date} startTime={startTime} durationMinutes={content.durationMinutes} location={{ option: location, name: content.studioName }} fee={content.fee} travelFee={travelFee} holdExpiresAt={effectiveHoldExpiresAt} onHoldExpired={handleHoldExpired} submitting={submitting} onContinue={handleContinue} />

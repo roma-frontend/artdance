@@ -775,6 +775,7 @@ const en = {
     recurring: {
       weeks: 'Weeks in series',
       hint: 'Every {weeks, plural, one {# week} other {# weeks}} — one payment creates all bookings',
+      singleHint: 'Single booking — one payment, one session',
     },
     leadTimeError: 'Bookings must be made at least {hours} in advance.',
     horizonError: 'Bookings open up to {days} ahead.',

@@ -71,7 +71,7 @@ export function OrderSummary({
     <aside
       aria-busy={recalculating}
       className={cn(
-        'flex flex-col rounded-xl border border-border-default bg-surface-card p-8 shadow-lg',
+        'flex min-w-0 flex-col overflow-hidden rounded-xl border border-border-default bg-surface-card p-6 md:p-8 shadow-lg',
         className,
       )}
     >

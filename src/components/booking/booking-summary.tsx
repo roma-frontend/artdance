@@ -100,7 +100,8 @@ export function BookingSummary({
   return (
     <aside
       className={cn(
-        'flex flex-col rounded-xl border border-border-default bg-surface-card p-8 shadow-lg',
+        'flex min-w-0 flex-col rounded-xl border border-border-default bg-surface-card p-6 md:p-8 shadow-lg',
+        'overflow-hidden',
         className,
       )}
     >

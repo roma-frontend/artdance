@@ -722,8 +722,9 @@
   .booking-detail-grid,
   .checkout-grid {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-6);
+    min-width: 0;
   }
 
   @media (width >= theme(--breakpoint-md)) {
