@@ -187,7 +187,7 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
           className="hidden lg:block"
         >
           <div
-            className="admin-sidebar-panel py-2 lg:pr-4"
+            className="admin-sidebar-panel py-2 lg:pr-4 lg:pb-[calc(var(--layout-nav-height)_+_var(--space-12)_+_var(--space-2))]"
           >
             <AdminSidebar groups={groups} variant="desktop" />
           </div>

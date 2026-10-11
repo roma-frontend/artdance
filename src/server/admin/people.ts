@@ -367,7 +367,7 @@ export interface ReportTotals {
   bookings: number;
   commission: number;
   topInstructors: readonly { name: string; amount: number }[];
-  topClasses: readonly { title: string; count: number }[];
+  topClasses: readonly { sessionId: string; title: string; count: number }[];
 }
 
 const PAID_ORDER_STATUSES = ['PAID', 'PACKING', 'SHIPPED', 'DELIVERED'] as const;
@@ -440,6 +440,7 @@ export async function getReportTotals(range: ReportRange): Promise<ReportTotals>
       amount: row._sum.grossAmount ?? 0,
     })),
     topClasses: classRows.map((row) => ({
+      sessionId: row.sessionId ?? '',
       title: sessions.find((item) => item.id === row.sessionId)?.danceClass.title ?? row.sessionId ?? '',
       count: row._count._all,
     })),

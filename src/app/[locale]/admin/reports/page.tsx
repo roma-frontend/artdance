@@ -124,7 +124,7 @@ export default async function AdminReportsPage({ params, searchParams }: PagePro
                 <ul className="flex flex-col gap-2">
                   {totals.topClasses.map((row) => (
                     <li
-                      key={row.title}
+                      key={row.sessionId}
                       className="flex items-baseline justify-between gap-3 border-b border-border-subtle pb-2"
                     >
                       <span className="text-body-sm text-content-primary">{row.title}</span>
