@@ -55,6 +55,19 @@ test.describe('SiteHeader', () => {
     await expect(header(page)).toHaveAttribute('data-state', 'top');
   });
 
+  test('на узком экране fixed-шапка отделена от прокручиваемого hero', async ({ page }) => {
+    test.skip(!(await isMobileLayout(page)), 'Проверяется мобильная glass-поверхность');
+
+    const nav = header(page);
+    const surface = nav.locator('.site-header-surface');
+    await expect(nav).toHaveCSS('position', 'fixed');
+    await expect(surface).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(surface).not.toHaveCSS('backdrop-filter', 'none');
+
+    await page.evaluate(() => window.scrollTo({ top: 200, behavior: 'instant' }));
+    await expect.poll(() => nav.evaluate(node => Math.round(node.getBoundingClientRect().top))).toBe(0);
+  });
+
   test('full → hidden → island → full: плавная геометрия и защита от мелкого скролла', async ({ page }) => {
     test.skip(await isMobileLayout(page), 'Остров — desktop-поведение, как в эталоне');
     // The scroll listeners attach during hydration; SSR markup alone is not readiness.

@@ -1440,6 +1440,28 @@
 }
 
 /*
+ * На узких экранах hero-контент прокручивается под фиксированной шапкой.
+ * Прозрачная full-форма оставляла subtitle и кнопки прямо под логотипом и
+ * иконками, из-за чего казалось, что сама шапка едет вместе со страницей.
+ * Glass-слой отделяет fixed chrome от движущегося hero, не добавляя места в
+ * потоке документа. Правило вне layer намеренно: оно должно перебить
+ * `bg-transparent` из Tailwind utility-класса.
+ */
+@media (width < theme(--breakpoint-lg)) {
+  .site-header .site-header-surface {
+    background-color: color-mix(in srgb, var(--surface-cinema) 82%, transparent);
+    backdrop-filter: blur(20px) saturate(140%);
+    border-bottom-width: 1px;
+    border-bottom-color: color-mix(in srgb, var(--border-on-cinema) 42%, transparent);
+  }
+
+  .site-header[data-state='scrolled'] .site-header-surface {
+    background-color: color-mix(in srgb, var(--surface-canvas) 88%, transparent);
+    border-bottom-color: var(--border-default);
+  }
+}
+
+/*
  * CURTAIN LIFT — подъём занавеса на кинематографичных секциях.
  *
  * Фирменный мотив бренда (первый экран — «занавес»), продолженный в скролле:
