@@ -230,7 +230,7 @@ export default async function ClassDetailPage({ params }: PageProps) {
             <section className="mb-12">
               <h2 className="text-heading-3 mb-4">{t('instructorTitle')}</h2>
 
-              <article className="card-surface relative flex flex-wrap items-center gap-5 rounded-lg border border-border-default bg-surface-card p-5 hover:shadow-md">
+              <article className="card-surface relative flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-5 rounded-lg border border-border-default bg-surface-card p-5 hover:shadow-md">
                 <Media
                   {...resolveMedia(item.instructorImage, locale as Locale)}
                   preset="avatarLarge"
