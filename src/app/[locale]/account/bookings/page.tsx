@@ -71,6 +71,7 @@ export default async function AccountBookingsPage({ params, searchParams }: Page
   const tBooking = await getTranslations({ locale: locale as Locale, namespace: 'booking' });
   const tCommon = await getTranslations({ locale: locale as Locale, namespace: 'common' });
   const tNav = await getTranslations({ locale: locale as Locale, namespace: 'nav' });
+  const tFooter = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
 
   if (total === 0) {
     return (
@@ -115,47 +116,73 @@ export default async function AccountBookingsPage({ params, searchParams }: Page
               const when = new Date(b.startsAt).toLocaleString(locale, { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
               return (
                 <li key={b.id} className="flex flex-col rounded-xl border border-border-default bg-surface-card p-5 shadow-sm transition hover:shadow-md">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                         <span className="font-mono text-body-sm font-semibold">{b.reference}</span>
-                        {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" /> : <Badge variant="neutral" size="sm">{b.status}</Badge>}
+                        {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
                       </div>
                       {(classTitle || instructorName) && <p className="text-body-sm mt-1 truncate text-content-secondary">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
                       <p className="text-body-sm mt-1 font-medium">{when}</p>
                     </div>
-                    <Price amount={b.totalPrice} emphasis="total" />
+                    <Price amount={b.totalPrice} emphasis="total" className="self-end sm:self-start" />
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button asChild variant="outline" size="sm"><Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link></Button>
-                    <Button asChild variant="ghost" size="sm"><Link href={routes.bookingPass(b.id)}>{tCommon('actions.viewDetails')}</Link></Button>
+                    <Button asChild variant="ghost" size="sm"><Link href={routes.bookingPass(b.id)}>{tFooter('passTitle')}</Link></Button>
                   </div>
                 </li>
               );
             })}
           </ul>
         ) : (
-          <ul className="mt-8 divide-y divide-border-default overflow-hidden rounded-xl border border-border-default bg-surface-card">
-            {bookings.map((b) => {
-              const classTitle = (b as { session?: { danceClass?: { title?: string } } | null }).session?.danceClass?.title;
-              const whenShort = new Date(b.startsAt).toLocaleString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-              return (
-                <li key={b.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface-sunken sm:px-4">
-                  <span className="font-mono text-caption font-semibold sm:text-body-sm">{b.reference}</span>
-                  {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" /> : <Badge variant="neutral" size="sm">{b.status}</Badge>}
-                  {classTitle ? <span className="hidden min-w-0 truncate text-body-sm text-content-secondary sm:block">{classTitle}</span> : null}
-                  <span className="ml-auto hidden shrink-0 text-body-sm font-medium tabular-nums sm:block">{whenShort}</span>
-                  <Price amount={b.totalPrice} emphasis="total" />
-                  <Button asChild variant="ghost" size="sm" className="hidden h-7 shrink-0 px-2 sm:inline-flex">
-                    <Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link>
-                  </Button>
-                  <Button asChild variant="outline" size="sm" className="h-7 shrink-0 px-2">
-                    <Link href={routes.bookingPass(b.id)} aria-label={b.reference}>Pass</Link>
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <ul className="mt-8 hidden divide-y divide-border-default overflow-hidden rounded-xl border border-border-default bg-surface-card sm:block">
+              {bookings.map((b) => {
+                const classTitle = (b as { session?: { danceClass?: { title?: string } } | null }).session?.danceClass?.title;
+                const whenShort = new Date(b.startsAt).toLocaleString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                return (
+                  <li key={b.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface-sunken sm:px-4">
+                    <span className="font-mono text-caption font-semibold sm:text-body-sm">{b.reference}</span>
+                    {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" /> : <Badge variant="neutral" size="sm">{b.status}</Badge>}
+                    {classTitle ? <span className="hidden min-w-0 truncate text-body-sm text-content-secondary sm:block">{classTitle}</span> : null}
+                    <span className="ml-auto hidden shrink-0 text-body-sm font-medium tabular-nums sm:block">{whenShort}</span>
+                    <Price amount={b.totalPrice} emphasis="total" />
+                    <Button asChild variant="ghost" size="sm" className="hidden h-7 shrink-0 px-2 sm:inline-flex">
+                      <Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link>
+                    </Button>
+                    <Button asChild variant="outline" size="sm" className="h-7 shrink-0 px-2">
+                      <Link href={routes.bookingPass(b.id)} aria-label={b.reference}>{tFooter('passTitle')}</Link>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+            <ul className="mt-8 grid gap-3 sm:hidden">
+              {bookings.map((b) => {
+                const classTitle = (b as { session?: { danceClass?: { title?: string } } | null }).session?.danceClass?.title;
+                const instructorName = (b as { instructor?: { user?: { name?: string } } | null }).instructor?.user?.name;
+                const whenShort = new Date(b.startsAt).toLocaleString(locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                return (
+                  <li key={b.id} className="min-w-0 rounded-xl border border-border-default bg-surface-card p-3 shadow-sm">
+                    <div className="flex min-w-0 flex-col items-start gap-2">
+                      <span className="min-w-0 break-all font-mono text-caption font-semibold">{b.reference}</span>
+                      {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
+                    </div>
+                    {(classTitle || instructorName) && <p className="mt-1.5 break-words text-body-sm text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
+                    <div className="mt-2 flex min-w-0 items-center justify-between gap-3">
+                      <span className="break-words text-caption font-medium tabular-nums text-content-tertiary [overflow-wrap:anywhere]">{whenShort}</span>
+                      <Price amount={b.totalPrice} emphasis="total" />
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button asChild variant="ghost" size="sm" className="flex-1"><Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link></Button>
+                      <Button asChild variant="outline" size="sm" className="flex-1"><Link href={routes.bookingPass(b.id)}>{tFooter('passTitle')}</Link></Button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
         )}
 
         {pageCount > 1 ? (

@@ -91,13 +91,13 @@ export default async function AccountOrdersPage({ params, searchParams }: PagePr
           <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {orders.map((o) => (
               <li key={o.id} className="flex flex-col rounded-xl border border-border-default bg-surface-card p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2"><span className="font-mono text-body-sm font-semibold">{o.orderNumber}</span>{(orderStatuses as readonly string[]).includes(o.status) ? <StatusBadge kind="order" status={o.status as OrderStatus} size="sm" /> : <Badge variant="neutral" size="sm">{o.status}</Badge>}</div>
+                    <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center"><span className="font-mono text-body-sm font-semibold">{o.orderNumber}</span>{(orderStatuses as readonly string[]).includes(o.status) ? <StatusBadge kind="order" status={o.status as OrderStatus} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{o.status}</Badge>}</div>
                     <p className="text-body-sm mt-1 truncate text-content-secondary">{t('orders.placedOn', { date: new Date(o.placedAt).toLocaleDateString(locale) } as never)} · {o._count.items} {tCommon('labels.quantity').toLowerCase()}</p>
                     <p className="text-body-sm mt-1 line-clamp-1 text-content-tertiary">{o.items.map((i) => i.titleSnapshot).join(', ')}</p>
                   </div>
-                  <Price amount={o.total} emphasis="total" />
+                  <Price amount={o.total} emphasis="total" className="self-end sm:self-start" />
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button asChild variant="outline" size="sm"><Link href={routes.accountOrder(o.orderNumber)}>{tCommon('actions.viewDetails')}</Link></Button>
@@ -107,7 +107,8 @@ export default async function AccountOrdersPage({ params, searchParams }: PagePr
             ))}
           </ul>
         ) : (
-          <ul className="mt-8 divide-y divide-border-default overflow-hidden rounded-xl border border-border-default bg-surface-card">
+          <>
+          <ul className="mt-8 hidden divide-y divide-border-default overflow-hidden rounded-xl border border-border-default bg-surface-card sm:block">
             {orders.map((o) => (
               <li key={o.id} className="flex items-center gap-2 px-3 py-2.5 hover:bg-surface-sunken sm:gap-3 sm:px-4">
                 <span className="shrink-0 font-mono text-caption font-semibold sm:text-body-sm">{o.orderNumber}</span>
@@ -121,6 +122,26 @@ export default async function AccountOrdersPage({ params, searchParams }: PagePr
               </li>
             ))}
           </ul>
+          <ul className="mt-8 grid gap-3 sm:hidden">
+            {orders.map((o) => (
+              <li key={o.id} className="min-w-0 rounded-xl border border-border-default bg-surface-card p-3 shadow-sm">
+                <div className="flex min-w-0 flex-col items-start gap-2">
+                  <span className="min-w-0 break-all font-mono text-caption font-semibold">{o.orderNumber}</span>
+                  {(orderStatuses as readonly string[]).includes(o.status) ? <StatusBadge kind="order" status={o.status as OrderStatus} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{o.status}</Badge>}
+                </div>
+                <p className="mt-1.5 break-words text-caption text-content-tertiary [overflow-wrap:anywhere]">{new Date(o.placedAt).toLocaleDateString(locale)} · {o._count.items}×</p>
+                <p className="mt-1 break-words text-body-sm text-content-secondary [overflow-wrap:anywhere]">{o.items[0]?.titleSnapshot ?? '—'}</p>
+                <div className="mt-2 flex justify-end">
+                  <Price amount={o.total} emphasis="total" />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button asChild variant="ghost" size="sm" className="flex-1"><Link href={routes.accountOrder(o.orderNumber)}>{tCommon('actions.viewDetails')}</Link></Button>
+                  <Button asChild variant="outline" size="sm" className="flex-1"><Link href={routes.orderInvoice(o.orderNumber)}>{t('orders.invoiceCta')}</Link></Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          </>
         )}
         {pageCount > 1 ? (
           <Pagination label="Pagination" className="mt-8 flex justify-center">

@@ -175,26 +175,26 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
                     hour: '2-digit',
                     minute: '2-digit',
                   });
-                    return (
-                      <li key={b.id} className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-4 shadow-sm">
-                        <div className="flex min-w-0 items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex min-w-0 flex-wrap items-center gap-2">
-                              <span className="min-w-0 break-all font-mono text-body-sm font-semibold">{b.reference}</span>
-                              {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="max-w-full" /> : <Badge variant="neutral" size="sm" className="max-w-full break-words">{b.status}</Badge>}
-                            </div>
-                            {(classTitle || instructorName) && <p className="text-body-sm mt-1 break-words text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
-                            <p className="text-body-sm mt-1 break-words font-medium [overflow-wrap:anywhere]">{when}</p>
+                  return (
+                    <li key={b.id} className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-4 shadow-sm">
+                      <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                            <span className="min-w-0 break-all font-mono text-body-sm font-semibold">{b.reference}</span>
+                            {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
                           </div>
-                          <Price amount={b.totalPrice} emphasis="total" className="shrink-0" />
+                          {(classTitle || instructorName) && <p className="text-body-sm mt-1 break-words text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
+                          <p className="text-body-sm mt-1 break-words font-medium [overflow-wrap:anywhere]">{when}</p>
                         </div>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Button asChild variant="outline" size="sm" className="max-w-full"><Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link></Button>
-                          <Button asChild variant="ghost" size="sm" className="max-w-full"><Link href={routes.bookingPass(b.id)}>Pass</Link></Button>
-                        </div>
-                      </li>
-                    );
-                  })}
+                        <Price amount={b.totalPrice} emphasis="total" className="shrink-0 self-end sm:self-start" />
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Button asChild variant="outline" size="sm" className="max-w-full"><Link href={routes.accountBooking(b.id)}>{tCommon('actions.viewDetails')}</Link></Button>
+                        <Button asChild variant="ghost" size="sm" className="max-w-full"><Link href={routes.bookingPass(b.id)}>Pass</Link></Button>
+                      </div>
+                    </li>
+                  );
+                })}
                 </ul>
             ) : (
               <>
@@ -224,9 +224,9 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
                     const whenShort = new Date(b.startsAt).toLocaleString(locale as Locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
                     return (
                       <li key={b.id} className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-3 shadow-sm">
-                        <div className="flex min-w-0 items-center justify-between gap-2">
+                        <div className="flex min-w-0 flex-col items-start gap-2">
                           <span className="min-w-0 break-all font-mono text-caption font-semibold">{b.reference}</span>
-                          {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="max-w-[50%]" /> : <Badge variant="neutral" size="sm" className="max-w-[50%] break-words">{b.status}</Badge>}
+                          {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
                         </div>
                         {(classTitle || instructorName) && <p className="mt-1.5 break-words text-body-sm text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
                         <div className="mt-2 flex min-w-0 items-center justify-between gap-3">
@@ -268,14 +268,14 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
             ) : view === 'grid' ? (
               <ul className="grid min-w-0 gap-3">
                 {orders.map((o) => (
-                  <li key={o.id} className="flex min-w-0 items-center justify-between gap-3 overflow-hidden rounded-xl border border-border-default bg-surface-card px-4 py-3 shadow-sm">
+                  <li key={o.id} className="flex min-w-0 flex-col gap-3 overflow-hidden rounded-xl border border-border-default bg-surface-card px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 flex-1">
                       <p className="break-all font-mono text-body-sm font-semibold [overflow-wrap:anywhere]">{o.orderNumber}</p>
-                      <p className="break-words text-caption text-content-tertiary [overflow-wrap:anywhere]">{new Date(o.placedAt).toLocaleDateString(locale as Locale)} · {o.status}</p>
+                      <p className="break-words text-caption text-content-tertiary [overflow-wrap:anywhere]">{new Date(o.placedAt).toLocaleDateString(locale as Locale)}</p>
+                      <Badge variant="neutral" size="sm" className="mt-2 w-fit max-w-full break-words">{o.status}</Badge>
                     </div>
-                    <div className="shrink-0 text-right">
+                    <div className="self-end text-right sm:self-start">
                       <p className="text-body-sm font-semibold"><Price amount={o.total} /></p>
-                      <p className="text-caption text-content-tertiary">{o.status}</p>
                     </div>
                   </li>
                 ))}
@@ -296,9 +296,9 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
                 <ul className="grid gap-3 sm:hidden">
                   {orders.map((o) => (
                     <li key={o.id} className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-3 shadow-sm">
-                      <div className="flex min-w-0 items-center justify-between gap-2">
+                      <div className="flex min-w-0 flex-col items-start gap-2">
                         <span className="min-w-0 break-all font-mono text-caption font-semibold">{o.orderNumber}</span>
-                        <Badge variant="neutral" size="sm" className="max-w-[50%] break-words">{o.status}</Badge>
+                        <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{o.status}</Badge>
                       </div>
                       <div className="mt-2 flex min-w-0 items-center justify-between gap-3">
                         <span className="text-caption text-content-tertiary">{new Date(o.placedAt).toLocaleDateString(locale as Locale)}</span>
