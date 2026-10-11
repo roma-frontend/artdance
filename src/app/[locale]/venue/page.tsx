@@ -29,7 +29,7 @@ export default async function VenuePage({ params }: { params: Promise<{ locale: 
       <h1 className="text-heading-2">{tFooter('venueDashboardTitle')}</h1>
       <p className="text-body mt-2 text-content-secondary">{tCommon('states.comingSoon')} — {tFooter('districtHint')}</p>
       <div className="mt-6 flex gap-3">
-        <Button asChild variant="outline"><Link href={routes.venueRooms()}>{tFooter('venueDashboardRooms')}</Link></Button>
+        <Button disabled variant="outline">{tFooter('venueDashboardRooms')}</Button>
         <Button asChild variant="ghost"><Link href={routes.account()}>{tCommon('actions.continue')}</Link></Button>
       </div>
       <SiteFooter />

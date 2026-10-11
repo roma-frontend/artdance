@@ -11,7 +11,9 @@ import { DM_Sans, Noto_Sans_Armenian, Playfair_Display } from 'next/font/google'
 
 export const displayFont = Playfair_Display({
   subsets: ['latin', 'cyrillic'],
-  weight: ['400', '700'],
+  // Variable font сохраняет 400/700 без статических Google kit URL,
+  // которые Turbopack может неверно разобрать как несколько query-параметров.
+  weight: 'variable',
   // italic нужен только для акцент-слова в hero — один начертания достаточно.
   style: ['normal', 'italic'],
   display: 'swap',

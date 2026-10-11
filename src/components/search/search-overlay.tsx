@@ -77,7 +77,7 @@ import { cn } from '@/lib/utils';
 
 interface SearchOverlayApi {
   open: boolean;
-  openSearch(): void;
+  openSearch(trigger?: HTMLElement): void;
   closeSearch(): void;
 }
 
@@ -149,13 +149,13 @@ export function SearchOverlayProvider({ children }: { children: ReactNode }) {
   const api = useMemo<SearchOverlayApi>(
     () => ({
       open,
-      openSearch: () => {
-        rememberFocus();
+      openSearch: (trigger) => {
+        returnFocusRef.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
         setOpen(true);
       },
       closeSearch: () => setOpen(false),
     }),
-    [open, rememberFocus],
+    [open],
   );
 
   return (

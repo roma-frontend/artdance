@@ -32,7 +32,7 @@ export default async function SchedulePage({ params }: PageProps) {
       <h1 className="text-heading-2">{t('scheduleTitle')}</h1>
       <p className="text-body mt-2 text-content-secondary">{t('scheduleHint')}</p>
       {classes.length > 0 && (
-        <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="my-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {classes.map((item) => (
             <li key={item.slug}><ClassCard item={item} locale={locale as Locale} /></li>
           ))}

@@ -75,7 +75,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           <aside>
             <div className="rounded-xl border border-border-default bg-surface-card p-6 shadow-md">
               <div className="mb-5 flex items-start justify-between gap-3">
-                <h1 className="text-heading-3">{item.title}</h1>
+                <h2 className="text-heading-3">{item.title}</h2>
                 <FavoriteButton target="product" slug={item.slug} name={item.title} />
               </div>
               <p className="text-body text-content-secondary mb-6">{item.description}</p>

@@ -8,19 +8,20 @@ export function useHeaderHideOnScroll(
   paused = false,
   islandEnabled = false,
   resetKey = '',
+  deferInitialIsland = false,
 ): { hidden: boolean; island: boolean } {
   const [state, setState] = useState({ hidden: false, island: false });
   // цель islands при смене маршрута — её видит второй эффект до ресета хука
   const targetIslandRef = useRef(false);
+  const initialIslandDeferredRef = useRef(deferInitialIsland);
 
   // Навигация: сразу целимся в остров если вкладка уже прокручена — иначе
   // следующий эффект стартует с lastY=0 и не может выставить island до первого скролла
   useLayoutEffect(() => {
     const y = Math.max(0, window.scrollY);
-    const nextIsland = y > 18 && islandEnabled;
+    const nextIsland = y > 18 && islandEnabled && !initialIslandDeferredRef.current;
     targetIslandRef.current = nextIsland;
     const nextHidden = false;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- синхронный апдейт при смене маршрута
     setState((previous) =>
       previous.hidden === nextHidden && previous.island === nextIsland
         ? previous
@@ -46,6 +47,17 @@ export function useHeaderHideOnScroll(
       const y = Math.max(0, Math.min(window.scrollY, document.documentElement.scrollHeight - window.innerHeight));
       const delta = y - lastY;
       lastY = y;
+
+      /*
+       * A page can be scrolled before hydration finishes (browser restoration,
+       * Playwright, or a fast touch gesture). Do not turn a cinema hero into an
+       * island from that initial snapshot; the next real scroll owns the mode.
+       */
+      if (initialIslandDeferredRef.current) {
+        initialIslandDeferredRef.current = false;
+        down = up = 0;
+        return;
+      }
 
       // Ожидаем реальную прокрутку после программного сброса в 0
       if (pendingRestoreIsland) {

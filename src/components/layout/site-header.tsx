@@ -56,7 +56,13 @@ export function SiteHeader() {
   const lite = useIsLiteMode();
   // island-компакт доступен на всех страницах (не только на главной):
   // пользователь ожидает один язык шапки после навигации, а не «на главной остров есть, внутри — нет»
-  const { hidden, island } = useHeaderHideOnScroll(headerRef, menuOpen, true, pathname);
+  const { hidden, island } = useHeaderHideOnScroll(
+    headerRef,
+    menuOpen,
+    true,
+    pathname,
+    hasCinemaHero(pathname),
+  );
 
   // мега-меню и фокус внутри шапки не должны оставаться после клиентской навигации —
   // иначе header остаётся в paused и не компактится до перезагрузки/blur
@@ -170,9 +176,17 @@ export function SiteHeader() {
                 {...(item.opensSearch
                   ? {
                       'aria-haspopup': 'dialog' as const,
+                      onPointerDown: (event) => {
+                        /*
+                         * На телефоне header может завершать layout-переход между
+                         * pointerdown и click. Открываем поиск на первом событии,
+                         * чтобы сдвиг шапки не превращал жест в клик по фону.
+                         */
+                        openSearch(event.currentTarget);
+                      },
                       onClick: (event: MouseEvent<HTMLAnchorElement>) => {
                         event.preventDefault();
-                        openSearch();
+                        openSearch(event.currentTarget);
                       },
                     }
                   : {})}

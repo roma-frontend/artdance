@@ -14,7 +14,7 @@ test('админка: общий скролл и правая sticky-колон�
   await page.getByLabel(en.auth.signIn.emailLabel).fill(admin.email);
   await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
   await page.getByRole('button', { name: en.auth.signIn.submit }).click();
-  await expect(page.locator('.admin-shell')).toBeVisible();
+  await expect(page.locator('.admin-shell')).toBeVisible({ timeout: 30_000 });
   const content = page.locator('.admin-content-panel');
   const sidebar = page.locator('.admin-sidebar-panel');
   await expect(content).toBeVisible();
@@ -59,8 +59,9 @@ test('support command center: доступ только allowlisted operator и 
   await page.getByLabel(en.auth.signIn.emailLabel).fill(supportOperator.email);
   await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
   await page.getByRole('button', { name: en.auth.signIn.submit }).click();
-  await expect(page.getByRole('heading', { name: en.admin.support.queueTitle })).toBeVisible();
-  await expect(page.getByRole('heading', { name: en.admin.support.toolsTitle })).toBeVisible();
+  /* The first Supabase connection can cold-start above the global 10s assertion budget. */
+  await expect(page.getByRole('heading', { name: en.admin.support.queueTitle })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: en.admin.support.toolsTitle })).toBeVisible({ timeout: 30_000 });
 
   const queue = page.locator('section[aria-labelledby="support-queue"]');
   const tools = page.locator('section[aria-labelledby="support-tools"]');

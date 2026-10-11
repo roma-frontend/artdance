@@ -85,7 +85,7 @@ export function PlanComparisonTable({ plans, className }: PlanComparisonTablePro
   }
 
   return (
-    <div className={cn('overflow-x-auto', className)}>
+    <div className={cn('contain-paint overflow-x-auto', className)}>
       <table className="w-full min-w-150 border-collapse text-start">
         <caption className="sr-only">{t('pricing.comparisonTitle')}</caption>
 

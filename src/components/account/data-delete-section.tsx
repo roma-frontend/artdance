@@ -40,10 +40,10 @@ export function DataDeleteSection() {
   };
 
   return (
-    <section className="rounded-xl border border-border-default bg-surface-card p-5">
+    <section className="min-w-0 rounded-xl border border-border-default bg-surface-card p-5">
       <h2 className="text-card-title">{t('deleteTitle')}</h2>
       <p className="text-body-sm mt-2 text-content-secondary">{t('deleteHint')}</p>
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 flex flex-wrap gap-2">
         <Button variant="outline" disabled={pending} onClick={onDelete}>
           {pending ? '…' : t('requestDeletion')}
         </Button>

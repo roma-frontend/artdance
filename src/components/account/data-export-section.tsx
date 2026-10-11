@@ -31,7 +31,7 @@ export function DataExportSection() {
   };
 
   return (
-    <section className="rounded-xl border border-border-default bg-surface-card p-5">
+    <section className="min-w-0 rounded-xl border border-border-default bg-surface-card p-5">
       <h2 className="text-card-title">{t('exportTitle')}</h2>
       <p className="text-body-sm mt-2 text-content-secondary">{t('exportHint')}</p>
       <Button variant="outline" className="mt-4" disabled={downloading} onClick={onExport}>{downloading ? '…' : t('downloadJson')}</Button>

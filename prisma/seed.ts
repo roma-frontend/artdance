@@ -388,6 +388,7 @@ async function seedInstructors(): Promise<Map<string, string>> {
       role: 'INSTRUCTOR',
       locale: 'en',
     });
+    await setDemoPassword(userId);
 
     const data = {
       slug: item.slug,
@@ -494,6 +495,7 @@ async function seedVenues(): Promise<{
       role: 'VENUE_OWNER',
       locale: 'en',
     });
+    await setDemoPassword(ownerId);
     await prisma.venueMember.upsert({
       where: { venueId_userId: { venueId, userId: ownerId } },
       update: { isOwner: true },
