@@ -2637,6 +2637,10 @@ const en = {
       title: 'Dashboard',
       subtitle: 'The platform at a glance',
       shortcuts: 'Shortcuts',
+      manualsTitle: "Owner's Manuals & System Documentation (PDF)",
+      manualEn: 'Platform Manual (English, 42 pages)',
+      manualHy: 'Platform Manual (Հայերեն, 42 pages)',
+      manualsHint: 'Complete illustrated platform operations handbook with real interface screenshots and troubleshooting protocols.',
       noAccess: 'Your access level does not include any admin section yet.',
       stats: {
         classes: 'Active classes',

@@ -68,6 +68,43 @@ export default async function AdminDashboardPage({ params }: PageProps) {
         />
       ) : (
         <>
+          {/* Owner Documentation & Operations Manuals Banner */}
+          <section aria-labelledby="admin-manuals" className="mb-8 rounded-2xl border border-accent/25 bg-accent-soft/30 p-5 shadow-sm">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-eyebrow uppercase tracking-widest text-content-accent">Documentation • Փաստաթղթեր</p>
+                <h2 id="admin-manuals" className="mt-1 text-card-title text-content-primary">
+                  {t('manualsTitle')}
+                </h2>
+                <p className="mt-1 text-body-sm text-content-secondary">
+                  {t('manualsHint')}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <a
+                  href="https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/docs/ArtDance_Operations_Manual_EN.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl border border-accent bg-accent px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-all hover:bg-accent-hover hover:shadow-md active:scale-[0.98]"
+                >
+                  <span>🇬🇧</span>
+                  <span>{t('manualEn')}</span>
+                  <span aria-hidden>↗</span>
+                </a>
+                <a
+                  href="https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/docs/ArtDance_Operations_Manual_HY.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl border border-metal bg-metal px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-all hover:bg-metal-dark hover:shadow-md active:scale-[0.98]"
+                >
+                  <span>🇦🇲</span>
+                  <span>{t('manualHy')}</span>
+                  <span aria-hidden>↗</span>
+                </a>
+              </div>
+            </div>
+          </section>
+
           <StatGrid items={items} />
 
           <section aria-labelledby="admin-shortcuts" className="mt-10">
