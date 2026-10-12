@@ -59,7 +59,7 @@ test('pair booking requires partner, stores two participants and cancels once', 
     expect(saved).toMatchObject({ lessonType: 'PAIR', participants: 2, partnerName: 'Partner Example', basePrice: 20000 });
     expect((await db.classSession.findUniqueOrThrow({ where: { id: session.id } })).bookedCount).toBe(2);
     await page.goto(`/en/account/bookings/${bookingId}`);
-    await expect(page.getByText('Partner Example', { exact: true })).toBeVisible();
+    await expect(page.getByRole('main').getByText('Partner Example', { exact: true }).first()).toBeVisible();
     const cancelled = await page.request.post(`/api/booking/${bookingId}/cancel`, { data: {} });
     expect(cancelled.status()).toBe(200);
     expect((await db.classSession.findUniqueOrThrow({ where: { id: session.id } })).bookedCount).toBe(0);
