@@ -91,6 +91,15 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
   const tNav = await getTranslations('nav');
   const isBookingStatus = (v: string): v is BookingStatus => (bookingStatuses as readonly string[]).includes(v);
 
+  /*
+   * Кабинет инструктора открыт владельцу привязанного профиля. Проверка мягкая
+   * (поиск, а не гвард): у клиента без профиля кнопка «Studio» не показывается,
+   * но и не кидает ошибку — кабинет клиента остаётся рабочим экраном.
+   */
+  const instructorProfile = user.role === 'INSTRUCTOR'
+    ? await db.instructorProfile.findUnique({ where: { userId: user.id }, select: { id: true } })
+    : null;
+
   const [bookings, orders, classPasses] = await Promise.all([
     db.booking.findMany({
       where: { customerId: caller.id },
@@ -134,6 +143,11 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
             <Badge variant="metal" size="md" className="max-w-full break-words">
               {tRoot(userRoleLabelKey(user.role))}
             </Badge>
+            {instructorProfile && (
+              <Button asChild variant="outline" size="sm" className="max-w-full">
+                <Link href={routes.instructorDashboard()}>{t('studioCta')}</Link>
+              </Button>
+            )}
             {hasAtLeastRole(user.role, 'SUPPORT') && (
               <Button asChild variant="outline" size="sm" className="max-w-full">
                 <Link href={routes.admin()}>{t('staffCta')}</Link>

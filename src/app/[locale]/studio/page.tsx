@@ -29,11 +29,11 @@ export default async function StudioPage({ params }: { params: Promise<{ locale:
       <h1 className="text-heading-2">{tFooter('studioDashboardTitle')}</h1>
       <p className="text-body mt-2 text-content-secondary">{tCommon('states.comingSoon')} — {tFooter('applyHint')}</p>
       <div className="mt-6 flex flex-wrap gap-3">
-        <Button disabled variant="outline">{tFooter('studioDashboardAvailability')}</Button>
+        <Button asChild variant="outline"><Link href={routes.instructorAvailability()}>{tFooter('studioDashboardAvailability')}</Link></Button>
         <Button disabled variant="outline">{tFooter('studioDashboardRequests')}</Button>
         <Button asChild variant="outline"><Link href={routes.account()}>{tCommon('actions.continue')}</Link></Button>
       </div>
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="my-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[routes.instructorSchedule(), routes.instructorAvailability(), routes.instructorClasses(), routes.instructorRequests(), routes.instructorEarnings(), routes.instructorProfile()].map((href) => (
           <div key={href} className="rounded-xl border border-border-default bg-surface-card p-5">
             <span className="font-mono text-sm">{href}</span>
