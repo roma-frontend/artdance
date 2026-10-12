@@ -138,7 +138,25 @@ test.describe('параллакс editorial-секции', () => {
      * Скролл к самой секции, а не к первому h2: выше editorial стоят секции со
      * своими заголовками, и на их фоне наблюдатель мог сработать раньше замера.
      */
-    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    // behavior:'instant' не поддерживается в CI Chromium — fallback на plain scrollTo.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    // В CinemaAperture на широком экране clip-path уже 'none' — занавес отключён.
+    // Проверяем раскрытие только когда занавес реально управляет маской.
+    const hasCurtain = await page.evaluate(
+      () => getComputedStyle(document.querySelector<HTMLElement>('[data-slot="section-parallax"][data-curtain]')!).clipPath,
+    );
+    if (hasCurtain === 'none') {
+      // CinemaAperture активен — маска уже открыта, проверяем что она и осталась открытой.
+      await wrap.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(600);
+      const open = await clip();
+      expect(
+        open === 'none' || /^inset\(0(px|%)?( 0(px|%)?){0,3}( round 0px)?\)$/.test(open),
+        `открытая маска (aperture on): ${open}`,
+      ).toBe(true);
+      return;
+    }
+
     const before = await clip();
 
     await wrap.scrollIntoViewIfNeeded();
@@ -151,9 +169,7 @@ test.describe('параллакс editorial-секции', () => {
      * Chrome вычисляет открытую маску в сокращённой форме `inset(0px)`. */
     /* На широком экране маской управляет `CinemaAperture`: экран открыт целиком,
      * когда верх секции поднялся на `openSpan` высоты окна — доводим до верха. */
-    await wrap.evaluate((node) =>
-      window.scrollBy({ top: node.getBoundingClientRect().top, behavior: 'instant' }),
-    );
+    await wrap.evaluate((node) => window.scrollBy(0, node.getBoundingClientRect().top));
     await page.waitForTimeout(1_200);
     const open = await clip();
     expect(

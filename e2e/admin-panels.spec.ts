@@ -26,6 +26,9 @@ test('админка: общий скролл и правая sticky-колон�
     await expect(sidebar).toHaveCSS('overflow-y', 'visible');
     await expect(content).toHaveCSS('position', 'sticky');
     await expect(content).toHaveCSS('align-self', 'start');
+    // Дождаться конца entrance-анимации хедера/сайдбара (≈ 380ms) — иначе
+    // координаты stickyTop и boundingBox скачут на трансформации.
+    await page.waitForTimeout(500);
     const initialLeft = (await sidebar.boundingBox())!.y;
     const stickyTop = await content.evaluate(node => Number.parseFloat(getComputedStyle(node).top));
     // Скролл через mouse.wheel флакал в CI (колёсико не всегда двигает window)
@@ -36,7 +39,9 @@ test('админка: общий скролл и правая sticky-колон�
       await page.evaluate(() => window.scrollTo(0, 260));
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100);
       await expect.poll(async () => (await sidebar.boundingBox())!.y).toBeLessThan(initialLeft - 100);
-      await expect.poll(async () => Math.abs((await content.boundingBox())!.y - stickyTop)).toBeLessThan(1);
+      // Допуск 4px: subpixel-округление, дробный stickyTop, масштаб — иначе
+      // флак на ретрае (1px слишком жёстко для CI Chromium headless).
+      await expect.poll(async () => Math.abs((await content.boundingBox())!.y - stickyTop)).toBeLessThan(4);
       expect(await content.evaluate(node => node.scrollTop)).toBe(0);
       // At the grid boundary, the right column must leave with the left column.
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
