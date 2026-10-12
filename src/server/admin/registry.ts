@@ -43,6 +43,7 @@ import {
 import { domainErrors } from '@/domain/errors';
 import { money } from '@/domain/money';
 import { notTrashed } from '@/domain/trash';
+import { danceSportDisciplineMeta, type DisciplineId } from '@/domain/dancesport';
 import { db } from '@/lib/db';
 
 /* ─────────────────────────────── Общие типы ─────────────────────────────── */
@@ -170,6 +171,7 @@ export function resourceCacheTags(resource: AdminResource): readonly string[] {
     case 'variants':
       return [cacheTags.products()];
     case 'events':
+    case 'competition-categories':
       return [cacheTags.events()];
     case 'courses':
     case 'lessons':
@@ -595,6 +597,44 @@ export async function listResource(resource: AdminResource, query: AdminListPara
           capacity: row.capacity,
           bookedCount: row.bookedCount,
           isPublished: row.isPublished,
+        })),
+        total,
+        page,
+      );
+    }
+
+    case 'competition-categories': {
+      const where = baseWhere(spec, query, ['name', 'ageGroup', 'conditions']) as Prisma.CompetitionCategoryWhereInput;
+      const [rows, total] = await Promise.all([
+        db.competitionCategory.findMany({
+          where,
+          skip,
+          take,
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+          select: {
+            id: true,
+            name: true,
+            ageGroup: true,
+            program: true,
+            discipline: true,
+            entryFee: true,
+            isActive: true,
+            event: { select: { title: true } },
+          },
+        }),
+        db.competitionCategory.count({ where }),
+      ]);
+
+      return result(
+        rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          eventName: row.event.title,
+          ageGroup: row.ageGroup,
+          program: row.program,
+          discipline: row.discipline,
+          entryFee: row.entryFee,
+          isActive: row.isActive,
         })),
         total,
         page,
@@ -1031,6 +1071,20 @@ function toPrismaData(spec: AdminResourceSpec, values: AdminFormValues): Record<
     }
   }
 
+  /* A precise DanceSport discipline must remain consistent with the broad
+   * catalogue style; otherwise a Standard discipline could silently appear
+   * under a Latin-only class filter. */
+  if (['DanceClass', 'Course', 'Event'].includes(spec.model)) {
+    const discipline = data.danceSportDiscipline;
+    const style = data.style;
+    if (typeof discipline === 'string' && typeof style === 'string') {
+      const expected = danceSportDisciplineMeta(discipline as DisciplineId).style;
+      if (expected !== style && !(discipline === 'TANGO_STANDARD' && style === 'TANGO')) {
+        throw domainErrors.validationFailed('danceSportDiscipline');
+      }
+    }
+  }
+
   return data;
 }
 
@@ -1284,6 +1338,7 @@ export async function relationOptions(source: AdminRelationSource): Promise<read
 
     /* Остальные ресурсы как источник связи не используются. */
     case 'sessions':
+    case 'competition-categories':
     case 'variants':
     case 'lessons':
     case 'promo-codes':

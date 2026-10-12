@@ -68,6 +68,7 @@ import {
   danceStyleSlug,
   skillLevelLabelKey,
   type DanceStyle,
+  type LessonType,
   type SkillLevel,
 } from '@/domain/enums';
 import { db } from '@/lib/db';
@@ -111,6 +112,8 @@ export const classSelect = {
   title: true,
   description: true,
   style: true,
+  danceSportDiscipline: true,
+  lessonType: true,
   level: true,
   durationMinutes: true,
   price: true,
@@ -145,6 +148,8 @@ export interface ClassRow {
   title: string;
   description: string;
   style: DanceStyle;
+  danceSportDiscipline: string | null;
+  lessonType: LessonType;
   level: SkillLevel;
   durationMinutes: number;
   price: number;
@@ -206,6 +211,8 @@ export function toClassCard(row: ClassRow): ClassCardItem {
     slug: row.slug,
     title: row.title,
     style: row.style,
+    ...(row.danceSportDiscipline ? { danceSportDiscipline: row.danceSportDiscipline } : {}),
+    lessonType: row.lessonType,
     level: row.level,
     instructorName: row.instructor.user.name,
     /*
@@ -247,6 +254,7 @@ function classWhere(query: CatalogQuery) {
   return {
     ...publicClassWhere,
     ...(style ? { style } : {}),
+    ...(query.discipline ? { danceSportDiscipline: query.discipline } : {}),
     ...(query.level ? { level: { in: [...levelsFor(query.level as SkillLevel)] } } : {}),
     ...(query.district ? { venue: { district: query.district } } : {}),
     ...(query.priceMin !== undefined || query.priceMax !== undefined

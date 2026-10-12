@@ -1,9 +1,8 @@
 import 'server-only';
 
 import { domainErrors } from '@/domain/errors';
-import { passExpiresAt } from '@/domain/class-pass';
-import { booking } from '@/config/business';
-import { classPasses } from '@/config/pricing';
+import { classPassOfferPrice, passExpiresAt } from '@/domain/class-pass';
+import { classPasses, priceGuidance } from '@/config/pricing';
 import { db } from '@/lib/db';
 import { Prisma } from '@/generated/prisma/client';
 
@@ -21,20 +20,23 @@ export interface PurchaseClassPassInput {
 export async function purchaseClassPass(input: PurchaseClassPassInput) {
   const offer = classPasses.find((pass) => pass.id === input.passId) ?? null;
   if (!offer) throw domainErrors.notFound();
-  const pricePaid = Math.round(booking.travelFee === 5000 ? 0 : 0);
-  // Стоимость пакета — из БД не берём: до договора R2/эквайринга продажа фиктивная (credit как в 07 B-03)
-  // Источник правды цены — прайс группы, поэтому фиксируем на момент покупки снимок скидки
+  const pricePaid = classPassOfferPrice(priceGuidance.groupClass.typical, offer.discountRate, offer.lessons);
   const now = input.now;
-  void input.idempotencyKey;
+  const existing = await db.classPass.findUnique({
+    where: { purchaseKey: input.idempotencyKey },
+    select: { id: true, expiresAt: true, lessonsRemaining: true, lessonsTotal: true },
+  });
+  if (existing) return existing;
   try {
     const expiresAt = passExpiresAt(now, offer.validityDays);
     const created = await db.classPass.create({
       data: {
         purchaserId: input.userId,
+        purchaseKey: input.idempotencyKey,
         templateId: offer.id,
         lessonsTotal: offer.lessons,
         lessonsRemaining: offer.lessons,
-        pricePaid: Math.round(0), // фактическая сумма из чекадо, до live-эквайринга — 0 (заглушка как в ui)
+        pricePaid,
         expiresAt,
       },
       select: { id: true, expiresAt: true, lessonsRemaining: true, lessonsTotal: true },
@@ -42,7 +44,18 @@ export async function purchaseClassPass(input: PurchaseClassPassInput) {
     void pricePaid;
     return created;
   } catch (error) {
-    if (isUniqueViolation(error)) throw domainErrors.validationFailed('classPass');
+    if (isUniqueViolation(error)) {
+      /*
+       * Две параллельные отправки могут обе не увидеть запись в первом
+       * findUnique. Уникальный ключ выигрывает гонку; возвращаем победившую
+       * покупку вместо ошибки, чтобы повторная отправка оставалась безопасной.
+       */
+      const raced = await db.classPass.findUnique({
+        where: { purchaseKey: input.idempotencyKey },
+        select: { id: true, expiresAt: true, lessonsRemaining: true, lessonsTotal: true },
+      });
+      if (raced) return raced;
+    }
     throw error;
   }
 }
@@ -61,14 +74,26 @@ export async function redeemClassPassForBooking(input: RedeemClassPassInput) {
     if (pass.lessonsRemaining <= 0) throw domainErrors.validationFailed('classPass');
     if (pass.expiresAt.getTime() <= input.now.getTime()) throw domainErrors.validationFailed('classPass');
 
-    const booking = await tx.booking.findUnique({ where: { id: input.bookingId }, select: { id: true, status: true, totalPrice: true, customerId: true } });
+    const booking = await tx.booking.findUnique({ where: { id: input.bookingId }, select: { id: true, status: true, totalPrice: true, customerId: true, lessonType: true, startsAt: true, updatedAt: true, travelFee: true, payments: { where: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, select: { id: true } } } });
     if (!booking || booking.customerId !== input.userId) throw domainErrors.forbidden();
-    if (booking.status !== 'CONFIRMED') throw domainErrors.validationFailed('bookingId');
+    if (booking.status !== 'CONFIRMED' || booking.lessonType !== 'GROUP' || booking.startsAt <= input.now || booking.payments.length > 0) throw domainErrors.validationFailed('bookingId');
+    // Lock the booking before reading redemption: cancellation and another
+    // redemption cannot both win against the same snapshot.
+    const locked = await tx.booking.updateMany({
+      where: { id: booking.id, status: 'CONFIRMED', updatedAt: booking.updatedAt },
+      data: { updatedAt: new Date() },
+    });
+    if (locked.count !== 1) throw domainErrors.validationFailed('bookingId');
 
     const existing = await tx.classPassRedemption.findUnique({ where: { bookingId: booking.id } });
     if (existing) throw domainErrors.validationFailed('bookingId');
 
-    await tx.classPass.update({ where: { id: pass.id }, data: { lessonsRemaining: { decrement: 1 } } });
+    const deducted = await tx.classPass.updateMany({
+      where: { id: pass.id, purchaserId: input.userId, lessonsRemaining: { gt: 0 }, expiresAt: { gt: input.now } },
+      data: { lessonsRemaining: { decrement: 1 } },
+    });
+    if (deducted.count !== 1) throw domainErrors.validationFailed('classPass');
+    await tx.booking.update({ where: { id: booking.id }, data: { discountAmount: { increment: Math.max(0, booking.totalPrice - booking.travelFee) }, totalPrice: booking.travelFee } });
     return tx.classPassRedemption.create({ data: { passId: pass.id, bookingId: booking.id }, select: { id: true } });
   });
   return result;

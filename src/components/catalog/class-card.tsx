@@ -32,7 +32,8 @@ import { Price } from '@/components/ui/price';
 import { SpotsLeft } from '@/components/ui/spots-left';
 import { routes } from '@/config';
 import { resolveMedia, type ClassCardItem } from '@/domain/content';
-import { danceStyleLabelKey, skillLevelLabelKey } from '@/domain/enums';
+import { danceStyleLabelKey, lessonTypeLabelKey, skillLevelLabelKey } from '@/domain/enums';
+import { disciplineLabelKey } from '@/domain/dancesport';
 import type { Locale } from '@/i18n/config';
 import { dateForWeekday } from '@/lib/format/weekday';
 import { cn } from '@/lib/utils';
@@ -48,6 +49,9 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
   const format = useFormatter();
 
   const soldOut = item.spotsLeft <= 0;
+  const directionLabel = item.danceSportDiscipline
+    ? t(disciplineLabelKey(item.danceSportDiscipline as never))
+    : t(danceStyleLabelKey(item.style as never));
 
   return (
     <article
@@ -114,7 +118,13 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
 
       <div className="flex flex-1 flex-col p-5">
         <p className="text-caption flex flex-wrap items-center gap-2 text-content-tertiary">
-          <span>{t(danceStyleLabelKey(item.style as never))}</span>
+          <span>{directionLabel}</span>
+          {item.lessonType && (
+            <>
+              <i aria-hidden className="size-1 shrink-0 rounded-full bg-border-strong" />
+              <span>{t(lessonTypeLabelKey(item.lessonType as never))}</span>
+            </>
+          )}
           <i aria-hidden className="size-1 shrink-0 rounded-full bg-border-strong" />
           <span>{t(skillLevelLabelKey(item.level as never))}</span>
           <i aria-hidden className="size-1 shrink-0 rounded-full bg-border-strong" />

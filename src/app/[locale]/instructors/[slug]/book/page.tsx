@@ -22,7 +22,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Link } from '@/i18n/routing';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { routes, site } from '@/config';
-import { getInstructorBookingContent } from '@/server/content/booking';
+import { getInstructorBookingContent, getUsableClassPasses } from '@/server/content/booking';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -86,6 +86,8 @@ export default async function InstructorBookingPage({ params, searchParams }: Pa
     );
   }
 
+  const classPasses = await getUsableClassPasses(new Date());
+
   return (
     <main id={site.mainContentId}>
       <div className="page-container inner-page">
@@ -97,7 +99,7 @@ export default async function InstructorBookingPage({ params, searchParams }: Pa
           })}
         </p>
 
-        <BookingScreen content={content} />
+        <BookingScreen content={{ ...content, classPasses }} />
       </div>
 
       <SiteFooter />

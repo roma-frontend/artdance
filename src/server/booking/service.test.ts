@@ -6,25 +6,29 @@ const mocks = vi.hoisted(() => ({
     danceClass: { findFirst: vi.fn(), findUnique: vi.fn() },
     classSession: { findFirst: vi.fn(), updateMany: vi.fn() },
     instructorProfile: { findUnique: vi.fn() },
+    classPass: { findFirst: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
+    classPassRedemption: { create: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
+    waitlistEntry: { findFirst: vi.fn(), update: vi.fn() },
     availabilityRule: { findMany: vi.fn() },
     availabilityException: { findMany: vi.fn() },
-    booking: { findUnique: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
+    booking: { findUnique: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn(), findUniqueOrThrow: vi.fn() },
     $transaction: vi.fn(),
   },
   notifyBookingConfirmed: vi.fn(),
+  notifyBookingCancelled: vi.fn(),
 }));
 
 vi.mock('@/lib/db', () => ({ db: mocks.db }));
 vi.mock('@/server/booking/notify', () => ({
   notifyBookingConfirmed: mocks.notifyBookingConfirmed,
-  notifyBookingCancelled: vi.fn(),
+  notifyBookingCancelled: mocks.notifyBookingCancelled,
   notifyWaitlistReady: vi.fn(),
 }));
 vi.mock('@/server/wallet/service', () => ({ creditWallet: vi.fn() }));
 
 import { booking } from '@/config/business';
 import { isPeakHour, isWeekendDay, priceForSlot } from '@/domain/dynamic-pricing';
-import { createBookingFromHold, rescheduleBooking } from './service';
+import { cancelBooking, createBookingFromHold, rescheduleBooking } from './service';
 
 const now = new Date('2026-10-01T08:00:00Z');
 const startsAt = new Date('2026-10-03T14:00:00Z');
@@ -53,6 +57,7 @@ beforeEach(() => {
   mocks.db.booking.create.mockResolvedValue({ id: 'booking-1', reference: 'tmp' });
   mocks.db.booking.update.mockResolvedValue({ id: 'booking-1', startsAt, endsAt });
   mocks.notifyBookingConfirmed.mockResolvedValue(undefined);
+  mocks.notifyBookingCancelled.mockResolvedValue(undefined);
 });
 
 describe('бронирование: цена только из БД', () => {
@@ -110,7 +115,7 @@ describe('бронь конкретного проведения', () => {
       data: expect.objectContaining({ sessionId: 'session-1', basePrice: 23_000, venueId: 'venue-2' }),
     }));
     expect(mocks.db.classSession.updateMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ id: 'session-1', bookedCount: { lt: 10 } }),
+      where: expect.objectContaining({ id: 'session-1', bookedCount: { lte: 9 } }),
     }));
   });
 
@@ -135,6 +140,107 @@ describe('бронь конкретного проведения', () => {
   });
 });
 
+describe('пакет на групповой брони', () => {
+  beforeEach(() => {
+    mocks.db.slotHold.findUnique.mockResolvedValue({ ...hold, sessionId: 'session-1' });
+    mocks.db.classSession.findFirst.mockResolvedValue({
+      id: 'session-1', classId: 'class-1', startsAt, endsAt, capacity: 10, bookedCount: 2,
+      danceClass: { instructorId: hold.instructorId },
+    });
+    mocks.db.danceClass.findUnique.mockResolvedValue({ id: 'class-1', price: 10_000, venueId: 'venue-1', lessonType: 'GROUP' });
+    mocks.db.classPass.findFirst.mockResolvedValue({ id: 'pass-1' });
+    mocks.db.classPass.updateMany.mockResolvedValue({ count: 1 });
+  });
+
+  it('списывает одно занятие атомарно и обнуляет сумму к оплате', async () => {
+    await createBookingFromHold({ holdId: hold.id, userId: hold.userId, useClassPass: true, now });
+    expect(mocks.db.booking.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ lessonType: 'GROUP', totalPrice: 0 }),
+    }));
+    expect(mocks.db.classPass.updateMany).toHaveBeenCalledWith({
+      where: { id: 'pass-1', purchaserId: hold.userId, lessonsRemaining: { gt: 0 }, expiresAt: { gt: now } },
+      data: { lessonsRemaining: { decrement: 1 } },
+    });
+    expect(mocks.db.classPassRedemption.create).toHaveBeenCalledWith({ data: { passId: 'pass-1', bookingId: 'booking-1' } });
+  });
+
+  it('не списывает пакет, когда последнее занятие уже использовано', async () => {
+    mocks.db.classPass.updateMany.mockResolvedValue({ count: 0 });
+    await expect(createBookingFromHold({ holdId: hold.id, userId: hold.userId, useClassPass: true, now }))
+      .rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    expect(mocks.db.classPassRedemption.create).not.toHaveBeenCalled();
+  });
+
+  it.each(['PRIVATE', 'PAIR'])('отклоняет пакет группы для формата %s', async (lessonType) => {
+    mocks.db.danceClass.findUnique.mockResolvedValue({ id: 'class-1', price: 10_000, venueId: 'venue-1', lessonType });
+    await expect(createBookingFromHold({ holdId: hold.id, userId: hold.userId, useClassPass: true, partnerName: lessonType === 'PAIR' ? 'Partner' : undefined, now }))
+      .rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    expect(mocks.db.classPass.findFirst).not.toHaveBeenCalled();
+  });
+});
+
+describe('парная бронь', () => {
+  beforeEach(() => {
+    mocks.db.slotHold.findUnique.mockResolvedValue({ ...hold, sessionId: 'pair-session' });
+    mocks.db.classSession.findFirst.mockResolvedValue({
+      id: 'pair-session', classId: 'pair-class', startsAt, endsAt, capacity: 4, bookedCount: 2,
+      danceClass: { instructorId: hold.instructorId },
+    });
+    mocks.db.danceClass.findUnique.mockResolvedValue({ id: 'pair-class', price: 20_000, venueId: 'venue-1', lessonType: 'PAIR' });
+  });
+  it('фиксирует партнёра и занимает два места без удвоения цены', async () => {
+    await createBookingFromHold({ holdId: hold.id, userId: hold.userId, partnerName: '  Partner  ', now });
+    expect(mocks.db.booking.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ participants: 2, partnerName: 'Partner', lessonType: 'PAIR', basePrice: 20_000 }) }));
+    expect(mocks.db.classSession.updateMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ bookedCount: { lte: 2 } }), data: { bookedCount: { increment: 2 } } }));
+  });
+  it('не принимает пару без имени партнёра', async () => {
+    await expect(createBookingFromHold({ holdId: hold.id, userId: hold.userId, now })).rejects.toMatchObject({ field: 'partnerName' });
+    expect(mocks.db.$transaction).not.toHaveBeenCalled();
+  });
+  it('не принимает пару на одно оставшееся место', async () => {
+    mocks.db.classSession.findFirst.mockResolvedValue({ id: 'pair-session', classId: 'pair-class', startsAt, endsAt, capacity: 4, bookedCount: 3, danceClass: { instructorId: hold.instructorId } });
+    await expect(createBookingFromHold({ holdId: hold.id, userId: hold.userId, partnerName: 'Partner', now })).rejects.toMatchObject({ code: 'CAPACITY_EXCEEDED' });
+    expect(mocks.db.booking.create).not.toHaveBeenCalled();
+  });
+});
+
+describe('безопасная отмена', () => {
+  beforeEach(() => {
+    mocks.db.booking.findUnique.mockResolvedValue({ id: 'booking-1', customerId: hold.userId, status: 'CONFIRMED', startsAt, totalPrice: 0, payments: [], sessionId: 'session-1', participants: 2, updatedAt: now, cancellationWindowHours: 24, lateCancellationRate: 0.5, rescheduleWindowHours: 24, rescheduleCount: 0, maxReschedules: 2 });
+    mocks.db.booking.updateMany.mockResolvedValue({ count: 1 });
+    mocks.db.booking.findUniqueOrThrow.mockResolvedValue({ id: 'booking-1', status: 'CANCELLED_BY_CUSTOMER', totalPrice: 0 });
+    mocks.db.classPassRedemption.findUnique.mockResolvedValue({ id: 'redemption-1', passId: 'pass-1' });
+    mocks.db.waitlistEntry.findFirst.mockResolvedValue(null);
+  });
+  it('освобождает обоих участников и возвращает одно списанное занятие', async () => {
+    await cancelBooking({ bookingId: 'booking-1', userId: hold.userId, now });
+    expect(mocks.db.classSession.updateMany).toHaveBeenCalledWith({ where: { id: 'session-1', bookedCount: { gte: 2 } }, data: { bookedCount: { decrement: 2 } } });
+    expect(mocks.db.classPass.update).toHaveBeenCalledWith({ where: { id: 'pass-1' }, data: { lessonsRemaining: { increment: 1 } } });
+  });
+  it('проигравшая параллельная отмена не возвращает места и занятия повторно', async () => {
+    mocks.db.booking.updateMany.mockResolvedValue({ count: 0 });
+    await expect(cancelBooking({ bookingId: 'booking-1', userId: hold.userId, now })).rejects.toMatchObject({ code: 'CANCELLATION_WINDOW_CLOSED' });
+    expect(mocks.db.classSession.updateMany).not.toHaveBeenCalled();
+    expect(mocks.db.classPass.update).not.toHaveBeenCalled();
+  });
+  it('не начисляет возврат за неоплаченную бронь', async () => {
+    const saved = await mocks.db.booking.findUnique();
+    mocks.db.booking.findUnique.mockResolvedValue({ ...saved, totalPrice: 20_000, payments: [] });
+    const result = await cancelBooking({ bookingId: 'booking-1', userId: hold.userId, now });
+    expect(result.refund).toBe(0);
+  });
+  it('учитывает уже оформленный возврат подтверждённой оплаты', async () => {
+    const saved = await mocks.db.booking.findUnique();
+    mocks.db.booking.findUnique.mockResolvedValue({ ...saved, totalPrice: 20_000, payments: [{ paidAmount: 20_000, refunds: [{ amount: 5_000 }] }] });
+    const result = await cancelBooking({ bookingId: 'booking-1', userId: hold.userId, now });
+    expect(result.refund).toBe(15_000);
+  });
+  it('поздняя отмена не возвращает занятие пакета', async () => {
+    await cancelBooking({ bookingId: 'booking-1', userId: hold.userId, now: new Date(startsAt.getTime() - 60_000) });
+    expect(mocks.db.classPass.update).not.toHaveBeenCalled();
+  });
+});
+
 describe('перенос: расписание только из БД', () => {
   beforeEach(() => {
     mocks.db.booking.findUnique.mockResolvedValue({
@@ -146,6 +252,7 @@ describe('перенос: расписание только из БД', () => {
       totalPrice: 17_000,
       basePrice: 17_000,
       travelFee: 0,
+      discountAmount: 0,
       cancellationWindowHours: 24,
       lateCancellationRate: 0.5,
       rescheduleWindowHours: 24,

@@ -78,6 +78,36 @@ enum SkillLevel {
   PROFESSIONAL
 }
 
+/**
+ * Спортивные программы и десять официальных дисциплин DanceSport.
+ */
+enum DanceSportProgram {
+  STANDARD
+  LATINE
+}
+
+enum DanceSportDiscipline {
+  SLOW_WALTZ
+  TANGO_STANDARD
+  VIENNESE_WALTZ
+  SLOW_FOXTROT
+  QUICKSTEP
+  SAMBA
+  CHACHACHA
+  RUMBA
+  PASODOBLE
+  JIVE
+}
+
+/**
+ * Формат занятия: группа, индивидуально или пара.
+ */
+enum LessonType {
+  GROUP
+  PRIVATE
+  PAIR
+}
+
 enum BookingStatus {
   PENDING
   CONFIRMED
@@ -147,6 +177,13 @@ enum ModerationStatus {
   REJECTED
 }
 
+enum CompetitionRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 enum LineItemType {
   CLASS_BOOKING
   PRIVATE_SESSION
@@ -169,7 +206,6 @@ enum EventType {
   COMPETITION
   CONCERT
 }
-
 
 enum VenueAmenity {
   MIRRORS
@@ -263,55 +299,58 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  sessions          Session[]
-  accounts          Account[]
-  notificationPrefs NotificationPreference[]
-  addresses         Address[]
-  instructor        InstructorProfile?
-  venueMemberships  VenueMember[]
-  bookings          Booking[]                @relation("BookingCustomer")
-  orders            Order[]
-  reviews           Review[]                 @relation("ReviewAuthor")
-  favorites         Favorite[]
-  cart              Cart?
-  enrollments       CourseEnrollment[]
-  subscriptions     Subscription[]
-  notifications     Notification[]
-  auditLogs         AuditLog[]               @relation("AuditActor")
-  waitlistEntries   WaitlistEntry[]
-  issuedGiftCards   GiftCard[]               @relation("GiftCardPurchaser")
-  savedSearches     SavedSearch[]
-  pushSubscriptions PushSubscription[]
+  sessions           Session[]
+  accounts           Account[]
+  notificationPrefs  NotificationPreference[]
+  addresses          Address[]
+  instructor         InstructorProfile?
+  venueMemberships   VenueMember[]
+  bookings           Booking[]                @relation("BookingCustomer")
+  orders             Order[]
+  reviews            Review[]                 @relation("ReviewAuthor")
+  favorites          Favorite[]
+  cart               Cart?
+  enrollments        CourseEnrollment[]
+  subscriptions      Subscription[]
+  classPasses        ClassPass[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]               @relation("AuditActor")
+  waitlistEntries    WaitlistEntry[]
+  issuedGiftCards    GiftCard[]               @relation("GiftCardPurchaser")
+  savedSearches      SavedSearch[]
+  pushSubscriptions  PushSubscription[]
   walletAccount      WalletAccount?
-  referralsMade      Referral[]          @relation("ReferralReferrer")
-  referralReceived   Referral?           @relation("ReferralReferee")
+  referralsMade      Referral[]               @relation("ReferralReferrer")
+  referralReceived   Referral?                @relation("ReferralReferee")
   reliabilityEvents  ReliabilityEvent[]
-  referralCode       String?             @unique
+  referralCode       String?                  @unique
   referredById       String?
-  reliabilityScore   Int                 @default(100)
+  reliabilityScore   Int                      @default(100)
   marketingConsentAt DateTime?
-  athleteProfile  AthleteProfile?
-  blogPosts         BlogPost[]
-  avatarMedia     MediaAsset?         @relation("UserAvatar")
+  athleteProfile     AthleteProfile?
+  blogPosts          BlogPost[]
+  avatarMedia        MediaAsset?              @relation("UserAvatar")
 
   @@index([role, isActive])
   @@index([createdAt])
 }
 
-/** Support inbox. Contact requests are retained so an operator can resolve the
- * issue from the product instead of losing the thread in a mailbox. */
+/**
+ * Support inbox. Contact requests are retained so an operator can resolve the
+ * issue from the product instead of losing the thread in a mailbox.
+ */
 model SupportTicket {
-  id          String   @id @default(cuid())
-  name        String
-  email       String
-  topic       String
-  message     String
-  locale      Locale
-  status      String   @default("OPEN")
-  resolvedAt  DateTime?
+  id           String    @id @default(cuid())
+  name         String
+  email        String
+  topic        String
+  message      String
+  locale       Locale
+  status       String    @default("OPEN")
+  resolvedAt   DateTime?
   resolvedById String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   replies SupportReply[]
 
@@ -320,13 +359,13 @@ model SupportTicket {
 }
 
 model SupportReply {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   ticketId  String
   actorId   String
   body      String
-  internal  Boolean  @default(false)
-  delivered Boolean  @default(false)
-  createdAt DateTime @default(now())
+  internal  Boolean       @default(false)
+  delivered Boolean       @default(false)
+  createdAt DateTime      @default(now())
   ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId, createdAt])
@@ -488,13 +527,14 @@ model InstructorProfile {
   payoutAccounts         PayoutAccount[]
   commissions            CommissionRecord[]
   reviews                Review[]
-  verificationDocuments VerificationDocument[]
-  tariffs              InstructorTariff[]
-  boostCampaigns        BoostCampaign[]
-  responseTimeMinutes   Int?
-  acceptanceRate        Decimal? @db.Decimal(5, 4)
-  rankingScore          Decimal? @db.Decimal(6, 3)
-  boostedUntil          DateTime?
+  verificationDocuments  VerificationDocument[]
+  tariffs                InstructorTariff[]
+  boostCampaigns         BoostCampaign[]
+  responseTimeMinutes    Int?
+  acceptanceRate         Decimal?                @db.Decimal(5, 4)
+  rankingScore           Decimal?                @db.Decimal(6, 3)
+  boostedUntil           DateTime?
+  danceSportDisciplines  DanceSportDiscipline[]  @default([])
 
   @@unique([userId], where: raw("\"deletedAt\" IS NULL"))
   @@unique([slug], where: raw("\"deletedAt\" IS NULL"))
@@ -534,14 +574,15 @@ model InstructorExperience {
 
 // Тарифная опция: «60 мин индивидуально», «90 мин в паре» и т.п.
 model PriceOption {
-  id              String  @id @default(cuid())
+  id              String     @id @default(cuid())
   instructorId    String?
   roomId          String?
   label           String
   durationMinutes Int
   price           Int
-  maxParticipants Int     @default(1)
-  isActive        Boolean @default(true)
+  maxParticipants Int        @default(1)
+  lessonType      LessonType @default(PRIVATE)
+  isActive        Boolean    @default(true)
 
   instructor InstructorProfile? @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   room       Room?              @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -551,16 +592,16 @@ model PriceOption {
 }
 
 model InstructorTariff {
-  id           String  @id @default(cuid())
-  instructorId String
-  name         String
-  pricePerHour Int
-  currencyCode String  @default("AMD")
+  id             String   @id @default(cuid())
+  instructorId   String
+  name           String
+  pricePerHour   Int
+  currencyCode   String   @default("AMD")
   // Доля платформы с этого тарифа (null = ставка из commission.instructorRate)
   commissionRate Decimal? @db.Decimal(5, 4)
-  isActive     Boolean @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   instructor InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
 
@@ -730,25 +771,27 @@ model SlotHold {
  */
 
 model DanceClass {
-  id              String     @id @default(cuid())
-  slug            String
-  instructorId    String
-  venueId         String?
-  title           String
-  description     String
-  style           DanceStyle
-  level           SkillLevel
-  durationMinutes Int
-  price           Int
-  capacity        Int
-  learningPoints  String[]
-  isTrending      Boolean    @default(false)
-  isActive        Boolean    @default(true)
-  ratingAverage   Decimal?   @db.Decimal(3, 2)
-  ratingCount     Int        @default(0)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  deletedAt       DateTime?
+  id                   String                @id @default(cuid())
+  slug                 String
+  instructorId         String
+  venueId              String?
+  title                String
+  description          String
+  style                DanceStyle
+  danceSportDiscipline DanceSportDiscipline?
+  lessonType           LessonType            @default(GROUP)
+  level                SkillLevel
+  durationMinutes      Int
+  price                Int
+  capacity             Int
+  learningPoints       String[]
+  isTrending           Boolean               @default(false)
+  isActive             Boolean               @default(true)
+  ratingAverage        Decimal?              @db.Decimal(3, 2)
+  ratingCount          Int                   @default(0)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  deletedAt            DateTime?
 
   instructor   InstructorProfile       @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   venue        Venue?                  @relation(fields: [venueId], references: [id])
@@ -820,21 +863,22 @@ model WaitlistEntry {
 }
 
 model Course {
-  id           String     @id @default(cuid())
-  slug         String
-  instructorId String
-  title        String
-  description  String
-  style        DanceStyle
-  level        SkillLevel
-  price        Int
-  coverKey     String?
-  totalMinutes Int        @default(0)
-  requirements String[]
-  isPublished  Boolean    @default(false)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
-  deletedAt    DateTime?
+  id                   String                @id @default(cuid())
+  slug                 String
+  instructorId         String
+  title                String
+  description          String
+  style                DanceStyle
+  danceSportDiscipline DanceSportDiscipline?
+  level                SkillLevel
+  price                Int
+  coverKey             String?
+  totalMinutes         Int                   @default(0)
+  requirements         String[]
+  isPublished          Boolean               @default(false)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  deletedAt            DateTime?
 
   instructor   InstructorProfile   @relation(fields: [instructorId], references: [id], onDelete: Cascade)
   translations CourseTranslation[]
@@ -915,10 +959,11 @@ model LessonProgress {
  */
 
 model Booking {
-  id        String         @id @default(cuid())
-  reference String         @unique
-  subject   BookingSubject
-  status    BookingStatus  @default(PENDING)
+  id         String         @id @default(cuid())
+  reference  String         @unique
+  subject    BookingSubject
+  lessonType LessonType     @default(GROUP)
+  status     BookingStatus  @default(PENDING)
 
   customerId   String
   instructorId String?
@@ -930,6 +975,7 @@ model Booking {
   startsAt        DateTime
   endsAt          DateTime
   participants    Int                   @default(1)
+  partnerName     String?
   locationOption  BookingLocationOption @default(STUDIO)
   customerAddress String?
 
@@ -958,30 +1004,30 @@ model Booking {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  customer   User               @relation("BookingCustomer", fields: [customerId], references: [id])
-  instructor InstructorProfile? @relation(fields: [instructorId], references: [id])
-  venue      Venue?             @relation(fields: [venueId], references: [id])
-  room       Room?              @relation(fields: [roomId], references: [id])
-  session    ClassSession?      @relation(fields: [sessionId], references: [id])
-  event      Event?             @relation(fields: [eventId], references: [id])
-  orderItem  OrderItem?
-  payments   Payment[]
-  reviews          Review[]
-  commission       CommissionRecord?
-  dispute          Dispute?
-  passRedemption   ClassPassRedemption?
-  series           RecurringSeries? @relation(fields: [seriesId], references: [id])
-  seriesId         String?
-  checkInAt        DateTime?
-  checkedInById    String?
-  requestExpiresAt DateTime?
-  consentVersion   String?
+  customer          User                 @relation("BookingCustomer", fields: [customerId], references: [id])
+  instructor        InstructorProfile?   @relation(fields: [instructorId], references: [id])
+  venue             Venue?               @relation(fields: [venueId], references: [id])
+  room              Room?                @relation(fields: [roomId], references: [id])
+  session           ClassSession?        @relation(fields: [sessionId], references: [id])
+  event             Event?               @relation(fields: [eventId], references: [id])
+  orderItem         OrderItem?
+  payments          Payment[]
+  reviews           Review[]
+  commission        CommissionRecord?
+  dispute           Dispute?
+  passRedemption    ClassPassRedemption?
+  series            RecurringSeries?     @relation(fields: [seriesId], references: [id])
+  seriesId          String?
+  checkInAt         DateTime?
+  checkedInById     String?
+  requestExpiresAt  DateTime?
+  consentVersion    String?
   // B-09 сплит: сколько участников делят счёт (null = без сплита)
   splitParticipants Int?
   // DS-04 профиль атлета (WDSF ID, разряд) — null у обычного клиента
-  athleteProfileId String?
+  athleteProfileId  String?
 
-  source           String?
+  source String?
 
   athleteProfile AthleteProfile? @relation(fields: [athleteProfileId], references: [id])
 
@@ -994,16 +1040,19 @@ model Booking {
 }
 
 model AthleteProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  wdsfId    String?  @unique
-  category  String?
-  clubName  String?
-  rank      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bookings  Booking[]
+  id                       String                    @id @default(cuid())
+  userId                   String                    @unique
+  wdsfId                   String?                   @unique
+  category                 String?
+  clubName                 String?
+  rank                     String?
+  birthDate                DateTime?
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings                 Booking[]
+  competitionRegistrations CompetitionRegistration[] @relation("CompetitionRegistrationAthlete")
+  partnerRegistrations     CompetitionRegistration[] @relation("CompetitionRegistrationPartner")
 }
 
 /**
@@ -1462,37 +1511,96 @@ model SubscriptionUsage {
  */
 
 model Event {
-  id           String      @id @default(cuid())
-  slug         String
-  type         EventType
-  title        String
-  description  String
-  style        DanceStyle?
-  level        SkillLevel  @default(ALL_LEVELS)
-  instructorId String?
-  venueId      String?
-  locationName String?
-  startsAt     DateTime
-  endsAt       DateTime
-  price        Int         @default(0)
-  capacity     Int
-  bookedCount  Int         @default(0)
-  coverKey     String?
-  isPublished  Boolean     @default(false)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  deletedAt    DateTime?
+  id                      String                @id @default(cuid())
+  slug                    String
+  type                    EventType
+  title                   String
+  description             String
+  style                   DanceStyle?
+  danceSportDiscipline    DanceSportDiscipline?
+  level                   SkillLevel            @default(ALL_LEVELS)
+  instructorId            String?
+  venueId                 String?
+  locationName            String?
+  startsAt                DateTime
+  endsAt                  DateTime
+  price                   Int                   @default(0)
+  capacity                Int
+  bookedCount             Int                   @default(0)
+  coverKey                String?
+  federation              String?
+  registrationOpenAt      DateTime?
+  registrationCloseAt     DateTime?
+  participationConditions String?
+  isPublished             Boolean               @default(false)
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  deletedAt               DateTime?
 
-  instructor   InstructorProfile? @relation(fields: [instructorId], references: [id])
-  venue        Venue?             @relation(fields: [venueId], references: [id])
-  translations EventTranslation[]
-  bookings     Booking[]
-  media        MediaAsset[]
+  instructor               InstructorProfile?        @relation(fields: [instructorId], references: [id])
+  venue                    Venue?                    @relation(fields: [venueId], references: [id])
+  translations             EventTranslation[]
+  bookings                 Booking[]
+  media                    MediaAsset[]
+  competitionCategories    CompetitionCategory[]
+  competitionRegistrations CompetitionRegistration[]
 
   @@unique([slug], where: raw("\"deletedAt\" IS NULL"))
   @@index([startsAt, isPublished])
   @@index([type, startsAt])
   @@index([deletedAt])
+}
+
+/**
+ * Категория/зачёт турнира, редактируемая независимо от события.
+ */
+model CompetitionCategory {
+  id         String                @id @default(cuid())
+  eventId    String
+  name       String
+  ageGroup   String
+  minAge     Int?
+  maxAge     Int?
+  program    DanceSportProgram
+  discipline DanceSportDiscipline?
+  conditions String?
+  entryFee   Int?
+  maxEntries Int?
+  sortOrder  Int                   @default(0)
+  isActive   Boolean               @default(true)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+
+  event         Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  registrations CompetitionRegistration[]
+
+  @@index([eventId, isActive, sortOrder])
+  @@index([program, discipline])
+}
+
+/**
+ * Заявка атлета на конкретную категорию конкретного турнира.
+ */
+model CompetitionRegistration {
+  id                      String                        @id @default(cuid())
+  eventId                 String
+  categoryId              String
+  athleteProfileId        String
+  partnerAthleteProfileId String?
+  partnerName             String?
+  status                  CompetitionRegistrationStatus @default(PENDING)
+  notes                   String?
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+
+  event                 Event               @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  category              CompetitionCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  athleteProfile        AthleteProfile      @relation("CompetitionRegistrationAthlete", fields: [athleteProfileId], references: [id], onDelete: Cascade)
+  partnerAthleteProfile AthleteProfile?     @relation("CompetitionRegistrationPartner", fields: [partnerAthleteProfileId], references: [id], onDelete: SetNull)
+
+  @@unique([eventId, categoryId, athleteProfileId])
+  @@index([eventId, status])
+  @@index([athleteProfileId, createdAt])
 }
 
 model EventTranslation {
@@ -1601,12 +1709,12 @@ model MediaAsset {
   focalPoint  String?
   sortOrder   Int     @default(0)
 
-  instructorId String?
-  venueId      String?
-  roomId       String?
-  classId      String?
-  productId    String?
-  eventId      String?
+  instructorId  String?
+  venueId       String?
+  roomId        String?
+  classId       String?
+  productId     String?
+  eventId       String?
   // Новые владельцы для upload-фаз (additive-only, deprecated строки остаются)
   bannerId      String? @unique
   blogPostId    String? @unique
@@ -1804,15 +1912,18 @@ model ApprovalRequest {
   @@index([requestedById])
 }
 
-/* ── P0 модели из 07 §6 (wave 0b) ── */
+/**
+ * ── P0 модели из 07 §6 (wave 0b) ──
+ */
 model ConsentRecord {
-  id        String   @id @default(cuid())
-  userId    String?
-  email     String
+  id         String   @id @default(cuid())
+  userId     String?
+  email      String
   documentId String
-  version   String
-  ipAddress String?
-  createdAt DateTime @default(now())
+  version    String
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
   @@unique([email, documentId, version])
   @@index([userId])
 }
@@ -1829,6 +1940,7 @@ model InstructorApplication {
   payload   Json?
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
+
   @@index([status, createdAt])
 }
 
@@ -1839,6 +1951,7 @@ model SavedSearch {
   scope     String   @default("all")
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([userId, query, scope])
   @@index([userId])
 }
@@ -1851,6 +1964,7 @@ model PushSubscription {
   auth      String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }
 
@@ -1884,6 +1998,7 @@ model ShortLink {
   clicks    Int       @default(0)
   createdAt DateTime  @default(now())
   expiresAt DateTime?
+
   @@index([code])
 }
 
@@ -1896,14 +2011,15 @@ model FeatureFlagOverride {
 }
 
 model VerificationDocument {
-  id           String           @id @default(cuid())
+  id           String            @id @default(cuid())
   instructorId String
   type         String
   storageKey   String
-  status       ModerationStatus @default(PENDING)
+  status       ModerationStatus  @default(PENDING)
   note         String?
-  createdAt    DateTime         @default(now())
+  createdAt    DateTime          @default(now())
   instructor   InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
   @@index([instructorId, status])
 }
 
@@ -1917,27 +2033,31 @@ model Dispute {
   booking   Booking          @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 }
 
-/* ── P1/P2 модели из 07 §6 (Wave — монетизация, корпоратив, продвижение) ── */
+/**
+ * ── P1/P2 модели из 07 §6 (Wave — монетизация, корпоратив, продвижение) ──
+ */
 
 model ClassPass {
-  id               String    @id @default(cuid())
+  id               String                @id @default(cuid())
   purchaserId      String
+  purchaseKey      String?               @unique
   templateId       String?
   lessonsTotal     Int
   lessonsRemaining Int
   pricePaid        Int
   expiresAt        DateTime
-  createdAt        DateTime  @default(now())
+  createdAt        DateTime              @default(now())
+  purchaser        User                  @relation(fields: [purchaserId], references: [id], onDelete: Cascade)
   redemptions      ClassPassRedemption[]
 
   @@index([purchaserId, expiresAt])
 }
 
 model ClassPassRedemption {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   passId    String
-  bookingId String   @unique
-  createdAt DateTime @default(now())
+  bookingId String    @unique
+  createdAt DateTime  @default(now())
   pass      ClassPass @relation(fields: [passId], references: [id], onDelete: Cascade)
   booking   Booking   @relation(fields: [bookingId], references: [id])
 
@@ -1945,48 +2065,48 @@ model ClassPassRedemption {
 }
 
 model RecurringSeries {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   customerId   String
   instructorId String?
   pattern      Json
   maxWeeks     Int
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
   bookings     Booking[]
 
   @@index([customerId, createdAt])
 }
 
 model WalletAccount {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  balance   Int      @default(0)
-  updatedAt DateTime @updatedAt
+  id        String        @id @default(cuid())
+  userId    String        @unique
+  balance   Int           @default(0)
+  updatedAt DateTime      @updatedAt
   entries   WalletEntry[]
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model WalletEntry {
-  id        String   @id @default(cuid())
+  id        String        @id @default(cuid())
   accountId String
   amount    Int
   kind      String
   refId     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
   account   WalletAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([accountId, createdAt])
 }
 
 model Referral {
-  id               String    @id @default(cuid())
-  referrerId       String
-  refereeId        String?   @unique
-  code             String
-  status           ModerationStatus @default(PENDING)
-  bonusPaidAt      DateTime?
-  createdAt        DateTime  @default(now())
-  referrer         User      @relation("ReferralReferrer", fields: [referrerId], references: [id])
-  referee          User?     @relation("ReferralReferee", fields: [refereeId], references: [id])
+  id          String           @id @default(cuid())
+  referrerId  String
+  refereeId   String?          @unique
+  code        String
+  status      ModerationStatus @default(PENDING)
+  bonusPaidAt DateTime?
+  createdAt   DateTime         @default(now())
+  referrer    User             @relation("ReferralReferrer", fields: [referrerId], references: [id])
+  referee     User?            @relation("ReferralReferee", fields: [refereeId], references: [id])
 
   @@unique([referrerId, code])
   @@index([code])
@@ -1994,22 +2114,22 @@ model Referral {
 }
 
 model CorporateAccount {
-  id        String   @id @default(cuid())
-  name      String
+  id           String    @id @default(cuid())
+  name         String
   contactEmail String
-  balance   Int      @default(0)
-  createdAt DateTime @default(now())
-  invoices  Invoice[]
+  balance      Int       @default(0)
+  createdAt    DateTime  @default(now())
+  invoices     Invoice[]
 }
 
 model Invoice {
-  id                 String   @id @default(cuid())
+  id                 String            @id @default(cuid())
   corporateAccountId String?
-  orderId            String?  @unique
-  number             String   @unique
+  orderId            String?           @unique
+  number             String            @unique
   amount             Int
-  status             PaymentStatus @default(PENDING)
-  issuedAt           DateTime @default(now())
+  status             PaymentStatus     @default(PENDING)
+  issuedAt           DateTime          @default(now())
   paidAt             DateTime?
   corporateAccount   CorporateAccount? @relation(fields: [corporateAccountId], references: [id])
   order              Order?            @relation(fields: [orderId], references: [id])
@@ -2018,13 +2138,13 @@ model Invoice {
 }
 
 model BoostCampaign {
-  id           String           @id @default(cuid())
+  id           String            @id @default(cuid())
   instructorId String
-  status       ModerationStatus @default(PENDING)
+  status       ModerationStatus  @default(PENDING)
   startsAt     DateTime
   endsAt       DateTime
   bidAmount    Int
-  createdAt    DateTime         @default(now())
+  createdAt    DateTime          @default(now())
   instructor   InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
 
   @@index([instructorId, status])
@@ -2043,15 +2163,15 @@ model ReliabilityEvent {
 }
 
 model Banner {
-  id        String   @id @default(cuid())
-  key       String   @unique
+  id        String      @id @default(cuid())
+  key       String      @unique
   title     String
   imageKey  String?
   href      String?
-  order     Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  order     Int         @default(0)
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   adSlots   AdSlot[]
   media     MediaAsset?
 }
@@ -2071,17 +2191,17 @@ model AdSlot {
 
 // DS-03 импорт календаря WDSF: сырой календарь до нормализации в Event
 model WdsfEvent {
-  id          String   @id @default(cuid())
-  externalId  String   @unique
-  title       String
-  city        String?
-  country     String?
-  startsAt    DateTime
-  endsAt      DateTime?
-  url         String?
-  rawPayload  Json?
-  importedAt  DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String    @id @default(cuid())
+  externalId String    @unique
+  title      String
+  city       String?
+  country    String?
+  startsAt   DateTime
+  endsAt     DateTime?
+  url        String?
+  rawPayload Json?
+  importedAt DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   @@index([startsAt])
 }
@@ -2104,27 +2224,27 @@ model JobRun {
  * ─════════════════════════ БЛОГ ═════════════════════════
  */
 model BlogPost {
-  id              String   @id @default(cuid())
-  slug            String
-  title           String
-  excerpt         String
-  body            String   @db.Text
-  coverKey        String?
-  coverAlt        String?
-  category        String?
-  tags            String[] @default([])
-  authorName      String?
-  authorId        String?
-  readingMinutes  Int?
-  viewCount       Int      @default(0)
-  isPublished     Boolean  @default(false)
-  publishedAt     DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  deletedAt       DateTime?
+  id             String    @id @default(cuid())
+  slug           String
+  title          String
+  excerpt        String
+  body           String    @db.Text
+  coverKey       String?
+  coverAlt       String?
+  category       String?
+  tags           String[]  @default([])
+  authorName     String?
+  authorId       String?
+  readingMinutes Int?
+  viewCount      Int       @default(0)
+  isPublished    Boolean   @default(false)
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
 
   translations BlogPostTranslation[]
-  author       User? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  author       User?                 @relation(fields: [authorId], references: [id], onDelete: SetNull)
   media        MediaAsset?
 
   @@unique([slug], where: raw("\"deletedAt\" IS NULL"))

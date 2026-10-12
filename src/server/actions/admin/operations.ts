@@ -288,6 +288,7 @@ export const cancelBooking = authedAction
         rescheduleWindowHours: true,
         maxReschedules: true,
         rescheduleCount: true,
+        updatedAt: true, sessionId: true, participants: true,
         payments: { where: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, select: { paidAmount: true } },
       },
     });
@@ -317,14 +318,31 @@ export const cancelBooking = authedAction
     const fee = outcome.kind === 'fee' ? outcome.amount : 0;
     const refund = outcome.kind === 'forbidden' ? 0 : refundAmountFor(outcome, paid);
 
-    const after = await db.booking.update({
-      where: { id: parsedInput.id },
-      data: {
-        status: parsedInput.byProvider ? 'CANCELLED_BY_PROVIDER' : 'CANCELLED_BY_CUSTOMER',
-        cancelledAt: new Date(),
-        cancellationReason: parsedInput.reason,
-      },
-      select: { id: true, status: true, cancelledAt: true },
+    if (booking.status === 'CANCELLED_BY_CUSTOMER' || booking.status === 'CANCELLED_BY_PROVIDER') throw domainErrors.validationFailed('status');
+    const after = await db.$transaction(async (tx) => {
+      const claimed = await tx.booking.updateMany({
+        where: { id: booking.id, status: booking.status, updatedAt: booking.updatedAt },
+        data: {
+          status: parsedInput.byProvider ? 'CANCELLED_BY_PROVIDER' : 'CANCELLED_BY_CUSTOMER',
+          cancelledAt: new Date(), cancellationReason: parsedInput.reason,
+        },
+      });
+      if (claimed.count !== 1) throw domainErrors.validationFailed('status');
+      if (booking.sessionId && (booking.status === 'PENDING' || booking.status === 'CONFIRMED')) {
+        const released = await tx.classSession.updateMany({
+          where: { id: booking.sessionId, bookedCount: { gte: booking.participants } },
+          data: { bookedCount: { decrement: booking.participants } },
+        });
+        if (released.count !== 1) throw domainErrors.validationFailed('sessionId');
+      }
+      if (outcome.kind === 'free' || (parsedInput.byProvider && outcome.kind !== 'forbidden')) {
+        const redemption = await tx.classPassRedemption.findUnique({ where: { bookingId: booking.id } });
+        if (redemption) {
+          await tx.classPass.update({ where: { id: redemption.passId }, data: { lessonsRemaining: { increment: 1 } } });
+          await tx.classPassRedemption.delete({ where: { id: redemption.id } });
+        }
+      }
+      return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, select: { id: true, status: true, cancelledAt: true } });
     });
 
     await recordAudit({

@@ -28,6 +28,7 @@
 import 'server-only';
 
 import { db } from '@/lib/db';
+import { getCaller } from '@/lib/auth/guards';
 import { defaultLocale, type Locale } from '@/i18n/config';
 import { slotBlockingBookingStatuses } from '@/domain/enums';
 import { publicInstructorWhere, instructorSelect, toInstructorCard } from '../queries/instructors';
@@ -98,6 +99,10 @@ export interface BookingContent {
   venueSlug: string | null;
   /** Групповой календарь: только реальные проведения выбранного занятия. */
   sessionBooking?: boolean;
+  /** Формат занятия из каталога. */
+  lessonType?: 'GROUP' | 'PRIVATE' | 'PAIR';
+  /** Активные пакеты текущего клиента, если он вошёл в аккаунт. */
+  classPasses?: readonly { id: string; lessonsRemaining: number; expiresAt: string }[];
 }
 
 /** Публичный инструктор существует, но занятие для записи ещё не опубликовано. */
@@ -117,7 +122,7 @@ async function bookingSubject(slug: string, locale: Locale = defaultLocale, clas
     where: { ...publicClassWhere, instructorId: instructor.id, ...(classSlug ? { slug: classSlug } : {}) },
     orderBy: { id: 'asc' },
     select: {
-      id: true, slug: true, title: true, price: true, durationMinutes: true,
+      id: true, slug: true, title: true, price: true, durationMinutes: true, lessonType: true,
       translations: { where: { locale }, select: { title: true } },
       venue: { select: { slug: true, name: true, deletedAt: true,
         translations: { where: { locale }, select: { name: true } } } },
@@ -252,7 +257,8 @@ export async function getInstructorBookingContent(
       const occupied = [...sessionBookings.filter(row => row.sessionId !== session.id), ...activeHolds]
         .some(row => row.startsAt.getTime() < session.endsAt.getTime() + bufferMs
           && row.endsAt.getTime() > session.startsAt.getTime() - bufferMs);
-      const available = session.bookedCount < session.capacity && !occupied;
+      const participants = classItem.lessonType === 'PAIR' ? 2 : 1;
+      const available = session.bookedCount + participants <= session.capacity && !occupied;
       day.slots = [...day.slots, {
         start: slotClock(session.startsAt), available,
         sessionId: session.id, endIso: session.endsAt.toISOString(),
@@ -267,7 +273,7 @@ export async function getInstructorBookingContent(
       studioName: venue?.translations[0]?.name ?? venue?.name ?? '',
       venueSlug: venue?.slug ?? null,
       durationMinutes: classItem.durationMinutes, fee: classItem.price,
-      acceptsTravel: false, acceptsOnline: false, sessionBooking: true,
+       acceptsTravel: false, acceptsOnline: false, sessionBooking: true, lessonType: classItem.lessonType,
       days, initialDateKey: initial?.dateKey ?? null, preselectedSlot: preselectedSlotFor(initial),
     };
   }
@@ -319,9 +325,22 @@ export async function getInstructorBookingContent(
     acceptsTravel: instructor.acceptsTravel,
     // Онлайн-формат не объявлен в схеме: не обещаем его вместо данных.
     acceptsOnline: false,
-    instructorId: instructor.id,
-    venueSlug: venue?.slug ?? null,
+     instructorId: instructor.id,
+     venueSlug: venue?.slug ?? null,
+      lessonType: classSlug ? classItem.lessonType : 'PRIVATE',
   };
+}
+
+/** Пакеты доступны только после входа и никогда не кешируются вместе с публичным каталогом. */
+export async function getUsableClassPasses(now: Date = new Date()) {
+  const caller = await getCaller();
+  if (!caller) return [] as const;
+  const rows = await db.classPass.findMany({
+    where: { purchaserId: caller.id, lessonsRemaining: { gt: 0 }, expiresAt: { gt: now } },
+    orderBy: [{ expiresAt: 'asc' }, { lessonsRemaining: 'asc' }],
+    select: { id: true, lessonsRemaining: true, expiresAt: true },
+  });
+  return rows.map((row) => ({ ...row, expiresAt: row.expiresAt.toISOString() }));
 }
 
 /**

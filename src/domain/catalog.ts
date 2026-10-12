@@ -23,9 +23,11 @@ import { keyIncludes, searchKey } from '@/lib/search/normalize';
 import {
   danceStyleFromSlug,
   danceStyleSlug,
+  danceSportDisciplines,
   eventTypes,
   skillLevels,
   type DanceStyle,
+  type DanceSportDiscipline,
   type EventType,
   type SkillLevel,
 } from './enums';
@@ -155,6 +157,7 @@ function comparatorFor<T>(
 export interface CatalogQuery {
   q?: string;
   style?: DanceStyle;
+  discipline?: DanceSportDiscipline;
   level?: SkillLevel;
   /**
    * Тип события (афиша). Нужен разделам DanceSport-навигации: «соревнования» и
@@ -208,6 +211,7 @@ export function parseCatalogQuery(params: RawSearchParams): CatalogQuery {
   const rawSort = first(params.sort);
   const rawStyle = first(params.style);
   const rawLevel = first(params.level)?.toUpperCase().replace(/-/g, '_');
+  const rawDiscipline = first(params.discipline)?.toUpperCase().replace(/-/g, '_');
   /** Мусор в URL отбрасывается молча: раздел с битым `type` — это афиша без фильтра. */
   const rawType = first(params.type)?.toUpperCase().replace(/-/g, '_');
   const rawQuery = first(params.q)?.trim();
@@ -235,6 +239,9 @@ export function parseCatalogQuery(params: RawSearchParams): CatalogQuery {
       ? { q: rawQuery.slice(0, limits.search.maxQueryLength) }
       : {}),
     ...(rawStyle ? withStyle(rawStyle) : {}),
+    ...(rawDiscipline && (danceSportDisciplines as readonly string[]).includes(rawDiscipline)
+      ? { discipline: rawDiscipline as DanceSportDiscipline }
+      : {}),
     ...(rawLevel && (skillLevels as readonly string[]).includes(rawLevel)
       ? { level: rawLevel as SkillLevel }
       : {}),
@@ -268,6 +275,7 @@ export function hasActiveFilters(query: CatalogQuery): boolean {
   return (
     query.q !== undefined ||
     query.style !== undefined ||
+    query.discipline !== undefined ||
     query.level !== undefined ||
     query.district !== undefined ||
     query.category !== undefined ||
@@ -282,6 +290,7 @@ export function activeFilterCount(query: CatalogQuery): number {
   return [
     query.q,
     query.style,
+    query.discipline,
     query.level,
     query.district,
     query.category,
@@ -306,6 +315,7 @@ export function catalogQueryToParams(
   return {
     q: query.q,
     style: query.style ? danceStyleSlug(query.style) : undefined,
+    discipline: query.discipline ? query.discipline.toLowerCase().replace(/_/g, '-') : undefined,
     level: query.level ? skillLevelSlug(query.level) : undefined,
     district: query.district,
     category: query.category,

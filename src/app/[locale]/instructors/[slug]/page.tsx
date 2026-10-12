@@ -48,6 +48,7 @@ import { RatingStars } from '@/components/ui/rating-stars';
 import { booking, routes, site } from '@/config';
 import { resolveMedia } from '@/domain/content';
 import { danceStyleLabelKey } from '@/domain/enums';
+import { disciplineLabelKey } from '@/domain/dancesport';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { breadcrumbSchema, personSchema, type Crumb } from '@/lib/seo/jsonld';
@@ -211,6 +212,19 @@ export default async function InstructorProfilePage({ params }: PageProps) {
                 ))}
               </ul>
             </section>
+
+            {item.danceSportDisciplines && item.danceSportDisciplines.length > 0 && (
+              <section className="mb-12">
+                <h2 className="text-heading-3 mb-4">{tRoot('footer.danceSportDisciplinesLabel')}</h2>
+                <ul className="flex flex-wrap gap-2">
+                  {item.danceSportDisciplines.map((discipline) => (
+                    <li key={discipline}>
+                      <Badge size="md">{tRoot(disciplineLabelKey(discipline as never))}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {item.specializations.length > 0 && (
               <section className="mb-12">

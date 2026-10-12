@@ -60,6 +60,9 @@ interface BookingSummaryProps {
   /** Отправка идёт: кнопка блокируется, чтобы не создать две брони. */
   submitting?: boolean;
   className?: string;
+  partnerName?: string;
+  participants?: number;
+  incomplete?: boolean;
 }
 
 /** Прочерк вместо пустой строки: незаполненное поле должно быть видно. */
@@ -79,6 +82,9 @@ export function BookingSummary({
   onContinue,
   submitting = false,
   className,
+  partnerName,
+  participants = 1,
+  incomplete = false,
 }: BookingSummaryProps) {
   const t = useTranslations();
   const format = useFormatter();
@@ -86,7 +92,7 @@ export function BookingSummary({
   const [holdState, setHoldState] = useState<CountdownState>('running');
   const holdExpired = Boolean(holdExpiresAt) && holdState === 'expired';
 
-  const complete = Boolean(date && startTime && fee !== undefined);
+  const complete = Boolean(date && startTime && fee !== undefined && !incomplete);
   const total = fee === undefined ? undefined : add(fee, travelFee);
 
   const locationLabel = location
@@ -115,6 +121,7 @@ export function BookingSummary({
       <dl className="flex flex-col">
         <SummaryRow label={t('booking.summaryClass')} value={classTitle} />
         <SummaryRow label={t('booking.summaryInstructor')} value={instructorName} />
+        {participants === 2 && <SummaryRow label={t('booking.partnerName')} value={partnerName || undefined} />}
         <SummaryRow
           label={t('booking.summaryDate')}
           value={date ? format.dateTime(date, 'dayWithWeekday') : undefined}

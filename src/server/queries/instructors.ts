@@ -62,6 +62,7 @@ export const instructorSelect = {
   headline: true,
   bio: true,
   styles: true,
+  danceSportDisciplines: true,
   specializations: true,
   languages: true,
   yearsExperience: true,
@@ -94,6 +95,7 @@ export interface InstructorRow {
   headline: string;
   bio: string;
   styles: DanceStyle[];
+  danceSportDisciplines?: readonly string[];
   specializations: string[];
   languages?: InstructorCardItem['languages'];
   yearsExperience: number;
@@ -118,6 +120,7 @@ export function toInstructorCard(row: InstructorRow): InstructorCardItem {
     name: row.user.name,
     headline: row.headline,
     styles: row.styles,
+    ...(row.danceSportDisciplines?.length ? { danceSportDisciplines: row.danceSportDisciplines } : {}),
     languages: row.languages,
     yearsExperience: row.yearsExperience,
     hourlyRateFrom: row.hourlyRateFrom,
@@ -307,7 +310,8 @@ export const getInstructorDetail = defineQuery({
     return {
       ...toInstructorCard(row),
       bio: row.bio,
-      specializations: row.specializations,
+       specializations: row.specializations,
+       ...(row.danceSportDisciplines?.length ? { danceSportDisciplines: row.danceSportDisciplines } : {}),
       studentCount: row.studentCount,
       acceptsTravel: row.acceptsTravel,
       experience: row.experiences.map((entry) => ({

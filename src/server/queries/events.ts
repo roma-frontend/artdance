@@ -26,7 +26,7 @@ import {
   type CatalogQuery,
   type CatalogSort,
 } from '@/domain/catalog';
-import type { CatalogPage, EventCardItem, EventDetail } from '@/domain/content';
+import type { CatalogPage, CompetitionCategoryItem, EventCardItem, EventDetail } from '@/domain/content';
 import type { EventType } from '@/domain/enums';
 import type { Prisma } from '@/generated/prisma/client';
 import { db } from '@/lib/db';
@@ -42,6 +42,11 @@ export const eventSelect = {
   type: true,
   title: true,
   description: true,
+  danceSportDiscipline: true,
+  federation: true,
+  registrationOpenAt: true,
+  registrationCloseAt: true,
+  participationConditions: true,
   locationName: true,
   startsAt: true,
   endsAt: true,
@@ -53,6 +58,23 @@ export const eventSelect = {
   venue: {
     select: { slug: true, name: true, district: true, latitude: true, longitude: true },
   },
+  competitionCategories: {
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      ageGroup: true,
+      minAge: true,
+      maxAge: true,
+      program: true,
+      discipline: true,
+      conditions: true,
+      entryFee: true,
+      maxEntries: true,
+      _count: { select: { registrations: true } },
+    },
+  },
 } as const;
 
 export interface EventRow {
@@ -60,6 +82,11 @@ export interface EventRow {
   type: EventType;
   title: string;
   description: string;
+  danceSportDiscipline: string | null;
+  federation: string | null;
+  registrationOpenAt: Date | null;
+  registrationCloseAt: Date | null;
+  participationConditions: string | null;
   locationName: string | null;
   startsAt: Date;
   endsAt: Date;
@@ -75,6 +102,19 @@ export interface EventRow {
     latitude: number;
     longitude: number;
   } | null;
+  competitionCategories: Array<{
+    id: string;
+    name: string;
+    ageGroup: string;
+    minAge: number | null;
+    maxAge: number | null;
+    program: string;
+    discipline: string | null;
+    conditions: string | null;
+    entryFee: number | null;
+    maxEntries: number | null;
+    _count: { registrations: number };
+  }>;
 }
 
 /** Опубликованные и ещё не закончившиеся. */
@@ -90,6 +130,7 @@ export function toEventCard(row: EventRow): EventCardItem {
     slug: row.slug,
     title: row.title,
     type: row.type,
+    ...(row.danceSportDiscipline ? { danceSportDiscipline: row.danceSportDiscipline } : {}),
     startsAt: row.startsAt.toISOString(),
     startTime: formatClock(start.minutesOfDay),
     endTime: formatClock(end.minutesOfDay),
@@ -213,6 +254,28 @@ export const getEventDetail = defineQuery({
       ...toEventCard(row),
       description: row.description,
       capacity: row.capacity,
+      ...(row.federation ? { federation: row.federation } : {}),
+      ...(row.registrationOpenAt ? { registrationOpenAt: row.registrationOpenAt.toISOString() } : {}),
+      ...(row.registrationCloseAt ? { registrationCloseAt: row.registrationCloseAt.toISOString() } : {}),
+      ...(row.participationConditions ? { participationConditions: row.participationConditions } : {}),
+      ...(row.competitionCategories.length > 0
+        ? {
+            competitionCategories: row.competitionCategories.map((category): CompetitionCategoryItem => ({
+              id: category.id,
+              name: category.name,
+              ageGroup: category.ageGroup,
+              ...(category.minAge !== null ? { minAge: category.minAge } : {}),
+              ...(category.maxAge !== null ? { maxAge: category.maxAge } : {}),
+              program: category.program,
+              ...(category.discipline ? { discipline: category.discipline } : {}),
+              ...(category.conditions ? { conditions: category.conditions } : {}),
+              ...(category.entryFee !== null ? { entryFee: category.entryFee } : {}),
+              ...(category.maxEntries !== null
+                ? { spotsLeft: Math.max(0, category.maxEntries - category._count.registrations), maxEntries: category.maxEntries }
+                : {}),
+            })),
+          }
+        : {}),
       ...(row.venue
         ? {
             venueSlug: row.venue.slug,

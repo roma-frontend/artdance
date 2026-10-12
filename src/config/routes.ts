@@ -29,6 +29,7 @@ export const adminResources = [
   'categories',
   'variants',
   'events',
+  'competition-categories',
   'courses',
   'lessons',
   'promo-codes',
@@ -337,6 +338,8 @@ export interface ListingParams {
    */
   q?: string;
   style?: string;
+  /** Точная спортивная дисциплина: quickstep, samba, rumba и т.д. */
+  discipline?: string;
   level?: string;
   /**
    * Район города, а не город: платформа работает в Ереване, и «Kentron» —

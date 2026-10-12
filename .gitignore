@@ -24,6 +24,7 @@ test-results/
 .claude/
 .freebuff/
 .ci-playwright-report/
+.local-ci/
 
 # ОС и редакторы
 .DS_Store

@@ -7,7 +7,7 @@ import { checkRateLimit, clientIdentifier, rateLimitHeaders } from '@/lib/securi
 import { createBookingFromHold } from '@/server/booking/service';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-const schema = z.object({ holdId: z.string().min(1), locationOption: z.enum(['STUDIO','CUSTOMER_LOCATION','ONLINE']).optional(), customerAddress: z.string().max(240).optional().nullable(), anonymousId: z.string().min(1).optional().nullable() });
+const schema = z.object({ holdId: z.string().min(1), locationOption: z.enum(['STUDIO','CUSTOMER_LOCATION','ONLINE']).optional(), customerAddress: z.string().max(240).optional().nullable(), anonymousId: z.string().min(1).optional().nullable(), useClassPass: z.boolean().optional(), partnerName: z.string().trim().min(1).max(160).optional() });
 function json(body: object, status: number, extra: Record<string,string> = {}) { return NextResponse.json(body, { status, headers: { 'Cache-Control': cacheControl.none, 'X-Content-Type-Options':'nosniff', ...extra } }); }
 export async function POST(request: Request) {
   const limit = await checkRateLimit('bookingHold', clientIdentifier(request.headers));
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const anonymousId = parsed.data.anonymousId ?? null;
   if (!userId && !anonymousId) return json({ error:'UNAUTHORIZED', messageKey:'errors.unauthorized.description' }, 401);
   try {
-    const result = await createBookingFromHold({ holdId: parsed.data.holdId, userId, anonymousId, locationOption: parsed.data.locationOption, customerAddress: parsed.data.customerAddress ?? null, now: new Date() });
+    const result = await createBookingFromHold({ holdId: parsed.data.holdId, userId, anonymousId, locationOption: parsed.data.locationOption, customerAddress: parsed.data.customerAddress ?? null, useClassPass: parsed.data.useClassPass === true, partnerName: parsed.data.partnerName, now: new Date() });
     return json({ booking: { id: result.id, reference: result.reference, totalPrice: result.totalPrice, startsAt: result.startsAt.toISOString(), endsAt: result.endsAt.toISOString() } }, 201);
   } catch (e) {
     if (isDomainError(e)) return json({ error: e.code, messageKey: e.messageKey, params: e.params, field: e.field }, httpStatusFor(e.code));

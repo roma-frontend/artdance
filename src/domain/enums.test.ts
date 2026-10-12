@@ -11,6 +11,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   bookingStatuses,
+  competitionRegistrationStatuses,
+  danceSportDisciplines,
+  danceSportPrograms,
   danceStyleAboutKey,
   danceStyleFromSlug,
   danceStyleGearKey,
@@ -21,6 +24,7 @@ import {
   danceStylesMatchingTerm,
   eventTypes,
   hasAtLeastRole,
+  lessonTypes,
   moderationStatuses,
   orderStatuses,
   paymentMethods,
@@ -51,6 +55,10 @@ const pairs: Array<[string, readonly string[]]> = [
   ['UserRole', userRoles],
   ['DanceStyle', danceStyles],
   ['SkillLevel', skillLevels],
+  ['DanceSportProgram', danceSportPrograms],
+  ['DanceSportDiscipline', danceSportDisciplines],
+  ['CompetitionRegistrationStatus', competitionRegistrationStatuses],
+  ['LessonType', lessonTypes],
   ['BookingStatus', bookingStatuses],
   ['PaymentStatus', paymentStatuses],
   ['PaymentMethod', paymentMethods],

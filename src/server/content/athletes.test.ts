@@ -44,3 +44,33 @@ it('без опыта не выдумывает стаж или медали и 
     headline: 'Teacher', competitionYears: 0, bestResult: 'PARTICIPANT',
   });
 });
+
+it('использует структурированные дисциплины и поддерживает Latine', async () => {
+  findMany.mockResolvedValue([{
+    ...profile('athlete', 2018),
+    specializations: ['Quickstep'],
+    danceSportDisciplines: ['RUMBA', 'JIVE'],
+  }]);
+
+  expect((await getAthletes('en'))[0]?.disciplines).toEqual(['RUMBA', 'JIVE']);
+  expect(findMany).toHaveBeenCalledWith(expect.objectContaining({
+    select: expect.objectContaining({ danceSportDisciplines: true }),
+  }));
+});
+
+it('удаляет дубликаты и неизвестные структурированные дисциплины', async () => {
+  findMany.mockResolvedValue([{
+    ...profile('athlete', 2018),
+    danceSportDisciplines: ['RUMBA', 'UNKNOWN', 'RUMBA', 'JIVE'],
+  }]);
+  expect((await getAthletes('en'))[0]?.disciplines).toEqual(['RUMBA', 'JIVE']);
+});
+
+it.each([{ structured: [] }, { structured: ['UNKNOWN'] }])('сохраняет старые специализации при пустом или невалидном поле ($structured)', async ({ structured }) => {
+  findMany.mockResolvedValue([{
+    ...profile('athlete', 2018),
+    danceSportDisciplines: structured,
+    specializations: ['Quickstep', 'Rumba', 'Salsa On1', 'Body Movement'],
+  }]);
+  expect((await getAthletes('en'))[0]?.disciplines).toEqual(['Quickstep', 'Rumba']);
+});

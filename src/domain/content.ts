@@ -160,6 +160,10 @@ export interface ClassCardItem {
   title: string;
   /** Значение `DanceStyle`: подпись берётся из i18n. */
   style: string;
+  /** Точная дисциплина DanceSport, если занятие относится к спортивной программе. */
+  danceSportDiscipline?: string;
+  /** Формат: группа, индивидуально или пара. */
+  lessonType?: string;
   /** Значение `SkillLevel`: подпись берётся из i18n. */
   level: string;
   instructorName: string;
@@ -188,6 +192,8 @@ export interface InstructorCardItem {
   headline: string;
   /** Значения `DanceStyle` — для ссылок и подписей. */
   styles: readonly string[];
+  /** Структурированные дисциплины DanceSport, если преподаватель их ведёт. */
+  danceSportDisciplines?: readonly string[];
   yearsExperience: number;
   hourlyRateFrom: number;
   ratingAverage: number;
@@ -258,6 +264,8 @@ export interface EventCardItem {
   title: string;
   /** Значение `EventType`: подпись берётся из i18n. */
   type: string;
+  /** Точная дисциплина DanceSport для соревнований. */
+  danceSportDiscipline?: string;
   /**
    * Начало события — ISO-строка, а не `Date`.
    *
@@ -433,6 +441,7 @@ export interface InstructorDetail extends InstructorCardItem {
   bio: string;
   /** Узкие специализации: «Salsa On1», «Bachata Sensual». Контент. */
   specializations: readonly string[];
+  danceSportDisciplines?: readonly string[];
   studentCount: number;
   /** Выезжает ли к клиенту: определяет доступность опции места. */
   acceptsTravel: boolean;
@@ -460,11 +469,30 @@ export interface VenueDetail extends VenueCardItem {
 export interface EventDetail extends EventCardItem {
   description: string;
   capacity: number;
+  federation?: string;
+  registrationOpenAt?: string;
+  registrationCloseAt?: string;
+  participationConditions?: string;
+  competitionCategories?: readonly CompetitionCategoryItem[];
   /** Слаг площадки, если событие проходит на площадке каталога. */
   venueSlug?: string;
   venueDistrict?: string;
   latitude?: number;
   longitude?: number;
+}
+
+export interface CompetitionCategoryItem {
+  id: string;
+  name: string;
+  ageGroup: string;
+  minAge?: number;
+  maxAge?: number;
+  program: string;
+  discipline?: string;
+  conditions?: string;
+  entryFee?: number;
+  maxEntries?: number;
+  spotsLeft?: number;
 }
 
 export interface ProductVariantItem {

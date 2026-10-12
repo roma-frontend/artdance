@@ -37,7 +37,7 @@ export default async function AccountBookingPage({ params }: PageProps) {
     select: {
       id: true, reference: true, status: true, startsAt: true, endsAt: true, totalPrice: true, basePrice: true, travelFee: true,
       createdAt: true, cancelledAt: true, cancellationReason: true, rescheduleCount: true, maxReschedules: true,
-      customerId: true, instructorId: true,
+      customerId: true, instructorId: true, lessonType: true, participants: true, partnerName: true, sessionId: true,
       instructor: { select: { slug: true, user: { select: { name: true } } } },
       venue: { select: { name: true, slug: true } },
       session: { select: { danceClass: { select: { title: true, slug: true } } } },
@@ -47,7 +47,7 @@ export default async function AccountBookingPage({ params }: PageProps) {
     select: {
       id: true, reference: true, status: true, startsAt: true, endsAt: true, totalPrice: true, basePrice: true, travelFee: true,
       createdAt: true, cancelledAt: true, cancellationReason: true, rescheduleCount: true, maxReschedules: true,
-      customerId: true, instructorId: true,
+      customerId: true, instructorId: true, lessonType: true, participants: true, partnerName: true, sessionId: true,
       instructor: { select: { slug: true, user: { select: { name: true } } } },
       venue: { select: { name: true, slug: true } },
       session: { select: { danceClass: { select: { title: true, slug: true } } } },
@@ -62,7 +62,7 @@ export default async function AccountBookingPage({ params }: PageProps) {
   const tBooking = await getTranslations({ locale: locale as Locale, namespace: 'booking' });
   const tCommon = await getTranslations({ locale: locale as Locale, namespace: 'common' });
   const isCancelled = booking.status === 'CANCELLED_BY_CUSTOMER' || booking.status === 'CANCELLED_BY_PROVIDER';
-  const canReschedule = !isCancelled && booking.status !== 'COMPLETED' && (booking.rescheduleCount < booking.maxReschedules);
+  const canReschedule = !booking.sessionId && !isCancelled && booking.status !== 'COMPLETED' && (booking.rescheduleCount < booking.maxReschedules);
   const classTitle = (booking as { session?: { danceClass?: { title?: string } } | null }).session?.danceClass?.title;
   const instructorName = (booking as { instructor?: { user?: { name?: string } } | null }).instructor?.user?.name;
   const bookingStatusKnown = (bookingStatuses as readonly string[]).includes(booking.status);
@@ -103,6 +103,13 @@ export default async function AccountBookingPage({ params }: PageProps) {
               {bookingStatusKnown ? <StatusBadge kind="booking" status={bookingStatus} size="sm" /> : null}
             </div>
             <dl className="mt-4 min-w-0 divide-y divide-border-subtle overflow-hidden rounded-lg border border-border-subtle">
+              {booking.lessonType === 'PAIR' && (
+                <div className="px-3 py-2.5 sm:px-4">
+                  <dt className="text-caption text-content-tertiary">{tBooking('partnerName')}</dt>
+                  <dd className="text-body-sm">{booking.partnerName}</dd>
+                  <p className="text-caption text-content-secondary">{tBooking('pairHint')}</p>
+                </div>
+              )}
               <div className="flex min-w-0 flex-col gap-1 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-4">
                 <dt className="shrink-0 text-caption font-medium tracking-wide text-content-tertiary uppercase">{tBooking('summaryDate')}</dt>
                 <dd className="min-w-0 break-words text-body-sm font-medium [overflow-wrap:anywhere]">{new Date(booking.startsAt).toLocaleDateString(locale)}</dd>

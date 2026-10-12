@@ -119,6 +119,17 @@ jobs:
         run: |
           npx prisma migrate deploy
           npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+      - name: Парные брони и конкурентное списание пакетов
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artdance_ci
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artdance_ci
+          BOOKING_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/artdance_ci
+          PGPASSWORD: postgres
+        run: |
+          createdb --host localhost --username postgres artdance_ci
+          npx prisma generate
+          npx prisma migrate deploy
+          node --conditions=react-server --import tsx scripts/verify-booking-db.ts
 
   # Vercel деплоит каждый пуш в main параллельно с этим workflow.
   # Его статус виден в GitHub Deployments, не в этом файле.

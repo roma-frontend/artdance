@@ -38,6 +38,8 @@ export function BookingScreen({ content }: BookingScreenProps) {
   const [date, setDate] = useState<Date | undefined>(() => (initialDay ? new Date(initialDay.dateIso) : undefined));
   const [startTime, setStartTime] = useState<string | undefined>(content.preselectedSlot ?? undefined);
   const [location, setLocation] = useState<BookingLocationOption>('STUDIO');
+  const [useClassPass, setUseClassPass] = useState(false);
+  const [partnerName, setPartnerName] = useState('');
   const [weeks, setWeeks] = useState(1);
   const [hold, setHold] = useState<HoldState>({ status: 'idle' });
   const [submitting, setSubmitting] = useState(false);
@@ -154,7 +156,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
   const rateLimitedSeconds = hold.status === 'rateLimited' ? hold.retryAfterSeconds : null;
   const recurringOpts = booking.recurring;
   const handleContinue = async () => {
-    if (submitting) return;
+    if (submitting || (content.lessonType === 'PAIR' && !partnerName.trim())) return;
     if (hold.status !== 'holding' || !hold.holdId || !date || !startTime) return;
     setSubmitting(true);
     try {
@@ -179,7 +181,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
         router.push(routes.bookingConfirm(first.reference ?? first.id!));
         return;
       }
-      const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ holdId: hold.holdId, locationOption: location, anonymousId: getAnonymousId() }) });
+      const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ holdId: hold.holdId, locationOption: location, anonymousId: getAnonymousId(), useClassPass, partnerName: content.lessonType === 'PAIR' ? partnerName.trim() : undefined }) });
       if (res.status === 401) {
         const target = routes.signIn(`/instructors/${content.instructorSlug}/book`);
         try { router.push(target); } catch {}
@@ -212,7 +214,40 @@ export function BookingScreen({ content }: BookingScreenProps) {
             )}
           </div>
         </div>
+        {content.lessonType === 'PAIR' && (
+          <div className="rounded-xl border border-border-default bg-surface-card p-5">
+            <label className="text-body-sm block font-semibold">
+              {tBooking('partnerName')}
+              <input value={partnerName} onChange={(event) => setPartnerName(event.target.value)} maxLength={160} required autoComplete="off" className="mt-2 block w-full rounded-md border border-border-default bg-surface-raised p-3" />
+            </label>
+            <p className="text-caption mt-2 text-content-secondary">{tBooking('pairHint')}</p>
+          </div>
+        )}
         <LocationOptionPicker value={location} onChange={setLocation} studioName={content.studioName} acceptsTravel={content.acceptsTravel} acceptsOnline={content.acceptsOnline} />
+        {content.lessonType === 'GROUP' && content.classPasses && content.classPasses.length > 0 && (
+          <div className="rounded-xl border border-border-default bg-surface-card p-5">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={useClassPass}
+                onChange={(event) => setUseClassPass(event.target.checked)}
+                className="mt-1 size-4 accent-accent"
+              />
+              <span className="min-w-0">
+                <span className="text-body-sm block font-semibold">{tBooking('classPassTitle')}</span>
+                <span className="text-caption mt-1 block text-content-secondary">
+                  {tBooking('classPassRemaining', {
+                    count: content.classPasses[0]?.lessonsRemaining ?? 0,
+                    date: content.classPasses[0]?.expiresAt
+                      ? new Date(content.classPasses[0].expiresAt).toLocaleDateString()
+                      : '',
+                  })}
+                </span>
+                <span className="text-caption mt-1 block text-content-tertiary">{tBooking('classPassHint')}</span>
+              </span>
+            </label>
+          </div>
+        )}
         {!content.sessionBooking && <div className="rounded-xl border border-border-default bg-surface-card p-5">
           <label className="text-body-sm font-semibold">{tBooking('recurring.weeks' as never)} — {weeks}
             <input type="range" min={1} max={recurringOpts.maxWeeks} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} className="mt-2 min-h-6 w-full cursor-pointer accent-accent" />
@@ -220,7 +255,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
           <p className="text-caption mt-1 text-content-tertiary">{weeks === 1 ? tBooking('recurring.singleHint' as never) as string : (tBooking('recurring.hint' as never, { weeks } as never) as string)}</p>
         </div>}
       </div>
-      <BookingSummary classTitle={content.classTitle} instructorName={content.instructorName} date={date} startTime={startTime} durationMinutes={content.durationMinutes} location={{ option: location, name: content.studioName }} fee={content.fee} travelFee={travelFee} holdExpiresAt={effectiveHoldExpiresAt} onHoldExpired={handleHoldExpired} submitting={submitting} onContinue={handleContinue} />
+      <BookingSummary classTitle={content.classTitle} instructorName={content.instructorName} date={date} startTime={startTime} durationMinutes={content.durationMinutes} location={{ option: location, name: content.studioName }} fee={useClassPass ? 0 : content.fee} travelFee={travelFee} partnerName={content.lessonType === 'PAIR' ? partnerName : undefined} participants={content.lessonType === 'PAIR' ? 2 : 1} incomplete={content.lessonType === 'PAIR' && !partnerName.trim()} holdExpiresAt={effectiveHoldExpiresAt} onHoldExpired={handleHoldExpired} submitting={submitting} onContinue={handleContinue} />
     </div>
   );
 }

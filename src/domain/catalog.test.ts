@@ -51,6 +51,14 @@ describe('parseCatalogQuery', () => {
     expect(query.level).toBe('ALL_LEVELS');
   });
 
+  it('разбирает точную DanceSport-дисциплину и сохраняет её в ссылке', () => {
+    const query = parseCatalogQuery({ discipline: 'slow-waltz' });
+
+    expect(query.discipline).toBe('SLOW_WALTZ');
+    expect(catalogQueryToParams(query).discipline).toBe('slow-waltz');
+    expect(hasActiveFilters(query)).toBe(true);
+  });
+
   it('меняет местами перевёрнутый диапазон цены', () => {
     const query = parseCatalogQuery({ priceMin: '50000', priceMax: '10000' });
 

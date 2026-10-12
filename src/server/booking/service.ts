@@ -15,7 +15,7 @@ import { notifyBookingCancelled, notifyBookingConfirmed, notifyWaitlistReady } f
 import { creditWallet } from '@/server/wallet/service';
 function isUniqueViolation(error: unknown): boolean { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'; }
 function refFromId(id: string): string { return 'BK-' + id.slice(-8).toUpperCase(); }
-export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; now: Date; }
+export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; partnerName?: string | null; useClassPass?: boolean; now: Date; }
 export async function createBookingFromHold(input: CreateBookingInput) {
   const { holdId, userId, anonymousId, now } = input;
   if (!userId && !anonymousId) throw domainErrors.unauthorized();
@@ -25,14 +25,14 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   if (!owned) throw domainErrors.forbidden();
   if (isHoldExpired(hold, now)) throw domainErrors.holdExpired();
   let basePrice: number | null = null;
-  let danceClass: { id: string; price: number; venueId: string | null } | null = null;
+  let danceClass: { id: string; price: number; venueId: string | null; lessonType: 'GROUP' | 'PRIVATE' | 'PAIR' } | null = null;
   let session: { id: string; capacity: number; bookedCount: number } | null = null;
   let sessionClassId: string | null = null;
   if (hold.sessionId) {
     const s = await db.classSession.findFirst({
       where: { id: hold.sessionId, ...notTrashed, isCancelled: false, danceClass: { ...notTrashed, ...publicClassWhere } },
       select: { id: true, capacity: true, bookedCount: true, classId: true, startsAt: true, endsAt: true,
-        danceClass: { select: { instructorId: true } } },
+        danceClass: { select: { instructorId: true, lessonType: true } } },
     });
     if (!s) throw domainErrors.notFound();
     if (s.startsAt.getTime() !== hold.startsAt.getTime() || s.endsAt.getTime() !== hold.endsAt.getTime()
@@ -41,11 +41,11 @@ export async function createBookingFromHold(input: CreateBookingInput) {
     if (input.locationOption && input.locationOption !== 'STUDIO') throw domainErrors.validationFailed('locationOption');
     session = { id: (s as { id: string }).id, capacity: (s as { capacity: number }).capacity, bookedCount: (s as { bookedCount: number }).bookedCount };
     sessionClassId = (s as { classId: string }).classId;
-    const dc = await db.danceClass.findUnique({ where: { id: sessionClassId }, select: { id: true, price: true, venueId: true } });
-    if (dc) danceClass = dc as { id: string; price: number; venueId: string | null };
+    const dc = await db.danceClass.findUnique({ where: { id: sessionClassId }, select: { id: true, price: true, venueId: true, lessonType: true } });
+    if (dc) danceClass = dc as { id: string; price: number; venueId: string | null; lessonType: 'GROUP' | 'PRIVATE' | 'PAIR' };
   } else if (hold.instructorId) {
-    const cls = await db.danceClass.findFirst({ where: { instructorId: hold.instructorId, isActive: true, deletedAt: null } as never, orderBy: { id: 'asc' }, select: { id: true, price: true, venueId: true } });
-    if (cls) { danceClass = cls as { id: string; price: number; venueId: string | null }; basePrice = (cls as { price: number }).price; }
+    const cls = await db.danceClass.findFirst({ where: { instructorId: hold.instructorId, isActive: true, deletedAt: null } as never, orderBy: { id: 'asc' }, select: { id: true, price: true, venueId: true, lessonType: true } });
+    if (cls) { danceClass = cls as { id: string; price: number; venueId: string | null; lessonType: 'GROUP' | 'PRIVATE' | 'PAIR' }; basePrice = (cls as { price: number }).price; }
   }
   if (basePrice == null) { if (danceClass) basePrice = danceClass.price; else throw domainErrors.notFound(); }
   const locationOption = (input.locationOption ?? 'STUDIO') as 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE';
@@ -63,17 +63,23 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   const customerId = userId ?? hold.userId ?? null;
   if (!customerId) throw domainErrors.unauthorized();
   const venueId = danceClass?.venueId ?? null;
+  const lessonType = session ? (danceClass?.lessonType ?? 'GROUP') : 'PRIVATE';
+  const participants = lessonType === 'PAIR' ? 2 : 1;
+  const partnerName = input.partnerName?.trim() || null;
+  if (lessonType === 'PAIR' && (!partnerName || partnerName.length > 160)) throw domainErrors.validationFailed('partnerName');
+  if (lessonType !== 'PAIR' && partnerName) throw domainErrors.validationFailed('partnerName');
+  if (input.useClassPass && lessonType !== 'GROUP') throw domainErrors.validationFailed('classPass');
   const bookedCheck = session;
   let createdId: string | null = null;
   try {
     const result = await db.$transaction(async (tx) => {
-      if (bookedCheck && bookedCheck.bookedCount >= bookedCheck.capacity) throw domainErrors.capacityExceeded(0);
+      if (bookedCheck && bookedCheck.bookedCount + participants > bookedCheck.capacity) throw domainErrors.capacityExceeded(Math.max(0, bookedCheck.capacity - bookedCheck.bookedCount));
       const consumed = await tx.slotHold.deleteMany({ where: { id: hold.id, expiresAt: { gt: now } } });
       if (consumed.count !== 1) throw domainErrors.holdExpired();
       if (session) {
         const reserved = await tx.classSession.updateMany({
-          where: { id: session.id, ...notTrashed, isCancelled: false, bookedCount: { lt: session.capacity } },
-          data: { bookedCount: { increment: 1 } },
+          where: { id: session.id, ...notTrashed, isCancelled: false, bookedCount: { lte: session.capacity - participants } },
+          data: { bookedCount: { increment: participants } },
         });
         if (reserved.count !== 1) throw domainErrors.capacityExceeded(0);
       }
@@ -84,7 +90,28 @@ export async function createBookingFromHold(input: CreateBookingInput) {
         ...(session ? { OR: [{ sessionId: null }, { sessionId: { not: session.id } }, { customerId }] } : {}),
       } });
       if (conflict) throw domainErrors.slotConflict();
-      const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject: 'CLASS_SESSION', status: 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants: 1, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount: 0, totalPrice, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules }, select: { id: true, reference: true } });
+       const subject = lessonType === 'PRIVATE' ? 'PRIVATE_SESSION' : 'CLASS_SESSION';
+       let classPassId: string | null = null;
+       let discountAmount = 0;
+       let payableTotal = totalPrice;
+       if (input.useClassPass) {
+         if (lessonType !== 'GROUP') throw domainErrors.validationFailed('classPass');
+         const pass = await tx.classPass.findFirst({
+           where: { purchaserId: customerId, lessonsRemaining: { gt: 0 }, expiresAt: { gt: now } },
+           orderBy: [{ expiresAt: 'asc' }, { lessonsRemaining: 'asc' }],
+           select: { id: true },
+         });
+         if (!pass) throw domainErrors.validationFailed('classPass');
+         classPassId = pass.id;
+         discountAmount = dynamicPrice;
+         payableTotal = travelFee;
+       }
+       const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject, lessonType, status: 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants, partnerName: lessonType === 'PAIR' ? partnerName : null, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount, totalPrice: payableTotal, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules }, select: { id: true, reference: true } });
+       if (classPassId) {
+         const redeemed = await tx.classPass.updateMany({ where: { id: classPassId, purchaserId: customerId, lessonsRemaining: { gt: 0 }, expiresAt: { gt: now } }, data: { lessonsRemaining: { decrement: 1 } } });
+         if (redeemed.count !== 1) throw domainErrors.validationFailed('classPass');
+         await tx.classPassRedemption.create({ data: { passId: classPassId, bookingId: created.id } });
+       }
       const ref = refFromId(created.id);
       const updated = await tx.booking.update({ where: { id: created.id }, data: { reference: ref }, select: { id: true, reference: true, totalPrice: true, startsAt: true, endsAt: true } });
       return updated;
@@ -96,17 +123,34 @@ export async function createBookingFromHold(input: CreateBookingInput) {
 }
 export interface CancelBookingInput { bookingId: string; userId: string; now: Date; reason?: string | null; creditInsteadOfRefund?: boolean }
 export async function cancelBooking(input: CancelBookingInput) {
-  const b = await db.booking.findUnique({ where: { id: input.bookingId } });
+  const b = await db.booking.findUnique({ where: { id: input.bookingId }, include: { payments: { where: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, select: { paidAmount: true, refunds: { where: { status: { in: ['PENDING', 'PAID', 'REFUNDED'] } }, select: { amount: true } } } } } });
   if (!b) throw domainErrors.notFound();
   if (b.customerId !== input.userId) throw domainErrors.forbidden();
   const snapshot: BookingSnapshot = { startsAt: b.startsAt, status: b.status as BookingSnapshot['status'], totalPrice: b.totalPrice, cancellationWindowHours: b.cancellationWindowHours, lateCancellationRate: Number(b.lateCancellationRate), rescheduleWindowHours: b.rescheduleWindowHours, rescheduleCount: b.rescheduleCount, maxReschedules: b.maxReschedules };
   const outcome = cancellationOutcome(snapshot, input.now);
   if (outcome.kind === 'forbidden') { if (outcome.reason === 'ALREADY_STARTED') throw domainErrors.validationFailed('startsAt'); throw domainErrors.cancellationWindowClosed(); }
   const fee = outcome.kind === 'fee' ? outcome.amount : 0;
-  const refund = outcome.kind === 'free' ? b.totalPrice : (()=> { try { return refundAmountFor(outcome, b.totalPrice); } catch { return b.totalPrice; } })();
+  const paid = b.payments.reduce((sum, payment) => sum + Math.max(0, payment.paidAmount - payment.refunds.reduce((total, refund) => total + refund.amount, 0)), 0);
+  const refund = refundAmountFor(outcome, paid);
   const txResult = await db.$transaction(async (tx) => {
-    const updated = await tx.booking.update({ where: { id: b.id }, data: { status: 'CANCELLED_BY_CUSTOMER', cancelledAt: input.now, cancellationReason: input.reason ?? (outcome.kind==='fee' ? 'LATE_FEE:'+fee : null) }, select: { id:true, reference:true, status:true, totalPrice:true } });
-    if (b.sessionId) await tx.classSession.update({ where: { id: b.sessionId }, data: { bookedCount: { decrement: 1 } } }).catch(()=>{});
+    // Compare-and-set locks the booking before returning seats or pass credit.
+    const claimed = await tx.booking.updateMany({
+      where: { id: b.id, customerId: input.userId, status: b.status, updatedAt: b.updatedAt },
+      data: { status: 'CANCELLED_BY_CUSTOMER', cancelledAt: input.now, cancellationReason: input.reason ?? (outcome.kind === 'fee' ? 'LATE_FEE:' + fee : null) },
+    });
+    if (claimed.count !== 1) throw domainErrors.cancellationWindowClosed();
+    const updated = await tx.booking.findUniqueOrThrow({ where: { id: b.id }, select: { id: true, reference: true, status: true, totalPrice: true } });
+    if (b.sessionId) {
+      const released = await tx.classSession.updateMany({ where: { id: b.sessionId, bookedCount: { gte: b.participants } }, data: { bookedCount: { decrement: b.participants } } });
+      if (released.count !== 1) throw domainErrors.validationFailed('sessionId');
+    }
+     if (outcome.kind === 'free') {
+       const redemption = await tx.classPassRedemption.findUnique({ where: { bookingId: b.id }, select: { id: true, passId: true } });
+       if (redemption) {
+         await tx.classPass.update({ where: { id: redemption.passId }, data: { lessonsRemaining: { increment: 1 } } });
+         await tx.classPassRedemption.delete({ where: { id: redemption.id } });
+       }
+     }
     let waitlistClaimUntil: Date | null = null;
     let waitlistUserId: string | null = null;
     if (b.sessionId) { const next = await tx.waitlistEntry.findFirst({ where:{ sessionId: b.sessionId, notifiedAt: null }, orderBy:{ position:'asc' }}); if (next) { waitlistClaimUntil = new Date(input.now.getTime() + booking.waitlistClaimWindowMinutes*60_000); waitlistUserId = next.userId; await tx.waitlistEntry.update({ where:{ id: next.id }, data:{ notifiedAt: input.now, claimUntil: waitlistClaimUntil }}); } }
@@ -156,7 +200,10 @@ export async function rescheduleBooking(input: RescheduleBookingInput) {
   assertNoConflict([...busy, ...holds].map(r=>({ start:r.startsAt, end:r.endsAt })), { start: input.newStartsAt, end: input.newEndsAt }, booking.bufferBetweenBookingsMinutes);
   const newBase = input.newPrice ?? b.basePrice;
   const newTravel = b.travelFee;
-  const newTotal = newBase + newTravel;
+  // Moving a scheduled session requires reserving another session, not changing
+  // timestamps while retaining its old ID. Keep that unsupported path closed.
+  if (b.sessionId) throw domainErrors.validationFailed('sessionId');
+  const newTotal = Math.max(0, newBase - b.discountAmount) + newTravel;
   return db.$transaction(async (tx)=>{
     const updated = await tx.booking.update({ where:{ id: b.id }, data:{ startsAt: input.newStartsAt, endsAt: input.newEndsAt, basePrice: newBase, totalPrice: newTotal, rescheduleCount:{ increment:1 } }, select:{ id:true, reference:true, startsAt:true, endsAt:true, totalPrice:true, rescheduleCount:true } });
     return { booking: updated, priceDifference: outcome.priceDifference, remaining: outcome.remaining, durationMinutes };

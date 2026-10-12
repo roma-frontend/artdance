@@ -29,8 +29,14 @@ import { adminResources, routes, type AdminResource } from './routes';
 import {
   danceStyleLabelKey,
   danceStyles,
+  danceSportDisciplineLabelKey,
+  danceSportDisciplines,
+  danceSportProgramLabelKey,
+  danceSportPrograms,
   eventTypeLabelKey,
   eventTypes,
+  lessonTypeLabelKey,
+  lessonTypes,
   moderationStatusLabelKey,
   moderationStatuses,
   skillLevelLabelKey,
@@ -211,6 +217,21 @@ const levelOptions: readonly AdminOption[] = skillLevels.map((value) => ({
   labelKey: skillLevelLabelKey(value),
 }));
 
+const danceSportDisciplineOptions: readonly AdminOption[] = danceSportDisciplines.map((value) => ({
+  value,
+  labelKey: danceSportDisciplineLabelKey(value),
+}));
+
+const danceSportProgramOptions: readonly AdminOption[] = danceSportPrograms.map((value) => ({
+  value,
+  labelKey: danceSportProgramLabelKey(value),
+}));
+
+const lessonTypeOptions: readonly AdminOption[] = lessonTypes.map((value) => ({
+  value,
+  labelKey: lessonTypeLabelKey(value),
+}));
+
 const moderationOptions: readonly AdminOption[] = moderationStatuses.map((value) => ({
   value,
   labelKey: moderationStatusLabelKey(value),
@@ -296,6 +317,8 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
       { key: 'title', labelKey: 'admin.fields.title', kind: 'text' },
       { key: 'instructorName', labelKey: 'admin.fields.instructor', kind: 'text' },
       { key: 'style', labelKey: 'admin.fields.style', kind: 'text', secondary: true },
+      { key: 'danceSportDiscipline', labelKey: 'admin.fields.danceSportDiscipline', kind: 'text', secondary: true },
+      { key: 'lessonType', labelKey: 'admin.fields.lessonType', kind: 'text', secondary: true },
       { key: 'level', labelKey: 'admin.fields.level', kind: 'text', secondary: true },
       { key: 'price', labelKey: 'admin.fields.price', kind: 'money' },
       { key: 'capacity', labelKey: 'admin.fields.capacity', kind: 'number', secondary: true },
@@ -331,6 +354,8 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
       },
       { name: 'venueId', labelKey: 'admin.fields.venue', kind: 'relation', relation: 'venues' },
       { name: 'style', labelKey: 'admin.fields.style', kind: 'select', options: styleOptions, required: true },
+      { name: 'danceSportDiscipline', labelKey: 'admin.fields.danceSportDiscipline', kind: 'select', options: danceSportDisciplineOptions },
+      { name: 'lessonType', labelKey: 'admin.fields.lessonType', kind: 'select', options: lessonTypeOptions, dbDefault: true },
       { name: 'level', labelKey: 'admin.fields.level', kind: 'select', options: levelOptions, required: true },
       {
         name: 'durationMinutes',
@@ -431,6 +456,13 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
         kind: 'multiselect',
         options: styleOptions,
         required: true,
+        full: true,
+      },
+      {
+        name: 'danceSportDisciplines',
+        labelKey: 'admin.fields.danceSportDisciplines',
+        kind: 'multiselect',
+        options: danceSportDisciplineOptions,
         full: true,
       },
       {
@@ -755,6 +787,7 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
     columns: [
       { key: 'title', labelKey: 'admin.fields.title', kind: 'text' },
       { key: 'type', labelKey: 'admin.fields.type', kind: 'text' },
+      { key: 'danceSportDiscipline', labelKey: 'admin.fields.danceSportDiscipline', kind: 'text', secondary: true },
       { key: 'startsAt', labelKey: 'admin.fields.startsAt', kind: 'datetime' },
       { key: 'price', labelKey: 'admin.fields.price', kind: 'money' },
       { key: 'capacity', labelKey: 'admin.fields.capacity', kind: 'number', secondary: true },
@@ -775,6 +808,7 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
         full: true,
       },
       { name: 'style', labelKey: 'admin.fields.style', kind: 'select', options: styleOptions },
+      { name: 'danceSportDiscipline', labelKey: 'admin.fields.danceSportDiscipline', kind: 'select', options: danceSportDisciplineOptions },
       { name: 'level', labelKey: 'admin.fields.level', kind: 'select', options: levelOptions, required: true },
       {
         name: 'instructorId',
@@ -786,6 +820,10 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
       { name: 'locationName', labelKey: 'admin.fields.locationName', kind: 'text' },
       { name: 'startsAt', labelKey: 'admin.fields.startsAt', kind: 'datetime', required: true },
       { name: 'endsAt', labelKey: 'admin.fields.endsAt', kind: 'datetime', required: true },
+      { name: 'federation', labelKey: 'admin.fields.federation', kind: 'text' },
+      { name: 'registrationOpenAt', labelKey: 'admin.fields.registrationOpenAt', kind: 'datetime' },
+      { name: 'registrationCloseAt', labelKey: 'admin.fields.registrationCloseAt', kind: 'datetime' },
+      { name: 'participationConditions', labelKey: 'admin.fields.participationConditions', kind: 'textarea', rows: 4, full: true },
       {
         name: 'price',
         labelKey: 'admin.fields.price',
@@ -795,6 +833,46 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
       },
       { name: 'capacity', labelKey: 'admin.fields.capacity', kind: 'number', required: true, min: 1, max: 5_000 },
       { name: 'isPublished', labelKey: 'admin.fields.isPublished', kind: 'switch' },
+    ],
+  },
+
+  'competition-categories': {
+    id: 'competition-categories',
+    model: 'CompetitionCategory',
+    group: 'catalog',
+    navLabelKey: 'admin.nav.competitionCategories',
+    titleKey: 'admin.resources.competitionCategories.title',
+    subtitleKey: 'admin.resources.competitionCategories.subtitle',
+    view: 'catalog.view',
+    edit: 'catalog.edit',
+    primaryField: 'name',
+    statusFilter: 'active',
+    searchable: true,
+    creatable: true,
+    deletable: true,
+    navHidden: true,
+    parent: { resource: 'events', field: 'eventId' },
+    columns: [
+      { key: 'name', labelKey: 'admin.fields.name', kind: 'text' },
+      { key: 'ageGroup', labelKey: 'admin.fields.ageGroup', kind: 'text' },
+      { key: 'program', labelKey: 'admin.fields.program', kind: 'text' },
+      { key: 'discipline', labelKey: 'admin.fields.danceSportDiscipline', kind: 'text', secondary: true },
+      { key: 'entryFee', labelKey: 'admin.fields.entryFee', kind: 'money', secondary: true },
+      { key: 'isActive', labelKey: 'admin.fields.isActive', kind: 'bool' },
+    ],
+    fields: [
+      { name: 'eventId', labelKey: 'admin.fields.event', kind: 'relation', relation: 'events', required: true },
+      { name: 'name', labelKey: 'admin.fields.name', kind: 'text', required: true },
+      { name: 'ageGroup', labelKey: 'admin.fields.ageGroup', kind: 'text', required: true },
+      { name: 'minAge', labelKey: 'admin.fields.minAge', kind: 'number', min: 0, max: 120 },
+      { name: 'maxAge', labelKey: 'admin.fields.maxAge', kind: 'number', min: 0, max: 120 },
+      { name: 'program', labelKey: 'admin.fields.program', kind: 'select', options: danceSportProgramOptions, required: true },
+      { name: 'discipline', labelKey: 'admin.fields.danceSportDiscipline', kind: 'select', options: danceSportDisciplineOptions },
+      { name: 'conditions', labelKey: 'admin.fields.conditions', kind: 'textarea', rows: 4, full: true },
+      { name: 'entryFee', labelKey: 'admin.fields.entryFee', kind: 'money' },
+      { name: 'maxEntries', labelKey: 'admin.fields.maxEntries', kind: 'number', min: 1, max: 100_000 },
+      { name: 'sortOrder', labelKey: 'admin.fields.sortOrder', kind: 'number', min: 0, max: 999, dbDefault: true },
+      { name: 'isActive', labelKey: 'admin.fields.isActive', kind: 'switch' },
     ],
   },
 
@@ -841,6 +919,7 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
         full: true,
       },
       { name: 'style', labelKey: 'admin.fields.style', kind: 'select', options: styleOptions, required: true },
+      { name: 'danceSportDiscipline', labelKey: 'admin.fields.danceSportDiscipline', kind: 'select', options: danceSportDisciplineOptions },
       { name: 'level', labelKey: 'admin.fields.level', kind: 'select', options: levelOptions, required: true },
       {
         name: 'price',

@@ -114,6 +114,11 @@ export function disciplineFromSlug(slug: string): Discipline | undefined {
   return disciplinesBySlug.get(slug);
 }
 
+/** Связь точной спортивной дисциплины с широким стилем каталога. */
+export function danceSportDisciplineMeta(id: DisciplineId): Discipline {
+  return disciplines.find((item) => item.id === id)!;
+}
+
 /**
  * Ключ перевода названия дисциплины.
  *

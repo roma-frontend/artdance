@@ -3,8 +3,7 @@
  *
  * Две карточки специализаций — Standard и Latine, по пять дисциплин. Данные —
  * из `src/domain/dancesport.ts`, тексты — из i18n; ссылки «расписание» ведут в
- * каталог по стилю (`BALLROOM` → `/classes?style=ballroom`): занятия физически
- * сидят в стилях каталога, и дисциплина без стиля была бы ссылкой в пустоту.
+ * каталог по точной спортивной дисциплине, а не только по широкому стилю.
  *
  * Синхронный компонент с `useTranslations` — паттерн соседних home-секций;
  * в серверную сборку попадает без пометки «use client», потому что ни
@@ -22,7 +21,6 @@ import {
   standardDisciplines,
   type Discipline,
 } from '@/domain/dancesport';
-import { danceStyleSlug } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 
@@ -88,7 +86,7 @@ export function DisciplineSections({ locale }: DisciplineSectionsProps) {
                     </span>
                     <Link
                       href={routes.classes({
-                        style: danceStyleSlug(discipline.style),
+                        discipline: discipline.slug,
                       })}
                       className="text-label shrink-0 rounded-full border border-transparent px-2 py-1 text-content-accent transition-colors hover:border-accent hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-border-focus"
                     >

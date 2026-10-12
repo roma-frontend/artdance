@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Media } from "@/components/ui/media";
 import { routes, site } from "@/config";
 import { resolveMedia, type MediaRef } from "@/domain/content";
+import { danceSportDisciplineLabelKey, danceSportDisciplines, type DanceSportDiscipline } from "@/domain/enums";
 import type { Locale } from "@/i18n/config";
 import { Link } from "@/i18n/routing";
 import type { Crumb } from "@/lib/seo/jsonld";
@@ -61,6 +62,7 @@ export default async function AthletesPage({ params }: PageProps) {
   setRequestLocale(locale as Locale);
 
   const t = await getTranslations("athletes");
+  const tRoot = await getTranslations();
   const athletes = await getAthletes(locale as Locale);
 
   const trail: Crumb[] = [{ name: t("eyebrow"), path: routes.athletes() }];
@@ -119,9 +121,13 @@ export default async function AthletesPage({ params }: PageProps) {
                   <p className="text-label mt-3 text-content-secondary">
                     {t("disciplinesTitle")}:
                   </p>
-                  <p className="text-body-sm">
-                    {athlete.disciplines.join(" · ") ||
-                      athlete.styles.join(" · ")}
+                   <p className="text-body-sm">
+                     {athlete.disciplines.map((discipline) => (
+                       (danceSportDisciplines as readonly string[]).includes(discipline)
+                         ? tRoot(danceSportDisciplineLabelKey(discipline as DanceSportDiscipline))
+                         : discipline
+                     )).join(" · ") ||
+                       athlete.styles.join(" · ")}
                   </p>
 
                   <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">

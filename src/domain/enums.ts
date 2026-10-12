@@ -313,6 +313,56 @@ export function skillLevelLabelKey(level: SkillLevel): MessageKey {
   return `levels.${skillLevelI18nKeys[level]}`;
 }
 
+/* ──────────────────────── DanceSport classification ──────────────────────── */
+
+export const danceSportPrograms = ['STANDARD', 'LATINE'] as const;
+export type DanceSportProgram = (typeof danceSportPrograms)[number];
+
+export const danceSportDisciplines = [
+  'SLOW_WALTZ',
+  'TANGO_STANDARD',
+  'VIENNESE_WALTZ',
+  'SLOW_FOXTROT',
+  'QUICKSTEP',
+  'SAMBA',
+  'CHACHACHA',
+  'RUMBA',
+  'PASODOBLE',
+  'JIVE',
+] as const;
+export type DanceSportDiscipline = (typeof danceSportDisciplines)[number];
+
+const danceSportDisciplineI18nKeys: Record<DanceSportDiscipline, string> = {
+  SLOW_WALTZ: 'slow-waltz',
+  TANGO_STANDARD: 'tango-standard',
+  VIENNESE_WALTZ: 'viennese-waltz',
+  SLOW_FOXTROT: 'slow-foxtrot',
+  QUICKSTEP: 'quickstep',
+  SAMBA: 'samba',
+  CHACHACHA: 'chachacha',
+  RUMBA: 'rumba',
+  PASODOBLE: 'pasodoble',
+  JIVE: 'jive',
+};
+
+export function danceSportDisciplineLabelKey(value: DanceSportDiscipline): MessageKey {
+  return `dancesport.disciplines.${danceSportDisciplineI18nKeys[value]}` as MessageKey;
+}
+
+export function danceSportProgramLabelKey(value: DanceSportProgram): MessageKey {
+  return `dancesport.programs.${value.toLowerCase()}` as MessageKey;
+}
+
+export const lessonTypes = ['GROUP', 'PRIVATE', 'PAIR'] as const;
+export type LessonType = (typeof lessonTypes)[number];
+
+export function lessonTypeLabelKey(value: LessonType): MessageKey {
+  return `admin.enums.lessonType.${value}` as MessageKey;
+}
+
+export const competitionRegistrationStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'CANCELLED'] as const;
+export type CompetitionRegistrationStatus = (typeof competitionRegistrationStatuses)[number];
+
 /* ──────────────────────────── Статусы ──────────────────────────── */
 
 export const bookingStatuses = [

@@ -26,6 +26,7 @@ import { CalendarDaysIcon, ClockIcon, MapPinIcon, UsersIcon } from 'lucide-react
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { PageHero, breadcrumbsFromTrail } from '@/components/layout/page-hero';
+import { CompetitionRegistrationForm } from '@/components/events/competition-registration-form';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ import { Price } from '@/components/ui/price';
 import { SpotsLeft } from '@/components/ui/spots-left';
 import { routes, site } from '@/config';
 import { eventTypeLabelKey } from '@/domain/enums';
+import { danceSportDisciplineLabelKey, danceSportProgramLabelKey } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { breadcrumbSchema, eventSchema, type Crumb } from '@/lib/seo/jsonld';
@@ -78,6 +80,11 @@ export default async function EventDetailPage({ params }: PageProps) {
   const format = await getFormatter({ locale: locale as Locale });
 
   const isFree = item.price <= 0;
+  const isCompetition = item.type === 'COMPETITION';
+  const now = new Date();
+  const registrationOpen = isCompetition
+    && (item.registrationOpenAt === undefined || new Date(item.registrationOpenAt) <= now)
+    && (item.registrationCloseAt === undefined || new Date(item.registrationCloseAt) >= now);
   /** Открытый вход: мест столько же, сколько вместимость — считать нечего. */
   const isOpenEntry = item.spotsLeft >= item.capacity;
   const typeLabel = tRoot(eventTypeLabelKey(item.type as never));
@@ -134,6 +141,43 @@ export default async function EventDetailPage({ params }: PageProps) {
                 {item.description}
               </p>
             </section>
+
+            {isCompetition && item.participationConditions && (
+              <section className="mb-12">
+                <h2 className="text-heading-3 mb-4">{t('participationConditions')}</h2>
+                <p className="text-body-lg max-w-(--layout-prose-max-width) whitespace-pre-line text-content-secondary">
+                  {item.participationConditions}
+                </p>
+              </section>
+            )}
+
+            {isCompetition && item.competitionCategories && item.competitionCategories.length > 0 && (
+              <section className="mb-12">
+                <h2 className="text-heading-3 mb-4">{t('competitionCategories')}</h2>
+                <ul className="grid gap-3">
+                  {item.competitionCategories.map((category) => (
+                    <li key={category.id} className="rounded-lg border border-border-default bg-surface-card p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-card-title">{category.name}</h3>
+                          <p className="text-body-sm mt-1 text-content-secondary">
+                            {category.ageGroup}
+                            {' · '}
+                            {tRoot(danceSportProgramLabelKey(category.program as never))}
+                            {category.discipline ? ` · ${tRoot(danceSportDisciplineLabelKey(category.discipline as never))}` : ''}
+                          </p>
+                        </div>
+                        {category.entryFee !== undefined && <Price amount={category.entryFee} />}
+                      </div>
+                      {category.conditions && <p className="text-body-sm mt-3 whitespace-pre-line text-content-secondary">{category.conditions}</p>}
+                      {category.spotsLeft !== undefined && (
+                        <p className="text-caption mt-3 text-content-tertiary">{t('capacityNote', { count: category.spotsLeft })}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {/* ── Когда ── */}
             <section className="mb-12">
@@ -243,23 +287,31 @@ export default async function EventDetailPage({ params }: PageProps) {
                 объяснить, как на него попасть, и «регистрация откроется» —
                 честный ответ, в отличие от ссылки в 404.
               */}
-              <Button
-                block
-                variant="accent"
-                size="lg"
-                disabled
-                aria-describedby="registration-unavailable"
-                className="mt-6"
-              >
-                {t('registerCta')}
-              </Button>
+              {isCompetition && registrationOpen && item.competitionCategories && item.competitionCategories.length > 0 ? (
+                <CompetitionRegistrationForm eventSlug={item.slug} categories={item.competitionCategories} />
+              ) : (
+                <>
+                  <Button
+                    block
+                    variant="accent"
+                    size="lg"
+                    disabled
+                    aria-describedby="registration-unavailable"
+                    className="mt-6"
+                  >
+                    {t('registerCta')}
+                  </Button>
 
-              <p
-                id="registration-unavailable"
-                className="text-caption mt-3 rounded-md bg-accent-soft px-4 py-3 text-content-secondary"
-              >
-                {tCommon('states.comingSoon')}
-              </p>
+                  <p
+                    id="registration-unavailable"
+                    className="text-caption mt-3 rounded-md bg-accent-soft px-4 py-3 text-content-secondary"
+                  >
+                    {isCompetition && item.registrationCloseAt && new Date(item.registrationCloseAt) < now
+                      ? t('registrationClosed')
+                      : tCommon('states.comingSoon')}
+                  </p>
+                </>
+              )}
 
               {/* Пока регистрации нет, афиша остаётся живым разделом. */}
               <Button asChild block variant="outline" size="lg" className="mt-3">

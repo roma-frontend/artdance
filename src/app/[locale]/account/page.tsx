@@ -91,7 +91,7 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
   const tNav = await getTranslations('nav');
   const isBookingStatus = (v: string): v is BookingStatus => (bookingStatuses as readonly string[]).includes(v);
 
-  const [bookings, orders] = await Promise.all([
+  const [bookings, orders, classPasses] = await Promise.all([
     db.booking.findMany({
       where: { customerId: caller.id },
       orderBy: { startsAt: 'desc' },
@@ -112,6 +112,11 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
       orderBy: { placedAt: 'desc' },
       take: 3,
       select: { id: true, orderNumber: true, status: true, total: true, placedAt: true },
+    }),
+    db.classPass.findMany({
+      where: { purchaserId: caller.id, lessonsRemaining: { gt: 0 }, expiresAt: { gt: new Date() } },
+      orderBy: [{ expiresAt: 'asc' }, { lessonsRemaining: 'asc' }],
+      select: { id: true, lessonsTotal: true, lessonsRemaining: true, expiresAt: true },
     }),
   ]);
 
@@ -141,6 +146,29 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
         <div className="mt-6 flex min-w-0 items-center justify-end">
           <ViewToggle value={view} />
         </div>
+
+        {classPasses.length > 0 && (
+          <section aria-labelledby="account-class-passes" className="mt-6 rounded-xl border border-border-default bg-surface-card p-5 shadow-sm">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h2 id="account-class-passes" className="text-card-title">{tRoot('pricing.classPasses.title')}</h2>
+              <Button asChild variant="outline" size="sm"><Link href={routes.pricing()}>{tCommon('actions.viewAll')}</Link></Button>
+            </div>
+            <ul className="grid gap-3 md:grid-cols-3">
+              {classPasses.map((pass) => (
+                <li key={pass.id} className="rounded-lg border border-border-default bg-surface-raised p-4">
+                  <p className="text-body-sm font-semibold">{tRoot('pricing.classPasses.lessonsCount', { count: pass.lessonsTotal })}</p>
+                  <p className="text-body-sm mt-1 text-content-secondary">
+                    {tRoot('pricing.classPasses.remaining', {
+                      remaining: pass.lessonsRemaining,
+                      total: pass.lessonsTotal,
+                      date: new Date(pass.expiresAt).toLocaleDateString(locale as Locale),
+                    })}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <div className={view === 'grid' ? 'mt-6 grid min-w-0 gap-6 md:grid-cols-2' : 'mt-6 grid min-w-0 gap-6'}>
           <section aria-labelledby="account-bookings">

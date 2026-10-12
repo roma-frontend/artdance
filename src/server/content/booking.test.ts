@@ -170,6 +170,17 @@ describe('календарь бронирования из БД', () => {
     expect(occupied.days[0]?.slots[0]?.available).toBe(false);
   });
 
+  it('парный календарь не предлагает одно оставшееся место', async () => {
+    db.danceClass.findFirst.mockResolvedValue({ ...classItem, lessonType: 'PAIR' });
+    db.classSession.findMany.mockResolvedValue([
+      { id: 'pair-session', ...interval('2026-09-08T14:00:00Z', '2026-09-08T15:00:00Z'), capacity: 4, bookedCount: 3 },
+    ]);
+    const result = await getInstructorBookingContent('teacher', now, 'ru', 'lesson');
+    if (!result || 'kind' in result) throw new Error('Expected booking content');
+    expect(result.lessonType).toBe('PAIR');
+    expect(result.days[0]?.slots[0]?.available).toBe(false);
+  });
+
   it('в список входят только публичные профили с неудалёнными занятиями', async () => {
     expect(await getBookableInstructors('ru')).toEqual([]);
     expect(db.instructorProfile.findMany).toHaveBeenCalledWith(expect.objectContaining({

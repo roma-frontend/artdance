@@ -6,9 +6,9 @@
  * соревнований приходят от инструкторов платформы, у которых есть спортивная
  * карьера.
  *
- * Данные читаются из публичных InstructorProfile и их опыта. Распознавание
- * дисциплин и результата по тексту сохранено до появления структурированных
- * спортивных достижений; новая таблица в этом переходе не нужна.
+ * Данные читаются из публичных InstructorProfile и их опыта. Структурированные
+ * дисциплины имеют приоритет, а распознавание по старым специализациям остаётся
+ * fallback для профилей, которые ещё не были переведены на новое поле.
  */
 
 import "server-only";
@@ -19,7 +19,8 @@ import { db } from "@/lib/db";
 import { defineQuery } from "@/server/query";
 import { instructorSelect, publicInstructorWhere, toInstructorCard } from "../queries/instructors";
 import type { MediaRef } from "@/domain/content";
-import { standardDisciplines } from "@/domain/dancesport";
+import { disciplines } from "@/domain/dancesport";
+import { danceSportDisciplines, type DanceSportDiscipline } from "@/domain/enums";
 
 
 
@@ -39,21 +40,22 @@ export interface AthleteItem {
   image: MediaRef;
 }
 
-const standardSlugs = new Set(standardDisciplines.map((item) => item.slug));
+const danceSportDisciplineSlugs = new Set(disciplines.map((item) => item.slug));
+const danceSportDisciplineIds = new Set<string>(danceSportDisciplines);
 
 /**
  * Спортивные дисциплины атлета.
  *
- * Отдельного поля дисциплин пока нет — они собираются из специализаций: то, что
- * упоминает дисциплину Standard/Latine, попадает в список; прочее («Body
- * Movement», «Salsa On1») — это педагогика, а не спорт, и в строку атлета не идёт.
+ * Старые профили не имеют структурированных дисциплин: то, что упоминает
+ * дисциплину Standard/Latine, попадает в список; прочее («Body Movement»,
+ * «Salsa On1») — педагогика, а не спорт, и в строку атлета не идёт.
  */
 function sportSpecializations(
   specializations: readonly string[],
 ): readonly string[] {
   const found = specializations.filter((item) => {
     const slug = item.toLowerCase().replace(/[^a-z]+/g, "-");
-    for (const discipline of standardSlugs) {
+    for (const discipline of danceSportDisciplineSlugs) {
       if (slug === discipline || slug.includes(discipline)) return true;
     }
     /* Обозначения программ: «Standard», «Latine/Latin program». */
@@ -61,6 +63,19 @@ function sportSpecializations(
   });
   /* Пока ни одна специализация не распознана, показываем программу по стилям. */
   return found;
+}
+
+/**
+ * Структурированные значения — это enum IDs, поэтому они безопасны для
+ * фильтрации и могут быть локализованы на странице. Невалидные значения не
+ * должны попадать в публичный ответ даже если старый кеш содержит мусор.
+ */
+function athleteDisciplines(
+  specializations: readonly string[],
+  structured: readonly string[] | undefined,
+): readonly string[] {
+  const normalized = [...new Set((structured ?? []).filter((value): value is DanceSportDiscipline => danceSportDisciplineIds.has(value)))];
+  return normalized.length > 0 ? normalized : sportSpecializations(specializations);
 }
 
 /**
@@ -121,7 +136,7 @@ export const getAthletes = defineQuery({
         slug: instructor.slug,
         name: instructor.name,
         headline: row.translations[0]?.headline ?? instructor.headline,
-        disciplines: sportSpecializations(row.specializations),
+        disciplines: athleteDisciplines(row.specializations, row.danceSportDisciplines),
         styles: instructor.styles,
         bestResult: bestResultFrom({ experience }),
         competitionYears,
