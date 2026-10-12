@@ -38,6 +38,8 @@ import { getCaller } from '@/lib/auth/guards';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { getFavorites } from '@/server/queries/favorites';
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
   params: Promise<{ locale: string }>;
 }

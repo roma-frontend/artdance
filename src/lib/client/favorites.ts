@@ -27,8 +27,11 @@ import { authClient } from '@/lib/auth/auth-client';
 /** Ключ в `localStorage`. Стиль тот же, что у ключа темы. */
 const STORAGE_KEY = 'ARTDANCE_FAVORITES';
 
-/** Тип сущности. Совпадает с `Favorite.targetType` в схеме. */
+/** Тип сущности. Совпадает с `Favorite.targetType` в схеме. `event` — только локальный. */
 export type FavoriteTarget = 'class' | 'instructor' | 'venue' | 'event' | 'product';
+
+/** Цели, имеющие строку в таблице `Favorite`. `event` — браузер-only. */
+export const SERVER_FAVORITE_TARGETS = new Set<string>(['class', 'instructor', 'venue', 'product']);
 
 /** Ключ отметки. Тип обязателен: слаги уникальны внутри раздела, а не между ними. */
 export function favoriteKey(target: FavoriteTarget, slug: string): string {
@@ -118,7 +121,16 @@ export function hydrateServerFavorites(keys: readonly string[]): void {
 
 /** Перезаписывает локальный набор (используется после мержа гостя, чтобы не терять серверные ключи). */
 export function overwriteFavorites(keys: readonly string[]): void {
+  serverKeysLoaded = true;
   write([...keys]);
+}
+
+/** Точная синхронизация с сервером: серверные ключи = истина, `event:*` сохраняем. Удаляет чужой мусор. */
+export function syncServerFavorites(keys: readonly string[]): void {
+  serverKeysLoaded = true;
+  const events = parse(read()).filter((k) => k.startsWith('event:'));
+  const merged = [...new Set([...keys, ...events])];
+  write(merged);
 }
 
 /**
@@ -149,19 +161,22 @@ export function useFavorite(target: FavoriteTarget, slug: string): {
 }
 
 /**
- * Totale Anzahl der Favoriten — für Badge in Header/Mobile-Dock.
- * Leerer Server-Snapshot vermeidet Hydration-Mismatch: Badge erscheint erst nach Hydration.
- * Bei Gast (keine Session) immer 0 — sonst Badge aus Gäste-localStorage (ARTDANCE_FAVORITES)
- * ohne existierenden Nutzer (Bug-Report: „когда в системе нет пользователя, почему сердечко показывает бейдж“).
+ * Бейдж в шапке — сколько показывать у сердечка.
+ *
+ * Баг: `event:*` — только локально (нет строки в `Favorite`), а бейдж считал и его.
+ * Получалось: сердечко закрашено + «1» в шапке, а на `/account/favorites`
+ * (там только сервер) — пусто.
+ *
+ * Для залогиненного считаем только серверные цели — 1:1 с `getFavorites`.
+ * Для гостя — всё из localStorage (до входа сервер пуст).
  */
 export function useFavoritesCount(): number {
   const raw = useSyncExternalStore(subscribe, read, serverSnapshot);
-  const count = parse(raw).filter(Boolean).length;
+  const all = parse(raw).filter(Boolean);
   const { data: session, isPending } = authClient.useSession();
-  // Vor Hydration / während Laden keine Entscheidung → 0 bis geklärt (verhindert Hydration-Mismatch).
   if (isPending) return 0;
-  if (!session?.user) return 0;
-  return count;
+  if (!session?.user) return all.length;
+  return all.filter((k) => SERVER_FAVORITE_TARGETS.has((k.split(':')[0] ?? '').trim())).length;
 }
 
 /**
@@ -184,7 +199,19 @@ export function readGuestFavorites(): ReadonlyArray<{ target: FavoriteTarget; sl
   });
 }
 
-/** Очистка после успешного переноса в аккаунт. */
+/** Очистка после успешного переноса в аккаунт (только серверные ключи, `event:*` оставляем). */
 export function clearGuestFavorites(): void {
-  write([]);
+  // Раньше `write([])` стирал и локальные `event:*` — после мержа гость терял сердечки на событиях.
+  const next = parse(read()).filter((k) => !SERVER_FAVORITE_TARGETS.has((k.split(':')[0] ?? '').trim()));
+  write(next);
+}
+
+/** Полная очистка — только при выходе. */
+export function resetFavoritesOnSignOut(): void {
+  serverKeysLoaded = false;
+  snapshot = null;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {}
+  for (const listener of listeners) listener();
 }

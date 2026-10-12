@@ -24,6 +24,8 @@ import { useTranslations } from 'next-intl';
 import { useRef } from 'react';
 import { toast } from 'sonner';
 
+import { useRouter } from '@/i18n/routing';
+
 import { useFavorite, type FavoriteTarget } from '@/lib/client/favorites';
 import { cn } from '@/lib/utils';
 import { toggleFavoriteAction } from '@/server/actions/favorites';
@@ -45,6 +47,7 @@ export function FavoriteButton({ target, slug, name, onMedia, className }: Favor
   const t = useTranslations('favorites');
   const { isFavorite, toggle } = useFavorite(target, slug);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const router = useRouter();
 
   // Серверный toggle — best-effort: гость получает UNAUTHORIZED (игнор),
   // снятый с публикации — откатываем локальную отметку.
@@ -54,9 +57,12 @@ export function FavoriteButton({ target, slug, name, onMedia, className }: Favor
       const res = await toggleFavoriteAction({ target: target as 'class' | 'instructor' | 'venue' | 'product', slug });
       if (res?.serverError && res.serverError.code !== 'UNAUTHORIZED') {
         toggle(); // откат локально — сервер не сохранил
+      } else if (!res?.serverError) {
+        // Сервер принял — обновляем серверную страницу /account/favorites, если она открыта.
+        router.refresh();
       }
     } catch {
-      // сеть — оставляем optimistic
+      // сеть — оставляем optimistic; страница избранного покажет stale до reload
     }
   };
 
