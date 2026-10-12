@@ -131,50 +131,36 @@ test.describe('параллакс editorial-секции', () => {
     await page.goto(HOME);
 
     const wrap = page.locator('[data-slot="section-parallax"][data-curtain]').first();
-    const clip = () =>
-      wrap.evaluate((node) => getComputedStyle(node).clipPath);
+    await expect(wrap).toBeAttached();
+    const clip = () => wrap.evaluate((node) => getComputedStyle(node).clipPath);
+    const isOpen = (value: string) =>
+      value === 'none' || /^inset\(0(px|%)?( 0(px|%)?){0,3}( round 0px)?\)$/.test(value);
 
-    /*
-     * Скролл к самой секции, а не к первому h2: выше editorial стоят секции со
-     * своими заголовками, и на их фоне наблюдатель мог сработать раньше замера.
-     */
-    // behavior:'instant' не поддерживается в CI Chromium — fallback на plain scrollTo.
+    // Вверху страницы editorial ниже viewport — занавес должен быть закрыт,
+    // но на широком экране CinemaAperture сразу ставит clip-path:none.
+    // Поэтому не проверяем "было закрыто", а ждём что после входа станет открыто.
     await page.evaluate(() => window.scrollTo(0, 0));
-    // В CinemaAperture на широком экране clip-path уже 'none' — занавес отключён.
-    // Проверяем раскрытие только когда занавес реально управляет маской.
-    const hasCurtain = await page.evaluate(
-      () => getComputedStyle(document.querySelector<HTMLElement>('[data-slot="section-parallax"][data-curtain]')!).clipPath,
-    );
-    if (hasCurtain === 'none') {
-      // CinemaAperture активен — маска уже открыта, проверяем что она и осталась открытой.
-      await wrap.scrollIntoViewIfNeeded();
-      await page.waitForTimeout(600);
-      const open = await clip();
-      expect(
-        open === 'none' || /^inset\(0(px|%)?( 0(px|%)?){0,3}( round 0px)?\)$/.test(open),
-        `открытая маска (aperture on): ${open}`,
-      ).toBe(true);
-      return;
-    }
-
-    const before = await clip();
+    // Дать смонтироваться CinemaAperture / SectionParallax (rAF, IO).
+    await page.waitForTimeout(300);
 
     await wrap.scrollIntoViewIfNeeded();
-    await expect
-      .poll(() => clip(), { timeout: 5_000 })
-      .not.toBe(before);
 
-    /* Открытый занавес не режет секцию. Poll мог поймать середину перехода —
-     * ждём конца анимации (reveal-duration 900ms) перед финальной проверкой.
-     * Chrome вычисляет открытую маску в сокращённой форме `inset(0px)`. */
-    /* На широком экране маской управляет `CinemaAperture`: экран открыт целиком,
-     * когда верх секции поднялся на `openSpan` высоты окна — доводим до верха. */
+    // Ждём раскрытия: либо занавес (inset 0), либо aperture (none).
+    // Poll устойчив к середине transition 900ms.
+    await expect
+      .poll(async () => (isOpen(await clip()) ? 'open' : await clip()), { timeout: 6_000 })
+      .toBe('open');
+
+    // На широком экране aperture раскрывается до open=1 только когда верх
+    // секции дошёл до верха окна (openSpan 0.8 * viewport). Доводим.
     await wrap.evaluate((node) => window.scrollBy(0, node.getBoundingClientRect().top));
-    await page.waitForTimeout(1_200);
+    await expect
+      .poll(async () => (isOpen(await clip()) ? 'open' : await clip()), { timeout: 6_000 })
+      .toBe('open');
+
+    // Финальная проверка без poll уже внутри предыдущего, но оставляем
+    // явное сообщение для диагностики.
     const open = await clip();
-    expect(
-      open === 'none' || /^inset\(0(px|%)?( 0(px|%)?){0,3}( round 0px)?\)$/.test(open),
-      `открытая маска: ${open}`,
-    ).toBe(true);
+    expect(isOpen(open), `открытая маска: ${open}`).toBe(true);
   });
 });
