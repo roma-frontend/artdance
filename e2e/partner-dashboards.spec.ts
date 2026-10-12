@@ -13,7 +13,7 @@ const dashboards = [
     email: instructor.email,
     name: instructor.name,
     title: en.footer.studioDashboardTitle,
-    unavailable: [en.footer.studioDashboardAvailability, en.footer.studioDashboardRequests],
+    unavailable: [en.footer.studioDashboardRequests],
   },
   {
     path: routes.venueDashboard(),
