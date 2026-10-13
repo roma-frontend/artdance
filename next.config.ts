@@ -19,6 +19,16 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
 
+  /**
+   * React Compiler: автокомпиляция мемоизации вместо ручных useMemo/useCallback.
+   * 123 файла используют motion-эффекты и клиентские карусели — лишние ре-рендеры
+   * там дешевле убрать компилятором, чем поддерживать вручную. Babel-вариант
+   * работает и с webpack (сборка Cloudflare), поэтому Rust-порт
+   * (turbopackRustReactCompiler) сознательно не включён: он упал бы на
+   * `opennextjs-cloudflare build`, который идёт через webpack.
+   */
+  reactCompiler: true,
+
   typescript: {
     // Сборка не должна проходить при ошибках типов — это часть контроля качества.
     // .next/dev types are regenerated as corrupted on Windows Turbopack - skip dev types check, keep production types

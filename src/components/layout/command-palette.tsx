@@ -61,8 +61,8 @@ function AdminCommands({ go }: AdminCommandsProps) {
   );
 }
 
-export function CommandPalette() {
-  const [open, setOpen] = useState(false);
+export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean }) {
+  const [open, setOpen] = useState(initialOpen);
   const router = useRouter();
   const pathname = usePathname();
   const t = useTranslations();

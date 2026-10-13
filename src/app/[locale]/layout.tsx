@@ -10,7 +10,7 @@ import { SkipToContent } from '@/components/layout/skip-to-content';
 import { ThemeColorSync } from '@/components/layout/theme-color-sync';
 import { ThemeProvider } from '@/components/layout/theme-provider';
 import { fontVariables } from '@/design/fonts';
-import { CommandPalette } from '@/components/layout/command-palette';
+import { CommandPaletteLazy } from '@/components/layout/command-palette-lazy';
 import { LiteModeProvider } from '@/lib/perf/lite-mode';
 import { STORAGE_KEY, liteModeInlineScript } from '@/lib/perf/detect-weak-device';
 import { FavoritesSync } from '@/components/favorites/favorites-sync';
@@ -160,7 +160,8 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                 передавать фокус между двумя модальными слоями одновременно.
               */}
               <SearchOverlayProvider>
-                <CommandPalette />
+                {/* Палитра монтируется лениво: чанк cmdk не входит в гидратацию публичных страниц */}
+                <CommandPaletteLazy />
                 <FavoritesSync />
                 <Toaster position="top-center" />
                 <SkipToContent />
