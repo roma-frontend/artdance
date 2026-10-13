@@ -1207,8 +1207,6 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
       { name: 'href', labelKey: 'admin.fields.href', kind: 'text', hintKey: 'admin.fields.hrefHint' },
       { name: 'order', labelKey: 'admin.fields.sortOrder', kind: 'number', min: 0, max: 999, dbDefault: true },
       { name: 'isActive', labelKey: 'admin.fields.isActive', kind: 'switch' },
-      // imageKey deprecated — теперь MediaAsset(bannerId) single cover
-      { name: 'imageKey', labelKey: 'admin.fields.cover', kind: 'text', hintKey: 'admin.fields.coverHint' },
     ],
   },
 

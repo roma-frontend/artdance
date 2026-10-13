@@ -120,6 +120,7 @@ const en = {
       language: 'Language',
       theme: 'Theme',
       currency: 'Currency',
+      promotion: 'Promotion',
     },
     units: {
       minutes: '{count, plural, one {# minute} other {# minutes}}',

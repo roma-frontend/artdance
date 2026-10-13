@@ -110,6 +110,7 @@ const ru: Messages = {
       language: 'Язык',
       theme: 'Тема',
       currency: 'Валюта',
+      promotion: 'Промо-баннер',
     },
     units: {
       minutes: '{count, plural, one {# минута} few {# минуты} many {# минут} other {# минуты}}',

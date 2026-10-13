@@ -59,6 +59,7 @@ import { fromZonedParts, nextOccurrence } from '../src/lib/time/schedule.ts';
 import { parseClock } from '../src/lib/time/clock.ts';
 import {
   demoAccounts,
+  demoBanners,
   demoClasses,
   demoEmailDomain,
   demoEvents,
@@ -214,7 +215,7 @@ function mediaData(assetName: string, sortOrder = 0) {
  */
 async function attachMedia(
   assetName: string,
-  owner: { instructorId?: string; venueId?: string; roomId?: string; classId?: string; productId?: string; eventId?: string },
+  owner: { instructorId?: string; venueId?: string; roomId?: string; classId?: string; productId?: string; eventId?: string; bannerId?: string },
   ownerTag: string,
 ): Promise<void> {
   const { translations, ...data } = mediaData(assetName);
@@ -844,6 +845,33 @@ async function seedHomeContent(): Promise<void> {
   console.log(`  CMS главной: 3 локали, медиа: ${storageByAsset.size}`);
 }
 
+/** Демо-промо: запись и картинка остаются редактируемыми из `/admin/banners`. */
+async function seedBanners(): Promise<void> {
+  for (const item of demoBanners) {
+    const banner = await prisma.banner.upsert({
+      where: { key: item.key },
+      update: {
+        title: item.title,
+        href: item.href,
+        order: item.order,
+        isActive: true,
+      },
+      create: {
+        key: item.key,
+        title: item.title,
+        href: item.href,
+        order: item.order,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+
+    await attachMedia(item.asset, { bannerId: banner.id }, `banner:${item.key}`);
+  }
+
+  console.log(`  баннеры: ${demoBanners.length}`);
+}
+
 /* ─────────────────────────── Промокоды ─────────────────────────── */
 
 async function seedPromoCodes(): Promise<void> {
@@ -940,6 +968,7 @@ async function main(): Promise<void> {
   await seedEvents(venueIds);
   await seedReviews(instructorIds, classSlugToId);
   await seedHomeContent();
+  await seedBanners();
   await seedPromoCodes();
   await seedCities();
   await seedFooterLinks();

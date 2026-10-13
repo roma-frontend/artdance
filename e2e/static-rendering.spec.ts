@@ -15,8 +15,11 @@
 
 import { expect, test } from '@playwright/test';
 
+import { demoBanners } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
 import { locales } from '../src/i18n/config';
+
+const demoBanner = demoBanners[0];
 
 test.describe('лендинг отдаётся готовым HTML', () => {
   for (const locale of locales) {
@@ -55,5 +58,16 @@ test.describe('лендинг отдаётся готовым HTML', () => {
     for (const title of [en.home.discover.title, en.pricing.title]) {
       await expect(page.locator('h2').filter({ hasText: title })).toBeVisible();
     }
+  });
+
+  test('en: активный баннер из CMS виден и закрывается', async ({ page }) => {
+    await page.goto('/en', { waitUntil: 'domcontentloaded' });
+
+    const banner = page.locator(`[data-banner-key="${demoBanner.key}"]`);
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText(demoBanner.title);
+
+    await banner.getByRole('button', { name: en.common.actions.close }).click();
+    await expect(banner).toHaveCount(0);
   });
 });

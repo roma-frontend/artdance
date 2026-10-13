@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
 
 import { absoluteUrl, routes, seo, site } from '@/config';
+import { AnnouncementBar } from '@/components/layout/announcement-bar';
 import { SiteChrome } from '@/components/layout/site-chrome';
 import { SkipToContent } from '@/components/layout/skip-to-content';
 import { ThemeColorSync } from '@/components/layout/theme-color-sync';
@@ -165,7 +166,9 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                 <FavoritesSync />
                 <Toaster position="top-center" />
                 <SkipToContent />
-                <SiteChrome>{children}</SiteChrome>
+                <SiteChrome announcement={<AnnouncementBar locale={rawLocale} />}>
+                  {children}
+                </SiteChrome>
               </SearchOverlayProvider>
             </LiteModeProvider>
           </NextIntlClientProvider>

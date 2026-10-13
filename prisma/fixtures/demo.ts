@@ -949,3 +949,20 @@ export const demoHomeContent = {
     testimonialAuthorEmails: demoReviews.map((item) => demoReviewerEmail(item.authorName)),
   },
 } as const;
+
+/**
+ * Первый промо-баннер для демонстрации CMS.
+ *
+ * Это именно запись `Banner`, а не фоллбэк в компоненте: после сида её можно
+ * открыть в админке, заменить картинку, ссылку, порядок или выключить — и
+ * публичный баннер изменится тем же способом, что и в production.
+ */
+export const demoBanners = [
+  {
+    key: 'find-your-rhythm',
+    title: 'Every body has a rhythm. Find yours.',
+    asset: 'hero-dancer',
+    href: '/discover',
+    order: 0,
+  },
+] as const;

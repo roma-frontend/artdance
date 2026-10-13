@@ -4,8 +4,26 @@ import { db } from '@/lib/db';
 import { bannerLive } from '@/domain/banner';
 
 export async function listLiveBanners(now = new Date()) {
-  const all = await db.banner.findMany({ where: { isActive: true }, orderBy: { order: 'asc' }, select: { id: true, key: true, title: true, imageKey: true, href: true, order: true, isActive: true } });
-  return all.filter((b) => bannerLive(b as unknown as { isActive: boolean; startsAt: Date | null; endsAt: Date | null }, now));
+  const all = await db.banner.findMany({
+    where: { isActive: true },
+    orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    select: {
+      id: true,
+      key: true,
+      title: true,
+      imageKey: true,
+      href: true,
+      order: true,
+      isActive: true,
+    },
+  });
+
+  /*
+   * `Banner` пока не хранит окно публикации, но доменное правило уже умеет его
+   * проверять. Передаём только поля, которые реально есть в схеме: когда окно
+   * появится, его можно добавить здесь без изменения публичного компонента.
+   */
+  return all.filter((banner) => bannerLive(banner, now));
 }
 
 export async function createBanner(input: { key: string; title: string; imageKey?: string | null; href?: string | null; order?: number }) {

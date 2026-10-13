@@ -113,6 +113,7 @@ const hy: Messages = {
       language: "Լեզու",
       theme: "Թեմա",
       currency: "Արժույթ",
+      promotion: "Գովազդային բաններ",
     },
     units: {
       minutes: "{count, plural, one {# րոպե} other {# րոպե}}",

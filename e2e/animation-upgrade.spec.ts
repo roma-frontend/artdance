@@ -27,7 +27,26 @@ test('Слои hero уходят с разной скоростью: кадр �
   await page.goto(HOME);
   const background = page.locator('[data-hero-background]');
   await expect(background).toBeVisible();
-  await page.evaluate(() => window.scrollTo({ top: 250, behavior: 'instant' }));
+  await expect(page.locator('[data-slot="hero-fx"]')).toBeAttached();
+  await expect.poll(() => background.evaluate((node) => node.style.transform)).toContain('translate3d');
+  /*
+    * AnnouncementBar из CMS стоит перед hero в публичном layout. Берём реальный
+    * offset секции, а не высоту баннера: на мобильном браузер может ещё менять
+    * высоту медиа до первого scroll, и фиксированная сумма даёт слишком хрупкий
+    * тест на границе между баннером и hero.
+    */
+  const heroPosition = await background.evaluate((node) => {
+    const hero = node.closest('section');
+    if (!hero) throw new Error('hero section not found');
+    const rect = hero.getBoundingClientRect();
+    return { top: rect.top + window.scrollY, height: rect.height };
+  });
+  const scrollTop = heroPosition.top + Math.min(250, heroPosition.height / 2);
+  await page.evaluate((top) => {
+    window.scrollTo(0, top);
+    window.dispatchEvent(new Event('scroll'));
+  }, scrollTop);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(heroPosition.top);
   await expect.poll(() => background.evaluate((node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42)).toBeGreaterThan(0);
   const offsets = await page.evaluate(() => {
     const style = (selector: string) => getComputedStyle(document.querySelector(selector)!);

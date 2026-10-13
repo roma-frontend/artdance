@@ -49,7 +49,7 @@ function isAuthPath(pathWithoutLocale: string): boolean {
   return AUTH_PREFIXES.some((p) => pathWithoutLocale === p || pathWithoutLocale.startsWith(`${p}/`));
 }
 
-export function SiteChrome({ children }: { children: ReactNode }) {
+export function SiteChrome({ children, announcement }: { children: ReactNode; announcement?: ReactNode }) {
   /* `usePathname` next-intl отдаёт путь без префикса локали — как ждёт `isAdminPath`. */
   const pathname = usePathname();
   const isAdmin = isAdminPath(pathname);
@@ -62,6 +62,7 @@ export function SiteChrome({ children }: { children: ReactNode }) {
       {showPublicChrome && !lite && <PointerGlow />}
       {showPublicChrome && !lite && <OrbitCursor />}
       {showPublicChrome && !lite && <Magnetic />}
+      {showPublicChrome && announcement}
       {showPublicChrome && <SiteHeader />}
       {children}
       {showPublicChrome && <MobileDock />}
