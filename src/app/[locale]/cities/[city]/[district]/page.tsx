@@ -10,7 +10,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { routes, site } from '@/config';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
-import { cityBySlug, districtBySlug } from '@/domain/geo';
+import { getCityList } from '@/server/content/geo';
 
 interface PageProps { params: Promise<{ locale: string; city: string; district: string }>; }
 
@@ -22,7 +22,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function DistrictPage({ params }: PageProps) {
   const { locale, city, district } = await params;
   setRequestLocale(locale as Locale);
-  if (!cityBySlug(city) || !districtBySlug(city as never, district)) notFound();
+  const list = await getCityList();
+  const entry = list.find((item) => item.slug === city);
+  if (!entry || !entry.districts?.some((item) => item.slug === district)) notFound();
   return (
     <main id={site.mainContentId} className="page-container inner-page">
       <h1 className="text-heading-2">{district} · {city}</h1>

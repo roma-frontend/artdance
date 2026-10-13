@@ -2601,6 +2601,9 @@ const ru: Messages = {
       promoCodes: 'Промокоды',
       giftCards: 'Подарочные карты',
       users: 'Пользователи',
+    cities: 'Города',
+    districts: 'Районы',
+    footerLinks: 'Ссылки подвала',
       moderation: 'Модерация',
       reports: 'Отчёты',
       auditLog: 'Журнал действий',
@@ -2943,6 +2946,11 @@ const ru: Messages = {
       avatar: 'Аватар',
       href: 'URL ссылки',
       hrefHint: 'Куда ведёт клик по карточке (напр. /classes/salsa).',
+      labelKey: 'Ключ перевода',
+      labelKeyHint: 'Ключ i18n текста ссылки (напр. footer.about).',
+      group: 'Колонка',
+      feature: 'Флаг модуля',
+      featureHint: 'Показывать только при включённом флаге (напр. events, shop).',
       videoAsset: 'Видеофайл',
       excerpt: 'Анонс',
       excerptHint: 'Короткий тизер для списка блога — 1–2 предложения.',
@@ -3081,6 +3089,18 @@ const ru: Messages = {
       banners: {
         title: 'Баннеры',
         subtitle: 'Герой и промо-баннеры — загрузка изображения вместо строки imageKey.',
+      },
+      footerLinks: {
+        title: 'Ссылки подвала',
+        subtitle: 'Пять колонок ссылок внизу каждой страницы; тексты — ключи i18n.',
+      },
+      cities: {
+        title: 'Города',
+        subtitle: 'Гео-хабы: город, координаты, районы и активность.',
+      },
+      districts: {
+        title: 'Районы',
+        subtitle: 'Районы городов — порядок, координаты, активность.',
       },
       users: {
         title: 'Пользователи',

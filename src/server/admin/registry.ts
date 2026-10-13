@@ -138,6 +138,10 @@ function translationConfig(resource: AdminResource): TranslationConfig | null {
       return { delegateKey: 'mediaAssetTranslation', foreignKey: 'assetId', uniqueKey: 'assetId_locale' };
     case 'blog-posts':
       return { delegateKey: 'blogPostTranslation', foreignKey: 'postId', uniqueKey: 'postId_locale' };
+    case 'cities':
+      return { delegateKey: 'cityTranslation', foreignKey: 'cityId', uniqueKey: 'cityId_locale' };
+    case 'districts':
+      return { delegateKey: 'districtTranslation', foreignKey: 'districtId', uniqueKey: 'districtId_locale' };
     default:
       return null;
   }
@@ -183,6 +187,11 @@ export function resourceCacheTags(resource: AdminResource): readonly string[] {
       return [cacheTags.blog()];
     case 'banners':
       return [cacheTags.content('banners')];
+    case 'footer-links':
+      return [cacheTags.content('footer')];
+    case 'cities':
+    case 'districts':
+      return [cacheTags.geo()];
     case 'users':
       return [];
     case 'promo-codes':
@@ -903,6 +912,90 @@ export async function listResource(resource: AdminResource, query: AdminListPara
       );
     }
 
+    case 'footer-links': {
+      const where = baseWhere(spec, query, ['labelKey', 'href', 'group']) as Prisma.FooterLinkWhereInput;
+      const [rows, total] = await Promise.all([
+        db.footerLink.findMany({
+          where,
+          skip,
+          take,
+          orderBy: [{ group: 'asc' }, { order: 'asc' }],
+          select: { id: true, labelKey: true, href: true, group: true, order: true, feature: true, isActive: true, updatedAt: true },
+        }),
+        db.footerLink.count({ where }),
+      ]);
+      return result(
+        rows.map((row) => ({
+          id: row.id,
+          labelKey: row.labelKey,
+          href: row.href,
+          group: row.group,
+          order: row.order,
+          feature: row.feature,
+          isActive: row.isActive,
+          updatedAt: iso(row.updatedAt),
+        })),
+        total,
+        page,
+      );
+    }
+
+    case 'cities': {
+      const where = baseWhere(spec, query, ['name', 'slug']) as Prisma.CityWhereInput;
+      const [rows, total] = await Promise.all([
+        db.city.findMany({
+          where,
+          skip,
+          take,
+          orderBy: { name: 'asc' },
+          select: { id: true, name: true, slug: true, latitude: true, longitude: true, isActive: true, moderation: true, updatedAt: true },
+        }),
+        db.city.count({ where }),
+      ]);
+      return result(
+        rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          latitude: row.latitude,
+          longitude: row.longitude,
+          isActive: row.isActive,
+          moderation: row.moderation,
+          updatedAt: iso(row.updatedAt),
+        })),
+        total,
+        page,
+      );
+    }
+
+    case 'districts': {
+      const where = baseWhere(spec, query, ['name', 'slug']) as Prisma.DistrictWhereInput;
+      const [rows, total] = await Promise.all([
+        db.district.findMany({
+          where,
+          skip,
+          take,
+          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+          select: { id: true, name: true, slug: true, latitude: true, longitude: true, sortOrder: true, isActive: true, updatedAt: true },
+        }),
+        db.district.count({ where }),
+      ]);
+      return result(
+        rows.map((row) => ({
+          id: row.id,
+          name: row.name,
+          slug: row.slug,
+          latitude: row.latitude,
+          longitude: row.longitude,
+          sortOrder: row.sortOrder,
+          isActive: row.isActive,
+          updatedAt: iso(row.updatedAt),
+        })),
+        total,
+        page,
+      );
+    }
+
     case 'users': {
       const where = baseWhere(spec, query, ['name', 'email']) as Prisma.UserWhereInput;
       const [rows, total] = await Promise.all([
@@ -1317,6 +1410,20 @@ export async function relationOptions(source: AdminRelationSource): Promise<read
       });
       return rows.map((row) => ({ value: row.id, label: row.name }));
     }
+
+    case 'cities': {
+      const rows = await db.city.findMany({
+        take,
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, slug: true },
+      });
+      return rows.map((row) => ({ value: row.id, label: `${row.name} · ${row.slug}` }));
+    }
+
+    case 'footer-links':
+    case 'districts':
+      /* Связей, которые выбираются в форме, у этих ресурсов нет. */
+      return [];
 
     case 'courses': {
       const rows = await db.course.findMany({

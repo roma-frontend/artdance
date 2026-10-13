@@ -2613,6 +2613,9 @@ const hy: Messages = {
       promoCodes: "Զեղչի կոդեր",
       giftCards: "Նվեր քարտեր",
       users: "Օգտատերեր",
+    cities: "Քաղակներ",
+    districts: "Շրջաններ",
+    footerLinks: "Կայքի ստորոտի հղումներ",
       moderation: "Մոդերացիա",
       reports: "Հաշվետվություններ",
       auditLog: "Գործողությունների մատյան",
@@ -2955,6 +2958,11 @@ const hy: Messages = {
       avatar: "Ավատար",
       href: "Հղման URL",
       hrefHint: "Որտեղ է տանում սեղմումը քարտի վրա (օր. /classes/salsa):",
+      labelKey: "Թարգմանության բանալի",
+      labelKeyHint: "Հղման տեքստի i18n բանալի (օր. footer.about):",
+      group: "Սյունակ",
+      feature: "Մոդուլի դրոշ",
+      featureHint: "Ցույց տալ միայն միացված մոդուլի դեպքում (օր. events, shop):",
       videoAsset: "Տեսաֆայլ",
       excerpt: "Անոնս",
       excerptHint: "Կարճ թիզեր ցուցակի համար — 1–2 նախադասություն։",
@@ -3094,6 +3102,18 @@ const hy: Messages = {
       banners: {
         title: "Բաններներ",
         subtitle: "Հերոսի և պրոմո բաններներ — պատկերի վերբեռնումը փոխարինում է imageKey տողին։",
+      },
+      footerLinks: {
+        title: "Կայքի ստորոտի հղումներ",
+        subtitle: "Հինգ սյունակ հղումներ յուրաքանչյուր էջի ներքևում; տեքստերը i18n բանալիներ են։",
+      },
+      cities: {
+        title: "Քաղաքներ",
+        subtitle: "Գեո-հանգույցներ՝ քաղաք, կոորդինատներ, շրջաններ և ակտիվություն։",
+      },
+      districts: {
+        title: "Շրջաններ",
+        subtitle: "Քաղաքի շրջաններ՝ կարգ, կոորդինատներ, ակտիվություն։",
       },
       users: {
         title: "Օգտատերեր",

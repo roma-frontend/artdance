@@ -37,7 +37,10 @@ export const adminResources = [
   'media',
   'blog-posts',
   'banners',
+  'footer-links',
   'users',
+  'cities',
+  'districts',
 ] as const;
 
 export type AdminResource = (typeof adminResources)[number];

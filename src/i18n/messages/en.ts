@@ -2637,6 +2637,9 @@ const en = {
       promoCodes: 'Promo codes',
       giftCards: 'Gift cards',
       users: 'Users',
+    cities: 'Cities',
+    districts: 'Districts',
+    footerLinks: 'Footer links',
       moderation: 'Moderation',
       reports: 'Reports',
       auditLog: 'Audit log',
@@ -3037,6 +3040,11 @@ const en = {
       avatar: 'Avatar',
       href: 'Link URL',
       hrefHint: 'Where the card click leads (e.g. /classes/salsa).',
+      labelKey: 'Translation key',
+      labelKeyHint: 'i18n key of the link label (e.g. footer.about).',
+      group: 'Column',
+      feature: 'Feature flag',
+      featureHint: 'Show only when the module is on (e.g. events, shop).',
       videoAsset: 'Video asset',
       excerpt: 'Excerpt',
       excerptHint: 'Short teaser shown on the blog listing — 1–2 sentences.',
@@ -3117,6 +3125,18 @@ const en = {
       banners: {
         title: 'Banners',
         subtitle: 'Hero and promo banners — image upload replaces string imageKey.',
+      },
+      footerLinks: {
+        title: 'Footer links',
+        subtitle: 'Five columns of links at the bottom of every page; labels are i18n keys.',
+      },
+      cities: {
+        title: 'Cities',
+        subtitle: 'Geo hubs: city, coordinates, districts and activity.',
+      },
+      districts: {
+        title: 'Districts',
+        subtitle: 'City districts — order, coordinates, activity.',
       },
       users: {
         title: 'Users',

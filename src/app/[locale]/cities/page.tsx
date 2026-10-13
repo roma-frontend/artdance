@@ -4,7 +4,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { routes, site } from '@/config';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
-import { cities } from '@/domain/geo';
+import { getCityList } from '@/server/content/geo';
 import { Link } from '@/i18n/routing';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
@@ -17,10 +17,11 @@ export default async function CitiesPage({ params }: { params: Promise<{ locale:
   const { locale } = await params;
   setRequestLocale(locale as Locale);
   const t = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
+  const cities = await getCityList();
   return (
     <main id={site.mainContentId} className="page-container inner-page">
       <h1 className="text-heading-2">{t('citiesTitle')}</h1>
-      <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+      <ul className="my-8 grid gap-4 sm:grid-cols-2">
         {cities.map((c) => (
           <li key={c.slug} className="rounded-xl border border-border-default bg-surface-card p-5">
             <h2 className="text-card-title"><Link href={routes.city(c.slug)} className="hover:underline">{c.slug}</Link></h2>

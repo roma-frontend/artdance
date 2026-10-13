@@ -677,6 +677,63 @@ model VenueMember {
   @@unique([venueId, userId])
 }
 
+model City {
+  id            String           @id @default(cuid())
+  slug          String
+  name          String
+  description   String?
+  latitude      Float
+  longitude     Float
+  moderation    ModerationStatus @default(PENDING)
+  publishedAt   DateTime?
+  isActive      Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  deletedAt     DateTime?
+  translations CityTranslation[]
+  districts    District[]
+  @@unique([slug], where: raw("\"deletedAt\" IS NULL"))
+  @@index([moderation])
+  @@index([deletedAt])
+}
+model CityTranslation {
+  id          String @id @default(cuid())
+  cityId      String
+  locale      Locale
+  name        String
+  description String?
+  city City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  @@unique([cityId, locale])
+}
+model District {
+  id            String           @id @default(cuid())
+  cityId        String
+  slug          String
+  name          String
+  description   String?
+  latitude      Float
+  longitude     Float
+  isActive      Boolean          @default(true)
+  sortOrder     Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  deletedAt     DateTime?
+  city         City                @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  translations DistrictTranslation[]
+  @@unique([cityId, slug], where: raw("\"deletedAt\" IS NULL"))
+  @@index([cityId, isActive, sortOrder])
+  @@index([deletedAt])
+}
+model DistrictTranslation {
+  id          String @id @default(cuid())
+  districtId  String
+  locale      Locale
+  name        String
+  description String?
+  district District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  @@unique([districtId, locale])
+}
+
 model Room {
   id           String         @id @default(cuid())
   venueId      String
@@ -2187,6 +2244,23 @@ model AdSlot {
   banner    Banner?  @relation(fields: [bannerId], references: [id])
 
   @@index([slotKey, isActive])
+}
+
+// Ссылки подвала, редактируемые из админки: набор, группа, порядок и адреса
+// управляются оператором, тексты остаются в i18n (`labelKey` — ключ перевода).
+// Фолбэк при пустой таблице — статический `footerNavGroups` из navigation.ts.
+model FooterLink {
+  id        String   @id @default(cuid())
+  group     String
+  labelKey  String
+  href      String
+  order     Int      @default(0)
+  feature   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, group, order])
 }
 
 // DS-03 импорт календаря WDSF: сырой календарь до нормализации в Event

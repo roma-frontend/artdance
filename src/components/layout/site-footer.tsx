@@ -15,8 +15,10 @@
 import { useFormatter, useTranslations } from 'next-intl';
 
 import { FooterParallaxFX } from '@/components/layout/footer-parallax-fx';
-import { footerNavGroups, routes, site } from '@/config';
+import { routes, site } from '@/config';
 import { mediaBaseUrl } from '@/config/media';
+import type { NavGroup } from '@/config/navigation';
+import { getFooterNavGroups } from '@/server/content/footer';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 
@@ -35,7 +37,12 @@ const SOCIAL_LABELS: Record<SocialKey, string> = {
   facebook: 'Facebook',
 };
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const groups = await getFooterNavGroups();
+  return <SiteFooterInner groups={groups} />;
+}
+
+function SiteFooterInner({ groups: footerNavGroups }: { groups: readonly NavGroup[] }) {
   const t = useTranslations();
   const format = useFormatter();
   const socials = (Object.keys(site.social) as SocialKey[]).filter((key) => site.social[key].length > 0);

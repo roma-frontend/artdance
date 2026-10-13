@@ -52,6 +52,8 @@ import { PrismaClient } from '../src/generated/prisma/client.ts';
 import { booking, promotions } from '../src/config/business.ts';
 import { homeContentConfig } from '../src/config/home-content.ts';
 import { danceStyles } from '../src/domain/enums.ts';
+import { cities as staticCities } from '../src/domain/geo.ts';
+import { footerNavGroups } from '../src/config/navigation.ts';
 import { seedMedia } from '../src/design/seed-media.ts';
 import { fromZonedParts, nextOccurrence } from '../src/lib/time/schedule.ts';
 import { parseClock } from '../src/lib/time/clock.ts';
@@ -855,6 +857,66 @@ async function seedPromoCodes(): Promise<void> {
   console.log(`  промокод ${code} (-${percentOff}%)`);
 }
 
+/* ────────────────────── География и подвал ────────────────────── */
+
+/**
+ * Города и районы из `domain/geo` — эталон прототипа. Сид подчиняется тем же
+ * правилам, что и остальной контент: названия/цифры из домена, переводы не
+ * создаются (демо-контент на основном языке), изменение домена меняет базу.
+ * Оператор дальше редактирует города и районы в админке — сид обновляет только
+ * строки, не тронутые вручную (upsert по slug).
+ */
+async function seedCities(): Promise<void> {
+  for (const city of staticCities) {
+    const cityId = await upsertLive(
+      prisma.city,
+      { slug: city.slug },
+      { latitude: city.center.lat, longitude: city.center.lng },
+      {
+        name: city.slug,
+        moderation: 'APPROVED',
+        publishedAt: new Date(),
+        isActive: true,
+      },
+    );
+    if (city.districts) {
+      for (const [index, district] of city.districts.entries()) {
+        await upsertLive(
+          prisma.district,
+          { cityId, slug: district.slug },
+          { latitude: district.center.lat, longitude: district.center.lng },
+          {
+            name: district.slug,
+            isActive: true,
+            sortOrder: index,
+          },
+        );
+      }
+    }
+  }
+  console.log(`  городов: ${staticCities.length}`);
+}
+
+/**
+ * Ссылки подвала — зеркало статического `footerNavGroups` из navigation.ts.
+ * Таблица пересоздаётся целиком: это хром страницы, а не пользовательские
+ * данные, и повторный сид должен вернуть макет, а не умножить ссылки.
+ */
+async function seedFooterLinks(): Promise<void> {
+  const items = footerNavGroups.flatMap((group, groupIndex) =>
+    group.items.map((item, itemIndex) => ({
+      group: group.id,
+      labelKey: item.labelKey,
+      href: item.href,
+      order: groupIndex * 100 + itemIndex,
+      feature: item.feature ?? null,
+    })),
+  );
+  await prisma.footerLink.deleteMany({});
+  await prisma.footerLink.createMany({ data: items });
+  console.log(`  ссылок подвала: ${items.length}`);
+}
+
 /* ─────────────────────────── Запуск ─────────────────────────── */
 
 async function main(): Promise<void> {
@@ -879,6 +941,8 @@ async function main(): Promise<void> {
   await seedReviews(instructorIds, classSlugToId);
   await seedHomeContent();
   await seedPromoCodes();
+  await seedCities();
+  await seedFooterLinks();
 
   if (CLEAN_SLOTS) {
     const holds = await prisma.slotHold.deleteMany({});
