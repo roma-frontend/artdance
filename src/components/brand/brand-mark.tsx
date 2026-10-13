@@ -12,7 +12,7 @@
  * Геометрия взята из прототипа без изменений.
  */
 
-import { mediaBaseUrl } from '@/config/media';
+import { mediaProxyUrl } from '@/config/media';
 
 interface BrandMarkProps {
   className?: string;
@@ -23,9 +23,7 @@ interface BrandMarkProps {
 
 function brandSrc(name: 'logo' | 'logoOnDark'): string {
   const key = name === 'logo' ? 'brand/logo.png' : 'brand/logo-on-dark.png';
-  const cdn = (mediaBaseUrl ?? '').trim().replace(/\/$/, '');
-  if (cdn) return `${cdn}/${key}`;
-  return `/${key}`;
+  return mediaProxyUrl(key);
 }
 
 export function BrandMark({ className, compact = false, solid }: BrandMarkProps) {

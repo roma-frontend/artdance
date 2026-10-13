@@ -22,6 +22,7 @@
     "NEXT_PUBLIC_APP_URL": "https://artdance.pages.dev",
     "NEXT_PUBLIC_APP_ENV": "production",
     "NEXT_PUBLIC_DEFAULT_LOCALE": "hy",
+    "NEXT_PUBLIC_MEDIA_CDN_URL": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev",
     "NEXT_PUBLIC_MEDIA_PROXY_ORIGIN": "true",
     "R2_PUBLIC_URL": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev",
     "NEXT_PUBLIC_FEATURE_SHOP": "true",

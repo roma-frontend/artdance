@@ -129,19 +129,26 @@ DATABASE_URL="…" npm run db:seed   # демо-контент; перед на�
 запросы к `*.r2.dev` ответом 403: иконки PWA, постеры и видео то открываются,
 то нет в зависимости от сети. Поэтому медиа отдаётся через origin:
 
-* `src/config/media.ts` в proxy-режиме генерирует относительные `/media-proxy/<ключ>`;
+* прямые загрузки браузера (видео, постеры-атрибуты, иконки PWA, лого, PDF)
+  получают относительные `/media-proxy/<ключ>` — `mediaProxyUrl` в proxy-режиме;
 * Vercel — `vercel.json` рерайт `/media-proxy/:path*` → `https://${R2_PUBLIC_URL}/:path*`;
-* Cloudflare — `src/proxy.ts` сам забирает объект у R2 (GET/HEAD, Range).
+* Cloudflare — `src/proxy.ts` сам забирает объект у R2 (GET/HEAD, Range);
+* `next/image` оставлен на абсолютных R2-URL: браузер их не видит (оптимизатор
+  фетчит источник на сервере), а относительные пути оптимизатор отклоняет
+  (`INVALID_IMAGE_OPTIMIZE_REQUEST`), поэтому `NEXT_PUBLIC_MEDIA_CDN_URL`
+  обязателен для сборки на обеих платформах.
 
 Обязательные переменные окружения для сборки/рантайма:
 
 | Платформа | Переменная | Значение |
 | --- | --- | --- |
+| Vercel (build) | `NEXT_PUBLIC_MEDIA_CDN_URL` | `https://pub-…r2.dev` (абсолютные src для оптимизатора) |
 | Vercel (build) | `NEXT_PUBLIC_MEDIA_PROXY_ORIGIN` | `true` |
 | Vercel (server) | `R2_PUBLIC_URL` | `https://pub-…r2.dev` (текущий бакет) |
+| Cloudflare (build) | `NEXT_PUBLIC_MEDIA_CDN_URL` | `https://pub-…r2.dev` (уже в `wrangler.jsonc`) |
 | Cloudflare (build) | `NEXT_PUBLIC_MEDIA_PROXY_ORIGIN` | `true` (уже в `wrangler.jsonc`) |
 | Cloudflare (runtime) | `R2_PUBLIC_URL` | `https://pub-…r2.dev` (уже в `wrangler.jsonc`) |
 
-`NEXT_PUBLIC_MEDIA_CDN_URL` в проде можно оставить пустой/удалить: в proxy-режиме
-он не используется (бакет один, путь `/media-proxy/<ключ>` маппится на ключ R2 1:1,
-включая seed-префикс `media/`). В dev без флага работают прежние абсолютные R2-URL.
+Путь `/media-proxy/<ключ>` маппится на ключ R2 1:1, включая seed-префикс `media/`.
+В dev (без флага `NEXT_PUBLIC_MEDIA_PROXY_ORIGIN`) и видео, и картинки ходят на
+R2 напрямую — у локального сервера нет ни ревайта, ни edge-прокси.

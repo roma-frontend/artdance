@@ -13,7 +13,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { StatGrid, type StatSpec } from '@/components/data/stat';
-import { mediaUrl } from '@/config/media';
+import { mediaProxyUrl } from '@/config/media';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { adminNavigation, routes } from '@/config';
@@ -83,7 +83,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <a
-                  href={mediaUrl('/docs/ArtDance_Operations_Manual_EN.pdf')}
+                  href={mediaProxyUrl('/docs/ArtDance_Operations_Manual_EN.pdf')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-xl border border-accent bg-accent px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-all hover:bg-accent-hover hover:shadow-md active:scale-[0.98]"
@@ -93,7 +93,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
                   <span aria-hidden>↗</span>
                 </a>
                 <a
-                  href={mediaUrl('/docs/ArtDance_Operations_Manual_HY.pdf')}
+                  href={mediaProxyUrl('/docs/ArtDance_Operations_Manual_HY.pdf')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-xl border border-metal bg-metal px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white shadow-sm transition-all hover:bg-metal-dark hover:shadow-md active:scale-[0.98]"
