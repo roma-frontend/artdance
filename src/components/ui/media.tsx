@@ -118,8 +118,15 @@ function resolve(
   // и contentBlock keys с фрагментом не находятся; mediaUrl тоже снимет, но seed-
   // проверка должна видеть имя до фрагмента.
   const cleanSrc = src.indexOf('#') === -1 ? src : src.slice(0, src.indexOf('#'));
+  // `/media-proxy/<ключ>` — proxy-ключ для прямых загрузок (видео, постеры).
+  // Для next/image его нужно развернуть в абсолютный R2-URL: оптимизатор фетчит
+  // источник на сервере, а CDN-префикс поверх `/media-proxy/` дал бы несуществующий
+  // ключ `r2.dev/media-proxy/...`.
+  const srcKey = cleanSrc.startsWith('/media-proxy/')
+    ? cleanSrc.slice('/media-proxy/'.length)
+    : cleanSrc;
   if (fromData.width !== undefined && fromData.height !== undefined) {
-    const url = cleanSrc.startsWith('http') ? cleanSrc : mediaUrl(cleanSrc);
+    const url = srcKey.startsWith('http') ? srcKey : mediaUrl(srcKey);
     return {
       url,
       width: fromData.width,
@@ -134,7 +141,7 @@ function resolve(
   }
 
   if (cleanSrc.startsWith('/') || cleanSrc.startsWith('http://') || cleanSrc.startsWith('https://') || isBareKey) {
-    const url = cleanSrc.startsWith('http') ? cleanSrc : mediaUrl(cleanSrc);
+    const url = srcKey.startsWith('http') ? srcKey : mediaUrl(srcKey);
     return { url, blur: fromData.blurDataUrl ?? blurDataUrl };
   }
 

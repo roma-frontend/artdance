@@ -19,4 +19,15 @@ describe('Media container dimensions', () => {
   it('leaves sizing to the parent when fill is explicit', () => {
     expect(Media({ ...props, fill: true })?.props.style).toBeUndefined();
   });
+
+  it('unwraps proxy paths so the optimizer receives an R2 key, not /media-proxy/...', () => {
+    const wrapper = Media({
+      src: '/media-proxy/media/style-tiles/ballet/ballet-poster.webp',
+      alt: 'Ballet',
+      preset: 'categoryCard',
+    }) as { props: { children: { props: { src: string } } } };
+    const src = wrapper.props.children.props.src;
+    expect(src).toMatch(/(^|\/)media\/style-tiles\/ballet\/ballet-poster\.webp$/);
+    expect(src).not.toContain('/media-proxy/');
+  });
 });
