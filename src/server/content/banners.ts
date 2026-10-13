@@ -2,6 +2,7 @@ import 'server-only';
 
 import { cacheTags, dataRevalidate } from '@/config/cache';
 import type { MediaRef } from '@/domain/content';
+import type { Locale } from '@/i18n/config';
 import { db } from '@/lib/db';
 import { defineQuery } from '@/server/query';
 import { listLiveBanners } from '@/server/banners/service';
@@ -32,7 +33,7 @@ export const getLiveBanners = defineQuery({
   name: 'liveBanners',
   tags: () => [cacheTags.content('banners')],
   revalidate: dataRevalidate.content,
-  handler: async (): Promise<readonly LiveBanner[]> => {
+  handler: async (locale: Locale): Promise<readonly LiveBanner[]> => {
     const banners = await listLiveBanners();
     if (banners.length === 0) return [];
 
@@ -52,8 +53,24 @@ export const getLiveBanners = defineQuery({
       mediaRows.map((row) => [row.bannerId, toMediaRef(row as MediaRow)]),
     );
 
+    /*
+     * Заголовок собирается из переводов. Отдельный запрос, а не `include`:
+     * связь `Banner→BannerTranslation` вложена в `select` и вернула бы строки
+     * всех локалей сразу. Локаль без перевода получает базовый `Banner.title`.
+     */
+    const translationRows = await db.bannerTranslation.findMany({
+      where: { bannerId: { in: banners.map((banner) => banner.id) } },
+      select: { bannerId: true, locale: true, title: true },
+    });
+    const titleByBannerId = new Map(
+      translationRows
+        .filter((row) => row.locale === locale)
+        .map((row) => [row.bannerId, row.title]),
+    );
+
     return banners.map((banner) => ({
       ...banner,
+      title: titleByBannerId.get(banner.id) ?? banner.title,
       image: mediaByBannerId.get(banner.id) ?? null,
     }));
   },

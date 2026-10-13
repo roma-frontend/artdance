@@ -33,6 +33,7 @@ interface StickyActionBarProps {
 export function StickyActionBar({ summary, action, className }: StickyActionBarProps) {
   return (
     <div
+      data-slot="sticky-action-bar"
       className={cn(
         /* Только там, где правая колонка схлопнута: на десктопе действие в ней. */
         'above-mobile-dock-flush fixed inset-x-0 z-sticky lg:hidden',

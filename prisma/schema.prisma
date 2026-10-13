@@ -2231,6 +2231,25 @@ model Banner {
   updatedAt DateTime    @updatedAt
   adSlots   AdSlot[]
   media     MediaAsset?
+  translations BannerTranslation[]
+}
+
+/**
+ * Перевод заголовка баннера.
+ *
+ * Баннер редактируется из админки, поэтому заголовок живёт в БД, а не в
+ * `messages`: иначе текст промо сменил бы только разработчик. Базовый
+ * `Banner.title` остаётся запасным вариантом для локали без перевода.
+ */
+model BannerTranslation {
+  id       String @id @default(cuid())
+  bannerId String
+  locale   Locale
+  title    String
+
+  banner Banner @relation(fields: [bannerId], references: [id], onDelete: Cascade)
+
+  @@unique([bannerId, locale])
 }
 
 // DS-08 рекламный слот: куда ставить баннер (hero, catalog-top, checkout-sidebar)

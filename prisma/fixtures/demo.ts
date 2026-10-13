@@ -960,7 +960,13 @@ export const demoHomeContent = {
 export const demoBanners = [
   {
     key: 'find-your-rhythm',
+    /* Базовый текст — запасной вариант; переводы ниже. */
     title: 'Every body has a rhythm. Find yours.',
+    translations: {
+      hy: 'Ամեն մարմին ունի իր ռիթմը։ Գտի՛ր քոնը։',
+      ru: 'У каждого тела свой ритм. Найди свой.',
+      en: 'Every body has a rhythm. Find yours.',
+    },
     asset: 'hero-dancer',
     href: '/discover',
     order: 0,

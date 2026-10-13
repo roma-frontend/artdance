@@ -30,11 +30,11 @@ test('Слои hero уходят с разной скоростью: кадр �
   await expect(page.locator('[data-slot="hero-fx"]')).toBeAttached();
   await expect.poll(() => background.evaluate((node) => node.style.transform)).toContain('translate3d');
   /*
-    * AnnouncementBar из CMS стоит перед hero в публичном layout. Берём реальный
-    * offset секции, а не высоту баннера: на мобильном браузер может ещё менять
-    * высоту медиа до первого scroll, и фиксированная сумма даёт слишком хрупкий
-    * тест на границе между баннером и hero.
-    */
+   * Промо-баннер вынесен из потока (появляется поверх страницы только после
+   * первого экрана), поэтому секция hero начинается от нуля. Но смещение всё
+   * равно берём замером: браузер может менять высоту медиа до первого scroll, и
+   * фиксированная сумма даёт хрупкий тест на границе кадра с hero.
+   */
   const heroPosition = await background.evaluate((node) => {
     const hero = node.closest('section');
     if (!hero) throw new Error('hero section not found');

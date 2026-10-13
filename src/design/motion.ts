@@ -422,6 +422,42 @@ export const adminMotion = {
  * Пролёт (`flightMs`) → медленный доезд камеры, пока новая страница не
  * отрисована (не дольше `holdMaxMs`) → растворение в hero (`revealMs`).
  */
+/**
+ * ПОЯВЛЕНИЕ ПРОМО-ПАНЕЛИ — 3D-вход снизу на пружине.
+ *
+ * Панель входит как крышка на петле: наклон вокруг оси X гасится к ровному
+ * положению, пружина мягче основной — кручение на резкой пружине читалось бы
+ * рывком, а не посадкой. Наклон по прокрутке ограничен `scrollTiltDeg`: текст
+ * на панели не должен «плыть», поэтому амплитуда мала.
+ */
+export const bannerMotion = {
+  spring: { type: 'spring' as const, stiffness: 300, damping: 26, mass: 0.9 },
+  perspectivePx: 1200,
+  offsetFromPx: 44,
+  offsetExitPx: 36,
+  rotateFromDeg: 16,
+  rotateExitDeg: -12,
+  scrollTiltDeg: 2.5,
+  scrollVelocityRange: 1400,
+  /**
+   * Уход «нырком» — когда слово ARTDANCE в подвале входит в кадр.
+   *
+   * Ключевые кадры (times 0 / 0.55 / 1): панель сначала слегка откатывается
+   * назад (`retreatDeg`), затем набирает скорость вниз (`plungeDeg`) и тонет за
+   * нижнюю кромку. Ease-in — падение, а не скольжение: скорость растёт к концу.
+   */
+  dive: {
+    yPx: 140,
+    retreatDeg: -8,
+    plungeDeg: 24,
+    scale: 0.96,
+    durationMs: 620,
+    ease: [0.5, 0, 0.9, 0.25] as [number, number, number, number],
+  },
+  /** При `prefers-reduced-motion` остаётся только короткое растворение. */
+  reducedFadeMs: 150,
+} as const;
+
 export const portalTransition = {
   flightMs: 1350,
   revealMs: 1100,
@@ -486,6 +522,7 @@ export const motion = {
   loading: loadingMotion,
   portal: portalTransition,
   admin: adminMotion,
+  banner: bannerMotion,
   reducedMotionDisables,
   /** Базовые шкалы — чтобы не импортировать primitives отдельно. */
   duration,

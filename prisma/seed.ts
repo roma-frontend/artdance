@@ -32,9 +32,9 @@
  *
  * Переводов сущностей (`*Translation`). У демо-контента их нет: тексты в макете
  * только на английском, и записать одну и ту же строку в три локали значило бы
- * выдать заглушку за перевод. Единственное исключение — alt-тексты изображений:
- * они переведены в фикстурах по-настоящему и попадают в
- * `MediaAssetTranslation`.
+ * выдать заглушку за перевод. Исключение — строки, которые в фикстурах написаны
+ * на трёх языках по-настоящему: alt-тексты изображений
+ * (`MediaAssetTranslation`) и заголовок промо-баннера (`BannerTranslation`).
  *
  * ## Что сид удаляет
  *
@@ -53,6 +53,7 @@ import { booking, promotions } from '../src/config/business.ts';
 import { homeContentConfig } from '../src/config/home-content.ts';
 import { danceStyles } from '../src/domain/enums.ts';
 import { cities as staticCities } from '../src/domain/geo.ts';
+import { locales } from '../src/i18n/config.ts';
 import { footerNavGroups } from '../src/config/navigation.ts';
 import { seedMedia } from '../src/design/seed-media.ts';
 import { fromZonedParts, nextOccurrence } from '../src/lib/time/schedule.ts';
@@ -865,6 +866,16 @@ async function seedBanners(): Promise<void> {
       },
       select: { id: true },
     });
+
+    /* Заголовок промо переводится: в демо-данных это три языка сразу. */
+    for (const locale of locales) {
+      const title = item.translations[locale];
+      await prisma.bannerTranslation.upsert({
+        where: { bannerId_locale: { bannerId: banner.id, locale } },
+        update: { title },
+        create: { bannerId: banner.id, locale, title },
+      });
+    }
 
     await attachMedia(item.asset, { bannerId: banner.id }, `banner:${item.key}`);
   }

@@ -67,7 +67,15 @@ const globalForPrisma = globalThis as unknown as { prismaBase?: PrismaClient };
  * pool is intentionally cached, but the old instance then lacks its delegate.
  * Recreate that instance once instead of keeping an unusable client forever. */
 const cachedBase = globalForPrisma.prismaBase;
-const base = cachedBase && 'supportTicket' in cachedBase && 'operatorSetting' in cachedBase ? cachedBase : createBaseClient();
+const base =
+  cachedBase &&
+  'supportTicket' in cachedBase &&
+  'operatorSetting' in cachedBase &&
+  /* Новая модель, добавленная при работающем `next dev`: старый экземпляр
+   * отдаст `undefined` вместо делегата, если не пересоздать клиент. */
+  'bannerTranslation' in cachedBase
+    ? cachedBase
+    : createBaseClient();
 
 if (cachedBase && cachedBase !== base) void cachedBase.$disconnect();
 

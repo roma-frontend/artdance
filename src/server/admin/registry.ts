@@ -136,6 +136,8 @@ function translationConfig(resource: AdminResource): TranslationConfig | null {
       return { delegateKey: 'courseTranslation', foreignKey: 'courseId', uniqueKey: 'courseId_locale' };
     case 'media':
       return { delegateKey: 'mediaAssetTranslation', foreignKey: 'assetId', uniqueKey: 'assetId_locale' };
+    case 'banners':
+      return { delegateKey: 'bannerTranslation', foreignKey: 'bannerId', uniqueKey: 'bannerId_locale' };
     case 'blog-posts':
       return { delegateKey: 'blogPostTranslation', foreignKey: 'postId', uniqueKey: 'postId_locale' };
     case 'cities':

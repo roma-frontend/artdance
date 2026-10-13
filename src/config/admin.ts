@@ -1203,7 +1203,7 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
     ],
     fields: [
       { name: 'key', labelKey: 'admin.fields.slug', kind: 'slug', required: true },
-      { name: 'title', labelKey: 'admin.fields.title', kind: 'text', required: true },
+      { name: 'title', labelKey: 'admin.fields.title', kind: 'text', required: true, localized: true },
       { name: 'href', labelKey: 'admin.fields.href', kind: 'text', hintKey: 'admin.fields.hrefHint' },
       { name: 'order', labelKey: 'admin.fields.sortOrder', kind: 'number', min: 0, max: 999, dbDefault: true },
       { name: 'isActive', labelKey: 'admin.fields.isActive', kind: 'switch' },

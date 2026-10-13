@@ -135,7 +135,7 @@ export function PageHero({
         )}
       >
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <Breadcrumb label={t('a11y.breadcrumbNav')} className="mb-5">
+          <Breadcrumb label={t('a11y.breadcrumbNav')} className="my-5">
             <BreadcrumbList className="text-content-on-cinema-muted">
               <BreadcrumbItem>
                 <BreadcrumbLink asChild className="hover:text-content-on-cinema">
