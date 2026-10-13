@@ -29,6 +29,20 @@ const rawMediaBaseUrl =
   candidates.find((value) => value.length > 0 && !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/i.test(value)) ?? '';
 export const mediaBaseUrl = rawMediaBaseUrl;
 
+/**
+ * Proxy-режим отдачи медиа через origin.
+ *
+ * Корпоративные прокси (Zscaler и аналоги) на части компьютеров режут прямые
+ * cross-site запросы к `*.r2.dev` ответом 403, поэтому браузеру отдаются
+ * относительные URL `/media-proxy/<ключ>`, а до R2 доходит уже сервер:
+ *   • Vercel — `rewrite /media-proxy/:path* → https://${R2_PUBLIC_URL}/:path*`;
+ *   • Cloudflare Worker — `GET/HEAD /media-proxy/*` обрабатывает `src/proxy.ts`.
+ * Включается на этапе сборки (`NEXT_PUBLIC_MEDIA_PROXY_ORIGIN=true`). В dev
+ * остаются абсолютные R2-URL: у локального сервера нет ни ревайта, ни
+ * edge-прокси, а R2_PUBLIC_URL читается напрямую.
+ */
+const originProxy = process.env.NEXT_PUBLIC_MEDIA_PROXY_ORIGIN === 'true';
+
 /** Ширины, для которых генерируются варианты. Совпадают с `next.config` deviceSizes. */
 export const imageWidths = [320, 420, 640, 768, 1024, 1280, 1600, 1920, 2560] as const;
 
@@ -191,6 +205,12 @@ export function mediaUrl(key: string): string {
   const hashAt = key.indexOf('#');
   const cleanKey = hashAt === -1 ? key : key.slice(0, hashAt);
   if (cleanKey.startsWith('http')) return cleanKey;
+  if (originProxy) {
+    // Ключ бакета без ведущего «/»: `/media/seed/x.webp` → R2 `media/seed/x.webp`,
+    // голый ключ загрузки `instructors/x` → R2 `instructors/x`.
+    const rel = cleanKey.startsWith('/') ? cleanKey.slice(1) : cleanKey;
+    return `/media-proxy/${rel}`;
+  }
   // R2 public base: из media.ts (NEXT_PUBLIC_MEDIA_CDN_URL) или алиасов процесса (R2_PUBLIC_URL)
   const cdn =
     mediaBaseUrl ||

@@ -25,6 +25,7 @@ import createIntlMiddleware from 'next-intl/middleware';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { security } from '@/config/business';
+import { cacheControl } from '@/config/cache';
 import { isProtectedPath, routes } from '@/config/routes';
 import {
   authContentSecurityPolicy,
@@ -109,6 +110,48 @@ export default async function proxy(request: NextRequest) {
   }
 
   /**
+   * Медиа через origin (proxy-режим): браузер не ходит на `.r2.dev` напрямую —
+   * корпоративные прокси режут такие cross-site запросы (403 Zscaler). Worker
+   * забирает объект у R2 и отдаёт его с кеш-заголовками и CORS. Range
+   * пробрасывается: видеоплееру нужен сёк к файлу.
+   */
+  if (
+    (request.method === 'GET' || request.method === 'HEAD') &&
+    pathname.startsWith('/media-proxy/')
+  ) {
+    const upstreamBase = process.env.R2_PUBLIC_URL?.trim() || process.env.R2_PUBLIC_BASE_URL?.trim() || '';
+    const key = pathname.slice('/media-proxy/'.length);
+    if (!upstreamBase || !key) {
+      return applySecurityHeaders(
+        NextResponse.json({ error: 'MEDIA_NOT_FOUND' }, { status: 404 }),
+        pathname,
+      );
+    }
+    try {
+      const upstream = await fetch(`${upstreamBase.replace(/\/$/, '')}/${key}`, {
+        method: request.method,
+        headers: {
+          range: request.headers.get('range') ?? '',
+          'accept-ranges': 'bytes',
+        },
+        signal: AbortSignal.timeout(15_000),
+      });
+      const headers = new Headers(upstream.headers);
+      headers.set('Cache-Control', cacheControl.media);
+      headers.set('Access-Control-Allow-Origin', '*');
+      return applySecurityHeaders(
+        new NextResponse(upstream.body, { status: upstream.status, headers }),
+        pathname,
+      );
+    } catch {
+      return applySecurityHeaders(
+        NextResponse.json({ error: 'MEDIA_UPSTREAM_UNAVAILABLE' }, { status: 502 }),
+        pathname,
+      );
+    }
+  }
+
+  /**
    * Backstop от флуда на всё API. Точечные лимиты (логин, платежи, брони)
    * применяются в самих операциях по ключам из `rateLimits`.
    */
@@ -159,5 +202,7 @@ export default async function proxy(request: NextRequest) {
  * на изображениях и шрифтах.
  */
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|monitoring|favicon\\.ico|.*\\..*).*)'],
+  // `/media-proxy/*` с расширением в имени ловится исключением `.*\..*`
+  // основного шаблона, поэтому добавлен отдельной записью.
+  matcher: ['/((?!_next/static|_next/image|monitoring|favicon\\.ico|.*\\..*).*)', '/media-proxy/:path*'],
 };
