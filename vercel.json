@@ -1,12 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["hnd1"],
-  /*
-   * Медиа через origin: браузер не ходит на `.r2.dev` напрямую (корпоративные
-   * прокси режут cross-site 403), R2 вызывает сервер Vercel. Путь `/media-proxy/<key>`
-   * маппится 1:1 на объект бакета, включая seed-префикс: `/media-proxy/media/seed/x.webp`
-   * → R2 `media/seed/x.webp`. Требует переменной окружения `R2_PUBLIC_URL` на Vercel.
-   */
   "rewrites": [
     {
       "source": "/media-proxy/:path*",
