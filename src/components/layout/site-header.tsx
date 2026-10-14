@@ -34,7 +34,8 @@ import { LocaleSwitcher } from '@/components/layout/locale-switcher';
 import { navIcons } from '@/components/layout/nav-icons';
 import { useSearchOverlay } from '@/components/search/search-overlay';
 import { Button } from '@/components/ui/button';
-import { hasCinemaHero, headerCta, headerIconItems, routes } from '@/config';
+import { hasCinemaHero, headerCta, routes } from '@/config';
+import { useEntitlementFilters } from '@/lib/entitlements/use-entitlements';
 import { Link, usePathname } from '@/i18n/routing';
 import { useCinemaHeroBehind } from '@/lib/hooks/use-cinema-hero-behind';
 import { cn } from '@/lib/utils';
@@ -115,6 +116,7 @@ export function SiteHeader() {
   }, [favCount]);
 
   const solid = island || !heroBehind;
+  const { headerIconItems: entHeaderIcons } = useEntitlementFilters();
 
   return (
     <header
@@ -158,7 +160,7 @@ export function SiteHeader() {
         </div>
 
         <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2">
-          {headerIconItems.map((item) => {
+          {entHeaderIcons.map((item) => {
             const Icon = navIcons[item.icon];
             const isCart = item.id === 'cart';
             const cartCount = isCart ? (snapshot?.totals.itemCount ?? 0) : 0;

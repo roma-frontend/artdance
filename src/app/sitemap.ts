@@ -15,14 +15,14 @@
 
 import type { MetadataRoute } from 'next';
 
-import { buildSitemap } from '@/lib/seo/sitemap';
+import { buildSitemapWithEntitlements } from '@/lib/seo/sitemap';
 import { getCatalogSlugs, getStyleHubSlugs } from '@/server/content/catalog';
 import { getBlogSlugs } from '@/server/queries/blog';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const slugs = await getCatalogSlugs();
 
-  return buildSitemap({
+  return buildSitemapWithEntitlements({
     classes: slugs.classes,
     instructors: slugs.instructors,
     venues: slugs.venues,

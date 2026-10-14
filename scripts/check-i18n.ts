@@ -156,6 +156,8 @@ const ALLOWED_IDENTICAL = [
   /^.*squareMeters$/,
   /^footer\.phonePlaceholder$/,
   /^admin\.integrations\.turnstileName$/,
+  /^entitlements\.preset\.(mvp|full|premium)$/,
+  /^entitlements\.presetPrice\.(mvp|full|premium)$/,
   /* Универсальные символы-разделители не переводятся. */
   /^admin\.media\.purposeUnknown$/,
   /^footer\.applyEmailPlaceholder$/,

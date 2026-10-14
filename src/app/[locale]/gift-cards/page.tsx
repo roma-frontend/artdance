@@ -21,6 +21,7 @@ import { PageHero, breadcrumbsFromTrail } from '@/components/layout/page-hero';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { notFound } from 'next/navigation';
 import { promotions, routes, site } from '@/config';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
@@ -45,6 +46,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function GiftCardsPage({ params }: PageProps) {
+  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+  if (!(await isEntitlementEnabled('shop').catch(() => true))) notFound();
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 

@@ -1,19 +1,24 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
-import { ExportModelButton, FeatureFlagButton, JobButton, OperatorTerminal, SessionRevokeButton, TicketReplyForm, TranslationEditor } from '@/components/admin/operator-actions';
+import { FeatureFlagButton, JobButton, OperatorTerminal, SessionRevokeButton, TicketReplyForm, TranslationEditor } from '@/components/admin/operator-actions';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { operatorModels, browseModel, translationCatalog } from '@/server/admin/operator';
+import { operatorModels, browseModel, translationCatalog, operatorDelegate } from '@/server/admin/operator';
 import { features } from '@/config/features';
 import { adminAccess } from '@/server/admin/access';
 import { db } from '@/lib/db';
 import { routes } from '@/config';
 import { Link } from '@/i18n/routing';
 import type { Locale } from '@/i18n/config';
+import { getCaller } from '@/lib/auth/guards';
+import { isEntitlementOwner } from '@/config/security';
+import { EntitlementsPanel } from '@/components/admin/entitlements-panel';
+import { getEntitlementsState, resolveEffectiveEnabled } from '@/server/entitlements/service';
+import { entitlementFeatureCatalog, presetDefaults } from '@/server/entitlements/catalog';
 
 interface PageProps { params: Promise<{ locale: string; tool: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }
 const text = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] ?? '' : value ?? '';
@@ -30,11 +35,33 @@ export default async function OperatorToolPage({ params, searchParams }: PagePro
 
   if (tool === 'database') {
     const models = operatorModels();
-    const model = text(query.model) || models[0]?.name;
-    if (!model) return <AccessDenied />;
+    // Counts for sidebar badges — single batched query, still god-mode
+    const counts = await Promise.all(
+      models.map(async (m) => {
+        try {
+          const d = operatorDelegate(m.name);
+          const c = await d.count({});
+          return { name: m.name, count: c };
+        } catch {
+          return { name: m.name, count: 0 };
+        }
+      }),
+    );
+    const requested = text(query.model);
+    const initialModel = (requested && models.some((m) => m.name === requested) ? requested : models[0]?.name) ?? null;
+    const q = text(query.q);
     const page = Math.max(Number(text(query.page)) || 1, 1);
-    const data = await browseModel(model, text(query.q), page);
-    return <><AdminPageHeader title={t('databaseTitle')} subtitle={t('databaseHint')} actions={back} /><div className="mb-6 flex flex-wrap items-center gap-3"><span className="text-label uppercase text-content-tertiary">{t('modelLabel')}</span>{models.map((item) => <Button key={item.name} asChild size="sm" variant={item.name === model ? 'accent' : 'outline'}><Link href={routes.adminOperatorTool('database', { model: item.name })}>{item.name}</Link></Button>)}<ExportModelButton model={model} /></div><form className="mb-6 flex gap-2"><Input name="q" defaultValue={text(query.q)} placeholder={t('searchRecords')} /><input type="hidden" name="model" value={model} /><Button type="submit" variant="outline">{t('searchRecords')}</Button></form><DataRows fields={data.fields} rows={data.rows} label={t('recordCount', { count: data.total })} /></>;
+    let payload: { fields: string[]; rows: Array<Record<string, unknown> & { id: string }>; total: number } | null = null;
+    if (initialModel) {
+      try {
+        const data = await browseModel(initialModel, q, page);
+        payload = { fields: data.fields, rows: data.rows as Array<Record<string, unknown> & { id: string }>, total: data.total };
+      } catch {
+        payload = { fields: [], rows: [], total: 0 };
+      }
+    }
+    const { DataBrowserClient } = await import('@/components/superadmin/data-browser-client');
+    return <DataBrowserClient models={counts} initialModel={initialModel} initialQuery={q} initialPage={page} payload={payload} />;
   }
 
   if (tool === 'translations') {
@@ -64,9 +91,27 @@ export default async function OperatorToolPage({ params, searchParams }: PagePro
   if (tool === 'terminal') return <><AdminPageHeader title={t('terminalTitle')} subtitle={t('terminalHint')} actions={back} /><OperatorTerminal /></>;
   if (tool === 'access') return <><AdminPageHeader title={t('accessTitle')} subtitle={t('accessHint')} actions={back} /><div className="flex flex-wrap gap-3"><Button asChild variant="accent"><Link href={routes.adminSettings()}>{t('openAccessSettings')}</Link></Button><Button asChild variant="outline"><Link href={routes.adminUsers()}>{t('impersonate')}</Link></Button></div></>;
 
+  if (tool === 'entitlements') {
+    const caller = await getCaller({ realActor: true });
+    const isOwner = !!caller && isEntitlementOwner(caller);
+    if (!isOwner) return <AccessDenied />;
+    const state = await getEntitlementsState();
+    const rows = entitlementFeatureCatalog.map((meta) => {
+      const presetValue = presetDefaults[state.preset][meta.key as keyof typeof presetDefaults.mvp] ?? false;
+      const overridden = state.overrides.has(meta.key as never);
+      const effective = resolveEffectiveEnabled(state.preset, state.overrides, meta.key as never);
+      return { meta, presetValue, effective, overridden };
+    });
+    const timeline = await db.auditLog.findMany({
+      where: { action: { in: ['admin.entitlement.preset', 'admin.entitlement.override', 'admin.entitlement.overrideReset', 'admin.entitlement.reset'] } },
+      orderBy: { createdAt: 'desc' },
+      take: 12,
+      select: { id: true, action: true, actorEmail: true, createdAt: true, diff: true },
+    });
+    return <><AdminPageHeader title={t('entitlementsTitle')} subtitle={t('entitlementsHint')} actions={back} /><EntitlementsPanel preset={state.preset} rows={rows} timeline={timeline} /></>;
+  }
+
   return <><AdminPageHeader title={t('title')} subtitle={t('subtitle')} actions={back} /><p className="text-body-sm text-content-secondary">{t('emptyQueue')}</p></>;
 }
 
-function DataRows({ fields, rows, label }: { fields: string[]; rows: Record<string, unknown>[]; label: string }) {
-  return <div className="overflow-x-auto rounded-xl border border-border-default bg-surface-card"><Table><caption className="p-3 text-left text-caption text-content-secondary">{label}</caption><TableHeader><TableRow>{fields.map((field) => <TableHead key={field}>{field}</TableHead>)}</TableRow></TableHeader><TableBody>{rows.map((row, index) => <TableRow key={String(row.id ?? index)}>{fields.map((field) => <TableCell key={field} className="max-w-64 whitespace-pre-wrap text-caption">{typeof row[field] === 'object' ? JSON.stringify(row[field]) : String(row[field] ?? '—')}</TableCell>)}</TableRow>)}</TableBody></Table></div>;
-}
+

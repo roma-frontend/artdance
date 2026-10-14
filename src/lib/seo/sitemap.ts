@@ -315,3 +315,31 @@ export function buildSitemap(slugs: EntitySlugs, lastModified: Date = new Date()
     alternates: { languages: hreflangAlternates(spec.path) },
   }));
 }
+
+/**
+ * Sitemap с учётом entitlements (рантайм). Падает грациозно: если БД недоступна
+ * на сборке — отдаёт `buildSitemap` (env-фallback), поэтому тесты не требуют БД.
+ */
+export async function buildSitemapWithEntitlements(slugs: EntitySlugs, lastModified: Date = new Date()): Promise<MetadataRoute.Sitemap> {
+  try {
+    const { getEffectiveEntitlements } = await import('@/server/entitlements/service');
+    const effective = await getEffectiveEntitlements();
+    // Фильтруем запись если её feature выключен entitlements (приватное через sitemap не уходит).
+    const filtered = buildSitemap(slugs, lastModified).filter((entry) => {
+      try {
+        const u = new URL(entry.url);
+        const path = u.pathname.replace(/^\/(hy|ru|en)(?=\/|$)/, '') || '/';
+        if (path === '/shop' || path.startsWith('/shop/') || path.startsWith('/gift-cards')) return !!effective.shop;
+        if (path === '/events' || path.startsWith('/events/')) return !!effective.events;
+        if (path === '/courses' || path.startsWith('/courses/')) return !!effective.courses || !!effective.videoCourses;
+        if (path === '/pricing') return !!effective.subscriptions;
+        return true;
+      } catch {
+        return true;
+      }
+    });
+    return filtered;
+  } catch {
+    return buildSitemap(slugs, lastModified);
+  }
+}

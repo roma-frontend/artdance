@@ -19,7 +19,7 @@ import { PageHero } from '@/components/layout/page-hero';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { ProductCard } from '@/components/shop/product-card';
 import { CardTilt } from '@/components/fx/card-tilt';
-import { commerce, features, routes, site } from '@/config';
+import { commerce, routes, site } from '@/config';
 import { parseCatalogQuery, type RawSearchParams } from '@/domain/catalog';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
@@ -43,7 +43,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ShopPage({ params, searchParams }: PageProps) {
-  if (!features.shop) notFound();
+  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+  if (!(await isEntitlementEnabled('shop').catch(() => true))) notFound();
 
   const { locale } = await params;
   setRequestLocale(locale as Locale);

@@ -1086,10 +1086,41 @@ const en = {
     title: 'Dispute',
     open: 'Open dispute',
   },
-  push: {
-    title: 'Push notifications',
-    enable: 'Enable',
-  },
+    push: {
+      title: 'Push notifications',
+      enable: 'Enable',
+    },
+    entitlements: {
+      preset: {
+        mvp: 'MVP — 5 000 000 ֏',
+        full: 'FULL — 5–6 000 000 ֏',
+        premium: 'PREMIUM — 7–8+ 000 000 ֏',
+      },
+      presetHint: {
+        mvp: 'Contract volume: catalog, instructors, studios, booking, shop, auth, email, SEO. No video, no marketplace, no CRM.',
+        full: 'Adds booking engine, venues, Paynet, Email+SMS, reviews, favorites, promo, maps, i18n (3), QA.',
+        premium: 'Adds video courses, marketplace commissions & payouts, CRM, reminders, calendar sync, advanced analytics.',
+      },
+      presetPrice: {
+        mvp: 'MVP · 5 000 000 ֏',
+        full: 'FULL · 5–6 000 000 ֏',
+        premium: 'PREMIUM · 7–8+ 000 000 ֏',
+      },
+      feature: {
+        shop: 'Shop & checkout',
+        events: 'Events catalog',
+        courses: 'Courses listing',
+        videoCourses: 'Video & lesson playback',
+        subscriptions: 'Subscriptions & pricing',
+        wallet: 'Wallet & commissions',
+        referrals: 'Referrals & loyalty',
+        packages: 'Class packages',
+        recurring: 'Recurring bookings',
+        push: 'Push notifications',
+        boost: 'Boost / promotion',
+        cms: 'CMS & content blocks',
+      },
+    },
   reviews: {
     title: 'Reviews',
     writeTitle: 'Write a review',
@@ -2803,7 +2834,7 @@ const en = {
       serviceMedia: 'Media storage',
       servicePayments: 'Payment provider',
       serviceCron: 'Cron secret',
-      repliesTitle: 'Conversation', replyTitle: 'Reply to requester', replyLabel: 'Reply', replyPlaceholder: 'Write a clear response…', sendReply: 'Send reply', internalNote: 'Internal note', openTicket: 'Open ticket', featuresTitle: 'Feature controls', featuresHint: 'Switch product modules without a redeploy. Every change is audited.', flagEnabled: 'Enabled', flagDisabled: 'Disabled', flagOverride: 'Operator override', flagDefault: 'Default configuration',
+      repliesTitle: 'Conversation', replyTitle: 'Reply to requester', replyLabel: 'Reply', replyPlaceholder: 'Write a clear response…', sendReply: 'Send reply', internalNote: 'Internal note', openTicket: 'Open ticket', featuresTitle: 'Feature controls', featuresHint: 'Switch product modules without a redeploy. Every change is audited.', flagEnabled: 'Enabled', flagDisabled: 'Disabled', flagOverride: 'Operator override', flagDefault: 'Default configuration', fromPreset: 'Preset', presetValue: 'Preset', effective: 'Live', activeBadge: 'Active', applyPreset: 'Apply', presetActive: 'Current', entitlementsTitle: 'Entitlements', entitlementsHint: 'Contract tiers MVP / FULL / PREMIUM plus fine toggles. Owner-only, every change is audited and live without a redeploy.', entitlementsCurrent: 'Current entitlement', entitlementsCurrentHint: 'What the public sees right now. Preset below overrides the previous selection; fine toggles override the preset.', entitlementsAdvanced: 'Advanced toggles', entitlementsAdvancedHint: 'Fine overrides per feature. Leave empty to follow the preset. Every switch is cached for 30 seconds.', entitlementsReset: 'Reset to MVP', entitlementsResetHint: 'Clears all fine overrides and returns to MVP.', entitlementsResetConfirm: 'Reset entitlements to MVP and clear all overrides?', entitlementsDiffHint: 'You are about to change the contract preset. Review what the customer will gain or lose:', entitlementsDiffEmpty: 'No visible change — fine overrides already produce this picture.', entitlementsDiffCancel: 'Cancel', entitlementsDiffConfirm: 'Confirm switch', entitlementsOpenAsClient: 'Open as customer', entitlementsOpenAsClientHint: 'Opens the public site in a new tab — check 404s in MVP.', entitlementsTimelineTitle: 'Recent entitlement changes', entitlementsTimelineHint: 'Last 12 switches — who, when, what.', entitlementBadge: 'Plan: {preset}', entitlementHubLink: 'Manage entitlements',
     },
 
     list: {

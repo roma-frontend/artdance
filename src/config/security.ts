@@ -43,12 +43,18 @@ const isPreview = clientEnv.NEXT_PUBLIC_APP_ENV === 'preview';
 export const support = {
   ownerEmail: 'romangulanyan@gmail.com',
   operatorEmails: ['romangulanyan@gmail.com', 'support@demo.artdance.am'],
+  /** Backup for entitlements until demo accounts are removed. */
+  entitlementEmails: ['romangulanyan@gmail.com', 'support@demo.artdance.am'] as const,
   impersonationMinutes: 30,
   maxAccessMinutes: 1440,
 } as const;
 
 export function isSupportOwner(user: { email: string }): boolean {
   return user.email.trim().toLowerCase() === support.ownerEmail;
+}
+
+export function isEntitlementOwner(user: { email: string }): boolean {
+  return (support.entitlementEmails as readonly string[]).includes(user.email.trim().toLowerCase());
 }
 
 export function isSupportOperator(user: { email?: string | null }): boolean {

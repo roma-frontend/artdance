@@ -243,8 +243,15 @@ export default async function HomePage({ params }: PageProps) {
         </div>
       </section>
 
-      {/* ── SHOP: раздел появляется только при включённом модуле ── */}
-      {features.shop && (
+      {/* ── SHOP: раздел появляется только при включённом entitlements (приватно — fallback на features) ── */}
+      {await (async () => {
+        try {
+          const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+          return await isEntitlementEnabled('shop').catch(() => features.shop);
+        } catch {
+          return features.shop;
+        }
+      })() && (
         <section className="section-y">
           <div className="page-container">
             <Reveal className="mb-12">
@@ -276,7 +283,14 @@ export default async function HomePage({ params }: PageProps) {
       )}
 
       {/* ── EVENTS ── */}
-      {features.events && (
+      {await (async () => {
+        try {
+          const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+          return await isEntitlementEnabled('events').catch(() => features.events);
+        } catch {
+          return features.events;
+        }
+      })() && (
         <section className="section-y bg-surface-raised">
           <div className="page-container">
             <Reveal className="mb-12">
@@ -338,7 +352,14 @@ export default async function HomePage({ params }: PageProps) {
       />
 
       {/* ── PRICING: суммы и квоты приходят из config/pricing, не из разметки ── */}
-      {features.subscriptions && (
+      {await (async () => {
+        try {
+          const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+          return await isEntitlementEnabled('subscriptions').catch(() => features.subscriptions);
+        } catch {
+          return features.subscriptions;
+        }
+      })() && (
         <section className="section-y bg-surface-raised">
           <div className="page-container">
             <Reveal as="div" className="mb-12">

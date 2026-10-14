@@ -6,7 +6,8 @@ import { navIcons } from '@/components/layout/nav-icons';
 import { LocaleSwitcher } from '@/components/layout/locale-switcher';
 import { Button } from '@/components/ui/button';
 import { DrawerClose, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
-import { headerCta, headerMegaGroups, isActiveNavPath } from '@/config/navigation';
+import { headerCta, headerMegaGroups as staticMegaGroups, isActiveNavPath } from '@/config/navigation';
+import { useEntitlementFilters } from '@/lib/entitlements/use-entitlements';
 import { Link, usePathname } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 import { HeaderLiteToggle } from '@/components/layout/header-lite-toggle';
@@ -15,6 +16,8 @@ import { HeaderThemeToggle } from '@/components/layout/header-theme-toggle';
 export function MobileMenuSheetContent() {
   const t = useTranslations();
   const pathname = usePathname();
+  const { headerMegaGroupsClient } = useEntitlementFilters();
+  const headerMegaGroups = headerMegaGroupsClient.length > 0 ? headerMegaGroupsClient : staticMegaGroups;
 
   return (
     <DrawerContent className="mobile-menu-sheet overscroll-contain max-h-[86vh]">

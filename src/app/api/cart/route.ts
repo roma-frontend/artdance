@@ -56,6 +56,8 @@ export async function POST(request: Request) {
   const parsed = addSchema.safeParse(body);
   if (!parsed.success) return json({ error: 'VALIDATION_FAILED' }, 400);
   try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    if (!(await isEntitlementEnabled('shop').catch(() => true))) return json({ error: 'FEATURE_DISABLED', messageKey: 'common.states.comingSoon' }, 403);
     const caller = await getCaller();
     const snapshot = await addCartItem({ userId: caller?.id ?? null, anonymousId: anonFrom(request), variantId: parsed.data.variantId, quantity: parsed.data.quantity });
     return json({ snapshot }, 200);
@@ -118,6 +120,8 @@ export async function PUT(request: Request) {
   const parsed = promoSchema.safeParse(body);
   if (!parsed.success) return json({ error: 'VALIDATION_FAILED' }, 400);
   try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    if (!(await isEntitlementEnabled('shop').catch(() => true))) return json({ error: 'FEATURE_DISABLED', messageKey: 'common.states.comingSoon' }, 403);
     const caller = await getCaller();
     const snapshot = await applyPromoCode({ userId: caller?.id ?? null, anonymousId: anonFrom(request), code: parsed.data.code });
     return json({ snapshot }, 200);

@@ -1087,6 +1087,37 @@ const hy: Messages = {
     title: "Push ծանուցումներ",
     enable: "Միացնել",
   },
+  entitlements: {
+    preset: {
+      mvp: "MVP — 5 000 000 ֏",
+      full: "FULL — 5–6 000 000 ֏",
+      premium: "PREMIUM — 7–8+ 000 000 ֏",
+    },
+    presetHint: {
+      mvp: "Պայմանագրով՝ կատալոգ, մարզիչներ, դահլիճներ, ամրագրում, խանութ, մուտք, նամակ, SEO։",
+      full: "Ավելացնում է ամրագրման շարժիչը, դահլիճները, Paynet, SMS, կարծիքներ, ընտրյալներ։",
+      premium: "Ավելացնում է վիդեո դասեր, մարկետփլեյս, CRM, հիշեցումներ, օրացույց։",
+    },
+    presetPrice: {
+      mvp: "MVP · 5 000 000 ֏",
+      full: "FULL · 5–6 000 000 ֏",
+      premium: "PREMIUM · 7–8+ 000 000 ֏",
+    },
+    feature: {
+      shop: "Խանութ",
+      events: "Միջոցառումներ",
+      courses: "Դասընթացներ",
+      videoCourses: "Վիդեո դասեր",
+      subscriptions: "Բաժանորդագրություններ",
+      wallet: "Դրամապանակ",
+      referrals: "Հրավերներ",
+      packages: "Փաթեթներ",
+      recurring: "Կրկնվող ամրագրումներ",
+      push: "Push",
+      boost: "Առաջխաղացում",
+      cms: "Բովանդակություն",
+    },
+  },
   reviews: {
     title: "Կարծիքներ",
     writeTitle: "Գրել կարծիք",
@@ -2712,7 +2743,7 @@ const hy: Messages = {
       thisConsole: "Աջակցության կենտրոն",
       recentActivity: "Հարթակի վերջին ակտիվությունը",
       viewAudit: "Բացել աուդիտի մատյանը",
-      repliesTitle: "Նամակագրություն", replyTitle: "Պատասխանել դիմողին", replyLabel: "Պատասխան", replyPlaceholder: "Գրել հստակ պատասխան…", sendReply: "Ուղարկել", internalNote: "Ներքին նշում", openTicket: "Բացել դիմումը", featuresTitle: "Գործառույթների կառավարում", featuresHint: "Փոխել մոդուլները առանց վերատեղակայման։ Յուրաքանչյուր փոփոխություն գրանցվում է աուդիտում։", flagEnabled: "Միացված է", flagDisabled: "Անջատված է", flagOverride: "Օպերատորի վերասահմանում", flagDefault: "Լռելյայն կազմաձևում",
+      repliesTitle: "Նամակագրություն", replyTitle: "Պատասխանել դիմողին", replyLabel: "Պատասխան", replyPlaceholder: "Գրել հստակ պատասխան…", sendReply: "Ուղարկել", internalNote: "Ներքին նշում", openTicket: "Բացել դիմումը", featuresTitle: "Գործառույթների կառավարում", featuresHint: "Փոխել մոդուլները առանց վերատեղակայման։ Յուրաքանչյուր փոփոխություն գրանցվում է աուդիտում։", flagEnabled: "Միացված է", flagDisabled: "Անջատված է", flagOverride: "Օպերատորի վերասահմանում", flagDefault: "Լռելյայն կազմաձևում", fromPreset: "Փաթեթ", presetValue: "Փաթեթ", effective: "Փաստացի", activeBadge: "Ակտիվ", applyPreset: "Կիրառել", presetActive: "Ընթացիկ", entitlementsTitle: "Փաթեթների հասանելիություն", entitlementsHint: "MVP / FULL / PREMIUM + կետային վերասահմանումներ։ Միայն սեփականատիրոջ համար։", entitlementsCurrent: "Ընթացիկ փաթեթ", entitlementsCurrentHint: "Ինչ է տեսնում հաճախորդը հիմա։", entitlementsAdvanced: "Լրացուցիչ կարգավորումներ", entitlementsAdvancedHint: "Դատարկ թողեք՝ փաթեթից է վերցվում։", entitlementsReset: "Վերադարձնել MVP", entitlementsResetHint: "Ջնջում է բոլոր վերասահմանումները։", entitlementsResetConfirm: "Վերադարձնե՞լ MVP և մաքրել բոլորը։", entitlementsDiffHint: "Փոխում ենք փաթեթը։ Ինչ կտեսնի հաճախորդը՝", entitlementsDiffEmpty: "Տեսանելի փոփոխություն չկա։", entitlementsDiffCancel: "Չեղարկել", entitlementsDiffConfirm: "Հաստատել", entitlementsOpenAsClient: "Բացել որպես հաճախորդ", entitlementsOpenAsClientHint: "Բացում է կայքը նոր ներդիրում։", entitlementsTimelineTitle: "Փոփոխությունների պատմություն", entitlementsTimelineHint: "Վերջին 12 փոփոխությունները։", entitlementBadge: "Փաթեթ՝ {preset}", entitlementHubLink: "Կառավարել փաթեթները",
       status: {
         open: "Բաց",
         pending: "Ընթացքի մեջ",

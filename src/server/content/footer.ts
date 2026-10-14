@@ -54,7 +54,16 @@ async function loadFooterGroups(): Promise<readonly NavGroup[]> {
     orderBy: [{ group: 'asc' }, { order: 'asc' }],
     select: { id: true, group: true, labelKey: true, href: true, order: true, feature: true },
   });
-  return buildFooterGroups(rows);
+  const built = buildFooterGroups(rows);
+  // Entitlements: если админ выключил shop/events через preset — это не должно торчать в подвале.
+  try {
+    const { getEffectiveEntitlements } = await import('@/server/entitlements/service');
+    const eff = await getEffectiveEntitlements();
+    const keep = (f?: string | null) => !f || (eff as Record<string, boolean>)[f] !== false;
+    return built.map((g) => ({ ...g, items: g.items.filter((it) => keep(it.feature)) })).filter((g) => g.items.length > 0) as readonly NavGroup[];
+  } catch {
+    return built;
+  }
 }
 
 export const getFooterNavGroups = defineQuery({

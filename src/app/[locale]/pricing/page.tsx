@@ -29,7 +29,6 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Price } from '@/components/ui/price';
 import {
-  isEnabled,
   orderedSubscriptionPlans,
   planFeatureLabelKey,
   routes,
@@ -66,6 +65,9 @@ export default async function PricingPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 
+  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+  const subscriptionsEnabled = await isEntitlementEnabled('subscriptions').catch(() => true);
+
   const t = await getTranslations('pricing');
   const tNav = await getTranslations('nav');
   const format = await getFormatter();
@@ -82,7 +84,7 @@ export default async function PricingPage({ params }: PageProps) {
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />
 
-      {isEnabled('subscriptions') ? (
+      {subscriptionsEnabled ? (
         <>
           <ContentSection>
             <ul className="grid gap-6 lg:grid-cols-3">

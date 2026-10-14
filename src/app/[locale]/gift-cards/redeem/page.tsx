@@ -2,6 +2,7 @@
  * GIFT CARDS REDEEM — A-21: активация карты по коду.
  */
 
+import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
@@ -25,6 +26,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function GiftCardRedeemPage({ params }: PageProps) {
+  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+  if (!(await isEntitlementEnabled('shop').catch(() => true))) notFound();
   const { locale } = await params;
   setRequestLocale(locale as Locale);
   const tFooter = await getTranslations('footer');

@@ -26,10 +26,11 @@ export default async function AdminSupportPage({ params }: PageProps) {
   const { caller, capabilities, can } = await adminAccess();
   if (!can('support.manage')) return <AccessDenied />;
 
-  const [stats, supportSummary, audit] = await Promise.all([
+  const [stats, supportSummary, audit, entitlementsState] = await Promise.all([
     getDashboardStats(capabilities),
     getSupportSummary(),
     listAuditLog({ page: 1 }),
+    (await import('@/server/entitlements/service')).getEntitlementsState().catch(() => null),
   ]);
   const t = await getTranslations('admin.support');
   const tRoot = await getRootTranslate();
@@ -59,11 +60,21 @@ export default async function AdminSupportPage({ params }: PageProps) {
             <h2 id="support-owner" className="mt-1 text-card-title text-content-primary">{t('godModeActive')}</h2>
             <p className="mt-1 text-body-sm text-content-secondary">{caller.name} · {caller.email}</p>
           </div>
-          <Badge variant="success" size="md">{t('allCapabilities')}</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="success" size="md">{t('allCapabilities')}</Badge>
+            {entitlementsState && <Badge variant="accent" size="md">{t('entitlementBadge', { preset: entitlementsState.preset.toUpperCase() })}</Badge>}
+          </div>
         </div>
         <p className="mt-4 max-w-(--layout-prose-max-width) text-caption text-content-secondary">
           {t('ownerNotice', { email: support.operatorEmails.join(', ') })}
         </p>
+        {entitlementsState && (
+          <p className="mt-2 text-caption">
+            <Link href={routes.adminOperatorTool('entitlements')} className="font-semibold text-content-accent hover:underline">
+              {t('entitlementHubLink')} →
+            </Link>
+          </p>
+        )}
       </section>
 
       <StatGrid items={statItems} />
@@ -99,7 +110,7 @@ export default async function AdminSupportPage({ params }: PageProps) {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div><h2 id="support-tools" className="text-card-title text-content-primary">{t('toolsTitle')}</h2><p className="mt-1 text-caption text-content-secondary">{t('toolsHint')}</p></div><Link className="shrink-0 text-caption font-semibold text-content-accent hover:underline" href={routes.adminAuditLog()}>{t('viewAudit')}</Link></div>
           <div className="grid gap-2 sm:grid-cols-2">
             {shortcuts.map((item) => <Link key={item.href} href={item.href} className="rounded-xl border border-border-subtle px-3 py-3 text-body-sm font-semibold text-content-primary transition-colors hover:border-accent hover:bg-accent-soft/30">{tRoot(item.labelKey)}</Link>)}
-            {(['database', 'translations', 'sessions', 'operations', 'access', 'terminal', 'features'] as const).map((tool) => <Link key={tool} href={routes.adminOperatorTool(tool)} className="rounded-xl border border-accent/25 bg-accent-soft/20 px-3 py-3 text-body-sm font-semibold text-content-accent transition-colors hover:border-accent hover:bg-accent-soft/40">{t(`${tool}Title` as 'databaseTitle')}</Link>)}
+            {(['database', 'translations', 'sessions', 'operations', 'access', 'terminal', 'features', 'entitlements'] as const).map((tool) => <Link key={tool} href={routes.adminOperatorTool(tool)} className={`rounded-xl border px-3 py-3 text-body-sm font-semibold transition-colors hover:border-accent ${tool === 'entitlements' ? 'border-accent bg-accent text-content-on-accent hover:bg-accent-hover' : 'border-accent/25 bg-accent-soft/20 text-content-accent hover:bg-accent-soft/40'}`}>{t(`${tool}Title` as 'databaseTitle')}</Link>)}
           </div>
         </section>
       </div>

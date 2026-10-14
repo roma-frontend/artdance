@@ -66,6 +66,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function EventDetailPage({ params }: PageProps) {
+  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+  if (!(await isEntitlementEnabled('events').catch(() => true))) notFound();
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 

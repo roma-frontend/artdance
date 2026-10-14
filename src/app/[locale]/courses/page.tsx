@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -14,6 +15,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 export default async function CoursesPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+  if (!(await isEntitlementEnabled('courses').catch(() => true))) notFound();
   const { locale } = await params;
   setRequestLocale(locale as Locale);
   const t = await getTranslations({ locale: locale as Locale, namespace: 'courses' });

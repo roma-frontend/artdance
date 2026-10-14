@@ -41,6 +41,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CartPage({ params }: PageProps) {
+  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+  if (!(await isEntitlementEnabled('shop').catch(() => true))) {
+    const { notFound } = await import('next/navigation');
+    notFound();
+  }
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 

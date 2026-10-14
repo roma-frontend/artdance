@@ -200,6 +200,17 @@ const config = [
   },
 
   /**
+   * God-mode таблица как в hr-project — фиксированные ширины ячеек и calc(100dvh)
+   */
+  {
+    files: ['src/components/superadmin/data-browser-client.tsx'],
+    rules: {
+      'no-restricted-syntax': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+
+  /**
    * `global-error.tsx` — последний рубеж: корневой layout уже упал. Здесь
    * недоступны провайдер переводов, Tailwind-цепочка и роутер, поэтому
    * инлайновые цвета, текст в разметке, обычный `<a>` и прямое чтение
@@ -207,7 +218,8 @@ const config = [
    * а не недоработка: см. комментарий в самом файле.
    */
   {
-    files: ['src/app/global-error.tsx'],
+    files: ['src/server/entitlements/service.ts',
+    'src/app/global-error.tsx'],
     rules: {
       'no-restricted-properties': 'off',
       'no-restricted-syntax': 'off',

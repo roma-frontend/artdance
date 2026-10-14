@@ -18,6 +18,7 @@ import { FooterParallaxFX } from "@/components/layout/footer-parallax-fx";
 import { routes, site } from "@/config";
 import type { NavGroup } from "@/config/navigation";
 import { getFooterNavGroups } from "@/server/content/footer";
+import { FooterEntitlementsFilter } from "@/components/layout/footer-entitlements-filter";
 import { Link } from '@/i18n/routing';
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand/brand-mark";
@@ -34,7 +35,11 @@ const SOCIAL_LABELS: Record<SocialKey, string> = {
 
 export async function SiteFooter() {
   const groups = await getFooterNavGroups();
-  return <SiteFooterInner groups={groups} />;
+  return (
+    <FooterEntitlementsFilter groups={groups}>
+      <SiteFooterInner groups={groups} />
+    </FooterEntitlementsFilter>
+  );
 }
 
 function SiteFooterInner({

@@ -1080,6 +1080,37 @@ const ru: Messages = {
     title: 'Push-уведомления',
     enable: 'Подписаться',
   },
+  entitlements: {
+    preset: {
+      mvp: 'MVP — 5 000 000 ֏',
+      full: 'FULL — 5–6 000 000 ֏',
+      premium: 'PREMIUM — 7–8+ 000 000 ֏',
+    },
+    presetHint: {
+      mvp: 'Объём по договору: курсы, инструкторы, площадки, бронь, магазин, вход, почта, SEO. Без видео, маркетплейса, CRM.',
+      full: 'Добавляет движок бронирования, площадки, Paynet, Email+SMS, отзывы, избранное, промо, карты, 3 языка, QA.',
+      premium: 'Добавляет видеокурсы, комиссии и выплаты маркетплейса, CRM, напоминания, синхр. календарей.',
+    },
+    presetPrice: {
+      mvp: 'MVP · 5 000 000 ֏',
+      full: 'FULL · 5–6 000 000 ֏',
+      premium: 'PREMIUM · 7–8+ 000 000 ֏',
+    },
+    feature: {
+      shop: 'Магазин и оформление',
+      events: 'Каталог событий',
+      courses: 'Каталог курсов',
+      videoCourses: 'Видео и уроки',
+      subscriptions: 'Подписки и тарифы',
+      wallet: 'Кошелёк и комиссии',
+      referrals: 'Рефералы и лояльность',
+      packages: 'Пакеты занятий',
+      recurring: 'Регулярные брони',
+      push: 'Push-уведомления',
+      boost: 'Продвижение',
+      cms: 'Контент и блоки',
+    },
+  },
   reviews: {
     title: 'Отзывы',
     writeTitle: 'Написать отзыв',
@@ -2700,7 +2731,7 @@ const ru: Messages = {
       thisConsole: 'Центр поддержки',
       recentActivity: 'Последняя активность платформы',
       viewAudit: 'Открыть журнал',
-      repliesTitle: 'Переписка', replyTitle: 'Ответить клиенту', replyLabel: 'Ответ', replyPlaceholder: 'Напишите понятный ответ…', sendReply: 'Отправить', internalNote: 'Внутренняя заметка', openTicket: 'Открыть обращение', featuresTitle: 'Управление функциями', featuresHint: 'Переключайте модули без деплоя. Каждое изменение попадает в аудит.', flagEnabled: 'Включено', flagDisabled: 'Выключено', flagOverride: 'Переопределено оператором', flagDefault: 'Конфигурация по умолчанию',
+      repliesTitle: 'Переписка', replyTitle: 'Ответить клиенту', replyLabel: 'Ответ', replyPlaceholder: 'Напишите понятный ответ…', sendReply: 'Отправить', internalNote: 'Внутренняя заметка', openTicket: 'Открыть обращение', featuresTitle: 'Управление функциями', featuresHint: 'Переключайте модули без деплоя. Каждое изменение попадает в аудит.', flagEnabled: 'Включено', flagDisabled: 'Выключено', flagOverride: 'Переопределено оператором', flagDefault: 'Конфигурация по умолчанию', fromPreset: 'Пресет', presetValue: 'Пресет', effective: 'Факт', activeBadge: 'Активно', applyPreset: 'Применить', presetActive: 'Текущий', entitlementsTitle: 'Доступ к пакетам', entitlementsHint: 'Тарифы MVP / FULL / PREMIUM и точечные оверрайды. Доступ только у владельца — без деплоя, с аудитом.', entitlementsCurrent: 'Текущий тариф', entitlementsCurrentHint: 'Что сейчас видит клиент. Пресет переопределяет прошлое, тумблеры — пресет.', entitlementsAdvanced: 'Тонкая настройка', entitlementsAdvancedHint: 'Оставьте пусто — берётся пресет. Кеш 30 секунд.', entitlementsReset: 'Сбросить в MVP', entitlementsResetHint: 'Удалит все оверрайды и вернёт MVP.', entitlementsResetConfirm: 'Сбросить всё в MVP и очистить оверрайды?', entitlementsDiffHint: 'Меняем тариф. Что увидит клиент после переключения:', entitlementsDiffEmpty: 'Видимых изменений нет — оверрайды уже дают эту картину.', entitlementsDiffCancel: 'Отмена', entitlementsDiffConfirm: 'Подтвердить', entitlementsOpenAsClient: 'Открыть как клиент', entitlementsOpenAsClientHint: 'Откроет сайт в новой вкладке — проверь 404 в MVP.', entitlementsTimelineTitle: 'История переключений', entitlementsTimelineHint: 'Последние 12 изменений — кто, когда, что.', entitlementBadge: 'Тариф: {preset}', entitlementHubLink: 'Управление тарифами',
       status: {
         open: 'Открыто',
         pending: 'В работе',

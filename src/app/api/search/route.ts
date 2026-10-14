@@ -105,6 +105,14 @@ export async function GET(request: Request): Promise<NextResponse> {
   const rawLocale = url.searchParams.get('locale') ?? '';
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
 
+  // Entitlements: поиск не должен отдавать выключенные скоупы (shop→products, events→events)
+  try {
+    const { getEffectiveEntitlements } = await import('@/server/entitlements/service');
+    const eff = await getEffectiveEntitlements();
+    if (scope === 'products' && !eff.shop) return jsonResponse({ term, scope, hits: [] } as SearchResponse, 200, { 'Content-Language': locale });
+    if (scope === 'events' && !eff.events) return jsonResponse({ term, scope, hits: [] } as SearchResponse, 200, { 'Content-Language': locale });
+  } catch {}
+
   const payload: SearchResponse = {
     term,
     scope,
