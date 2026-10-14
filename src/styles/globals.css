@@ -1354,7 +1354,7 @@
      * буквы уже попадали под полупрозрачную панель.
      */
     .footer-cinema {
-      padding-bottom: var(--space-4);
+      padding-bottom: var(--space-8);
     }
 
     body:has([data-slot='sticky-action-bar']) .announcement-banner {
