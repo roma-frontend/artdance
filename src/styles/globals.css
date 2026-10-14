@@ -3,6 +3,11 @@
 
 
 
+:root {
+  /* JS уточняет высоту панели после layout; токен закрывает первый paint. */
+  --sticky-action-bar-height: var(--layout-sticky-action-bar-height);
+}
+
 /**
  * Мост между дизайн-токенами и Tailwind v4.
  *
@@ -1315,12 +1320,15 @@
   /*
    * Полоса действия детальной страницы (`StickyActionBar`).
    *
-   * Отличается от `.above-mobile-dock` отсутствием зазора: это панель во всю
-   * ширину, прижатая к верхней кромке дока, а не плавающая кнопка. Зазор под
-   * панелью выглядел бы щелью, через которую видно содержимое страницы.
+   * Панель — отдельная карточка над доком, а не вторая половина одной полосы:
+   * между ними оставляем небольшой ритмический зазор. Сам док занимает не
+   * только свои 4rem, но и нижний safe-area/воздух оболочки, поэтому смещение
+   * считается от всей занятой высоты.
    */
   .above-mobile-dock-flush {
-    bottom: calc(var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    bottom: calc(
+      var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-3) + var(--space-2)
+    );
   }
 
   @media (width >= theme(--breakpoint-lg)) {
@@ -1353,11 +1361,23 @@
      * доком: тест «footer не накрыт» проходил по border-box футера, хотя именно
      * буквы уже попадали под полупрозрачную панель.
      */
-    .footer-cinema {
-      padding-bottom: var(--space-8);
-    }
+     .footer-cinema {
+       padding-bottom: var(--space-8);
+     }
 
-    body:has([data-slot='sticky-action-bar']) .announcement-banner {
+     /*
+      * На detail-страницах фиксированная CTA тоже вынута из потока. Резервируем
+      * её внутри cinema-фона, а не у body: футер остаётся тёмным до самого
+      * края, декоративное ARTDANCE поднимается над карточкой, и под панелью не
+      * появляется светлая полоса канвы.
+      */
+     body:has([data-slot='sticky-action-bar']) .footer-cinema {
+       padding-bottom: calc(
+         var(--space-8) + var(--sticky-action-bar-height) + var(--space-3)
+       );
+     }
+
+     body:has([data-slot='sticky-action-bar']) .announcement-banner {
       display: none;
     }
   }
