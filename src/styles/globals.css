@@ -1346,6 +1346,17 @@
    * `lg:hidden` и промо ничему не мешает.
    */
   @media (width < theme(--breakpoint-lg)) {
+    /*
+     * Последний декоративный слой футера живёт внутри его overflow-контейнера,
+     * но FooterParallaxFX слегка сдвигает слово вниз через `translate`. Без
+     * собственного запаса этот сдвиг съедал нижнюю кромку ARTDANCE фиксированным
+     * доком: тест «footer не накрыт» проходил по border-box футера, хотя именно
+     * буквы уже попадали под полупрозрачную панель.
+     */
+    .footer-cinema {
+      padding-bottom: var(--space-4);
+    }
+
     body:has([data-slot='sticky-action-bar']) .announcement-banner {
       display: none;
     }

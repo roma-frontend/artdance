@@ -120,4 +120,16 @@ test.describe('лендинг отдаётся готовым HTML', () => {
     );
     await expect(banner).toBeHidden();
   });
+
+  test('en: на странице без hero промо не лежит на ARTDANCE', async ({ page }) => {
+    await page.goto('/en/about', { waitUntil: 'domcontentloaded' });
+
+    const banner = page.locator(`[data-banner-key="${demoBanner.key}"]`);
+    await expect(banner).toBeVisible();
+
+    await page.evaluate(() =>
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }),
+    );
+    await expect(banner).toBeHidden();
+  });
 });

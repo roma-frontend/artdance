@@ -327,10 +327,15 @@ test.describe('MobileDock', () => {
       .locator('body footer')
       .last()
       .evaluate((node) => node.getBoundingClientRect().bottom);
+    const decorativeWordBottom = await page
+      .locator('body footer [data-footer-word]')
+      .evaluate((node) => node.getBoundingClientRect().bottom);
     const dockTop = await dock(page).evaluate((node) => node.getBoundingClientRect().top);
 
     /* Последняя строка подвала обязана оказаться выше панели. */
     expect(footerBottom).toBeLessThanOrEqual(dockTop + 1);
+    /* У трансформированного декоративного ARTDANCE остаётся читаемый запас. */
+    expect(dockTop - decorativeWordBottom).toBeGreaterThanOrEqual(8);
   });
 
   test('шторка открывается, запирает фокус и блокирует прокрутку', async ({ page }) => {

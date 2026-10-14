@@ -111,22 +111,58 @@ export function AnnouncementBarDismiss({ bannerKey, children }: AnnouncementBarD
   useEffect(() => {
     if (dismissed) return;
 
-    const word = document.querySelector<HTMLElement>(FOOTER_WORD_SELECTOR);
-    if (!word) {
-      const frame = window.requestAnimationFrame(() => setStowed(false));
-      return () => window.cancelAnimationFrame(frame);
+    let wordObserver: IntersectionObserver | null = null;
+    let domObserver: MutationObserver | null = null;
+    let retryFrame = 0;
+
+    const attachWordObserver = (): boolean => {
+      if (wordObserver) return true;
+
+      const word = document.querySelector<HTMLElement>(FOOTER_WORD_SELECTOR);
+      if (!word) return false;
+
+      wordObserver = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (!entry) return;
+          setStowed(entry.isIntersecting);
+        },
+        { threshold: 0 },
+      );
+      wordObserver.observe(word);
+      return true;
+    };
+
+    /*
+     * Кабинет и другие динамические страницы могут прислать SiteFooter после
+     * первого client effect: сервер сначала отдаёт основное содержимое, а
+     * async-футер приходит следующим flight-чанком. Одного querySelector здесь
+     * недостаточно — баннер уже смонтировался, а наблюдать ARTDANCE ещё нечего.
+     * MutationObserver подхватывает слово сразу после его появления и не даёт
+     * панели остаться поверх него на странице вроде `/account`.
+     */
+    if (!attachWordObserver()) {
+      domObserver = new MutationObserver(() => {
+        if (!attachWordObserver()) return;
+        domObserver?.disconnect();
+        domObserver = null;
+      });
+      domObserver.observe(document.body, { childList: true, subtree: true });
+      retryFrame = window.requestAnimationFrame(() => {
+        if (!attachWordObserver()) {
+          setStowed(false);
+          return;
+        }
+        domObserver?.disconnect();
+        domObserver = null;
+      });
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry) return;
-        setStowed(entry.isIntersecting);
-      },
-      { threshold: 0 },
-    );
-    observer.observe(word);
-    return () => observer.disconnect();
+    return () => {
+      if (retryFrame !== 0) window.cancelAnimationFrame(retryFrame);
+      wordObserver?.disconnect();
+      domObserver?.disconnect();
+    };
   }, [dismissed, pathname]);
 
   const shown = revealed && hydrated && !dismissed && !stowed;
