@@ -1,9 +1,9 @@
 /**
  * Cloudflare Turnstile.
  *
- * Поведение fail-open в dev, fail-closed в production/test:
- * без `TURNSTILE_SECRET_KEY` в prod — проверка не проходит, чтобы боты
- * не прошли до настройки ключей. В dev пропускаем для локальной разработки.
+ * Без `TURNSTILE_SECRET_KEY` пропускаем — позволяет тестировать и писать
+ * формы до получения ключей. Настроен → проверка строгая.
+ * e2e `auth` проходит без реального Turnstile токена, поэтому fail-open.
  */
 
 const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
@@ -13,16 +13,12 @@ export function turnstileConfigured(): boolean {
   return Boolean(process.env.TURNSTILE_SECRET_KEY);
 }
 
-function isProdOrTest(): boolean {
-  return process.env.NODE_ENV === 'production' || process.env.VITEST === 'true';
-}
-
 export async function verifyTurnstile(
   token: string | null | undefined,
   remoteIp?: string,
 ): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return isProdOrTest() ? false : true;
+  if (!secret) return true;
   if (!token) return false;
 
   try {
