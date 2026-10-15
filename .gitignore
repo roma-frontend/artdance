@@ -4,7 +4,7 @@ out/
 build/
 coverage/
 .turbo/
-manual/
+/manual/
 
 # Секреты
 .env

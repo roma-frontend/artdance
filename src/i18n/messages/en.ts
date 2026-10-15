@@ -2735,9 +2735,9 @@ const en = {
       subtitle: 'The platform at a glance',
       shortcuts: 'Shortcuts',
       manualsTitle: "Owner's Manuals & System Documentation (PDF)",
-      manualEn: 'Platform Manual (English, 42 pages)',
-      manualHy: 'Platform Manual (Հայերեն, 42 pages)',
-      manualsHint: 'Complete illustrated platform operations handbook with real interface screenshots and troubleshooting protocols.',
+      manualEn: 'Platform Manual (English, 63 pages)',
+      manualHy: 'Platform Manual (Հայերեն, 63 pages)',
+      manualsHint: 'Practical illustrated guide to the current admin interface, with verified routes and procedures.',
       noAccess: 'Your access level does not include any admin section yet.',
       stats: {
         classes: 'Active classes',

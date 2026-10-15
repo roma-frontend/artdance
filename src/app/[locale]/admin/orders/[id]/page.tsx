@@ -19,6 +19,7 @@ import { RefundForm } from '@/components/admin/refund-form';
 import { OrderStatusActions } from '@/components/admin/status-actions';
 import { StatusBadge } from '@/components/data/status-badge';
 import { AccessDenied } from '@/components/ui/access-denied';
+import { security } from '@/config/business';
 import { routes } from '@/config';
 import type { OrderStatus } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
@@ -166,7 +167,12 @@ export default async function AdminOrderPage({ params }: PageProps) {
             {can('payments.refund') ? (
               <div className="mt-6">
                 <h3 className="text-label mb-3 uppercase text-content-secondary">{t('refundTitle')}</h3>
-                <RefundForm orderId={order.id} refundable={paid} />
+                <RefundForm
+                  orderId={order.id}
+                  refundable={paid}
+                  manualRefundLimitLabel={format.number(security.guardrails.maxManualRefund, 'price')}
+                  refundableLabel={format.number(paid, 'price')}
+                />
               </div>
             ) : null}
           </section>

@@ -16,12 +16,11 @@
  */
 
 import { useAction } from 'next-safe-action/hooks';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { ActionError } from '@/components/admin/status-actions';
 import { Button } from '@/components/ui/button';
-import { security } from '@/config/business';
 import { useRouter } from '@/i18n/routing';
 import type { Translate } from '@/i18n/translate';
 import { refundOrder } from '@/server/actions/admin/operations';
@@ -30,12 +29,14 @@ interface RefundFormProps {
   orderId: string;
   /** Предел возврата в драмах, посчитанный на сервере. */
   refundable: number;
+  /** Locale-stable server-rendered labels; avoids a client/server ICU locale drift. */
+  manualRefundLimitLabel: string;
+  refundableLabel: string;
 }
 
-export function RefundForm({ orderId, refundable }: RefundFormProps) {
+export function RefundForm({ orderId, refundable, manualRefundLimitLabel, refundableLabel }: RefundFormProps) {
   const t = useTranslations('admin.orders');
   const tRoot = useTranslations() as unknown as Translate;
-  const format = useFormatter();
   const router = useRouter();
 
   const [amount, setAmount] = useState<string>('');
@@ -67,7 +68,7 @@ export function RefundForm({ orderId, refundable }: RefundFormProps) {
       }}
     >
       <p className="text-body-sm text-content-secondary">
-        {t('refundLimit', { max: format.number(security.guardrails.maxManualRefund, 'price') })}
+        {t('refundLimit', { max: manualRefundLimitLabel })}
       </p>
 
       <div className="flex flex-col gap-2">
@@ -85,7 +86,7 @@ export function RefundForm({ orderId, refundable }: RefundFormProps) {
           onChange={(event) => setAmount(event.target.value)}
           className="form-input"
         />
-        <p className="text-caption text-content-tertiary">{format.number(refundable, 'price')}</p>
+        <p className="text-caption text-content-tertiary">{refundableLabel}</p>
       </div>
 
       <div className="flex flex-col gap-2">
