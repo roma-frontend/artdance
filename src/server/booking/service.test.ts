@@ -27,7 +27,6 @@ vi.mock('@/server/booking/notify', () => ({
 vi.mock('@/server/wallet/service', () => ({ creditWallet: vi.fn() }));
 
 import { booking } from '@/config/business';
-import { isPeakHour, isWeekendDay, priceForSlot } from '@/domain/dynamic-pricing';
 import { cancelBooking, createBookingFromHold, rescheduleBooking } from './service';
 
 const now = new Date('2026-10-01T08:00:00Z');
