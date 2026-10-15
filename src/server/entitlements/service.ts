@@ -29,12 +29,12 @@ function parsePresetValue(value: unknown): EntitlementPreset | null {
 }
 
 export interface EntitlementsState {
-  preset: EntitlementPreset;
+  preset: EntitlementPreset | null;
   overrides: Map<FeatureKey, boolean>;
   updatedAt: string | null;
 }
 
-/** Дефолт до первого применения пресета — MVP (договор 5 000 000 ֏). */
+/** Дефолт до первого применения пресета — MVP (договор 5 000 000 ֏). Применяется только при явном `resetEntitlements()`. */
 export const ENTITLEMENTS_DEFAULT_PRESET: EntitlementPreset = 'mvp';
 
 let inMemoryCache: { at: number; state: EntitlementsState } | null = null;
@@ -54,7 +54,7 @@ export async function getEntitlementsState(options?: { force?: boolean }): Promi
       db.featureFlagOverride.findMany({ select: { key: true, enabled: true } }),
     ]);
 
-    const preset = parsePresetValue(presetRow?.value) ?? ENTITLEMENTS_DEFAULT_PRESET;
+    const preset = presetRow ? parsePresetValue(presetRow.value) : null;
     const overrides = new Map<FeatureKey, boolean>();
     for (const row of flagRows) {
       const key = row.key as FeatureKey;
@@ -71,14 +71,16 @@ export async function getEntitlementsState(options?: { force?: boolean }): Promi
   } catch (error) {
     if (!isTestEnv) console.warn('[entitlements] DB unavailable, using env fallback', error);
     const overrides = new Map<FeatureKey, boolean>();
-    const state: EntitlementsState = { preset: ENTITLEMENTS_DEFAULT_PRESET, overrides, updatedAt: null };
+    const state: EntitlementsState = { preset: null, overrides, updatedAt: null };
     return state;
   }
 }
 
-export function resolveEffectiveEnabled(preset: EntitlementPreset, overrides: Map<FeatureKey, boolean>, key: FeatureKey): boolean {
+export function resolveEffectiveEnabled(preset: EntitlementPreset | null, overrides: Map<FeatureKey, boolean>, key: FeatureKey): boolean {
   if (overrides.has(key)) return overrides.get(key)!;
-  return presetDefaults[preset][key] ?? features[key] ?? false;
+  if (preset) return presetDefaults[preset][key] ?? features[key] ?? false;
+  // Пресет ещё не выбран (свежая БД) — ведём себя как env, чтобы e2e не получил 404.
+  return features[key] ?? false;
 }
 
 /** Совместимость: синхронный читатель как раньше — не трогает БД. */
@@ -89,6 +91,14 @@ export function getEffectiveSnapshotSync(): Record<FeatureKey, boolean> {
 
 export async function getEffectiveEntitlements(): Promise<Record<FeatureKey, boolean>> {
   const state = await getEntitlementsState();
+  const out = {} as Record<FeatureKey, boolean>;
+  for (const key of Object.keys(presetDefaults.mvp) as FeatureKey[]) {
+    out[key] = resolveEffectiveEnabled(state.preset, state.overrides, key);
+  }
+  return out;
+}
+
+export function effectiveFromState(state: EntitlementsState): Record<FeatureKey, boolean> {
   const out = {} as Record<FeatureKey, boolean>;
   for (const key of Object.keys(presetDefaults.mvp) as FeatureKey[]) {
     out[key] = resolveEffectiveEnabled(state.preset, state.overrides, key);

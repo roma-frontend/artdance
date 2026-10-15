@@ -62,7 +62,7 @@ export default async function AdminSupportPage({ params }: PageProps) {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="success" size="md">{t('allCapabilities')}</Badge>
-            {entitlementsState && <Badge variant="accent" size="md">{t('entitlementBadge', { preset: entitlementsState.preset.toUpperCase() })}</Badge>}
+            {entitlementsState?.preset && <Badge variant="accent" size="md">{t('entitlementBadge', { preset: entitlementsState.preset.toUpperCase() })}</Badge>}
           </div>
         </div>
         <p className="mt-4 max-w-(--layout-prose-max-width) text-caption text-content-secondary">

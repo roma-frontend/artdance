@@ -97,7 +97,7 @@ export default async function OperatorToolPage({ params, searchParams }: PagePro
     if (!isOwner) return <AccessDenied />;
     const state = await getEntitlementsState();
     const rows = entitlementFeatureCatalog.map((meta) => {
-      const presetValue = presetDefaults[state.preset][meta.key as keyof typeof presetDefaults.mvp] ?? false;
+      const presetValue = state.preset ? (presetDefaults[state.preset][meta.key as keyof typeof presetDefaults.mvp] ?? false) : false;
       const overridden = state.overrides.has(meta.key as never);
       const effective = resolveEffectiveEnabled(state.preset, state.overrides, meta.key as never);
       return { meta, presetValue, effective, overridden };

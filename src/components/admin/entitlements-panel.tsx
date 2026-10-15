@@ -23,7 +23,7 @@ import { presetDefaults, type EntitlementPreset, type FeatureMeta } from '@/serv
 import type { FeatureKey } from '@/config/features';
 
 interface PanelProps {
-  preset: EntitlementPreset;
+  preset: EntitlementPreset | null;
   rows: Array<{ meta: FeatureMeta; presetValue: boolean; effective: boolean; overridden: boolean }>;
   timeline: Array<{ id: string; action: string; actorEmail: string; createdAt: Date; diff: unknown }>;
 }
@@ -38,7 +38,7 @@ export function EntitlementsPanel({ preset, rows, timeline }: PanelProps) {
   const t = useTranslations('admin.support');
   const tp = useTranslations('entitlements' as never);
   const router = useRouter();
-  const [pendingPreset, setPendingPreset] = useState<EntitlementPreset>(preset);
+  const [pendingPreset, setPendingPreset] = useState<EntitlementPreset>(preset ?? 'mvp');
   const [confirmPreset, setConfirmPreset] = useState<EntitlementPreset | null>(null);
 
   const applyPreset = useAction(setEntitlementPreset, { onSuccess: () => router.refresh() });
@@ -67,8 +67,9 @@ export function EntitlementsPanel({ preset, rows, timeline }: PanelProps) {
               <CardTitle className="text-content-primary">{t('entitlementsCurrent')}</CardTitle>
               <CardDescription className="mt-1 max-w-prose">{t('entitlementsCurrentHint')}</CardDescription>
             </div>
-            <Badge variant="accent" size="md">{tp(`preset.${preset}` as never)}</Badge>
+            {preset ? <Badge variant="accent" size="md">{tp(`preset.${preset}` as never)}</Badge> : <Badge variant="neutral" size="md">env</Badge>}
           </div>
+          {!preset && <CardDescription className="mt-2 text-caption">Пресет ещё не выбран — страницы ведут себя как env (e2e без 404). Выбери MVP/FULL/PREMIUM.</CardDescription>}
         </CardHeader>
       </Card>
 
