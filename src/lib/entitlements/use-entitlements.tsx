@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 
 import { features, type FeatureKey } from '@/config/features';
 import {
+  footerNavGroups as staticFooterGroups,
   headerIconItems as staticHeaderIcons,
   headerMegaGroups as staticMegaGroups,
-  footerNavGroups as staticFooterGroups,
   primaryNavItems as staticPrimary,
   allMegaChildren as staticMegaChildren,
 } from '@/config/navigation';
@@ -28,9 +28,8 @@ function applySnapshot(snapshot: Snapshot) {
   };
 }
 
-export function useEntitlementFilters() {
+export function useEntitlementsSnapshot(): Snapshot {
   const [snapshot, setSnapshot] = useState<Snapshot>(() => ({ ...features }) as Snapshot);
-
   useEffect(() => {
     let cancelled = false;
     fetch('/api/entitlements', { cache: 'no-store' })
@@ -48,7 +47,11 @@ export function useEntitlementFilters() {
       cancelled = true;
     };
   }, []);
+  return snapshot;
+}
 
+export function useEntitlementFilters() {
+  const snapshot = useEntitlementsSnapshot();
   const derived = applySnapshot(snapshot);
   return {
     headerIconItems: derived.headerIcons,

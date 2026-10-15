@@ -21,12 +21,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ pro
   if (!allowed.has(provider as PaymentProviderId)) return noStore({ error: 'UNKNOWN_PROVIDER' }, 404);
 
   const providerId = provider as PaymentProviderId;
-  if (providerId === 'stripe') {
-    const env = getServerEnv();
-    if (!env.STRIPE_WEBHOOK_SECRET) return noStore({ error: 'WEBHOOK_NOT_CONFIGURED' }, 503);
-  } else if (providerId !== 'mock') {
-    const env = getServerEnv();
-    if (!env.PAYNET_WEBHOOK_SECRET && providerId === 'paynet') return noStore({ error: 'WEBHOOK_NOT_CONFIGURED' }, 503);
+  {
+    const env = getServerEnv() as Record<string, unknown>;
+    const needSecret =
+      providerId === 'stripe' ? !env.STRIPE_WEBHOOK_SECRET :
+      providerId === 'paynet' ? !env.PAYNET_WEBHOOK_SECRET :
+      providerId === 'arca-epg' ? !env.ARCA_EPG_WEBHOOK_SECRET && !env.ARCA_WEBHOOK_SECRET :
+      providerId === 'ameria-vpos' ? !env.AMERIA_VPOS_WEBHOOK_SECRET :
+      providerId === 'idram' ? !env.IDRAM_WEBHOOK_SECRET : false;
+    if (needSecret) return noStore({ error: 'WEBHOOK_NOT_CONFIGURED' }, 503);
   }
 
   const rawBody = await request.text();

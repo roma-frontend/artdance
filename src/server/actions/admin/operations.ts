@@ -380,6 +380,33 @@ export const releasePayout = authedAction
 
     if (before.status === 'PAID') throw domainErrors.validationFailed('status');
 
+    // Maker-checker: выплата требует ApprovalRequest, кроме hold
+    if (!parsedInput.hold) {
+      const { security } = await import('@/config/business');
+      if ((security.approvalRequiredActions as readonly string[]).includes('payout.release')) {
+        const pending = await db.approvalRequest.findFirst({
+          where: { action: 'payout.release', status: 'PENDING', payload: { path: ['payoutId'], equals: parsedInput.id } } as never,
+          select: { id: true, requestedById: true },
+        } as never);
+        // Если есть ожидающая заявка от другого админа — исполняем только ей
+        if (pending && (pending as { requestedById: string }).requestedById === caller.id) {
+          throw domainErrors.validationFailed('status');
+        }
+        if (!pending) {
+          await db.approvalRequest.create({
+            data: {
+              action: 'payout.release',
+              payload: { payoutId: parsedInput.id },
+              requestedById: caller.id,
+              expiresAt: new Date(Date.now() + security.guardrails.approvalTtlHours * 60 * 60 * 1000),
+            } as never,
+          });
+          await recordAudit({ actor: caller, action: 'admin.payout.release.requested', entityType: 'Payout', entityId: parsedInput.id, ipAddress: ctx.identifier });
+          throw domainErrors.validationFailed('status');
+        }
+      }
+    }
+
     const after = await db.payout.update({
       where: { id: parsedInput.id },
       data: parsedInput.hold

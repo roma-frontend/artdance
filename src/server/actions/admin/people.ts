@@ -45,7 +45,7 @@ const capabilitySchema = z.string().trim().min(1).max(64).refine(isCapability, '
 export const changeUserRole = authedAction
   .metadata({ rateLimit: 'adminMutation', audit: 'admin.user.roleChange' })
   .inputSchema(z.object({ id: idSchema, role: z.enum(userRoles) }))
-  .action(async ({ parsedInput, ctx }): Promise<{ role: string }> => {
+  .action(async ({ parsedInput, ctx }): Promise<{ role: string; requiresApproval?: boolean }> => {
     const caller = await requireCapability('users.roleChange');
 
     if (parsedInput.id === caller.id) throw domainErrors.forbidden();
@@ -59,6 +59,31 @@ export const changeUserRole = authedAction
     /* Понижение последнего администратора запрещено — иначе админка запирается. */
     if (before.role === 'ADMIN' && parsedInput.role !== 'ADMIN' && (await activeAdminCount()) <= 1) {
       throw domainErrors.forbidden();
+    }
+
+    // Повышение до ADMIN/SUPPORT требует согласования вторым админом (maker-checker)
+    const needsApproval = (parsedInput.role === 'ADMIN' || parsedInput.role === 'SUPPORT') && before.role !== parsedInput.role;
+    if (needsApproval) {
+      const { security } = await import('@/config/business');
+      const existing = await db.approvalRequest.findFirst({
+        where: { action: 'user.roleChange', status: 'PENDING', payload: { path: ['userId'], equals: parsedInput.id } } as never,
+        select: { id: true, requestedById: true },
+      } as never);
+      if (existing) {
+        if ((existing as { requestedById: string }).requestedById === caller.id) throw domainErrors.forbidden();
+        await db.approvalRequest.update({ where: { id: (existing as { id: string }).id }, data: { status: 'APPROVED', decidedById: caller.id, decidedAt: new Date() } as never });
+      } else {
+        await db.approvalRequest.create({
+          data: {
+            action: 'user.roleChange',
+            payload: { userId: parsedInput.id, role: parsedInput.role },
+            requestedById: caller.id,
+            expiresAt: new Date(Date.now() + security.guardrails.approvalTtlHours * 60 * 60 * 1000),
+          } as never,
+        });
+        await recordAudit({ actor: caller, action: 'admin.user.roleChange.requested', entityType: 'User', entityId: parsedInput.id, after: { role: parsedInput.role }, ipAddress: ctx.identifier });
+        return { role: before.role, requiresApproval: true };
+      }
     }
 
     const after = await db.user.update({

@@ -55,6 +55,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CheckoutStepPage({ params }: PageProps) {
+  {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    if (!(await isEntitlementEnabled('shop').catch(() => true))) notFound();
+  }
   const { locale, step } = await params;
   setRequestLocale(locale as Locale);
 

@@ -134,6 +134,21 @@ export async function POST(request: Request): Promise<Response> {
     if (owner.length !== 1) throw domainErrors.validationFailed('owner');
     const ownerEntry = owner[0] as { field: OwnerField; id: string };
 
+    // Owner must exist — не пишем orphan-активы в R2
+    const ownerExists = await (() => {
+      switch (ownerEntry.field) {
+        case 'instructorId': return db.instructorProfile.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
+        case 'venueId': return db.venue.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
+        case 'classId': return db.danceClass.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
+        case 'eventId': return db.event.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
+        case 'productId': return db.product.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
+        case 'courseId': return db.course.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
+        case 'avatarOwnerId': return db.user.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
+        default: return Promise.resolve({ id: ownerEntry.id } as unknown as { id: string } | null);
+      }
+    })();
+    if (!ownerExists) throw domainErrors.notFound();
+
     /* Сколько кадров уже привязано — для проверки предела на сущность. */
     const existingCount = await db.mediaAsset.count({
       where: { [ownerEntry.field]: ownerEntry.id },

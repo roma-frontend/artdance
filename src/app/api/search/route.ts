@@ -105,19 +105,24 @@ export async function GET(request: Request): Promise<NextResponse> {
   const rawLocale = url.searchParams.get('locale') ?? '';
   const locale = isLocale(rawLocale) ? rawLocale : defaultLocale;
 
-  // Entitlements: поиск не должен отдавать выключенные скоупы (shop→products, events→events)
+  let effForAll: Record<string, boolean> | null = null;
   try {
     const { getEffectiveEntitlements } = await import('@/server/entitlements/service');
-    const eff = await getEffectiveEntitlements();
-    if (scope === 'products' && !eff.shop) return jsonResponse({ term, scope, hits: [] } as SearchResponse, 200, { 'Content-Language': locale });
-    if (scope === 'events' && !eff.events) return jsonResponse({ term, scope, hits: [] } as SearchResponse, 200, { 'Content-Language': locale });
+    effForAll = (await getEffectiveEntitlements()) as unknown as Record<string, boolean>;
+    if (scope === 'products' && !effForAll.shop) return jsonResponse({ term, scope, hits: [] } as SearchResponse, 200, { 'Content-Language': locale });
+    if (scope === 'events' && !effForAll.events) return jsonResponse({ term, scope, hits: [] } as SearchResponse, 200, { 'Content-Language': locale });
   } catch {}
 
-  const payload: SearchResponse = {
-    term,
-    scope,
-    hits: await searchCatalog(term, scope, maxHits, locale),
-  };
+  const rawHits = await searchCatalog(term, scope, maxHits, locale);
+  // scope=all: searchCatalog now respects entitlements, but also filter here for defense-in-depth
+  const hits = effForAll
+    ? rawHits.filter((h) => {
+        if (h.scope === 'products' && !effForAll!.shop) return false;
+        if (h.scope === 'events' && !effForAll!.events) return false;
+        return true;
+      })
+    : rawHits;
+  const payload: SearchResponse = { term, scope, hits };
 
   return jsonResponse(payload, 200, {
     'Content-Language': locale,

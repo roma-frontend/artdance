@@ -6,11 +6,23 @@ import { creditWallet } from '@/server/wallet/service';
 
 const BONUS = 3000; // AMD, единый бонус обеим сторонам — измеримый CAC, без процентов
 
+async function assertReferralsEnabled(): Promise<void> {
+  try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    const enabled = await isEntitlementEnabled('referrals').catch(() => true);
+    if (!enabled) throw domainErrors.featureDisabled();
+  } catch (error) {
+    if (error instanceof Error && (error as { code?: string }).code === 'FEATURE_DISABLED') throw error;
+    // DB unavailable on build — do not block
+  }
+}
+
 function codeFor(userId: string): string {
   return userId.slice(-8).toUpperCase();
 }
 
 export async function ensureReferralCode(callerId: string): Promise<string> {
+  await assertReferralsEnabled();
   const code = codeFor(callerId);
   await db.referral.upsert({
     where: { referrerId_code: { referrerId: callerId, code } } as never,
@@ -21,6 +33,7 @@ export async function ensureReferralCode(callerId: string): Promise<string> {
 }
 
 export async function bindReferral(input: { refereeId: string; code: string }) {
+  await assertReferralsEnabled();
   const normalized = input.code.trim().toUpperCase();
   const referral = await db.referral.findFirst({ where: { code: normalized } } as never);
   if (!referral) throw domainErrors.notFound();
@@ -34,6 +47,7 @@ export async function bindReferral(input: { refereeId: string; code: string }) {
 }
 
 export async function payReferralBonus(referralId: string) {
+  await assertReferralsEnabled();
   const referral = await db.referral.findUnique({ where: { id: referralId } } as never);
   if (!referral) throw domainErrors.notFound();
   const r = referral as unknown as { referrerId: string; refereeId: string | null; bonusPaidAt: Date | null; id: string };

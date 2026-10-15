@@ -7,6 +7,16 @@ import { site } from '@/config/site';
 import { db } from '@/lib/db';
 import { createBookingFromHold, type CreateBookingInput } from '@/server/booking/service';
 
+async function assertRecurringEnabled(): Promise<void> {
+  try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    const enabled = await isEntitlementEnabled('recurring').catch(() => true);
+    if (!enabled) throw domainErrors.featureDisabled();
+  } catch (error) {
+    if (error instanceof Error && (error as { code?: string }).code === 'FEATURE_DISABLED') throw error;
+  }
+}
+
 export interface CreateRecurringSeriesInput {
   customerId: string;
   instructorId?: string | null;
@@ -20,6 +30,7 @@ export interface CreateRecurringSeriesInput {
 }
 
 export async function createRecurringSeries(input: CreateRecurringSeriesInput) {
+  await assertRecurringEnabled();
   const { customerId, instructorId, weekday, startTime, durationMinutes, weeks, now } = input;
   if (!instructorId) throw domainErrors.validationFailed('instructorId');
   const occurrences = nextOccurrences({ weekday, startTime, durationMinutes }, now, weeks, site.timeZone);

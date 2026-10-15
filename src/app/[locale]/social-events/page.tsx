@@ -15,7 +15,7 @@ import { EventCard } from "@/components/catalog/event-card";
 import { CardTilt } from "@/components/fx/card-tilt";
 import { PageHero } from "@/components/layout/page-hero";
 import { SiteFooter } from "@/components/layout/site-footer";
-import { features, routes, site } from "@/config";
+import { routes, site } from "@/config";
 import { parseCatalogQuery, type RawSearchParams } from "@/domain/catalog";
 import type { Locale } from "@/i18n/config";
 import { buildMetadata } from "@/lib/seo/metadata";
@@ -51,7 +51,10 @@ export default async function SocialEventsPage({
   params,
   searchParams,
 }: PageProps) {
-  if (!features.events) notFound();
+  {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    if (!(await isEntitlementEnabled('events').catch(() => true))) notFound();
+  }
 
   const { locale } = await params;
   setRequestLocale(locale as Locale);

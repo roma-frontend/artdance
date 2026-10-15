@@ -3,6 +3,16 @@ import 'server-only';
 import { db } from '@/lib/db';
 import { domainErrors } from '@/domain/errors';
 
+async function assertWalletEnabled(): Promise<void> {
+  try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    const enabled = await isEntitlementEnabled('wallet').catch(() => true);
+    if (!enabled) throw domainErrors.featureDisabled();
+  } catch (error) {
+    if (error instanceof Error && (error as { code?: string }).code === 'FEATURE_DISABLED') throw error;
+  }
+}
+
 export async function ensureWallet(userId: string) {
   return db.walletAccount.upsert({
     where: { userId },
@@ -18,6 +28,12 @@ export async function walletBalance(userId: string): Promise<number> {
 }
 
 export async function creditWallet(input: { userId: string; amount: number; kind: string; refId?: string | null }) {
+  // Allow internal credit on cancellation/refund path — do not block credited refunds even if wallet feature is hidden.
+  // Direct credit (gift, manual, referral) requires `wallet` entitlement.
+  const internalCreditKinds = new Set(['CREDIT_REFUND']);
+  if (!internalCreditKinds.has(input.kind)) {
+    await assertWalletEnabled();
+  }
   if (input.amount <= 0) throw domainErrors.validationFailed('amount');
   const account = await ensureWallet(input.userId);
   // Dedup by WalletEntry.refId (credit for same booking only once)
@@ -33,6 +49,7 @@ export async function creditWallet(input: { userId: string; amount: number; kind
 }
 
 export async function debitWallet(input: { userId: string; amount: number; kind: string; refId?: string | null }) {
+  await assertWalletEnabled();
   if (input.amount <= 0) throw domainErrors.validationFailed('amount');
   const account = await ensureWallet(input.userId);
   if (account.balance < input.amount) throw domainErrors.validationFailed('balance');
@@ -50,6 +67,7 @@ export async function debitWallet(input: { userId: string; amount: number; kind:
 }
 
 export async function applyWalletToPayment(input: { userId: string; amount: number; orderId: string }) {
+  await assertWalletEnabled();
   // Списывает не более баланса, идемпотентно по orderId — можно звать из reconcile/webhook повторно
   if (input.amount <= 0) return { applied: 0, balance: await walletBalance(input.userId) };
   const capped = Math.min(input.amount, await walletBalance(input.userId));

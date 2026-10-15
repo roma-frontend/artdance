@@ -45,19 +45,29 @@ export async function createRefund(input: CreateRefundInput) {
     throw domainErrors.refundNotAllowed();
   }
 
-  // Резервируем строку, чтобы повтор не создал вторую.
-  let refund: { id: string; status: string } = (await db.refund.create({
-    data: {
-      paymentId: payment.id,
-      orderId: null,
-      amount: input.amount,
-      reason: input.reason,
-      status: 'PENDING' as never,
-      idempotencyKey: key,
-      initiatedBy: input.actor?.id ?? null,
-    } as never,
-    select: { id: true, status: true },
-  })) as unknown as { id: string; status: string };
+  // Резервируем строку, чтобы повтор не создал вторую — P2002-safe
+  let refund: { id: string; status: string };
+  try {
+    refund = (await db.refund.create({
+      data: {
+        paymentId: payment.id,
+        orderId: null,
+        amount: input.amount,
+        reason: input.reason,
+        status: 'PENDING' as never,
+        idempotencyKey: key,
+        initiatedBy: input.actor?.id ?? null,
+      } as never,
+      select: { id: true, status: true },
+    })) as unknown as { id: string; status: string };
+  } catch (error) {
+    const code = (error as { code?: string })?.code;
+    if (code === 'P2002') {
+      const raced = (await db.refund.findUnique({ where: { idempotencyKey: key } })) as unknown as { id: string; status: string } | null;
+      if (raced) return raced;
+    }
+    throw error;
+  }
 
   try {
     const result = await provider.refund({

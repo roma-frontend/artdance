@@ -16,7 +16,12 @@ export async function hasActivePushSubscription(userId: string): Promise<boolean
 
 export async function preferredChannel(userId: string, type?: string): Promise<'PUSH' | 'SMS' | 'EMAIL'> {
   void type;
-  if (await hasActivePushSubscription(userId)) return 'PUSH';
+  let pushEnabled = true;
+  try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    pushEnabled = await isEntitlementEnabled('push').catch(() => true);
+  } catch {}
+  if (pushEnabled && (await hasActivePushSubscription(userId))) return 'PUSH';
   const user = await db.user.findUnique({ where: { id: userId }, select: { phone: true, email: true } });
   if (user?.phone) return 'SMS';
   return 'EMAIL';

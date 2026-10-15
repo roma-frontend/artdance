@@ -38,8 +38,9 @@ describe('удержание: просроченный уникальный кл
     { instructorId: null, roomId: 'room-1' },
   ])('освобождает только просроченный ключ ресурса $instructorId/$roomId', async resource => {
     await expect(createSlotHold({ ...input, ...resource })).resolves.toMatchObject({ id: 'new-hold' });
+    const expected = (resource.instructorId ? { instructorId: resource.instructorId } : { roomId: resource.roomId }) as Record<string, unknown>;
     expect(mocks.slotHold.deleteMany).toHaveBeenCalledWith({ where: {
-      ...resource, startsAt, expiresAt: { lte: now },
+      ...expected, startsAt, expiresAt: { lte: now },
     } });
     expect(mocks.slotHold.deleteMany.mock.invocationCallOrder[0])
       .toBeLessThan(mocks.slotHold.create.mock.invocationCallOrder[0]!);

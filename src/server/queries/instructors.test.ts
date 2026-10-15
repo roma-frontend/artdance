@@ -57,7 +57,9 @@ describe('сигналы ранжирования', () => {
     expect(signals.noShowRate).toBe(0);
   });
 
-  it('платного размещения нет: буст всегда пуст', () => {
+  it('буст читается из строки, если есть boostedUntil', () => {
+    const until = new Date('2026-12-01T00:00:00Z');
+    expect(rankingSignals(row({ boostedUntil: until })).boostedUntil).toEqual(until);
     expect(rankingSignals(row({})).boostedUntil).toBeNull();
   });
 

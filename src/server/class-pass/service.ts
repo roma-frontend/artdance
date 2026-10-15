@@ -6,6 +6,16 @@ import { classPasses, priceGuidance } from '@/config/pricing';
 import { db } from '@/lib/db';
 import { Prisma } from '@/generated/prisma/client';
 
+async function assertPackagesEnabled(): Promise<void> {
+  try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    const enabled = await isEntitlementEnabled('packages').catch(() => true);
+    if (!enabled) throw domainErrors.featureDisabled();
+  } catch (error) {
+    if (error instanceof Error && (error as { code?: string }).code === 'FEATURE_DISABLED') throw error;
+  }
+}
+
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 }
@@ -18,6 +28,7 @@ export interface PurchaseClassPassInput {
 }
 
 export async function purchaseClassPass(input: PurchaseClassPassInput) {
+  await assertPackagesEnabled();
   const offer = classPasses.find((pass) => pass.id === input.passId) ?? null;
   if (!offer) throw domainErrors.notFound();
   const pricePaid = classPassOfferPrice(priceGuidance.groupClass.typical, offer.discountRate, offer.lessons);
@@ -68,6 +79,7 @@ export interface RedeemClassPassInput {
 }
 
 export async function redeemClassPassForBooking(input: RedeemClassPassInput) {
+  await assertPackagesEnabled();
   const result = await db.$transaction(async (tx) => {
     const pass = await tx.classPass.findUnique({ where: { id: input.passId } });
     if (!pass || pass.purchaserId !== input.userId) throw domainErrors.forbidden();

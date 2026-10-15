@@ -62,7 +62,6 @@ import {
   type DanceStyle,
 } from '@/domain/enums';
 import {
-  enabledSearchScopes,
   searchScopeLabelKey,
   type SearchHit,
   type SearchResponse,
@@ -295,6 +294,25 @@ export function SearchOverlay({ open, onOpenChange, onRestoreFocus }: SearchOver
 
   const close = useCallback(() => onOpenChange(false), [onOpenChange]);
 
+  const [visibleScopes, setVisibleScopes] = useState<SearchScope[]>(['all', 'classes', 'instructors', 'studios']);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/entitlements', { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data || cancelled) return;
+        const next: SearchScope[] = ['all', 'classes', 'instructors', 'studios'];
+        if (data.shop) next.push('products');
+        if (data.events) next.push('events');
+        setVisibleScopes(next);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const resultsHref = routes.discover({
     q: term,
     ...(scope === 'all' ? {} : { scope }),
@@ -483,7 +501,7 @@ export function SearchOverlay({ open, onOpenChange, onRestoreFocus }: SearchOver
               aria-label={t('a11y.searchScope')}
               className="mt-8 flex w-full max-w-(--layout-content-max-width) flex-wrap justify-center gap-2"
             >
-              {enabledSearchScopes().map((candidate) => {
+              {visibleScopes.map((candidate) => {
                 const active = candidate === scope;
 
                 return (

@@ -36,6 +36,22 @@ export interface CreateOrderInput {
 }
 
 export async function createOrder(input: CreateOrderInput) {
+  // Серверная валидация контактных данных (клиент может обойти checkout-screen)
+  const normalizedEmail = input.contactEmail.trim().toLowerCase();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail) && normalizedEmail.length <= 254;
+  if (!emailOk) throw domainErrors.validationFailed('contactEmail');
+  const phoneDigits = input.contactPhone.replace(/\D/g, '');
+  if (phoneDigits.length < 6 || phoneDigits.length > 20) throw domainErrors.validationFailed('contactPhone');
+  const nameTrimmed = input.contactName.trim();
+  if (nameTrimmed.length < 1 || nameTrimmed.length > 80) throw domainErrors.validationFailed('contactName');
+  if (/[<>]/.test(nameTrimmed)) throw domainErrors.validationFailed('contactName');
+  if (input.deliveryAddressId) {
+    const addr = await db.address.findUnique({ where: { id: input.deliveryAddressId }, select: { userId: true } });
+    if (!addr) throw domainErrors.validationFailed('deliveryAddressId');
+    if (input.userId && addr.userId !== input.userId) throw domainErrors.forbidden();
+    if (!input.userId && addr.userId) throw domainErrors.forbidden();
+  }
+  if (input.deliveryNotes && input.deliveryNotes.length > 500) throw domainErrors.validationFailed('deliveryNotes');
   // Корзину пересчитываем по БД (validateCart-логика кусочно)
   const where = input.userId ? { userId: input.userId } : input.anonymousId ? { anonymousId: input.anonymousId } : null;
   if (!where) throw domainErrors.unauthorized();
@@ -74,12 +90,25 @@ export async function createOrder(input: CreateOrderInput) {
 
   // Транзакция: создать Order + OrderItem + инкремент usageCount + списание stock (4.7)
   const created = await db.$transaction(async (tx) => {
-    // Промокод — атомарно инкремент usageCount, если есть
+    // Промокод — атомарно: только если usageCount < usageLimit
     if (promo && cart.promoCodeId) {
       const pr = await tx.promoCode.findUnique({ where: { id: cart.promoCodeId } });
       if (!pr) throw domainErrors.validationFailed('promoCode');
       if (pr.usageLimit !== null && pr.usageCount >= pr.usageLimit) throw domainErrors.validationFailed('promoCode');
-      await tx.promoCode.update({ where: { id: cart.promoCodeId }, data: { usageCount: { increment: 1 } } });
+      if (pr.usageLimit !== null) {
+        const bumped = await tx.promoCode.updateMany({
+          where: { id: cart.promoCodeId, usageCount: { lt: pr.usageLimit } },
+          data: { usageCount: { increment: 1 } },
+        });
+        if (bumped.count !== 1) throw domainErrors.validationFailed('promoCode');
+      } else {
+        await tx.promoCode.update({ where: { id: cart.promoCodeId }, data: { usageCount: { increment: 1 } } });
+      }
+      // perUserLimit — проверяем внутри транзакции
+      if (pr.perUserLimit !== null && input.userId) {
+        const used = await tx.order.count({ where: { userId: input.userId, promoCodeId: pr.id } });
+        if (used >= pr.perUserLimit) throw domainErrors.validationFailed('promoCode');
+      }
     }
 
     const num = orderNumber();
@@ -125,16 +154,19 @@ export async function createOrder(input: CreateOrderInput) {
         },
       });
 
-      // Склад: списание stock (резерва при оплате нет — commerce.cartReservationMinutes=0)
+      // Склад: атомарно — декремент только если осталось достаточно (защита от гонки)
       if (!commerce.allowBackorder) {
-        // Проверяем доступность ещё раз внутри транзакции
-        const fresh = await tx.productVariant.findUnique({ where: { id: it.variantId! }, select: { stock: true, reserved: true } });
-        if (!fresh || fresh.stock - fresh.reserved < it.quantity) throw domainErrors.validationFailed('stock');
+        const claimed = await tx.productVariant.updateMany({
+          where: { id: it.variantId!, stock: { gte: it.quantity } },
+          data: { stock: { decrement: it.quantity } },
+        });
+        if (claimed.count !== 1) throw domainErrors.validationFailed('stock');
+      } else {
+        await tx.productVariant.update({
+          where: { id: it.variantId! },
+          data: { stock: { decrement: it.quantity } },
+        });
       }
-      await tx.productVariant.update({
-        where: { id: it.variantId! },
-        data: { stock: { decrement: it.quantity } },
-      });
 
     }
 

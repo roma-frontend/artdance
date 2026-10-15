@@ -313,8 +313,22 @@ export async function searchCatalog(
   limit: number,
   locale: Locale,
 ): Promise<readonly SearchHit[]> {
+  // Prefer entitlements runtime (preset-aware) over static `features`.
+  // When DB is unavailable (build/test without preset), fall back to `isSearchScopeEnabled`.
+  let enabledForScope: (s: SearchHitScope) => boolean;
+  try {
+    const { getEffectiveEntitlements } = await import('@/server/entitlements/service');
+    const eff = await getEffectiveEntitlements();
+    enabledForScope = (s: SearchHitScope) => {
+      if (s === 'events') return !!eff.events;
+      if (s === 'products') return !!eff.shop;
+      return true;
+    };
+  } catch {
+    enabledForScope = isSearchScopeEnabled;
+  }
   const wants = (candidate: SearchHitScope): boolean =>
-    (scope === 'all' || scope === candidate) && isSearchScopeEnabled(candidate);
+    (scope === 'all' || scope === candidate) && enabledForScope(candidate);
 
   const [classes, instructors, venues, events, products] = await Promise.all([
     wants('classes') ? getClassCandidates(locale) : Promise.resolve([]),

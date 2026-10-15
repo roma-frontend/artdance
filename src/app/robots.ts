@@ -17,7 +17,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: noIndexPathPrefixes.map((prefix) => `${prefix}/`),
+        disallow: [...noIndexPathPrefixes.flatMap((p) => [p, `${p}/`])],
       },
     ],
     sitemap: absoluteUrl('/sitemap.xml'),

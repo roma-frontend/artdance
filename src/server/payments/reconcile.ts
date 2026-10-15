@@ -8,12 +8,15 @@
 import 'server-only';
 
 import { db } from '@/lib/db';
+import { domainErrors } from '@/domain/errors';
 import { getPaymentProvider, type PaymentProviderId } from '@/lib/payments';
 import { recordAudit } from '@/lib/audit';
 import type { PaymentStatus } from '@/domain/enums';
 
+const TERMINAL_STATUSES = new Set(['PAID', 'REFUNDED', 'CANCELLED', 'CHARGEBACK', 'FAILED', 'REFUNDED_PARTIALLY' as string]);
+
 function isTerminal(status: string): boolean {
-  return ['REFUNDED', 'CANCELLED', 'CHARGEBACK'].includes(status);
+  return TERMINAL_STATUSES.has(status);
 }
 
 export interface ReconcileInput {
@@ -31,7 +34,12 @@ export async function reconcilePayment(input: ReconcileInput) {
   if (isTerminal(payment.status)) return { status: payment.status as PaymentStatus };
 
   const provider = getPaymentProvider(payment.provider as PaymentProviderId);
-  const snapshot = await provider.getPayment(payment.providerTransactionId);
+  let snapshot: Awaited<ReturnType<typeof provider.getPayment>>;
+  try {
+    snapshot = await provider.getPayment(payment.providerTransactionId);
+  } catch (error) {
+    throw domainErrors.paymentFailed(error);
+  }
 
   const paid = snapshot.status === 'PAID' || snapshot.status === 'AUTHORIZED';
   const failed = snapshot.status === 'FAILED' || snapshot.status === 'CANCELLED';

@@ -17,7 +17,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { navIcons } from '@/components/layout/nav-icons';
-import { headerMegaGroups as staticMegaGroups, isActiveNavPath } from '@/config/navigation';
+import { isActiveNavPath } from '@/config/navigation';
 import { useEntitlementFilters } from '@/lib/entitlements/use-entitlements';
 import { Link, usePathname } from '@/i18n/routing';
 import { useMegaMenuTop } from '@/lib/hooks/use-mega-menu-top';
@@ -42,7 +42,7 @@ export function HeaderMegaMenu({ solid, onOpenChange }: Props) {
   const top = useMegaMenuTop(isOpen, navRef);
 
   const { headerMegaGroupsClient } = useEntitlementFilters();
-  const megaGroups = headerMegaGroupsClient.length > 0 ? headerMegaGroupsClient : staticMegaGroups;
+  const megaGroups = headerMegaGroupsClient;
   const activeGroup = megaGroups.find((g) => g.id === renderId) ?? null;
 
   const clearTimers = () => {

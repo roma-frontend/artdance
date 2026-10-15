@@ -7,6 +7,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    if (!(await isEntitlementEnabled('shop').catch(() => true))) return NextResponse.json({ error: 'FEATURE_DISABLED' }, { status: 403, headers: { 'Cache-Control': cacheControl.none } });
+  } catch {}
   const url = new URL(request.url);
   const sku = url.searchParams.get('sku') ?? '';
   if (!sku) return NextResponse.json({ error: 'VALIDATION_FAILED' }, { status: 400, headers: { 'Cache-Control': cacheControl.none } });

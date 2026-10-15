@@ -213,9 +213,9 @@ function styleSpecs(slugs: readonly string[]): SitemapSpec[] {
  * Приоритет ниже каталога и выше правовых документов: они приводят трафик по
  * запросам «как стать преподавателем в Ереване», но не являются товаром.
  *
- * `/pricing` появляется только вместе с модулем подписок: страница остаётся
- * доступной по адресу и при выключенном флаге, но приглашать поисковик на
- * «тарифы», которых пока нет, значит обещать несуществующее.
+ * `/pricing` виден всегда — это витрина/конверсия, а не сам товар
+ * `subscriptions`. При выкл. подписках страница показывает `comingSoon`
+ * (см. `src/app/[locale]/pricing/page.tsx`), но URL остаётся каноническим.
  */
 function contentSpecs(): SitemapSpec[] {
   const { priorities, changeFrequency } = seo.sitemap;
@@ -257,9 +257,8 @@ function contentSpecs(): SitemapSpec[] {
     spec(routes.sponsors()),
     spec(routes.advertise()),
     spec(routes.cities()),
+    spec(routes.pricing()),
   ];
-
-  if (isEnabled('subscriptions')) specs.push(spec(routes.pricing()));
   /* Подарочные карты продаются через магазин — вместе с ним они и появляются. */
   if (isEnabled('shop')) specs.push(spec(routes.giftCards()));
 
@@ -332,7 +331,6 @@ export async function buildSitemapWithEntitlements(slugs: EntitySlugs, lastModif
         if (path === '/shop' || path.startsWith('/shop/') || path.startsWith('/gift-cards')) return !!effective.shop;
         if (path === '/events' || path.startsWith('/events/')) return !!effective.events;
         if (path === '/courses' || path.startsWith('/courses/')) return !!effective.courses || !!effective.videoCourses;
-        if (path === '/pricing') return !!effective.subscriptions;
         return true;
       } catch {
         return true;

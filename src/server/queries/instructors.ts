@@ -73,6 +73,7 @@ export const instructorSelect = {
   ratingCount: true,
   studentCount: true,
   createdAt: true,
+  boostedUntil: true,
   user: { select: { name: true } },
   media: mediaRelation,
 } as const;
@@ -106,6 +107,7 @@ export interface InstructorRow {
   ratingCount: number;
   studentCount: number;
   createdAt: Date;
+  boostedUntil?: Date | null;
   user: { name: string };
   media: MediaRow[];
 }
@@ -144,6 +146,7 @@ export interface InstructorRankingRow {
   createdAt: Date;
   isVerified: boolean;
   hourlyRateFrom: number;
+  boostedUntil?: Date | null;
 }
 
 /**
@@ -153,7 +156,7 @@ export interface InstructorRankingRow {
  * людьми, и проверять его нужно на явных данных, а не на том, что случайно лежит
  * в базе разработчика.
  */
-export function rankingSignals(row: InstructorRankingRow): RankingSignals {
+export function rankingSignals(row: InstructorRankingRow & { boostedUntil?: Date | null }): RankingSignals {
   return {
     averageRating: ratingNumber(row.ratingAverage),
     reviewCount: row.ratingCount,
@@ -165,8 +168,7 @@ export function rankingSignals(row: InstructorRankingRow): RankingSignals {
     completedBookings: row.studentCount,
     createdAt: row.createdAt,
     isVerified: row.isVerified,
-    /** Платного размещения ещё нет: `BoostCampaign` — задача B-07. */
-    boostedUntil: null,
+    boostedUntil: (row as { boostedUntil?: Date | null }).boostedUntil ?? null,
   };
 }
 

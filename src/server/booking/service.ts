@@ -49,10 +49,15 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   }
   if (basePrice == null) { if (danceClass) basePrice = danceClass.price; else throw domainErrors.notFound(); }
   const locationOption = (input.locationOption ?? 'STUDIO') as 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE';
-  // B-10 динамическая цена: пиковые часы/выходные поверх тарифа инструктора
+  // B-10 динамическая цена: пиковые/выходные по Asia/Yerevan, не по серверному UTC
   const { priceForSlot, isPeakHour, isWeekendDay } = await import('@/domain/dynamic-pricing');
-  const startHour = hold.startsAt.getHours();
-  const startDow = hold.startsAt.getDay();
+  const { zonedParts } = await import('@/lib/time/schedule');
+  const zParts = zonedParts(hold.startsAt, site.timeZone);
+  const startHour = Math.floor(zParts.minutesOfDay / 60);
+  // zonedParts не暴露 weekday; вычисляем через fromZonedParts-совместимый day, либо используем UTC-для-недели fallback на Yerevan через offset — берём getDay в Yerevan через Intl
+  const yDay = new Intl.DateTimeFormat('en-US', { timeZone: site.timeZone, weekday: 'short' }).format(hold.startsAt);
+  const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const startDow = dayMap[yDay] ?? hold.startsAt.getDay();
   const dynamicPrice = priceForSlot(basePrice, { isPeak: isPeakHour(startHour), isWeekend: isWeekendDay(startDow) });
   const travelFee = locationOption === 'CUSTOMER_LOCATION' ? booking.travelFee : 0;
   const totalPrice = dynamicPrice + travelFee;
@@ -83,20 +88,37 @@ export async function createBookingFromHold(input: CreateBookingInput) {
         });
         if (reserved.count !== 1) throw domainErrors.capacityExceeded(0);
       }
-      const conflict = await tx.booking.findFirst({ where: {
-        instructorId: hold.instructorId ?? undefined,
-        startsAt: { lt: hold.endsAt }, endsAt: { gt: hold.startsAt },
+      // Buffer-aware conflict: расширяем окно запроса и учитываем roomId
+      const bufMs = booking.bufferBetweenBookingsMinutes * 60_000;
+      const conflictWhere: Record<string, unknown> = {
+        ...(hold.instructorId ? { instructorId: hold.instructorId } : hold.roomId ? { roomId: hold.roomId } : {}),
+        startsAt: { lt: new Date(hold.endsAt.getTime() + bufMs) },
+        endsAt: { gt: new Date(hold.startsAt.getTime() - bufMs) },
         status: { in: [...slotBlockingBookingStatuses] },
-        ...(session ? { OR: [{ sessionId: null }, { sessionId: { not: session.id } }, { customerId }] } : {}),
-      } });
+      };
+      if (session && hold.instructorId) {
+        // Для групповых: конфликт если другая сессия в то же время у того же инструктора
+        (conflictWhere as Record<string, unknown>).OR = [{ sessionId: null }, { sessionId: { not: session.id } }];
+      }
+      const conflict = await tx.booking.findFirst({ where: conflictWhere as never });
       if (conflict) throw domainErrors.slotConflict();
        const subject = lessonType === 'PRIVATE' ? 'PRIVATE_SESSION' : 'CLASS_SESSION';
-       let classPassId: string | null = null;
-       let discountAmount = 0;
-       let payableTotal = totalPrice;
-       if (input.useClassPass) {
-         if (lessonType !== 'GROUP') throw domainErrors.validationFailed('classPass');
-         const pass = await tx.classPass.findFirst({
+        let classPassId: string | null = null;
+        let discountAmount = 0;
+        let payableTotal = totalPrice;
+        if (input.useClassPass) {
+          if (lessonType !== 'GROUP') throw domainErrors.validationFailed('classPass');
+          // Entitlement guard (server-side, inside tx): packages disabled → FEATURE_DISABLED
+          {
+            try {
+              const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+              const enabled = await isEntitlementEnabled('packages').catch(() => true);
+              if (!enabled) throw domainErrors.featureDisabled();
+            } catch (error) {
+              if (error instanceof Error && (error as { code?: string }).code === 'FEATURE_DISABLED') throw error;
+            }
+          }
+          const pass = await tx.classPass.findFirst({
            where: { purchaserId: customerId, lessonsRemaining: { gt: 0 }, expiresAt: { gt: now } },
            orderBy: [{ expiresAt: 'asc' }, { lessonsRemaining: 'asc' }],
            select: { id: true },
@@ -174,7 +196,8 @@ export async function rescheduleBooking(input: RescheduleBookingInput) {
   if (!b) throw domainErrors.notFound();
   if (b.customerId !== input.userId) throw domainErrors.forbidden();
   const snapshot: BookingSnapshot = { startsAt: b.startsAt, status: b.status as BookingSnapshot['status'], totalPrice: b.totalPrice, cancellationWindowHours: b.cancellationWindowHours, lateCancellationRate: Number(b.lateCancellationRate), rescheduleWindowHours: b.rescheduleWindowHours, rescheduleCount: b.rescheduleCount, maxReschedules: b.maxReschedules };
-  const target = { start: input.newStartsAt, end: input.newEndsAt, price: input.newPrice ?? b.totalPrice };
+  // newPrice с клиента игнорируем — цену считаем серверно по тарифу инструктора + пиковый мультипликатор Asia/Yerevan
+  const target = { start: input.newStartsAt, end: input.newEndsAt, price: b.totalPrice };
   const outcome = rescheduleOutcome(snapshot, target, input.now);
   if (outcome.kind === 'forbidden') {
     if (outcome.reason === 'LIMIT_REACHED') throw domainErrors.rescheduleLimitReached();
@@ -198,7 +221,7 @@ export async function rescheduleBooking(input: RescheduleBookingInput) {
   const busy = await db.booking.findMany({ where:{ id:{ not: b.id }, instructorId: b.instructorId ?? undefined, status:{ in:['PENDING','CONFIRMED'] as const }, startsAt:{ lt: input.newEndsAt }, endsAt:{ gt: input.newStartsAt } } as never, select:{ startsAt:true, endsAt:true }});
   const holds = await db.slotHold.findMany({ where:{ instructorId: b.instructorId ?? undefined, expiresAt:{ gt: input.now }, startsAt:{ lt: input.newEndsAt }, endsAt:{ gt: input.newStartsAt } } as never, select:{ startsAt:true, endsAt:true }});
   assertNoConflict([...busy, ...holds].map(r=>({ start:r.startsAt, end:r.endsAt })), { start: input.newStartsAt, end: input.newEndsAt }, booking.bufferBetweenBookingsMinutes);
-  const newBase = input.newPrice ?? b.basePrice;
+  const newBase = b.basePrice;
   const newTravel = b.travelFee;
   // Moving a scheduled session requires reserving another session, not changing
   // timestamps while retaining its old ID. Keep that unsupported path closed.

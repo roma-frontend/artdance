@@ -57,12 +57,11 @@ export async function createSlotHold(request: HoldRequest): Promise<HoldResult> 
   assertNoConflict(request.busy as readonly Interval[], candidate, booking.bufferBetweenBookingsMinutes);
   try {
     return await db.$transaction(async transaction => {
-      await transaction.slotHold.deleteMany({ where: {
-        instructorId: request.instructorId ?? null,
-        roomId: request.roomId ?? null,
-        startsAt: request.startsAt,
-        expiresAt: { lte: now },
-      } });
+      // Удаляем только истёкшие холды конкретного ресурса (не NULL-фильтр)
+      const expiredWhere: Record<string, unknown> = { startsAt: request.startsAt, expiresAt: { lte: now } };
+      if (request.instructorId) (expiredWhere as Record<string, unknown>).instructorId = request.instructorId;
+      else if (request.roomId) (expiredWhere as Record<string, unknown>).roomId = request.roomId;
+      await transaction.slotHold.deleteMany({ where: expiredWhere as never });
       return transaction.slotHold.create({ data: { instructorId: request.instructorId ?? null, roomId: request.roomId ?? null, sessionId: request.sessionId ?? null, startsAt: request.startsAt, endsAt: request.endsAt, userId: request.userId ?? null, anonymousId: request.anonymousId ?? null, expiresAt, extensions: 0 }, select: { id: true, startsAt: true, endsAt: true, expiresAt: true, extensions: true } });
     });
   } catch (error) {
@@ -78,6 +77,10 @@ export async function extendSlotHold(holdId: string, owner: { userId?: string | 
   if (!owned) throw domainErrors.forbidden();
   if (isHoldExpired(existing, now)) throw domainErrors.holdExpired();
   if (existing.extensions >= booking.holdMaxExtensions) throw domainErrors.validationFailed('extensions');
+  // Продление не может увести слот за maxAdvanceDays
+  // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- type-only inside function scope intentional for hold expiry path
+  const candidate: import('@/lib/time/interval').Interval = { start: existing.startsAt, end: existing.endsAt };
+  assertWithinPolicy(candidate, { minLeadMinutes: booking.minLeadTimeMinutes, maxAdvanceDays: booking.maxAdvanceDays, allowedDurationsMinutes: booking.durationsMinutes, granularityMinutes: booking.slotGranularityMinutes, timeZone: site.timeZone }, now);
   const nextExpiresAt = slotHoldExpiresAt(now, booking.holdTtlMinutes);
   const updated = await db.slotHold.update({ where: { id: holdId }, data: { expiresAt: nextExpiresAt, extensions: { increment: 1 } }, select: { id: true, startsAt: true, endsAt: true, expiresAt: true, extensions: true } });
   return updated;

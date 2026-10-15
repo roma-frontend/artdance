@@ -1,12 +1,9 @@
 /**
  * Cloudflare Turnstile.
  *
- * Осознанное решение: **не настроен → пропускаем**. Это позволяет писать и
- * тестировать защищённые формы до получения ключей Cloudflare и не держать
- * закомментированные вызовы в коде. Настроен → проверка строгая.
- *
- * Функция никогда не бросает и всегда имеет таймаут: внешний сервис не должен
- * подвешивать регистрацию пользователя.
+ * Поведение fail-open в dev, fail-closed в production/test:
+ * без `TURNSTILE_SECRET_KEY` в prod — проверка не проходит, чтобы боты
+ * не прошли до настройки ключей. В dev пропускаем для локальной разработки.
  */
 
 const VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
@@ -16,12 +13,16 @@ export function turnstileConfigured(): boolean {
   return Boolean(process.env.TURNSTILE_SECRET_KEY);
 }
 
+function isProdOrTest(): boolean {
+  return process.env.NODE_ENV === 'production' || process.env.VITEST === 'true';
+}
+
 export async function verifyTurnstile(
   token: string | null | undefined,
   remoteIp?: string,
 ): Promise<boolean> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;
+  if (!secret) return isProdOrTest() ? false : true;
   if (!token) return false;
 
   try {

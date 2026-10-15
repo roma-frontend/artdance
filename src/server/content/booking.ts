@@ -333,6 +333,10 @@ export async function getInstructorBookingContent(
 
 /** Пакеты доступны только после входа и никогда не кешируются вместе с публичным каталогом. */
 export async function getUsableClassPasses(now: Date = new Date()) {
+  try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    if (!(await isEntitlementEnabled('packages').catch(() => true))) return [] as const;
+  } catch {}
   const caller = await getCaller();
   if (!caller) return [] as const;
   const rows = await db.classPass.findMany({

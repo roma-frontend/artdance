@@ -238,10 +238,14 @@ export function rateLimitHeaders(result: RateLimitResult, operation: RateLimitKe
  * и его добавление лишь дробит бакеты, ослабляя лимит.
  */
 export function clientIdentifier(headers: Headers): string {
+  // Доверяем правому (последнему) элементу XFF — левый может подделать клиент
+  const real = headers.get('cf-connecting-ip')?.trim() || headers.get('x-real-ip')?.trim();
+  if (real) return real;
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {
-    const first = forwarded.split(',')[0]?.trim();
-    if (first) return first;
+    const parts = forwarded.split(',').map((s) => s.trim()).filter(Boolean);
+    const last = parts[parts.length - 1];
+    if (last) return last;
   }
-  return headers.get('x-real-ip') ?? headers.get('cf-connecting-ip') ?? 'unknown';
+  return 'unknown';
 }

@@ -231,7 +231,6 @@ const FEATURE_GATED: ReadonlyArray<{ prefix: string; feature: FeatureKey }> = [
   { prefix: '/shop', feature: 'shop' },
   { prefix: '/courses', feature: 'courses' },
   { prefix: '/events', feature: 'events' },
-  { prefix: '/pricing', feature: 'subscriptions' },
   { prefix: '/gift-cards', feature: 'shop' },
 ];
 

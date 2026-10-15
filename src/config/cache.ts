@@ -118,6 +118,16 @@ export const privatePaths = [
   '/reset-password',
   '/reset-password/:path*',
   '/verify-email/:path*',
+  // Приватные персональные доки/токены — нельзя отдавать из CDN
+  '/orders/:path*',
+  '/reviews/new/:path*',
+  '/booking/:path*/pass',
+  '/booking/:path*/confirm',
+  '/unsubscribe/:path*',
+  '/newsletter/:path*',
+  '/s/:path*',
+  '/qr/:path*',
+  '/embed/:path*',
 ] as const;
 
 interface HeaderRule {

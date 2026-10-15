@@ -1,18 +1,18 @@
 /**
- * PRICING — тарифы подписки.
+ * PRICING — тарифы подписки (вариант Б: витрина/конверсия).
  *
  * Страница целиком выводится из `config/pricing.ts`: суммы, квоты, скидка за год,
  * пробный период. В разметке нет ни одной цифры — «поднимите Pro до 39 000»
  * должно быть правкой одной строки конфигурации, а не поиском по вёрстке.
  *
- * Переключателя «месяц / год» здесь нет намеренно. Он требует клиентского
- * состояния на статичной странице, а показывает то, что умещается в одну строку:
- * годовая цена стоит под месячной с бейджем выгоды. Человеку нужно сравнить два
- * числа, а не переключать вид.
+ * Переключателя «месяц / год» здесь нет намеренно (см. верхний коммент).
  *
- * Подписки — модуль под флагом поставки. Когда он выключен, страница не исчезает,
- * а честно говорит, что оплата пока поштучная, и ведёт в каталог: адрес уже мог
- * попасть в переписку и в закладки.
+ * Вариант Б: `Starter / Pro / Elite` — это планы ДЛЯ КЛИЕНТОВ платформы
+ * (танцоров), а не `entitlement preset` заказчика (`MVP/FULL/PREMIUM` в
+ * `src/server/entitlements/catalog.ts`). Они видны ВСЕГДА, даже в MVP, как
+ * превью/витрина. Когда `entitlement subscriptions=false` — карточки `disabled`,
+ * с бейджем `Coming soon` и подсказкой, что пока оплата поштучная. Подписка —
+ * не товар третьего магазина, а конверсия внутрь платформы, её прятать нельзя.
  */
 
 import type { Metadata } from 'next';
@@ -26,7 +26,6 @@ import { PageHero, breadcrumbsFromTrail } from '@/components/layout/page-hero';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/ui/empty-state';
 import { Price } from '@/components/ui/price';
 import {
   orderedSubscriptionPlans,
@@ -84,55 +83,57 @@ export default async function PricingPage({ params }: PageProps) {
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />
 
-      {subscriptionsEnabled ? (
-        <>
-          <ContentSection>
-            <ul className="grid gap-6 lg:grid-cols-3">
-              {orderedSubscriptionPlans.map((plan) => (
-                <li key={plan.id} className="flex">
-                  <PlanCard plan={plan} />
-                </li>
-              ))}
-            </ul>
-
-            <p className="text-caption mt-6 text-content-tertiary">
-              {t('vatNote', { rate: format.number(tax.vatRate, 'percent') })} {t('cancelAnytime')}
+      <ContentSection>
+        {/* Coming soon banner — only when subscriptions disabled (MVP/FULL). Not a blocker, a badge. */}
+        {!subscriptionsEnabled && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/30">
+            <p className="text-body-sm font-semibold text-amber-900 dark:text-amber-200">
+              <Badge variant="warning" size="sm" className="mr-2 align-middle">Coming soon</Badge>
+              {t('comingSoon.body')}
             </p>
-          </ContentSection>
+          </div>
+        )}
+        <ul className="grid gap-6 lg:grid-cols-3">
+          {orderedSubscriptionPlans.map((plan) => (
+            <li key={plan.id} className="flex">
+              <PlanCard plan={plan} disabled={!subscriptionsEnabled} comingSoonLabel={t('comingSoon.title' as never) as unknown as string} />
+            </li>
+          ))}
+        </ul>
 
-          <ContentSection
-            tone="raised"
-            title={t('comparisonTitle')}
-            subtitle={t('comparisonSubtitle')}
-          >
-            <PlanComparisonTable plans={orderedSubscriptionPlans} />
-          </ContentSection>
+        <p className="text-caption mt-6 text-content-tertiary">
+          {t('vatNote', { rate: format.number(tax.vatRate, 'percent') })} {t('cancelAnytime')}
+        </p>
+      </ContentSection>
 
-          <ContentSection title={t('classPasses.title' as never)} subtitle={t('classPasses.subtitle' as never)}>
-            <ClassPassGrid locale={locale as Locale} />
-          </ContentSection>
+      <ContentSection
+        tone="raised"
+        title={t('comparisonTitle')}
+        subtitle={t('comparisonSubtitle')}
+      >
+        <PlanComparisonTable plans={orderedSubscriptionPlans} />
+      </ContentSection>
 
-          <ContentSection spacing="tight" prose>
-            <h2 className="text-heading-3">{t('payAsYouGo.title')}</h2>
-            <p className="text-body mt-3 text-content-secondary">{t('payAsYouGo.body')}</p>
-            <Button asChild variant="outline" className="mt-6">
-              <Link href={routes.classes()}>{t('payAsYouGo.cta')}</Link>
-            </Button>
-          </ContentSection>
-        </>
+      {await (async () => { try { const { isEntitlementEnabled } = await import('@/server/entitlements/service'); return await isEntitlementEnabled('packages').catch(() => true); } catch { return true; } })() ? (
+        <ContentSection title={t('classPasses.title' as never)} subtitle={t('classPasses.subtitle' as never)}>
+          <ClassPassGrid locale={locale as Locale} />
+        </ContentSection>
       ) : (
-        <ContentSection>
-          <EmptyState
-            title={t('comingSoon.title')}
-            description={t('comingSoon.body')}
-            action={
-              <Button asChild variant="outline">
-                <Link href={routes.classes()}>{t('comingSoon.cta')}</Link>
-              </Button>
-            }
-          />
+        <ContentSection title={t('classPasses.title' as never)} subtitle={t('classPasses.subtitle' as never)}>
+          <div className="rounded-xl border border-dashed border-border-default bg-surface-raised px-6 py-8 text-center">
+            <p className="text-body-sm text-content-secondary">{t('comingSoon.title')}</p>
+            <p className="text-caption mt-1 text-content-tertiary">{t('comingSoon.body')}</p>
+          </div>
         </ContentSection>
       )}
+
+      <ContentSection spacing="tight" prose>
+        <h2 className="text-heading-3">{t('payAsYouGo.title')}</h2>
+        <p className="text-body mt-3 text-content-secondary">{t('payAsYouGo.body')}</p>
+        <Button asChild variant="outline" className="mt-6">
+          <Link href={routes.classes()}>{t('payAsYouGo.cta')}</Link>
+        </Button>
+      </ContentSection>
 
       <SiteFooter />
     </main>
@@ -149,30 +150,36 @@ export default async function PricingPage({ params }: PageProps) {
  * квоты того же плана. Ни одной пары «строка перевода — число» в разметке нет:
  * подпись знает, что ей нужно `{count}`, а сколько именно — знает конфигурация.
  */
-function PlanCard({ plan }: { plan: SubscriptionPlan }) {
+function PlanCard({ plan, disabled = false, comingSoonLabel = 'Coming soon' }: { plan: SubscriptionPlan; disabled?: boolean; comingSoonLabel?: string }) {
   const t = useTranslations('pricing');
   const tRoot = useTranslations();
   const format = useFormatter();
 
   return (
     <article
+      data-disabled={disabled || undefined}
       className={cn(
-        'flex h-full flex-col rounded-xl p-8',
+        'flex h-full flex-col rounded-xl p-8 transition',
+        disabled && 'opacity-60 grayscale-[0.15]',
         plan.highlighted
           ? 'border-2 border-accent bg-surface-card shadow-lg'
           : 'border border-border-default bg-surface-card',
       )}
     >
-      {(plan.highlighted || plan.trialDays > 0) && (
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          {plan.highlighted && <Badge variant="accent">{t('mostPopular')}</Badge>}
-          {plan.trialDays > 0 && (
-            <Badge variant="metal">
-              {t('trialBadge', { days: tRoot('common.units.days', { count: plan.trialDays }) })}
-            </Badge>
-          )}
-        </div>
-      )}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {disabled ? (
+          <Badge variant="warning">{comingSoonLabel}</Badge>
+        ) : (
+          <>
+            {plan.highlighted && <Badge variant="accent">{t('mostPopular')}</Badge>}
+            {plan.trialDays > 0 && (
+              <Badge variant="metal">
+                {t('trialBadge', { days: tRoot('common.units.days', { count: plan.trialDays }) })}
+              </Badge>
+            )}
+          </>
+        )}
+      </div>
 
       <h2 className="text-card-title">{tRoot(subscriptionPlanNameKey(plan.id))}</h2>
       <p className="text-body-sm mt-2 text-content-secondary">
@@ -200,16 +207,17 @@ function PlanCard({ plan }: { plan: SubscriptionPlan }) {
         ))}
       </ul>
 
-      <Button asChild block className="mt-8" variant={plan.highlighted ? 'accent' : 'outline'}>
-        {/*
-          Оформление подписки — фаза 3 бэклога (`B-*`). Пока кнопка ведёт к
-          разговору с нами, а не к платёжной форме, которой нет: неработающая
-          кнопка «оплатить» на странице тарифов дороже отсутствующей.
-        */}
-        <Link href={routes.contact()}>
+      {disabled ? (
+        <Button block className="mt-8" variant="outline" disabled aria-disabled>
           {t('selectCta', { plan: tRoot(subscriptionPlanNameKey(plan.id)) })}
-        </Link>
-      </Button>
+        </Button>
+      ) : (
+        <Button asChild block className="mt-8" variant={plan.highlighted ? 'accent' : 'outline'}>
+          <Link href={routes.contact()}>
+            {t('selectCta', { plan: tRoot(subscriptionPlanNameKey(plan.id)) })}
+          </Link>
+        </Button>
+      )}
     </article>
   );
 }

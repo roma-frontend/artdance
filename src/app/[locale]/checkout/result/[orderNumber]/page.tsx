@@ -11,6 +11,8 @@ import { bookingStatuses, orderStatuses, type BookingStatus, type OrderStatus } 
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import { db } from '@/lib/db';
+import { getCaller } from '@/lib/auth/guards';
+import { isSupportOperator } from '@/config/security';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 interface PageProps { params: Promise<{ locale: string; orderNumber: string }>; }
@@ -22,6 +24,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CheckoutResultPage({ params }: PageProps) {
+  {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    if (!(await isEntitlementEnabled('shop').catch(() => true))) notFound();
+  }
+  const caller = await getCaller();
   const { locale, orderNumber } = await params;
   setRequestLocale(locale as Locale);
   const t = await getTranslations({ locale: locale as Locale, namespace: 'checkout' });
@@ -30,21 +37,37 @@ export default async function CheckoutResultPage({ params }: PageProps) {
   const order = await db.order.findUnique({
     where: { orderNumber },
     select: {
-      id: true, orderNumber: true, status: true, total: true, placedAt: true,
+      id: true, orderNumber: true, status: true, total: true, placedAt: true, userId: true,
       items: { select: { titleSnapshot: true, quantity: true, lineTotal: true } },
       payments: { select: { status: true, provider: true, method: true }, orderBy: { createdAt: 'desc' }, take: 1 },
     },
   });
+  // Ownership guard: чужой заказ не отдаём (IDOR). Support может смотреть любой.
+  if (order && caller) {
+    const allowed = order.userId === caller.id || isSupportOperator(caller);
+    if (!allowed && order.userId !== null) notFound();
+    // Гостевой заказ (userId null) — отдаём только тому, кто знает номер (как сейчас), без привязки
+  } else if (order && !caller && order.userId !== null) {
+    // Невошедший смотрит на чужой userId-заказ — скрываем
+    notFound();
+  }
   // Также может быть booking reference — покажем бронь как "заказ"
   const booking = !order
-    ? await db.booking.findUnique({
+    ? ((await db.booking.findUnique({
         where: { reference: orderNumber },
-        select: { id: true, reference: true, status: true, totalPrice: true, startsAt: true, endsAt: true },
-      }) ?? await db.booking.findUnique({
+        select: { id: true, reference: true, status: true, totalPrice: true, startsAt: true, endsAt: true, customerId: true },
+      }) as unknown as { id: string; reference: string; status: string; totalPrice: number; startsAt: Date; endsAt: Date; customerId: string | null } | null) ??
+      (await db.booking.findUnique({
         where: { id: orderNumber },
-        select: { id: true, reference: true, status: true, totalPrice: true, startsAt: true, endsAt: true },
-      })
+        select: { id: true, reference: true, status: true, totalPrice: true, startsAt: true, endsAt: true, customerId: true },
+      }) as unknown as { id: string; reference: string; status: string; totalPrice: number; startsAt: Date; endsAt: Date; customerId: string | null } | null))
     : null;
+  if (booking && caller) {
+    const bAllowed = booking.customerId === caller.id || isSupportOperator(caller);
+    if (!bAllowed && booking.customerId !== null) notFound();
+  } else if (booking && !caller && (booking as { customerId: string | null }).customerId !== null) {
+    notFound();
+  }
 
   if (!order && !booking) notFound();
 

@@ -141,6 +141,8 @@ export function isBoosted(boostedUntil: Date | null, now: Date): boolean {
   return boostedUntil !== null && boostedUntil.getTime() > now.getTime();
 }
 
+
+
 export interface RankingBreakdown {
   /** Вклад каждого сигнала в счёт: вес × нормализованное значение. */
   signals: Record<keyof typeof ranking.weights, number>;

@@ -7,7 +7,7 @@ import { publicAction } from '@/server/safe-action';
 import { createOrder, transitionOrder } from '@/server/orders/service';
 
 export const createOrderAction = publicAction
-  .metadata({ rateLimit: 'search' })
+  .metadata({ rateLimit: 'paymentIntent' })
   .inputSchema(
     z.object({
       contactEmail: z.string().email(),
@@ -39,5 +39,7 @@ export const transitionOrderAction = publicAction
   .metadata({ rateLimit: 'adminMutation' })
   .inputSchema(z.object({ orderId: z.string().min(1), to: z.string().min(1) }))
   .action(async ({ parsedInput }) => {
+    const { requireCapability } = await import('@/lib/auth/guards');
+    await requireCapability('orders.fulfil');
     return transitionOrder({ orderId: parsedInput.orderId, to: parsedInput.to });
   });

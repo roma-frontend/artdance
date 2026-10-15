@@ -103,7 +103,7 @@ const primaryNav: readonly NavItem[] = [
    * Соревнования — главный месседж DanceSport-платформы (заказчик, 21.09.2026):
    * в шапке он виден с каждой страницы, а не только в подвале.
    */
-  { id: 'competitions', labelKey: 'nav.competitions', href: routes.competitions(), icon: 'competitions' },
+  { id: 'competitions', labelKey: 'nav.competitions', href: routes.competitions(), icon: 'competitions', feature: 'events' },
   { id: 'shop', labelKey: 'nav.shop', href: routes.shop(), feature: 'shop', icon: 'shop' },
   { id: 'calendar', labelKey: 'nav.calendar', href: routes.booking(), icon: 'calendar' },
 ];
@@ -197,8 +197,8 @@ export const headerMegaGroups: readonly MegaGroup[] = [
     labelKey: 'nav.megaCommunity',
     href: routes.competitions(),
     children: [
-      { id: 'competitions', labelKey: 'nav.competitions', href: routes.competitions(), icon: 'competitions', descriptionKey: 'nav.megaDescCompetitions' },
-      { id: 'socialEvents', labelKey: 'nav.socialEvents', href: routes.socialEvents(), icon: 'events', descriptionKey: 'nav.megaDescSocialEvents' },
+      { id: 'competitions', labelKey: 'nav.competitions', href: routes.competitions(), icon: 'competitions', feature: 'events', descriptionKey: 'nav.megaDescCompetitions' },
+      { id: 'socialEvents', labelKey: 'nav.socialEvents', href: routes.socialEvents(), icon: 'events', feature: 'events', descriptionKey: 'nav.megaDescSocialEvents' },
       { id: 'athletes', labelKey: 'nav.athletes', href: routes.athletes(), icon: 'athletes', descriptionKey: 'nav.megaDescAthletes' },
       { id: 'federations', labelKey: 'footer.federations', href: routes.federations(), icon: 'competitions', descriptionKey: 'nav.megaDescFederations' },
       { id: 'partners', labelKey: 'footer.partners', href: routes.partners(), icon: 'corporate', descriptionKey: 'nav.megaDescPartners' },
@@ -215,7 +215,7 @@ export const headerMegaGroups: readonly MegaGroup[] = [
       { id: 'listStudio', labelKey: 'footer.listStudio', href: routes.listYourStudio(), icon: 'studios', descriptionKey: 'nav.megaDescListStudio' },
       { id: 'corporate', labelKey: 'nav.corporate', href: routes.corporate(), icon: 'corporate', descriptionKey: 'nav.megaDescCorporate' },
       { id: 'giftCards', labelKey: 'footer.giftCards', href: routes.giftCards(), icon: 'giftCards', descriptionKey: 'nav.megaDescGiftCards' },
-      { id: 'pricing', labelKey: 'nav.pricing', href: routes.pricing(), icon: 'pricing', feature: 'subscriptions', descriptionKey: 'nav.megaDescPricing' },
+      { id: 'pricing', labelKey: 'nav.pricing', href: routes.pricing(), icon: 'pricing', descriptionKey: 'nav.megaDescPricing' },
     ],
   },
   {
@@ -351,8 +351,8 @@ const footerGroups: readonly NavGroup[] = [
     id: 'community',
     titleKey: 'footer.communityTitle',
     items: [
-      { id: 'competitions', labelKey: 'nav.competitions', href: routes.competitions() },
-      { id: 'socialEvents', labelKey: 'nav.socialEvents', href: routes.socialEvents() },
+      { id: 'competitions', labelKey: 'nav.competitions', href: routes.competitions(), feature: 'events' },
+      { id: 'socialEvents', labelKey: 'nav.socialEvents', href: routes.socialEvents(), feature: 'events' },
       { id: 'athletes', labelKey: 'footer.athletes', href: routes.athletes() },
       { id: 'federations', labelKey: 'footer.federations', href: routes.federations() },
       { id: 'partners', labelKey: 'footer.partners', href: routes.partners() },
@@ -377,7 +377,7 @@ const footerGroups: readonly NavGroup[] = [
       { id: 'becomeInstructor', labelKey: 'footer.becomeInstructor', href: routes.becomeInstructor() },
       { id: 'becomeInstructorApply', labelKey: 'nav.applyInstructor', href: routes.becomeInstructorApply() },
       { id: 'listStudio', labelKey: 'footer.listStudio', href: routes.listYourStudio() },
-      { id: 'pricing', labelKey: 'nav.pricing', href: routes.pricing(), feature: 'subscriptions' },
+      { id: 'pricing', labelKey: 'nav.pricing', href: routes.pricing() },
     ],
   },
   {

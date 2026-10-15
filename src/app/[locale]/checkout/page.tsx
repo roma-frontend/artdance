@@ -19,6 +19,13 @@ interface PageProps {
 }
 
 export default async function CheckoutIndexPage({ params }: PageProps) {
+  {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    if (!(await isEntitlementEnabled('shop').catch(() => true))) {
+      const { notFound } = await import('next/navigation');
+      notFound();
+    }
+  }
   const { locale } = await params;
   redirect({ href: routes.checkoutStep('contact'), locale: locale as Locale });
 }

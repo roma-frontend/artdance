@@ -31,8 +31,13 @@ export interface ProcessWebhookInput {
 function providerSecret(provider: PaymentProviderId): string | undefined {
   const env = getServerEnv();
   if (provider === 'paynet') return env.PAYNET_WEBHOOK_SECRET;
-  if (provider === 'stripe') return env.STRIPE_WEBHOOK_SECRET ?? 'stripe';
+  if (provider === 'stripe') return env.STRIPE_WEBHOOK_SECRET;
   if (provider === 'mock') return 'mock'; // mock — без подписи
+  // arca-epg / ameria-vpos / idram — по env, если не заданы → HMAC с '' не вызываем
+  const anyEnv = env as Record<string, unknown>;
+  if (provider === 'arca-epg') return anyEnv.ARCA_EPG_WEBHOOK_SECRET as string | undefined ?? anyEnv.ARCA_WEBHOOK_SECRET as string | undefined;
+  if (provider === 'ameria-vpos') return anyEnv.AMERIA_VPOS_WEBHOOK_SECRET as string | undefined;
+  if (provider === 'idram') return anyEnv.IDRAM_WEBHOOK_SECRET as string | undefined;
   return undefined;
 }
 
@@ -57,19 +62,29 @@ async function persistWebhookEvent(input: {
   status: 'RECEIVED' | 'PROCESSED' | 'FAILED';
 }): Promise<string> {
   const eventId = input.eventId ?? `anon_${randomUUID()}`;
-  const row = await db.webhookEvent.create({
-    data: {
-      provider: input.provider,
-      eventId,
-      paymentId: input.paymentId ?? undefined,
-      status: input.status,
-      signatureValid: input.signatureValid,
-      payload: input.payload as never,
-      processingError: input.error,
-    } as never,
-    select: { id: true },
-  });
-  return row.id;
+  try {
+    const row = await db.webhookEvent.create({
+      data: {
+        provider: input.provider,
+        eventId,
+        paymentId: input.paymentId ?? undefined,
+        status: input.status,
+        signatureValid: input.signatureValid,
+        payload: input.payload as never,
+        processingError: input.error,
+      } as never,
+      select: { id: true },
+    });
+    return row.id;
+  } catch (error) {
+    // P2002 unique violation — concurrent delivery raced, return existing
+    const code = (error as { code?: string })?.code;
+    if (code === 'P2002') {
+      const existing = await db.webhookEvent.findFirst({ where: { provider: input.provider, eventId } as never, select: { id: true } } as never);
+      if (existing) return (existing as { id: string }).id;
+    }
+    throw error;
+  }
 }
 
 /**
@@ -83,18 +98,31 @@ export async function processWebhookPayment(input: ProcessWebhookInput): Promise
 
   // 1. Проверка подписи (кроме mock; Stripe проверяет внутри провайдера)
   let signatureValid = false;
-  if (input.provider === 'mock' || input.provider === 'stripe') {
-    // mock — без подписи; stripe — Stripe-Signature валидируется в stripe-provider parseWebhook
+  if (input.provider === 'mock') {
+    signatureValid = true;
+  } else if (input.provider === 'stripe') {
+    // Stripe-Signature валидируется в stripe-provider parseWebhook
     signatureValid = true;
   } else {
     const secret = providerSecret(input.provider);
+    if (!secret) {
+      await persistWebhookEvent({
+        provider: input.provider,
+        eventId: null,
+        paymentId: null,
+        signatureValid: false,
+        payload: { raw: input.rawBody.slice(0, 4000) },
+        error: 'webhook secret not configured',
+        status: 'FAILED',
+      });
+      return { httpStatus: 400, body: 'webhook secret not configured' };
+    }
     const headerName = webhookSecurity.signatureHeaders[input.provider as keyof typeof webhookSecurity.signatureHeaders];
     const signature = headerName ? (headers[headerName.toLowerCase()] ?? null) : null;
-    // Пробуем timestamp-схему, иначе body-only
-    const ts = verifyTimestampedSignature(input.rawBody, signature, secret ?? '');
+    const ts = verifyTimestampedSignature(input.rawBody, signature, secret);
     if (ts.valid) signatureValid = true;
     else if (ts.reason === 'MALFORMED_HEADER' || ts.reason === 'MISSING_INPUT') {
-      signatureValid = verifyBodySignature(input.rawBody, signature, secret ?? '');
+      signatureValid = verifyBodySignature(input.rawBody, signature, secret);
     }
     // STALE/MISMATCH — подпись не сошлась
     if (!signatureValid) {
@@ -152,12 +180,15 @@ export async function processWebhookPayment(input: ProcessWebhookInput): Promise
   });
 
   // 4. Сверка: подтверждение только после getPayment() — 5.3
-  let confirmedStatus = event.status;
-  let paidAmount = event.amount as unknown as number;
+  // Не храним nextStatus в event напрямую: сверим с провайдером
+  let confirmedStatus: string = event.status;
+  let paidAmount: number = event.amount as unknown as number;
+  let verified = false;
   try {
     const snapshot = await provider.getPayment(event.providerTransactionId);
     confirmedStatus = snapshot.status;
     paidAmount = snapshot.paidAmount as unknown as number;
+    verified = true;
     await db.webhookEvent.update({ where: { id: webhookId }, data: { status: 'PROCESSED', processedAt: new Date() } as never });
   } catch (error) {
     const err = errorMessageOf(error);
@@ -165,22 +196,30 @@ export async function processWebhookPayment(input: ProcessWebhookInput): Promise
     return { httpStatus: 200, body: 'verification failed, logged' };
   }
 
-  // 5. Применяем к платежу и к брони/заказу
+  // 5. Применяем к платежу и к брони/заказу — terminal guard: не даунгрейдим PAID/REFUNDED
+  const PAYMENT_TERMINAL = new Set(['PAID', 'REFUNDED', 'PARTIALLY_REFUNDED', 'CANCELLED', 'CHARGEBACK']);
   if (payment) {
-    const paid = confirmedStatus === 'PAID' || confirmedStatus === 'AUTHORIZED';
-    const failed = confirmedStatus === 'FAILED' || confirmedStatus === 'CANCELLED';
-    await db.payment.update({
-      where: { id: payment.id },
-      data: {
-        status: confirmedStatus as never,
-        paidAmount: paid ? (paidAmount as number) : (payment.status === 'PAID' ? undefined : 0),
-        ...(paid ? { paidAt: new Date() } : {}),
-        ...(failed ? { failedAt: new Date(), failureCode: confirmedStatus, failureMessage: `verified ${confirmedStatus}` } : {}),
-        providerPayload: event.raw as never,
-      } as never,
-    });
+    // Не даунгрейдим уже подтверждённый платёж
+    const isDowngrade = PAYMENT_TERMINAL.has(payment.status) && confirmedStatus !== payment.status && confirmedStatus !== 'REFUNDED' && confirmedStatus !== 'PARTIALLY_REFUNDED';
+    const nextStatus = isDowngrade ? payment.status : confirmedStatus;
+    const paid = nextStatus === 'PAID' || nextStatus === 'AUTHORIZED';
+    const failed = nextStatus === 'FAILED' || nextStatus === 'CANCELLED';
+    const shouldUpdatePayment = !isDowngrade;
+    if (shouldUpdatePayment) {
+      await db.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: nextStatus as never,
+          paidAmount: paid ? (paidAmount as number) : (payment.status === 'PAID' ? undefined : 0),
+          ...(paid ? { paidAt: new Date() } : {}),
+          ...(failed ? { failedAt: new Date(), failureCode: nextStatus, failureMessage: `verified ${nextStatus}` } : {}),
+          providerPayload: event.raw as never,
+        } as never,
+      });
+    }
 
-    if (paid) {
+    // booking/order подтверждаем только если вебхук верифицирован провайдером
+    if (verified && paid) {
       if (payment.bookingId) {
         const b = await db.booking.findUnique({ where: { id: payment.bookingId }, select: { status: true } });
         if (b && ['PENDING', 'RESCHEDULED'].includes(b.status as string)) {

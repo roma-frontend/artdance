@@ -16,6 +16,7 @@ import { BookingSummary } from '@/components/booking/booking-summary';
 import { LocationOptionPicker } from '@/components/booking/location-option-picker';
 import { TimeSlotPicker } from '@/components/booking/time-slot-picker';
 import { apiRoutes, booking, routes, site, type BookingLocationOption } from '@/config';
+import { useEntitlementsSnapshot } from '@/lib/entitlements/use-entitlements';
 import { zonedDateKey } from '@/domain/availability/compute';
 import { useRouter } from '@/i18n/routing';
 import { getAnonymousId } from '@/lib/client/anonymous-id';
@@ -34,6 +35,9 @@ type HoldState =
 export function BookingScreen({ content }: BookingScreenProps) {
   const router = useRouter();
   const tBooking = useTranslations('booking');
+  const entitlements = useEntitlementsSnapshot();
+  const packagesEnabled = entitlements.packages !== false;
+  const recurringEnabled = entitlements.recurring !== false;
   const initialDay = content.days.find((day) => day.dateKey === content.initialDateKey);
   const [date, setDate] = useState<Date | undefined>(() => (initialDay ? new Date(initialDay.dateIso) : undefined));
   const [startTime, setStartTime] = useState<string | undefined>(content.preselectedSlot ?? undefined);
@@ -160,8 +164,10 @@ export function BookingScreen({ content }: BookingScreenProps) {
     if (hold.status !== 'holding' || !hold.holdId || !date || !startTime) return;
     setSubmitting(true);
     try {
-      if (!content.sessionBooking && weeks > 1) {
-        const weekday = date.getDay();
+      if (recurringEnabled && !content.sessionBooking && weeks > 1) {
+        const { zonedParts: zp } = await import('@/lib/time/schedule');
+        const { site: siteCfg } = await import('@/config/site');
+        const weekday = zp(date, siteCfg.timeZone).weekday;
         const res = await fetch('/api/booking/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ weekday, startTime, durationMinutes: content.durationMinutes, weeks, instructorId: content.instructorId, locationOption: location }) });
         if (res.status === 401) {
           // Гостей переводим на вход; используем жёсткий переход как fallback для iOS Safari,
@@ -181,7 +187,8 @@ export function BookingScreen({ content }: BookingScreenProps) {
         router.push(routes.bookingConfirm(first.reference ?? first.id!));
         return;
       }
-      const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ holdId: hold.holdId, locationOption: location, anonymousId: getAnonymousId(), useClassPass, partnerName: content.lessonType === 'PAIR' ? partnerName.trim() : undefined }) });
+      const effectiveUsePass = packagesEnabled && useClassPass;
+      const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ holdId: hold.holdId, locationOption: location, anonymousId: getAnonymousId(), useClassPass: effectiveUsePass, partnerName: content.lessonType === 'PAIR' ? partnerName.trim() : undefined }) });
       if (res.status === 401) {
         const target = routes.signIn(`/instructors/${content.instructorSlug}/book`);
         try { router.push(target); } catch {}
@@ -224,7 +231,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
           </div>
         )}
         <LocationOptionPicker value={location} onChange={setLocation} studioName={content.studioName} acceptsTravel={content.acceptsTravel} acceptsOnline={content.acceptsOnline} />
-        {content.lessonType === 'GROUP' && content.classPasses && content.classPasses.length > 0 && (
+        {packagesEnabled && content.lessonType === 'GROUP' && content.classPasses && content.classPasses.length > 0 && (
           <div className="rounded-xl border border-border-default bg-surface-card p-5">
             <label className="flex cursor-pointer items-start gap-3">
               <input
@@ -248,7 +255,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
             </label>
           </div>
         )}
-        {!content.sessionBooking && <div className="rounded-xl border border-border-default bg-surface-card p-5">
+        {recurringEnabled && !content.sessionBooking && <div className="rounded-xl border border-border-default bg-surface-card p-5">
           <label className="text-body-sm font-semibold">{tBooking('recurring.weeks' as never)} — {weeks}
             <input type="range" min={1} max={recurringOpts.maxWeeks} value={weeks} onChange={(e) => setWeeks(Number(e.target.value))} className="mt-2 min-h-6 w-full cursor-pointer accent-accent" />
           </label>

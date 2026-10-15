@@ -24,6 +24,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function AccountWalletPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
+  try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    if (!(await isEntitlementEnabled('wallet').catch(() => true))) {
+      const { notFound } = await import('next/navigation');
+      notFound();
+    }
+  } catch (error) {
+    if (error instanceof Error && (error as { digest?: string }).digest === 'NEXT_NOT_FOUND') throw error;
+  }
   const t = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
   const caller = await getCaller();
   if (!caller) {

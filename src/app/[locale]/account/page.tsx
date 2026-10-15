@@ -100,6 +100,12 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
     ? await db.instructorProfile.findUnique({ where: { userId: user.id }, select: { id: true } })
     : null;
 
+  const packagesEnabled = await (async () => {
+    try {
+      const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+      return await isEntitlementEnabled('packages').catch(() => true);
+    } catch { return true; }
+  })();
   const [bookings, orders, classPasses] = await Promise.all([
     db.booking.findMany({
       where: { customerId: caller.id },
@@ -122,11 +128,13 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
       take: 3,
       select: { id: true, orderNumber: true, status: true, total: true, placedAt: true },
     }),
-    db.classPass.findMany({
-      where: { purchaserId: caller.id, lessonsRemaining: { gt: 0 }, expiresAt: { gt: new Date() } },
-      orderBy: [{ expiresAt: 'asc' }, { lessonsRemaining: 'asc' }],
-      select: { id: true, lessonsTotal: true, lessonsRemaining: true, expiresAt: true },
-    }),
+    packagesEnabled
+      ? db.classPass.findMany({
+          where: { purchaserId: caller.id, lessonsRemaining: { gt: 0 }, expiresAt: { gt: new Date() } },
+          orderBy: [{ expiresAt: 'asc' }, { lessonsRemaining: 'asc' }],
+          select: { id: true, lessonsTotal: true, lessonsRemaining: true, expiresAt: true },
+        })
+      : Promise.resolve([] as { id: string; lessonsTotal: number; lessonsRemaining: number; expiresAt: Date }[]),
   ]);
 
   return (

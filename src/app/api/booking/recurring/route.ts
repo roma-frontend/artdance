@@ -33,15 +33,21 @@ export async function POST(request: Request) {
   }
   const parsed = schema.safeParse(body);
   if (!parsed.success) return json({ error: 'VALIDATION_FAILED' }, 400);
-  const result = await createRecurringSeries({
-    customerId: caller.id,
-    instructorId: parsed.data.instructorId,
-    weekday: parsed.data.weekday,
-    startTime: parsed.data.startTime,
-    durationMinutes: parsed.data.durationMinutes,
-    weeks: parsed.data.weeks,
-    locationOption: parsed.data.locationOption,
-    now: new Date(),
-  });
-  return json(result, 201);
+  try {
+    const result = await createRecurringSeries({
+      customerId: caller.id,
+      instructorId: parsed.data.instructorId,
+      weekday: parsed.data.weekday,
+      startTime: parsed.data.startTime,
+      durationMinutes: parsed.data.durationMinutes,
+      weeks: parsed.data.weeks,
+      locationOption: parsed.data.locationOption,
+      now: new Date(),
+    });
+    return json(result, 201);
+  } catch (error) {
+    const { isDomainError, httpStatusFor } = await import('@/domain/errors');
+    if (isDomainError(error)) return json({ error: error.code, messageKey: error.messageKey }, httpStatusFor(error.code));
+    throw error;
+  }
 }
