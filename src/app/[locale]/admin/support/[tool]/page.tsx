@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { operatorModels, browseModel, translationCatalog, operatorDelegate } from '@/server/admin/operator';
+import { browseModel, getOperatorCounts, operatorModels, translationCatalog } from '@/server/admin/operator';
 import { features } from '@/config/features';
 import { adminAccess } from '@/server/admin/access';
 import { db } from '@/lib/db';
@@ -35,31 +35,14 @@ export default async function OperatorToolPage({ params, searchParams }: PagePro
 
   if (tool === 'database') {
     const models = operatorModels();
-    // Counts for sidebar badges — single batched query, still god-mode
-    const counts = await Promise.all(
-      models.map(async (m) => {
-        try {
-          const d = operatorDelegate(m.name);
-          const c = await d.count({});
-          return { name: m.name, count: c };
-        } catch {
-          return { name: m.name, count: 0 };
-        }
-      }),
-    );
-    const requested = text(query.model);
-    const initialModel = (requested && models.some((m) => m.name === requested) ? requested : models[0]?.name) ?? null;
     const q = text(query.q);
     const page = Math.max(Number(text(query.page)) || 1, 1);
-    let payload: { fields: string[]; rows: Array<Record<string, unknown> & { id: string }>; total: number } | null = null;
-    if (initialModel) {
-      try {
-        const data = await browseModel(initialModel, q, page);
-        payload = { fields: data.fields, rows: data.rows as Array<Record<string, unknown> & { id: string }>, total: data.total };
-      } catch {
-        payload = { fields: [], rows: [], total: 0 };
-      }
-    }
+    const requested = text(query.model);
+    const initialModel = (requested && models.some((m) => m.name === requested) ? requested : models[0]?.name) ?? null;
+    const [counts, payload] = await Promise.all([
+      getOperatorCounts(),
+      initialModel ? browseModel(initialModel, q, page).then((data) => ({ fields: data.fields, rows: data.rows as Array<Record<string, unknown> & { id: string }>, total: data.total })).catch(() => ({ fields: [], rows: [], total: 0 }) as { fields: string[]; rows: Array<Record<string, unknown> & { id: string }>; total: number }) : Promise.resolve(null as { fields: string[]; rows: Array<Record<string, unknown> & { id: string }>; total: number } | null),
+    ]);
     const { DataBrowserClient } = await import('@/components/superadmin/data-browser-client');
     return <DataBrowserClient models={counts} initialModel={initialModel} initialQuery={q} initialPage={page} payload={payload} />;
   }

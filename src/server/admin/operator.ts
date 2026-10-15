@@ -76,6 +76,19 @@ export function modelWorkflow(name: string, id?: string): string | undefined {
   return undefined;
 }
 
+// Cached per-request: count list is stable inside one RSC render; re-fetched on next navigation.
+let __cachedCounts: Array<{ name: string; count: number }> | null = null;
+export async function getOperatorCounts(): Promise<Array<{ name: string; count: number }>> {
+  if (__cachedCounts) return __cachedCounts;
+  await requireOperator();
+  const models = operatorModels();
+  const counts = await Promise.all(models.map(async (m) => {
+    try { const d = operatorDelegate(m.name); const c = await d.count({}); return { name: m.name, count: c }; } catch { return { name: m.name, count: 0 }; }
+  }));
+  __cachedCounts = counts;
+  return counts;
+}
+
 export async function browseModel(name: string, q: string, page: number) {
   await requireOperator();
   const fields = modelFields(name);

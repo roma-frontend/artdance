@@ -47,7 +47,7 @@ function BannerContent({ banner, linkLabel }: { banner: LiveBanner; linkLabel: s
       <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-metal" />
       <span className="text-body-sm min-w-0 truncate text-content-on-cinema">{banner.title}</span>
       {banner.href ? (
-        <span className="text-label ml-auto inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-metal uppercase transition-colors duration-normal ease-brand group-hover/banner:text-content-on-cinema">
+        <span className="text-label ml-auto inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-content-metal uppercase transition-colors duration-normal ease-brand group-hover/banner:text-content-on-cinema">
           <span className="hidden sm:inline">{linkLabel}</span>
           <span aria-hidden className="transition-transform duration-normal ease-brand group-hover/banner:translate-x-0.5">
             →
