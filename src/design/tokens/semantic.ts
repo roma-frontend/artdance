@@ -52,6 +52,7 @@ export interface SemanticColors {
    * поисковых чипов.
    */
   'accent-on-cinema': string;
+  'metal-on-cinema': string;
 
   /* ─────────────────────────────────────────────────────────────────────────
      Текстовые варианты цветных ролей.
@@ -144,6 +145,7 @@ const cinema = {
    * Цвет — брендовый бургунди, как в прототипе (`var(--accent)`).
    */
   'accent-on-cinema': crimson[300],
+  'metal-on-cinema': gold[400],
 } as const;
 
 const statuses = {
