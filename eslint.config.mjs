@@ -181,7 +181,7 @@ const config = [
    * означает работу без Redis / без CAPTCHA, а не падение.
    */
   {
-    files: ['src/lib/security/rate-limit.ts', 'src/lib/security/turnstile.ts'],
+    files: ['src/lib/security/rate-limit.ts', 'src/lib/security/turnstile.ts', 'src/config/security.ts'],
     rules: {
       'no-restricted-properties': 'off',
     },
