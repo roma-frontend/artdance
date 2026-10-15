@@ -41,23 +41,16 @@ const isPreview = clientEnv.NEXT_PUBLIC_APP_ENV === 'preview';
  * from a valid server session; ADMIN/SUPPORT roles alone cannot grant it.
  */
 /**
- * Support allowlist: в production demo-аккаунт изоляции.
- * Клиент требовал: real operator emails из env, demo — только для local.
+ * Support operator identities. Access requires an allowlisted account email
+ * from a valid server session; ADMIN/SUPPORT roles alone cannot grant it.
+ *
+ * Временно: оба адреса имеют полный доступ, по требованию клиента.
+ * Убрать `support@demo.artdance.am` — удалить одну строку ниже.
  */
-function buildOperatorEmails(): readonly string[] {
-  const base = ['romangulanyan@gmail.com'];
-  const extra = process.env.SUPPORT_OPERATOR_EMAILS?.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean) ?? [];
-  const demo = process.env.NODE_ENV === 'production' || clientEnv.NEXT_PUBLIC_APP_ENV === 'production'
-    ? []
-    : ['support@demo.artdance.am'];
-  return [...base, ...demo, ...extra].map((s) => s.toLowerCase()) as unknown as readonly string[];
-}
-const operatorEmailsResolved = buildOperatorEmails();
-
 export const support = {
   ownerEmail: 'romangulanyan@gmail.com',
-  operatorEmails: operatorEmailsResolved as unknown as string[],
-  entitlementEmails: operatorEmailsResolved as unknown as readonly string[],
+  operatorEmails: ['romangulanyan@gmail.com', 'support@demo.artdance.am'],
+  entitlementEmails: ['romangulanyan@gmail.com', 'support@demo.artdance.am'] as const,
   impersonationMinutes: 30,
   maxAccessMinutes: 1440,
 } as const;
