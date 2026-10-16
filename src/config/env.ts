@@ -168,6 +168,16 @@ const serverSchema = z.object({
   /* Внешние сервисы */
   MAPS_SERVER_API_KEY: optionalString,
   EXCHANGE_RATE_API_URL: optionalUrl,
+
+  /* Bot — управление с телефона (Telegram + CodeCraft + GitHub). Всё optional: без токенов бот просто не активен. */
+  TELEGRAM_BOT_TOKEN: optionalString,
+  TELEGRAM_CHAT_ID: optionalString,
+  TELEGRAM_WEBHOOK_SECRET: optionalString,
+  GITHUB_TOKEN: optionalString,
+  CODECRAFT_BASE_URL: optionalUrl,
+  CODECRAFT_API_KEY: optionalString,
+  CODECRAFT_MODEL: optionalString,
+  CODECRAFT_PROVIDER: optionalString,
 });
 
 /* ──────────────────────────── PARSE ──────────────────────────── */
