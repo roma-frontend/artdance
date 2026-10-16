@@ -8,13 +8,14 @@ import { isSupportOperator } from '@/config/security';
 import { locales, type Locale } from '@/i18n/config';
 import { recordAudit } from '@/lib/audit';
 import { db } from '@/lib/db';
-import { exportModel, operatorPulse, validateTranslation } from '@/server/admin/operator';
+import { exportModel, validateTranslation } from '@/server/admin/operator';
 import { purgeExpiredTrash } from '@/server/admin/trash';
 import { purgeExpiredHolds } from '@/server/hold/service';
 import { runBookingCron, runDailyDigest } from '@/server/cron/tasks';
 import { sendEmail } from '@/lib/email/send';
 import { authedAction } from '@/server/safe-action';
 import { requireOperator } from '@/lib/auth/guards';
+import { runTerminalCommand } from '@/server/terminal/commands';
 
 const id = z.string().trim().min(1).max(128);
 
@@ -122,22 +123,14 @@ export const exportOperatorModel = authedAction
 
 export const runOperatorCommand = authedAction
   .metadata({ rateLimit: 'adminMutation', audit: 'admin.operator.command' })
-  .inputSchema(z.object({ command: z.string().trim().min(1).max(120) }))
+  .inputSchema(z.object({ command: z.string().trim().min(1).max(500) }))
   .action(async ({ parsedInput, ctx }) => {
     const caller = await requireOperator();
-    const command = parsedInput.command.split(/\s+/)[0]?.toLowerCase();
-    const pulse = await operatorPulse();
-    const lines = command === 'help'
-      ? ['help', 'health', 'counts', 'jobs']
-      : command === 'health'
-        ? [`sessions: ${pulse.sessions}`, `open tickets: ${pulse.openTickets}`, `failed payments (24h): ${pulse.failedPayments}`, `failed notifications (24h): ${pulse.failedNotifications}`, `failed webhooks (24h): ${pulse.failedWebhooks}`]
-        : command === 'counts'
-          ? [`active sessions: ${pulse.sessions}`, `locked login keys: ${pulse.locked.length}`, `open tickets: ${pulse.openTickets}`]
-          : command === 'jobs'
-            ? pulse.jobs.map((job) => `${job.jobName} · ${job.succeeded === false ? 'failed' : job.succeeded === true ? 'ok' : 'running'}`)
-            : [`Unknown command: ${command}`];
-    await recordAudit({ actor: caller, action: 'admin.operator.command', entityType: 'OperatorCommand', entityId: command ?? 'unknown', after: { command }, ipAddress: ctx.identifier });
-    return { lines, ok: command === 'help' || ['health', 'counts', 'jobs'].includes(command ?? '') };
+    const raw = parsedInput.command.trim();
+    const head = raw.split(/\s+/)[0]?.toLowerCase() ?? 'unknown';
+    const { lines, ok } = await runTerminalCommand(raw);
+    await recordAudit({ actor: caller, action: 'admin.operator.command', entityType: 'OperatorCommand', entityId: head, after: { command: raw, ok }, ipAddress: ctx.identifier });
+    return { lines, ok };
   });
 
 export const replyToSupportTicket = authedAction

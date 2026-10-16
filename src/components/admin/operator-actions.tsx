@@ -1,13 +1,14 @@
 'use client';
 
 import { useAction } from 'next-safe-action/hooks';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRouter } from '@/i18n/routing';
 import { exportOperatorModel, replyToSupportTicket, resetTranslationOverride, revokeSession, runOperatorCommand, runOperatorJob, saveTranslationOverride, setFeatureFlag, startImpersonation, stopImpersonation } from '@/server/actions/admin/operator';
+import { terminalCommands } from '@/server/terminal/registry';
 
 export function SessionRevokeButton({ id }: { id: string }) {
   const t = useTranslations('admin.support');
@@ -79,20 +80,210 @@ export function StopImpersonationButton() {
 export function OperatorTerminal() {
   const t = useTranslations('admin.support');
   const action = useAction(runOperatorCommand);
-  const [command, setCommand] = useState('help');
-  const [lines, setLines] = useState<string[]>([]);
-  const run = async () => {
-    const result = await action.executeAsync({ command });
-    if (result?.data) setLines(result.data.lines);
+  const [command, setCommand] = useState('');
+  const [history, setHistory] = useState<Array<{ cmd: string; lines: string[]; ok: boolean }>>([]);
+  const [cursor, setCursor] = useState(-1);
+  const [dismissed, setDismissed] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
+
+  const completions = useMemo(() => {
+    const raw = command.trimStart().toLowerCase();
+    if (!raw) return terminalCommands.map((c) => c.name);
+    if (!raw.includes(' ')) return terminalCommands.map((c) => c.name).filter((n) => n.startsWith(raw));
+    if (raw.startsWith('db ')) {
+      const rest = raw.slice(3).trim();
+      const subs = ['models', 'counts', 'count', 'find', 'help'];
+      if (!rest) return subs;
+      return subs.filter((s) => s.startsWith(rest));
+    }
+    if (raw.startsWith('carts ')) {
+      const rest = raw.slice(6).trim();
+      if (!rest) return ['stats', 'purge', 'help'];
+      if (rest.startsWith('purge')) {
+        const last = rest.split(/\s+/).pop() ?? '';
+        const flags = ['--empty', '--anon', '--older-than', '--dry-run', '--force'];
+        if (last.startsWith('--')) return flags.filter((f) => f.startsWith(last));
+        return flags.filter((f) => !rest.includes(f));
+      }
+      return ['stats', 'purge', 'help'].filter((s) => s.startsWith(rest));
+    }
+    return [];
+  }, [command]);
+
+  const suggestRaw = useMemo(() => {
+    const trimmed = command.trim();
+    if (!trimmed || trimmed.includes(' ')) return [] as string[];
+    const matches = completions;
+    return matches.length === 1 && matches[0] === trimmed.toLowerCase() ? [] : matches.slice(0, 6);
+  }, [command, completions]);
+  const suggest = dismissed === command ? [] : suggestRaw;
+
+  useEffect(() => {
+    logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
+  }, [history]);
+
+  const run = async (override?: string) => {
+    const raw = (override ?? command).trim();
+    if (!raw) return;
+    if (raw === 'clear') {
+      setHistory([]);
+      setCommand('');
+      setCursor(-1);
+      return;
+    }
+    const result = await action.executeAsync({ command: raw });
+    const lines = result?.data?.lines ?? [];
+    const ok = Boolean(result?.data?.ok);
+    setHistory((prev) => [...prev, { cmd: raw, lines, ok }]);
+    setCommand('');
+    setCursor(-1);
   };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      void run();
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (history.length === 0) return;
+      const next = cursor === -1 ? history.length - 1 : Math.max(0, cursor - 1);
+      setCursor(next);
+      setCommand(history[next]?.cmd ?? '');
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (cursor === -1) return;
+      const next = cursor + 1;
+      if (next >= history.length) {
+        setCursor(-1);
+        setCommand('');
+      } else {
+        setCursor(next);
+        setCommand(history[next]?.cmd ?? '');
+      }
+      return;
+    }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const m = completions[0];
+      if (!m) return;
+      // complete first token or subcommand
+      if (!command.includes(' ')) setCommand(m + ' ');
+      else {
+        const parts = command.trimEnd().split(/\s+/);
+        parts[parts.length - 1] = m;
+        setCommand(parts.join(' ') + ' ');
+      }
+      return;
+    }
+    if (e.key === 'Escape') setDismissed(command);
+  };
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-border-strong bg-surface-inverse p-4 text-content-inverse shadow-lg">
-      <div className="mb-4 flex min-h-32 flex-col justify-end gap-1 font-mono text-caption">
-        {lines.length === 0 ? <p className="text-content-on-cinema-muted">{t('commandHelp')}</p> : lines.map((line, index) => <p key={`${line}-${index}`} className="text-content-on-cinema">{line}</p>)}
+    <div className="flex flex-col gap-4">
+      {/* Command reference — always visible */}
+      <div className="rounded-2xl border border-border-default bg-surface-card p-4">
+        <h2 className="text-label font-semibold text-content-primary">Команды</h2>
+        <p className="mt-1 text-caption text-content-secondary">Подсказки: Tab — автокомплит, ↑/↓ — история, clear — очистить вывод.</p>
+        <div className="mt-4 grid gap-3">
+          {terminalCommands.map((cmd) => (
+            <button
+              key={cmd.name}
+              type="button"
+              onClick={() => {
+                setCommand(cmd.name === 'clear' ? 'clear' : cmd.usage.split('[')[0]!.trim() + ' ');
+                inputRef.current?.focus();
+              }}
+              className="flex flex-col gap-1 rounded-xl border border-border-subtle bg-surface-sunken px-3 py-2.5 text-left transition hover:border-border-default hover:bg-surface-card"
+            >
+              <span className="font-mono text-caption font-semibold text-content-primary">{cmd.usage}</span>
+              <span className="text-caption leading-snug text-content-secondary">{cmd.description}</span>
+              {cmd.examples?.length ? <span className="font-mono text-caption text-content-tertiary">{cmd.examples.join(' · ')}</span> : null}
+            </button>
+          ))}
+        </div>
+        <div className="mt-4 rounded-xl bg-surface-inverse px-3 py-2.5 font-mono text-caption leading-relaxed text-content-on-cinema">
+          <p className="font-semibold text-content-inverse">Быстрый старт — пустые корзины</p>
+          <p className="mt-1 text-content-on-cinema-muted">1) carts stats — посмотреть сколько всего</p>
+          <p>carts purge --empty --dry-run — сколько удалит</p>
+          <p>carts purge --empty --force — удалить пустые</p>
+          <p className="mt-2 text-content-on-cinema-muted">Только anon и старше 7 дней: carts purge --empty --anon --older-than 7d --force</p>
+        </div>
       </div>
-      <div className="flex gap-2">
-        <Input value={command} onChange={(event) => setCommand(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void run(); }} aria-label={t('terminalPlaceholder')} className="border-border-on-cinema bg-surface-inverse font-mono text-content-inverse" />
-        <Button variant="onCinema" pending={action.status === 'executing'} onClick={() => void run()}>{t('runJob')}</Button>
+
+      {/* Terminal */}
+      <div className="overflow-hidden rounded-2xl border border-border-strong bg-surface-inverse shadow-lg">
+        <div ref={logRef} className="max-h-[60dvh] min-h-36 overflow-auto p-4 font-mono text-caption leading-relaxed">
+          {history.length === 0 ? (
+            <p className="text-content-on-cinema-muted">{t('commandHelp')}</p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {history.map((entry, idx) => (
+                <div key={`${entry.cmd}-${idx}`} className="flex flex-col gap-1">
+                  <p className="flex gap-2">
+                    <span className="shrink-0 text-content-on-cinema-muted">$</span>
+                    <span className="break-words text-content-inverse">{entry.cmd}</span>
+                  </p>
+                  {entry.lines.map((line, i) => (
+                    <p key={`${line}-${i}`} className={entry.ok ? 'whitespace-pre-wrap break-words text-content-on-cinema' : 'whitespace-pre-wrap break-words text-[#ffb4ab]'}>
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              ))}
+              {action.status === 'executing' ? <p className="animate-pulse text-content-on-cinema-muted">…</p> : null}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-white/10 p-3">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-caption text-content-on-cinema-muted">$</span>
+              <Input
+                ref={inputRef}
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder={t('terminalPlaceholder')}
+                aria-label={t('terminalPlaceholder')}
+                autoComplete="off"
+                spellCheck={false}
+                className="border-border-on-cinema bg-surface-inverse pl-7 font-mono text-content-inverse placeholder:text-content-on-cinema-muted"
+              />
+              {suggest.length > 0 ? (
+                <div className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-xl border border-white/10 bg-surface-inverse shadow-xl">
+                  {suggest.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => {
+                        if (!command.includes(' ')) setCommand(s + ' ');
+                        else {
+                          const parts = command.trimEnd().split(/\s+/);
+                          parts[parts.length - 1] = s;
+                          setCommand(parts.join(' ') + ' ');
+                        }
+                        inputRef.current?.focus();
+                      }}
+                      className="block w-full px-3 py-2 text-left font-mono text-caption text-content-on-cinema hover:bg-white/10"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <Button variant="onCinema" pending={action.status === 'executing'} onClick={() => void run()} className="shrink-0">
+              {t('runJob')}
+            </Button>
+          </div>
+          <p className="mt-2 font-mono text-caption leading-relaxed text-content-on-cinema-muted">Tab — дополнить · ↑/↓ — история · Enter — выполнить · clear — очистить</p>
+        </div>
       </div>
     </div>
   );

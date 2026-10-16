@@ -8,7 +8,7 @@
  *   - промокод валидируется по БД (validateCart);
  *   - гость (anonymousId) переносится в Cart пользователя при входе.
  *
- * Хранение: Cart (userId XOR anonymousId) + CartItem[], без expiresAt.
+ * Хранение: Cart (userId XOR anonymousId) + CartItem[] + expiresAt (24ч, см. cartExpiresAt).
  */
 
 import 'server-only';
@@ -16,6 +16,7 @@ import 'server-only';
 import { commerce, promotions } from '@/config/business';
 import { domainErrors } from '@/domain/errors';
 import { cartTotals, clampQuantity, type CartLine, type CartTotals } from '@/domain/cart';
+import { cartExpiresAt } from '@/domain/cart-abandonment';
 import { db } from '@/lib/db';
 
 // ── Типы ───────────────────────────────────────────────────────────────
@@ -80,6 +81,7 @@ async function getOrCreateCart(params: {
       data: {
         ...(userId ? { userId } : { anonymousId: anonymousId! }),
         currencyCode: 'AMD',
+        expiresAt: cartExpiresAt(new Date()),
       },
       select: { id: true, userId: true, anonymousId: true, promoCodeId: true },
     })) as unknown as ResolvedCart;
@@ -467,6 +469,69 @@ export async function mergeGuestCart(params: { userId: string; anonymousId: stri
   if (left === 0) await db.cart.delete({ where: { id: guest.id } });
 
   return validateCart({ userId });
+}
+
+// ── Обслуживание корзин ─────────────────────────────────────────────
+
+export async function cartStats(): Promise<{
+  total: number;
+  empty: number;
+  withItems: number;
+  anon: number;
+  anonEmpty: number;
+  user: number;
+  userEmpty: number;
+  expired: number;
+}> {
+  const [total, withItems, anon, anonEmpty, userEmpty, expired] = await Promise.all([
+    db.cart.count({}),
+    db.cart.count({ where: { items: { some: {} } } as never }),
+    db.cart.count({ where: { anonymousId: { not: null } } as never }),
+    db.cart.count({ where: { anonymousId: { not: null }, items: { none: {} } } as never }),
+    db.cart.count({ where: { userId: { not: null }, items: { none: {} } } as never }),
+    db.cart.count({ where: { expiresAt: { lte: new Date() } } as never }).catch(() => 0),
+  ]);
+  const empty = total - withItems;
+  const user = total - anon;
+  return { total, empty, withItems, anon, anonEmpty, user, userEmpty, expired };
+}
+
+export async function purgeEmptyCarts(options: {
+  anonOnly?: boolean;
+  olderThanDays?: number | null;
+  dryRun?: boolean;
+}): Promise<{ deleted: number; dryRun: boolean }> {
+  const where: Record<string, unknown> = { items: { none: {} } };
+  if (options.anonOnly) (where as Record<string, unknown>).anonymousId = { not: null };
+  if (options.olderThanDays != null && options.olderThanDays > 0) {
+    const cutoff = new Date(Date.now() - options.olderThanDays * 86400000);
+    (where as Record<string, unknown>).createdAt = { lt: cutoff };
+  }
+  if (options.dryRun) {
+    const count = await db.cart.count({ where: where as never });
+    return { deleted: count, dryRun: true };
+  }
+  const found = await db.cart.findMany({ where: where as never, select: { id: true }, take: 5000 });
+  let deleted = 0;
+  for (const row of found as unknown as Array<{ id: string }>) {
+    await db.cart.delete({ where: { id: row.id } }).catch(() => {});
+    deleted += 1;
+  }
+  return { deleted, dryRun: false };
+}
+
+export async function purgeExpiredCarts(now: Date): Promise<{ purged: number }> {
+  const rows = await db.cart.findMany({
+    where: { expiresAt: { lte: now }, items: { none: {} } } as never,
+    select: { id: true },
+    take: 5000,
+  });
+  let purged = 0;
+  for (const row of rows as unknown as Array<{ id: string }>) {
+    await db.cart.delete({ where: { id: row.id } }).catch(() => {});
+    purged += 1;
+  }
+  return { purged };
 }
 
 // ── Счётчик для шапки ────────────────────────────────────────────────

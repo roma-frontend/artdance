@@ -7,6 +7,7 @@ import { useRouter } from '@/i18n/routing';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
+  ChevronLeft,
   Copy,
   Database,
   Download,
@@ -429,297 +430,450 @@ export function DataBrowserClient({ models, initialModel, initialQuery, initialP
     [sortedModels],
   );
 
-  const browserBody = (
-    <>
-      <div className={cn('grid h-full gap-3 transition-[grid-template-columns] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none', fullscreen ? 'grid-cols-[280px_minmax(0,1fr)]' : 'grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)]')}>
-        {/* Sidebar — cozy */}
-        <Card className={cn('flex min-h-0 flex-col overflow-hidden py-0 shadow-[0_2px_12px_rgba(58,50,38,0.06)] dark:shadow-none', COZY.card, COZY.cardBorder)}>
-          <CardContent className="flex min-h-0 flex-col p-2">
-            <div className="mb-2 flex items-center justify-between px-2 pt-2">
-              <p className={cn('flex items-center gap-2 text-sm font-semibold', COZY.heading)}>
-                <span className="flex size-7 items-center justify-center rounded-lg bg-[#F5E6CC] dark:bg-accent-soft border border-[#E8DDD0] dark:border-border-default">
-                  <Database className="h-3.5 w-3.5 text-[#8B5A2B] dark:text-content-accent" />
-                </span>
-                Tables
-                <span className="rounded-full bg-[#F5EDE0] dark:bg-surface-sunken px-2 py-0.5 font-mono text-[10px] font-medium text-[#8A7D6B] dark:text-content-tertiary border border-[#EDE3D3] dark:border-border-default">{models.length}</span>
-              </p>
-            </div>
+  const handleBackToList = useCallback(() => {
+    setSelectedModel(null);
+    setSelectedIds(new Set());
+    setEditingCell(null);
+    setDetailRow(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('model');
+    params.delete('q');
+    params.delete('page');
+    const qs = params.toString();
+    router.push(qs ? `?${qs}` : '?');
+  }, [router, searchParams]);
 
-            <div className="relative mb-2 px-1">
-              <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#B8A99A] dark:text-content-tertiary" />
-              <Input
-                value={tableQuery}
-                onChange={(e) => setTableQuery(e.target.value)}
-                placeholder="Find a table…"
-                className={cn('h-8 pl-8 text-xs rounded-full', COZY.inputBg, COZY.inputBorder, 'placeholder:text-[#B8A99A] dark:text-content-tertiary focus-visible:ring-[#D4B896]/40')}
-              />
-            </div>
+  // mobile: one pane at a time (list ↔ table)
+  const hasMobileTable = selectedModel !== null;
 
-            <div className="mb-2 flex flex-wrap gap-1 px-1">
-              {quickTabs.map((m) => (
-                <button
-                  key={m.name}
-                  type="button"
-                  onClick={() => selectModel(m.name)}
-                  className={cn(
-                    'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors duration-200 ease-out motion-reduce:transition-none',
-                    selectedModel === m.name
-                      ? 'border-[#D4B896] dark:border-border-default bg-[#F5E6CC] dark:bg-accent-soft text-[#6B3A1F] dark:text-content-accent'
-                      : 'border-[#E8DDD0] dark:border-border-default text-[#8A7D6B] dark:text-content-tertiary hover:border-[#D4B896] dark:hover:border-border-strong hover:text-[#3A3226] dark:hover:text-content-primary bg-[#FFFBF5] dark:bg-surface-card',
-                  )}
-                >
-                  {m.name}
-                </button>
-              ))}
-            </div>
+  // Reusable pieces for desktop / mobile (keeps one source of truth)
+  const SidebarCard = (
+    <Card className={cn('flex min-h-0 flex-col overflow-hidden py-0 shadow-[0_2px_12px_rgba(58,50,38,0.06)] dark:shadow-none', COZY.card, COZY.cardBorder)}>
+      <CardContent className="flex min-h-0 flex-col p-2">
+        <div className="mb-2 flex items-center justify-between px-2 pt-2">
+          <p className={cn('flex items-center gap-2 text-sm font-semibold', COZY.heading)}>
+            <span className="flex size-7 items-center justify-center rounded-lg bg-[#F5E6CC] dark:bg-accent-soft border border-[#E8DDD0] dark:border-border-default">
+              <Database className="h-3.5 w-3.5 text-[#8B5A2B] dark:text-content-accent" />
+            </span>
+            Tables
+            <span className="rounded-full bg-[#F5EDE0] dark:bg-surface-sunken px-2 py-0.5 font-mono text-[10px] font-medium text-[#8A7D6B] dark:text-content-tertiary border border-[#EDE3D3] dark:border-border-default">{models.length}</span>
+          </p>
+        </div>
 
-            <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-0.5">
-              {visibleModels.map((m) => (
-                <button
-                  key={m.name}
-                  type="button"
-                  onClick={() => selectModel(m.name)}
-                  className={cn(
-                    'flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ease-out motion-reduce:transition-none',
-                    selectedModel === m.name
-                      ? 'bg-[#FFF3D6] dark:bg-accent-soft font-medium text-[#6B3A1F] dark:text-content-accent border border-[#E8DDD0] dark:border-border-default shadow-sm'
-                      : 'text-[#8A7D6B] dark:text-content-tertiary hover:bg-[#FDF6E8] dark:hover:bg-white/[0.06] hover:text-[#3A3226] dark:hover:text-content-primary border border-transparent',
-                  )}
-                >
-                  <Database className="h-3.5 w-3.5 shrink-0 opacity-50" />
-                  <span className="truncate font-mono text-xs">{m.name}</span>
-                  <span className="ml-auto shrink-0 font-mono text-[10px] text-[#B8A99A] dark:text-content-tertiary">{m.count}</span>
-                </button>
-              ))}
-              {visibleModels.length === 0 && (
-                <p className="px-3 py-6 text-center text-xs text-[#B8A99A] dark:text-content-tertiary">No table matches &quot;{tableQuery}&quot;</p>
+        <div className="relative mb-2 px-1">
+          <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#B8A99A] dark:text-content-tertiary" />
+          <Input
+            value={tableQuery}
+            onChange={(e) => setTableQuery(e.target.value)}
+            placeholder="Find a table…"
+            className={cn('h-8 pl-8 text-xs rounded-full', COZY.inputBg, COZY.inputBorder, 'placeholder:text-[#B8A99A] dark:text-content-tertiary focus-visible:ring-[#D4B896]/40')}
+          />
+        </div>
+
+        <div className="mb-2 flex flex-wrap gap-1 px-1">
+          {quickTabs.map((m) => (
+            <button
+              key={m.name}
+              type="button"
+              onClick={() => selectModel(m.name)}
+              className={cn(
+                'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors duration-200 ease-out motion-reduce:transition-none',
+                selectedModel === m.name
+                  ? 'border-[#D4B896] dark:border-border-default bg-[#F5E6CC] dark:bg-accent-soft text-[#6B3A1F] dark:text-content-accent'
+                  : 'border-[#E8DDD0] dark:border-border-default text-[#8A7D6B] dark:text-content-tertiary hover:border-[#D4B896] dark:hover:border-border-strong hover:text-[#3A3226] dark:hover:text-content-primary bg-[#FFFBF5] dark:bg-surface-card',
               )}
-            </div>
-          </CardContent>
-        </Card>
+            >
+              {m.name}
+            </button>
+          ))}
+        </div>
 
-        {/* Grid */}
-        <div className="flex min-h-0 min-w-0 flex-col">
-          {!selectedModel ? (
-            <Card className={cn('flex h-full flex-col shadow-[0_2px_12px_rgba(58,50,38,0.06)]', COZY.card, COZY.cardBorder)}>
-              <CardContent className="flex flex-1 flex-col items-center justify-center gap-3 py-20 text-center">
-                <span className="flex size-14 items-center justify-center rounded-2xl bg-[#FDF6E8] dark:bg-surface-sunken border border-[#EDE3D3] dark:border-border-default">
-                  <Database className="h-7 w-7 text-[#B8A99A] dark:text-content-tertiary" />
-                </span>
-                <p className={cn('font-medium', COZY.heading)}>Select a table to browse its rows</p>
-                <p className="text-sm text-[#8A7D6B] dark:text-content-tertiary">Search 70+ Prisma models with full row control</p>
-                <Heart className="h-4 w-4 text-[#D4B896] dark:text-content-metal opacity-60" />
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className={cn('flex min-h-0 flex-1 flex-col overflow-hidden py-0 shadow-[0_2px_16px_rgba(58,50,38,0.07)] dark:shadow-none', COZY.card, COZY.cardBorder)}>
-              {/* Table toolbar — warm, not stark */}
-              <div className="flex flex-wrap items-center gap-2 border-b border-[#EDE3D3] dark:border-border-default bg-[#FDF8F0] dark:bg-surface-canvas/60 px-3 py-2.5">
-                <p className={cn('flex items-center gap-2 font-mono text-sm font-semibold', COZY.heading)}>
-                  <span className="flex size-7 items-center justify-center rounded-lg bg-[#F5E6CC] dark:bg-accent-soft border border-[#E8DDD0] dark:border-border-default">
-                    <KeyRound className="h-3.5 w-3.5 text-[#8B5A2B] dark:text-content-accent" />
-                  </span>
-                  {selectedModel}
-                  <span className="rounded-full bg-[#F5EDE0] dark:bg-surface-sunken px-2 py-0.5 font-mono text-[10px] font-medium text-[#8A7D6B] dark:text-content-tertiary border border-[#EDE3D3] dark:border-border-default">{total} rows</span>
-                </p>
+        <div className="min-h-0 flex-1 space-y-0.5 overflow-y-auto pr-0.5">
+          {visibleModels.map((m) => (
+            <button
+              key={m.name}
+              type="button"
+              onClick={() => selectModel(m.name)}
+              className={cn(
+                'flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm transition-colors duration-200 ease-out motion-reduce:transition-none',
+                selectedModel === m.name
+                  ? 'bg-[#FFF3D6] dark:bg-accent-soft font-medium text-[#6B3A1F] dark:text-content-accent border border-[#E8DDD0] dark:border-border-default shadow-sm'
+                  : 'text-[#8A7D6B] dark:text-content-tertiary hover:bg-[#FDF6E8] dark:hover:bg-white/[0.06] hover:text-[#3A3226] dark:hover:text-content-primary border border-transparent',
+              )}
+            >
+              <Database className="h-3.5 w-3.5 shrink-0 opacity-50" />
+              <span className="truncate font-mono text-xs">{m.name}</span>
+              <span className="ml-auto shrink-0 font-mono text-[10px] text-[#B8A99A] dark:text-content-tertiary">{m.count}</span>
+            </button>
+          ))}
+          {visibleModels.length === 0 && (
+            <p className="px-3 py-6 text-center text-xs text-[#B8A99A] dark:text-content-tertiary">No table matches &quot;{tableQuery}&quot;</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
-                <div className="relative ml-auto">
-                  <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#B8A99A] dark:text-content-tertiary" />
-                  <Input
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    placeholder="Search rows…"
-                    className="h-8 w-48 pl-8 text-xs rounded-full bg-[#FFFBF5] dark:bg-surface-card border-[#E8DDD0] dark:border-border-default placeholder:text-[#B8A99A] dark:text-content-tertiary focus-visible:ring-[#D4B896]/40"
-                  />
-                </div>
+  const EmptyStateCard = (
+    <Card className={cn('flex h-full flex-col shadow-[0_2px_12px_rgba(58,50,38,0.06)]', COZY.card, COZY.cardBorder)}>
+      <CardContent className="flex flex-1 flex-col items-center justify-center gap-3 py-20 text-center">
+        <span className="flex size-14 items-center justify-center rounded-2xl bg-[#FDF6E8] dark:bg-surface-sunken border border-[#EDE3D3] dark:border-border-default">
+          <Database className="h-7 w-7 text-[#B8A99A] dark:text-content-tertiary" />
+        </span>
+        <p className={cn('font-medium', COZY.heading)}>Select a table to browse its rows</p>
+        <p className="text-sm text-[#8A7D6B] dark:text-content-tertiary">Search 70+ Prisma models with full row control</p>
+        <Heart className="h-4 w-4 text-[#D4B896] dark:text-content-metal opacity-60" />
+      </CardContent>
+    </Card>
+  );
 
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 rounded-full border-[#E8DDD0] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card text-[#8A7D6B] dark:text-content-tertiary hover:bg-[#F5EDE0] dark:hover:bg-white/[0.08] hover:text-[#3A3226] dark:hover:text-content-primary transition-colors duration-200 ease-out"
-                  disabled={refreshing}
-                  onClick={handleRefresh}
-                  aria-label="Refresh"
+  const TableCard = (
+    <Card className={cn('flex min-h-0 flex-1 flex-col overflow-hidden py-0 shadow-[0_2px_16px_rgba(58,50,38,0.07)] dark:shadow-none', COZY.card, COZY.cardBorder)}>
+      {/* Table toolbar — responsive: search stacks on narrow */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-[#EDE3D3] dark:border-border-default bg-[#FDF8F0] dark:bg-surface-canvas/60 px-3 py-2.5">
+        <p className={cn('flex items-center gap-2 font-mono text-sm font-semibold', COZY.heading)}>
+          <span className="flex size-7 items-center justify-center rounded-lg bg-[#F5E6CC] dark:bg-accent-soft border border-[#E8DDD0] dark:border-border-default">
+            <KeyRound className="h-3.5 w-3.5 text-[#8B5A2B] dark:text-content-accent" />
+          </span>
+          {selectedModel}
+          <span className="rounded-full bg-[#F5EDE0] dark:bg-surface-sunken px-2 py-0.5 font-mono text-[10px] font-medium text-[#8A7D6B] dark:text-content-tertiary border border-[#EDE3D3] dark:border-border-default">{total} rows</span>
+        </p>
+
+        <div className="flex w-full items-center gap-2 sm:ml-auto sm:w-auto">
+          <div className="relative flex-1 sm:w-48 sm:flex-none">
+            <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#B8A99A] dark:text-content-tertiary" />
+            <Input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search rows…"
+              className="h-8 w-full pl-8 text-xs rounded-full bg-[#FFFBF5] dark:bg-surface-card border-[#E8DDD0] dark:border-border-default placeholder:text-[#B8A99A] dark:text-content-tertiary focus-visible:ring-[#D4B896]/40"
+            />
+          </div>
+
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-8 w-8 shrink-0 rounded-full border-[#E8DDD0] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card text-[#8A7D6B] dark:text-content-tertiary hover:bg-[#F5EDE0] dark:hover:bg-white/[0.08] hover:text-[#3A3226] dark:hover:text-content-primary transition-colors duration-200 ease-out"
+            disabled={refreshing}
+            onClick={handleRefresh}
+            aria-label="Refresh"
+          >
+            <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
+          </Button>
+
+          <Button size="sm" className="h-8 shrink-0 gap-1.5 rounded-full bg-[#8B5A2B] dark:bg-accent text-white hover:bg-[#6B3A1F] dark:hover:bg-accent-hover shadow-sm" onClick={() => setCreatingRow(true)}>
+            <Plus className="h-3.5 w-3.5" />
+            <span className="hidden xs:inline">New row</span>
+            <span className="xs:hidden">New</span>
+          </Button>
+
+          {selectedIds.size > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 shrink-0 gap-1.5 rounded-full border-[#E8DDD0] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card text-[#8B5A2B] dark:text-content-accent hover:bg-[#FFF3D6] dark:hover:bg-accent-soft"
+              onClick={() => void handleBulkDelete()}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete {selectedIds.size}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop table — horizontal scroll, hidden on phones */}
+      <div ref={tableScrollRef} className="hidden min-h-0 flex-1 overflow-auto scroll-smooth overscroll-contain bg-[#FFFBF5] dark:bg-surface-card lg:block">
+        <table className="w-full text-xs">
+          <thead className="sticky top-0 z-10">
+            <tr className={cn('border-b', COZY.tableHead, 'border-[#EDE3D3] dark:border-border-default')}>
+              <th className="w-10 px-2 py-2">
+                <input type="checkbox" checked={isAllSelected} onChange={toggleSelectAll} className="h-3.5 w-3.5 accent-[#8B5A2B] rounded" aria-label="Select all" />
+              </th>
+              <th className={cn('px-2 py-2 text-left font-semibold', COZY.tableHeadText)}>ID</th>
+              {fields
+                .filter((f) => f !== 'id')
+                .map((col) => (
+                  <th key={col} className={cn('min-w-35 whitespace-nowrap px-2 py-2 text-left font-semibold', COZY.tableHeadText)}>
+                    <span className="flex items-center gap-1">
+                      {col}
+                      {isIdField(col) && <KeyRound className="h-3 w-3 text-[#C9A86A] dark:text-content-metal" />}
+                    </span>
+                  </th>
+                ))}
+              <th className={cn('sticky right-0 px-2 py-2 text-right font-semibold shadow-[-4px_0_8px_rgba(0,0,0,0.04)]', COZY.tableHead, COZY.tableHeadText)}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={fields.length + 2} className="px-4 py-16 text-center text-sm text-[#8A7D6B] dark:text-content-tertiary">
+                  No rows match — try a different search
+                </td>
+              </tr>
+            ) : (
+              rows.map((row) => (
+                <tr
+                  key={row.id}
+                  className={cn('group border-b border-[#F0E6D3] dark:border-border-subtle last:border-0 transition-colors duration-200 ease-out', selectedIds.has(row.id) ? COZY.rowSelected : COZY.rowHover)}
                 >
-                  <RefreshCw className={cn('h-3.5 w-3.5', refreshing && 'animate-spin')} />
-                </Button>
-
-                <Button size="sm" className="h-8 gap-1.5 rounded-full bg-[#8B5A2B] dark:bg-accent text-white hover:bg-[#6B3A1F] dark:hover:bg-accent-hover shadow-sm" onClick={() => setCreatingRow(true)}>
-                  <Plus className="h-3.5 w-3.5" />
-                  New row
-                </Button>
-
-                {selectedIds.size > 0 && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 gap-1.5 rounded-full border-[#E8DDD0] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card text-[#8B5A2B] dark:text-content-accent hover:bg-[#FFF3D6] dark:hover:bg-accent-soft"
-                    onClick={() => void handleBulkDelete()}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Delete {selectedIds.size}
-                  </Button>
-                )}
-              </div>
-
-              <div ref={tableScrollRef} className="min-h-0 flex-1 overflow-auto scroll-smooth overscroll-contain bg-[#FFFBF5] dark:bg-surface-card">
-                <table className="w-full text-xs">
-                  <thead className="sticky top-0 z-10">
-                    <tr className={cn('border-b', COZY.tableHead, 'border-[#EDE3D3] dark:border-border-default')}>
-                      <th className="w-10 px-2 py-2">
-                        <input type="checkbox" checked={isAllSelected} onChange={toggleSelectAll} className="h-3.5 w-3.5 accent-[#8B5A2B] rounded" aria-label="Select all" />
-                      </th>
-                      <th className={cn('px-2 py-2 text-left font-semibold', COZY.tableHeadText)}>ID</th>
-                      {fields
-                        .filter((f) => f !== 'id')
-                        .map((col) => (
-                          <th key={col} className={cn('min-w-35 whitespace-nowrap px-2 py-2 text-left font-semibold', COZY.tableHeadText)}>
-                            <span className="flex items-center gap-1">
-                              {col}
-                              {isIdField(col) && <KeyRound className="h-3 w-3 text-[#C9A86A] dark:text-content-metal" />}
-                            </span>
-                          </th>
-                        ))}
-                      <th className={cn('sticky right-0 px-2 py-2 text-right font-semibold shadow-[-4px_0_8px_rgba(0,0,0,0.04)]', COZY.tableHead, COZY.tableHeadText)}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.length === 0 ? (
-                      <tr>
-                        <td colSpan={fields.length + 2} className="px-4 py-16 text-center text-sm text-[#8A7D6B] dark:text-content-tertiary">
-                          No rows match — try a different search
-                        </td>
-                      </tr>
-                    ) : (
-                      rows.map((row) => (
-                        <tr
-                          key={row.id}
-                          className={cn('group border-b border-[#F0E6D3] dark:border-border-subtle last:border-0 transition-colors duration-200 ease-out', selectedIds.has(row.id) ? COZY.rowSelected : COZY.rowHover)}
-                        >
-                          <td className="px-2 py-1.5">
-                            <input
-                              type="checkbox"
-                              checked={selectedIds.has(row.id)}
-                              onChange={() => toggleSelected(row.id)}
-                              className="h-3.5 w-3.5 accent-[#8B5A2B] rounded"
-                              aria-label="Select row"
-                            />
-                          </td>
-                          <td className="max-w-40 px-2 py-1.5">
-                            <button
-                              type="button"
-                              onClick={() => openDetail(row)}
-                              className="block w-full truncate rounded-full px-2 py-0.5 text-left font-mono text-[11px] text-[#8B5A2B] dark:text-content-accent hover:bg-white dark:hover:bg-white/10 border border-transparent hover:border-[#EDE3D3] dark:hover:border-white/20 transition-colors duration-200 ease-out"
-                              title={row.id}
-                            >
-                              {row.id}
-                            </button>
-                          </td>
-                          {fields
-                            .filter((f) => f !== 'id')
-                            .map((col) => {
-                              const value = row[col];
-                              const isEditing = editingCell?.rowId === row.id && editingCell.field === col;
-                              return (
-                                <td key={col} className="max-w-60 px-2 py-1.5">
-                                  {isEditing ? (
-                                    <div className="flex items-center gap-1">
-                                      <input
-                                        autoFocus
-                                        value={editingCell.value}
-                                        onChange={(e) => setEditingCell((c) => (c ? { ...c, value: e.target.value } : c))}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter') void handleCellSave();
-                                          if (e.key === 'Escape') setEditingCell(null);
-                                        }}
-                                        className="h-7 w-full rounded-full border border-[#D4B896] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card px-2.5 font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-[#D4B896]/30"
-                                      />
-                                      <Button
-                                        size="icon"
-                                        className="h-7 w-7 shrink-0 rounded-full bg-[#8B5A2B] dark:bg-accent text-white hover:bg-[#6B3A1F] dark:hover:bg-accent-hover"
-                                        onClick={() => void handleCellSave()}
-                                        aria-label="Save"
-                                      >
-                                        <Pencil className="h-3 w-3" />
-                                      </Button>
-                                    </div>
-                                  ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => openCellEditor(row, col)}
-                                      className={cn(
-                                        'block w-full truncate rounded-full px-2 py-0.5 text-left font-mono text-[11px] transition-colors border border-transparent',
-                                        isIdField(col) && typeof value === 'string'
-                                          ? 'text-[#8B5A2B] dark:text-content-accent hover:bg-white dark:hover:bg-white/10 hover:border-[#EDE3D3] dark:hover:border-white/20'
-                                          : 'text-[#6B5D4D] dark:text-content-secondary hover:bg-white dark:hover:bg-white/10 hover:border-[#EDE3D3] dark:hover:border-white/20',
-                                      )}
-                                      title={detailText(value)}
-                                    >
-                                      {cellText(value)}
-                                    </button>
-                                  )}
-                                </td>
-                              );
-                            })}
-                          <td className="sticky right-0 px-2 py-1.5 relative bg-[#FFFBF5] dark:bg-surface-card shadow-[-8px_0_12px_#FFFBF5] dark:shadow-[-8px_0_12px_#1F1D1B] before:absolute before:inset-y-0 before:-left-4 before:w-4 before:bg-gradient-to-r before:from-transparent before:to-[#FFFBF5] dark:before:to-[#1F1D1B] before:pointer-events-none">
-                            <div className="flex items-center justify-end gap-1 transition-opacity duration-200 ease-out motion-reduce:transition-none">
+                  <td className="px-2 py-1.5">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(row.id)}
+                      onChange={() => toggleSelected(row.id)}
+                      className="h-3.5 w-3.5 accent-[#8B5A2B] rounded"
+                      aria-label="Select row"
+                    />
+                  </td>
+                  <td className="max-w-40 px-2 py-1.5">
+                    <button
+                      type="button"
+                      onClick={() => openDetail(row)}
+                      className="block w-full truncate rounded-full px-2 py-0.5 text-left font-mono text-[11px] text-[#8B5A2B] dark:text-content-accent hover:bg-white dark:hover:bg-white/10 border border-transparent hover:border-[#EDE3D3] dark:hover:border-white/20 transition-colors duration-200 ease-out"
+                      title={row.id}
+                    >
+                      {row.id}
+                    </button>
+                  </td>
+                  {fields
+                    .filter((f) => f !== 'id')
+                    .map((col) => {
+                      const value = row[col];
+                      const isEditing = editingCell?.rowId === row.id && editingCell.field === col;
+                      return (
+                        <td key={col} className="max-w-60 px-2 py-1.5">
+                          {isEditing ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                autoFocus
+                                value={editingCell.value}
+                                onChange={(e) => setEditingCell((c) => (c ? { ...c, value: e.target.value } : c))}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') void handleCellSave();
+                                  if (e.key === 'Escape') setEditingCell(null);
+                                }}
+                                className="h-7 w-full rounded-full border border-[#D4B896] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card px-2.5 font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-[#D4B896]/30"
+                              />
                               <Button
-                                variant="ghost"
                                 size="icon"
-                                className="h-6 w-6 rounded-full text-[#8A7D6B] dark:text-content-tertiary hover:bg-[#F5EDE0] dark:hover:bg-white/[0.08] hover:text-[#3A3226] dark:hover:text-content-primary transition-colors duration-200 ease-out"
-                                onClick={() => void handleDuplicate(row)}
-                                aria-label="Duplicate"
+                                className="h-7 w-7 shrink-0 rounded-full bg-[#8B5A2B] dark:bg-accent text-white hover:bg-[#6B3A1F] dark:hover:bg-accent-hover"
+                                onClick={() => void handleCellSave()}
+                                aria-label="Save"
                               >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 rounded-full text-[#B07A6A] dark:text-content-danger hover:bg-[#FFF0EB] dark:hover:bg-danger-soft hover:text-[#8B3A2B] dark:text-content-danger transition-colors duration-200"
-                                onClick={() => void handleDelete(row)}
-                                aria-label="Delete"
-                              >
-                                <Trash2 className="h-3 w-3" />
+                                <Pencil className="h-3 w-3" />
                               </Button>
                             </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => openCellEditor(row, col)}
+                              className={cn(
+                                'block w-full truncate rounded-full px-2 py-0.5 text-left font-mono text-[11px] transition-colors border border-transparent',
+                                isIdField(col) && typeof value === 'string'
+                                  ? 'text-[#8B5A2B] dark:text-content-accent hover:bg-white dark:hover:bg-white/10 hover:border-[#EDE3D3] dark:hover:border-white/20'
+                                  : 'text-[#6B5D4D] dark:text-content-secondary hover:bg-white dark:hover:bg-white/10 hover:border-[#EDE3D3] dark:hover:border-white/20',
+                              )}
+                              title={detailText(value)}
+                            >
+                              {cellText(value)}
+                            </button>
+                          )}
+                        </td>
+                      );
+                    })}
+                  <td className="sticky right-0 px-2 py-1.5 relative bg-[#FFFBF5] dark:bg-surface-card shadow-[-8px_0_12px_#FFFBF5] dark:shadow-[-8px_0_12px_#1F1D1B] before:absolute before:inset-y-0 before:-left-4 before:w-4 before:bg-gradient-to-r before:from-transparent before:to-[#FFFBF5] dark:before:to-[#1F1D1B] before:pointer-events-none">
+                    <div className="flex items-center justify-end gap-1 transition-opacity duration-200 ease-out motion-reduce:transition-none">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 rounded-full text-[#8A7D6B] dark:text-content-tertiary hover:bg-[#F5EDE0] dark:hover:bg-white/[0.08] hover:text-[#3A3226] dark:hover:text-content-primary transition-colors duration-200 ease-out"
+                        onClick={() => void handleDuplicate(row)}
+                        aria-label="Duplicate"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 rounded-full text-[#B07A6A] dark:text-content-danger hover:bg-[#FFF0EB] dark:hover:bg-danger-soft hover:text-[#8B3A2B] dark:text-content-danger transition-colors duration-200"
+                        onClick={() => void handleDelete(row)}
+                        aria-label="Delete"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile — stacked cards, no horizontal scroll */}
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto bg-[#FFFBF5] dark:bg-surface-card p-2 sm:hidden">
+        {rows.length === 0 ? (
+          <p className="px-4 py-10 text-center text-sm text-[#8A7D6B] dark:text-content-tertiary">No rows match — try a different search</p>
+        ) : (
+          rows.map((row) => (
+            <div
+              key={row.id}
+              className={cn(
+                'rounded-2xl border bg-white dark:bg-surface-card p-3 shadow-sm transition-colors',
+                selectedIds.has(row.id) ? 'border-[#D4B896] dark:border-border-default bg-[#FFF8EB] dark:bg-white/[0.06]' : 'border-[#EDE3D3] dark:border-border-default',
+              )}
+            >
+              {/* card header */}
+              <div className="mb-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(row.id)}
+                  onChange={() => toggleSelected(row.id)}
+                  className="h-4 w-4 shrink-0 accent-[#8B5A2B] rounded"
+                  aria-label="Select row"
+                />
+                <button
+                  type="button"
+                  onClick={() => openDetail(row)}
+                  className="min-w-0 flex-1 truncate rounded-full bg-[#FDF6E8] dark:bg-surface-sunken border border-[#EDE3D3] dark:border-border-default px-2.5 py-1 text-left font-mono text-[11px] font-medium text-[#8B5A2B] dark:text-content-accent"
+                  title={row.id}
+                >
+                  {row.id}
+                </button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 rounded-full hover:bg-[#F5EDE0] dark:hover:bg-white/[0.08]" onClick={() => void handleDuplicate(row)} aria-label="Duplicate">
+                  <Copy className="h-3.5 w-3.5 text-[#8A7D6B] dark:text-content-tertiary" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 rounded-full hover:bg-[#FFF0EB] dark:hover:bg-danger-soft" onClick={() => void handleDelete(row)} aria-label="Delete">
+                  <Trash2 className="h-3.5 w-3.5 text-[#B07A6A] dark:text-content-danger" />
+                </Button>
               </div>
 
-              <div className="flex items-center justify-between border-t border-[#EDE3D3] dark:border-border-default bg-[#FDF8F0] dark:bg-surface-canvas/50 px-3 py-2">
-                <p className="text-[11px] text-[#8A7D6B] dark:text-content-tertiary">
-                  {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} / {total}
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 rounded-full border-[#E8DDD0] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card text-xs text-[#6B5D4D] dark:text-content-secondary hover:bg-[#F5EDE0] dark:hover:bg-surface-sunken"
-                    disabled={page <= 1}
-                    onClick={() => pushState({ page: page - 1 })}
-                  >
-                    Prev
-                  </Button>
-                  <span className="rounded-full bg-[#F5EDE0] dark:bg-surface-sunken px-3 py-1 text-xs font-medium text-[#6B5D4D] dark:text-content-secondary border border-[#EDE3D3] dark:border-border-default">
-                    {page} / {pageCount}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 rounded-full border-[#E8DDD0] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card text-xs text-[#6B5D4D] dark:text-content-secondary hover:bg-[#F5EDE0] dark:hover:bg-surface-sunken"
-                    disabled={page >= pageCount}
-                    onClick={() => pushState({ page: page + 1 })}
-                  >
-                    Next
-                  </Button>
-                </div>
+              {/* fields — one per line, tap to edit */}
+              <div className="space-y-1.5">
+                {fields
+                  .filter((f) => f !== 'id')
+                  .map((col) => {
+                    const value = row[col];
+                    const isEditing = editingCell?.rowId === row.id && editingCell.field === col;
+                    return (
+                      <div key={col} className="rounded-xl bg-[#FDF8F0] dark:bg-surface-sunken border border-[#F0E6D3] dark:border-border-subtle px-2.5 py-2">
+                        <div className="mb-1 flex items-center gap-1">
+                          <span className="font-mono text-[10px] font-semibold tracking-wide text-[#8A7D6B] dark:text-content-tertiary">{col}</span>
+                          {isIdField(col) && <KeyRound className="h-3 w-3 text-[#C9A86A] dark:text-content-metal" />}
+                        </div>
+                        {isEditing ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              autoFocus
+                              value={editingCell.value}
+                              onChange={(e) => setEditingCell((c) => (c ? { ...c, value: e.target.value } : c))}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') void handleCellSave();
+                                if (e.key === 'Escape') setEditingCell(null);
+                              }}
+                              className="h-8 w-full rounded-full border border-[#D4B896] dark:border-border-default bg-white dark:bg-surface-card px-3 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-[#D4B896]/30"
+                            />
+                            <Button size="icon" className="h-8 w-8 shrink-0 rounded-full bg-[#8B5A2B] dark:bg-accent text-white" onClick={() => void handleCellSave()} aria-label="Save">
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => openCellEditor(row, col)}
+                            className={cn(
+                              'block w-full break-words text-left font-mono text-xs leading-snug',
+                              isIdField(col) && typeof value === 'string' ? 'text-[#8B5A2B] dark:text-content-accent' : 'text-[#3A3226] dark:text-content-primary',
+                            )}
+                            title={detailText(value)}
+                          >
+                            <span className="line-clamp-3">{cellText(value)}</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
               </div>
-            </Card>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2 border-t border-[#EDE3D3] dark:border-border-default bg-[#FDF8F0] dark:bg-surface-canvas/50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-center text-[11px] text-[#8A7D6B] dark:text-content-tertiary sm:text-left">
+          {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} / {total}
+        </p>
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 rounded-full border-[#E8DDD0] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card text-xs text-[#6B5D4D] dark:text-content-secondary hover:bg-[#F5EDE0] dark:hover:bg-surface-sunken"
+            disabled={page <= 1}
+            onClick={() => pushState({ page: page - 1 })}
+          >
+            Prev
+          </Button>
+          <span className="rounded-full bg-[#F5EDE0] dark:bg-surface-sunken px-3 py-1 text-xs font-medium text-[#6B5D4D] dark:text-content-secondary border border-[#EDE3D3] dark:border-border-default">
+            {page} / {pageCount}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 rounded-full border-[#E8DDD0] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card text-xs text-[#6B5D4D] dark:text-content-secondary hover:bg-[#F5EDE0] dark:hover:bg-surface-sunken"
+            disabled={page >= pageCount}
+            onClick={() => pushState({ page: page + 1 })}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+
+  const browserBody = (
+    <>
+      {/* ── Desktop: side-by-side grid (unchanged) ── */}
+      <div className={cn('hidden h-full gap-3 transition-[grid-template-columns] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none lg:grid', fullscreen ? 'grid-cols-[280px_minmax(0,1fr)]' : 'grid-cols-[260px_minmax(0,1fr)]')}>
+        {SidebarCard}
+        <div className="flex min-h-0 min-w-0 flex-col">{selectedModel ? TableCard : EmptyStateCard}</div>
+      </div>
+
+      {/* ── Mobile: one pane at a time with fluid crossfade ── */}
+      <div className="grid min-h-[68dvh] lg:hidden">
+        {/* list pane */}
+        <div
+          className={cn(
+            'col-start-1 row-start-1 flex min-h-0 flex-col transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
+            hasMobileTable ? 'pointer-events-none opacity-0 -translate-x-3 scale-[0.98]' : 'opacity-100 translate-x-0 scale-100',
           )}
+          aria-hidden={hasMobileTable}
+        >
+          {SidebarCard}
+        </div>
+        {/* table pane — плавная замена на месте списка */}
+        <div
+          className={cn(
+            'col-start-1 row-start-1 flex min-h-0 flex-col gap-3 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none',
+            hasMobileTable ? 'opacity-100 translate-x-0 scale-100' : 'pointer-events-none opacity-0 translate-x-3 scale-[0.98]',
+          )}
+          aria-hidden={!hasMobileTable}
+        >
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackToList}
+              className="gap-1.5 rounded-full border-[#E8DDD0] dark:border-border-default bg-white dark:bg-surface-card text-[#3A3226] dark:text-content-primary hover:bg-[#FDF6E8] dark:hover:bg-white/[0.06] shadow-sm"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Tables
+            </Button>
+            <span className="min-w-0 flex-1 truncate font-mono text-xs font-semibold text-[#3A3226] dark:text-content-primary">{selectedModel}</span>
+            <span className="shrink-0 rounded-full bg-[#F5EDE0] dark:bg-surface-sunken px-2 py-0.5 font-mono text-[10px] text-[#8A7D6B] dark:text-content-tertiary border border-[#EDE3D3] dark:border-border-default">{total} rows</span>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col">
+            {selectedModel ? TableCard : EmptyStateCard}
+          </div>
         </div>
       </div>
 
