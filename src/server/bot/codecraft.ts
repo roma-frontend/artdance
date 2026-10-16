@@ -20,14 +20,18 @@ export async function codecraftChat(opts: CodecraftCallOptions): Promise<string>
   if (!base || !key) throw new Error('CodeCraft not configured: CODECRAFT_BASE_URL / CODECRAFT_API_KEY missing');
 
   const url = `${base}/chat/completions`;
+  // Cloudflare Turnstile на Vercel IP режет Bearer — шлём оба варианта
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    accept: 'application/json',
+    authorization: `Bearer ${key}`,
+    'x-api-key': key,
+    'user-agent': 'ArtDanceBot/1.0 (Vercel; +https://artdance.vercel.app)',
+    'anthropic-version': '2023-06-01',
+  };
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      accept: 'application/json',
-      authorization: `Bearer ${key}`,
-      'user-agent': 'ArtDanceBot/1.0',
-    },
+    headers,
     body: JSON.stringify({
       model,
       messages: opts.messages,

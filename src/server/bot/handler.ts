@@ -83,6 +83,13 @@ export async function handleTelegramCommand(textRaw: string): Promise<string> {
     });
     return answer.slice(0, 3800);
   } catch (e) {
-    return `codecraft error: ${e instanceof Error ? e.message : String(e)}`;
+    const msg = e instanceof Error ? e.message : String(e);
+    if (msg.includes('403') || msg.includes('Just a moment') || msg.includes('challenges.cloudflare')) {
+      return 'CodeCraft защищён Cloudflare (Vercel IP под челленджем). Пробую снова — если повторится, напиши провайдеру codecraftapi чтобы вынести Vercel 216.198.79.67 из Turnstile, либо дай прямой base URL без Cloudflare.';
+    }
+    if (msg.includes('503') || msg.includes('service_upgrading') || msg.includes('maintenance')) {
+      return 'CodeCraft на техобслуживании (503 service_upgrading). Попробуй через пару минут — /status и /repo уже работают.';
+    }
+    return `codecraft error: ${msg.slice(0, 800)}`;
   }
 }
