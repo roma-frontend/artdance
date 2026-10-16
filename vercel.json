@@ -33,7 +33,7 @@
     },
     {
       "path": "/api/cron/support-sla",
-      "schedule": "*/30 * * * *"
+      "schedule": "17 7 * * *"
     }
   ]
 }
