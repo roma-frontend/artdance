@@ -7,16 +7,18 @@ export function JourneyLazy({
   instructorImage,
   classImage,
   competitionImage,
+  includeCompetition = true,
   locale,
 }: {
   styleImage?: MediaRef;
   instructorImage?: MediaRef;
   classImage?: MediaRef;
-  competitionImage: MediaRef;
+  competitionImage?: MediaRef;
+  includeCompetition?: boolean;
   locale: Locale;
 }) {
-  const images = [styleImage, instructorImage, classImage, competitionImage].filter(
+  const images = [styleImage, instructorImage, classImage, includeCompetition ? competitionImage : undefined].filter(
     (v): v is MediaRef => v !== undefined,
   );
-  return <JourneySection images={images} locale={locale} />;
+  return <JourneySection images={images} includeCompetition={includeCompetition} locale={locale} />;
 }

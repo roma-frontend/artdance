@@ -17,8 +17,9 @@ import { useFormatter, useTranslations } from "next-intl";
 import { FooterParallaxFX } from "@/components/layout/footer-parallax-fx";
 import { routes, site } from "@/config";
 import type { NavGroup } from "@/config/navigation";
-import { getFooterNavGroups } from "@/server/content/footer";
-import { FooterEntitlementsFilter } from "@/components/layout/footer-entitlements-filter";
+import { features, type FeatureKey } from "@/config/features";
+import { filterFooterGroups, getFooterNavGroups } from "@/server/content/footer";
+import { getEffectiveEntitlements } from "@/server/entitlements/service";
 import { Link } from '@/i18n/routing';
 import { cn } from "@/lib/utils";
 import { BrandMark } from "@/components/brand/brand-mark";
@@ -34,12 +35,15 @@ const SOCIAL_LABELS: Record<SocialKey, string> = {
 };
 
 export async function SiteFooter() {
-  const groups = await getFooterNavGroups();
-  return (
-    <FooterEntitlementsFilter groups={groups}>
-      <SiteFooterInner groups={groups} />
-    </FooterEntitlementsFilter>
-  );
+  const configuredGroups = await getFooterNavGroups();
+  let enabled: Partial<Record<FeatureKey, boolean>> = features;
+  try {
+    enabled = await getEffectiveEntitlements();
+  } catch {
+    // Env flags remain the safe fallback when the entitlement store is unavailable.
+  }
+
+  return <SiteFooterInner groups={filterFooterGroups(configuredGroups, enabled)} />;
 }
 
 function SiteFooterInner({

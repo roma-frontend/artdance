@@ -19,8 +19,12 @@ function applySnapshot(snapshot: Snapshot) {
     primary: staticPrimary.filter((i) => enabled(i.feature)),
     headerIcons: staticHeaderIcons.filter((i) => enabled((i as unknown as { feature?: FeatureKey }).feature)),
     megaGroups: staticMegaGroups
-      .map((g) => ({ ...g, children: g.children.filter((c) => enabled(c.feature)) }))
-      .filter((g) => g.children.length > 0 || !g.children.length),
+      .map((g) => {
+        const children = g.children.filter((c) => enabled(c.feature));
+        const fallback = children.find((child) => child.href === g.href)?.href ?? children[0]?.href ?? g.href;
+        return { ...g, href: fallback, children };
+      })
+      .filter((g) => g.children.length > 0),
     megaChildren: staticMegaChildren.filter((c) => enabled(c.feature)),
     footerGroups: staticFooterGroups
       .map((g) => ({ ...g, items: g.items.filter((it) => enabled(it.feature)) }))

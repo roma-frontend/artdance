@@ -329,7 +329,14 @@ export async function buildSitemapWithEntitlements(slugs: EntitySlugs, lastModif
         const u = new URL(entry.url);
         const path = u.pathname.replace(/^\/(hy|ru|en)(?=\/|$)/, '') || '/';
         if (path === '/shop' || path.startsWith('/shop/') || path.startsWith('/gift-cards')) return !!effective.shop;
-        if (path === '/events' || path.startsWith('/events/')) return !!effective.events;
+        if (
+          path === '/events' ||
+          path.startsWith('/events/') ||
+          path === '/competitions' ||
+          path.startsWith('/competitions/') ||
+          path === '/social-events' ||
+          path.startsWith('/social-events/')
+        ) return !!effective.events;
         if (path === '/courses' || path.startsWith('/courses/')) return !!effective.courses || !!effective.videoCourses;
         return true;
       } catch {

@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { cacheTags, dataRevalidate } from '@/config/cache';
+import { features, type FeatureKey } from '@/config/features';
 import { footerNavGroups, type NavGroup, type NavItem } from '@/config/navigation';
 import { db } from '@/lib/db';
 import { defineQuery } from '@/server/query';
@@ -13,6 +14,22 @@ export interface FooterLinkRow {
   href: string;
   order: number;
   feature: string | null;
+}
+
+/** Оставляет только ссылки, доступные в текущем entitlement-снимке. */
+export function filterFooterGroups(
+  groups: readonly NavGroup[],
+  enabled: Partial<Record<FeatureKey, boolean>> = features,
+): readonly NavGroup[] {
+  return groups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const feature = item.feature;
+        return feature === undefined || (feature in enabled && enabled[feature] !== false);
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
 }
 
 const groupTitles = new Map(footerNavGroups.map((group) => [group.id, group.titleKey]));
@@ -37,11 +54,16 @@ export function buildFooterGroups(rows: readonly FooterLinkRow[]): readonly NavG
     const titleKey = groupTitles.get(row.group);
     if (!titleKey) continue;
     const group = groups.get(row.group) ?? { id: row.group, titleKey, items: [] };
+    const configuredItem = footerNavGroups
+      .find((candidate) => candidate.id === row.group)
+      ?.items.find((item) => item.href === row.href);
+    const feature = row.feature ?? configuredItem?.feature ?? null;
+
     group.items.push({
       id: row.id,
       labelKey: row.labelKey as NavItem['labelKey'],
       href: row.href,
-      ...(row.feature ? { feature: row.feature as NavItem['feature'] } : {}),
+      ...(feature ? { feature: feature as NavItem['feature'] } : {}),
     });
     groups.set(row.group, group);
   }
@@ -49,20 +71,16 @@ export function buildFooterGroups(rows: readonly FooterLinkRow[]): readonly NavG
 }
 
 async function loadFooterGroups(): Promise<readonly NavGroup[]> {
-  const rows = await db.footerLink.findMany({
-    where: { isActive: true },
-    orderBy: [{ group: 'asc' }, { order: 'asc' }],
-    select: { id: true, group: true, labelKey: true, href: true, order: true, feature: true },
-  });
-  const built = buildFooterGroups(rows);
-  // Entitlements: если админ выключил shop/events через preset — это не должно торчать в подвале.
   try {
-    const { getEffectiveEntitlements } = await import('@/server/entitlements/service');
-    const eff = await getEffectiveEntitlements();
-    const keep = (f?: string | null) => !f || (eff as Record<string, boolean>)[f] !== false;
-    return built.map((g) => ({ ...g, items: g.items.filter((it) => keep(it.feature)) })).filter((g) => g.items.length > 0) as readonly NavGroup[];
+    const rows = await db.footerLink.findMany({
+      where: { isActive: true },
+      orderBy: [{ group: 'asc' }, { order: 'asc' }],
+      select: { id: true, group: true, labelKey: true, href: true, order: true, feature: true },
+    });
+    return buildFooterGroups(rows);
   } catch {
-    return built;
+    // Первый деплой и локальная разработка могут идти без таблицы контента.
+    return footerNavGroups;
   }
 }
 

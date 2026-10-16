@@ -77,6 +77,13 @@ export default async function HomePage({ params }: PageProps) {
   const tPricing = await getTranslations('pricing');
   /** Корневой переводчик — для ключей, собранных из данных (`MessageKey`). */
   const tRoot = await getTranslations();
+  let eventsEnabled = features.events;
+  try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    eventsEnabled = await isEntitlementEnabled('events');
+  } catch {
+    // Env flags remain the fallback when the entitlement store is unavailable.
+  }
 
   return (
     <main id={site.mainContentId}>
@@ -159,11 +166,13 @@ export default async function HomePage({ params }: PageProps) {
       {/* ── DANCESPORT: дисциплины Standard/Latine + видео соревнований ── */}
       <DisciplineSections locale={locale as Locale} />
 
-      <CompetitionSection
-        video={content.competition.video}
-        image={content.competition.image}
-        locale={locale as Locale}
-      />
+      {eventsEnabled && (
+        <CompetitionSection
+          video={content.competition.video}
+          image={content.competition.image}
+          locale={locale as Locale}
+        />
+      )}
       </CinemaAperture>
 
       {/* ── JOURNEY: ниже фолда — грузим лениво, чтобы не тащить тяжелую логику в начальный чанк */}
@@ -171,7 +180,8 @@ export default async function HomePage({ params }: PageProps) {
         styleImage={content.styleTiles[0]?.image}
         instructorImage={content.instructors[0]?.image}
         classImage={content.popularClasses[0]?.image}
-        competitionImage={content.competition.image}
+        competitionImage={eventsEnabled ? content.competition.image : undefined}
+        includeCompetition={eventsEnabled}
         locale={locale as Locale}
       />
 
@@ -283,14 +293,7 @@ export default async function HomePage({ params }: PageProps) {
       )}
 
       {/* ── EVENTS ── */}
-      {await (async () => {
-        try {
-          const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-          return await isEntitlementEnabled('events').catch(() => features.events);
-        } catch {
-          return features.events;
-        }
-      })() && (
+      {eventsEnabled && (
         <section className="section-y bg-surface-raised">
           <div className="page-container">
             <Reveal className="mb-12">

@@ -154,6 +154,17 @@ export function DataBrowserClient({ models, initialModel, initialQuery, initialP
     };
   }, [fullscreen, detailRow, creatingRow, exitFullscreen]);
 
+  /* Fullscreen is a desktop-only layout; close it if a window is resized to a phone width. */
+  useEffect(() => {
+    const mobile = window.matchMedia('(width < 640px)');
+    const closeOnMobile = () => {
+      if (mobile.matches) setFullscreen(false);
+    };
+    closeOnMobile();
+    mobile.addEventListener('change', closeOnMobile);
+    return () => mobile.removeEventListener('change', closeOnMobile);
+  }, []);
+
   const pushState = (next: { model?: string | null; q?: string; page?: number }) => {
     const params = new URLSearchParams(searchParams.toString());
     const model = next.model !== undefined ? next.model : selectedModel;
@@ -827,7 +838,7 @@ export function DataBrowserClient({ models, initialModel, initialQuery, initialP
           size="icon"
           onClick={() => setFullscreen((f) => !f)}
           aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          className="h-9 w-9 rounded-full border-[#E8DDD0] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card hover:bg-[#F5EDE0] dark:hover:bg-white/[0.08] transition-colors duration-200 ease-out"
+          className="hidden h-9 w-9 rounded-full border-[#E8DDD0] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card hover:bg-[#F5EDE0] dark:hover:bg-white/[0.08] transition-colors duration-200 ease-out sm:inline-flex"
         >
           {fullscreen ? <Minimize2 className="h-4 w-4 text-[#6B5D4D] dark:text-content-secondary" /> : <Maximize2 className="h-4 w-4 text-[#6B5D4D] dark:text-content-secondary" />}
         </Button>

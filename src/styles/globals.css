@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import './tokens.css';
 
+/* next-themes writes `data-theme`, not the `.dark` class Tailwind expects. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 
 :root {

@@ -49,7 +49,8 @@ export interface SemanticColors {
    * бургунди даёт 2.1:1, то есть не проходит WCAG AA. Когда для тёмных плоскостей
    * найдут решение (плашка под словом, обводка, другой носитель акцента), менять
    * придётся одну строку здесь, а не разметку hero, editorial, знака бренда и
-   * поисковых чипов.
+   * поисковых чипов. Принятое исключение зафиксировано в
+   * `src/design/tokens/contrast.ts`.
    */
   'accent-on-cinema': string;
   'metal-on-cinema': string;
@@ -142,7 +143,7 @@ const cinema = {
   'border-on-cinema': 'rgba(247, 244, 239, 0.10)',
   /**
    * Одно значение на обе темы: кинематографичная плоскость от темы не зависит.
-   * Цвет — брендовый бургунди, как в прототипе (`var(--accent)`).
+   * Цвет — брендовый бургунди, как в утверждённом прототипе (`var(--accent)`).
    */
   'accent-on-cinema': crimson[300],
   'metal-on-cinema': gold[400],
@@ -241,7 +242,8 @@ export const darkColors: SemanticColors = {
   /*
    * Текстовые варианты в тёмной теме. Заливки остаются прежними: кнопка обязана
    * быть брендового бургунди в обеих темах — и текст, по решению заказчика,
-   * тоже. Розовых и золотых подмен здесь нет.
+   * тоже. Розовых и золотых подмен здесь нет. Принятое исключение и его пары
+   * описаны в `src/design/tokens/contrast.ts`.
    */
   'content-accent': crimson[300],
   'content-metal': gold[400],
@@ -341,4 +343,3 @@ export const textStyles = {
 } as const;
 
 export type TextStyle = keyof typeof textStyles;
-

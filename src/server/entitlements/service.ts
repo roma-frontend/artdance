@@ -45,8 +45,13 @@ export async function getEntitlementsState(options?: { force?: boolean }): Promi
   if (!options?.force && inMemoryCache && now - inMemoryCache.at < TTL_MS) return inMemoryCache.state;
 
   // Сборка/CI без БД — отдаём env-fallback (тесты sitemap уже на нём завязаны).
-  // В тестах Prisma мокается и бросает на findMany/findUnique — не шумим prisma:error в логе.
+  // В тестах база намеренно не поднимается: не создаём Prisma-запрос только для
+  // того, чтобы поймать ожидаемый отказ и получить тот же env-fallback.
   const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+  if (isTestEnv) {
+    return { preset: null, overrides: new Map<FeatureKey, boolean>(), updatedAt: null };
+  }
+
   try {
     const { db } = await import('@/lib/db');
     const [presetRow, flagRows] = await Promise.all([

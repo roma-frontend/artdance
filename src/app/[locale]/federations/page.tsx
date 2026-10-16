@@ -13,7 +13,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ContentSection } from "@/components/content/content-section";
 import { PageHero, breadcrumbsFromTrail } from "@/components/layout/page-hero";
 import { SiteFooter } from "@/components/layout/site-footer";
-import { routes, site } from "@/config";
+import { features, routes, site } from "@/config";
 import { federations, federationDescriptionKey } from "@/domain/dancesport";
 import type { Locale } from "@/i18n/config";
 import { Link } from "@/i18n/routing";
@@ -48,6 +48,13 @@ export default async function FederationsPage({ params }: PageProps) {
 
   const t = await getTranslations("federations");
   const tRoot = await getTranslations();
+  let eventsEnabled = features.events;
+  try {
+    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
+    eventsEnabled = await isEntitlementEnabled('events');
+  } catch {
+    // Env flags remain the fallback when the entitlement store is unavailable.
+  }
 
   const trail: Crumb[] = [{ name: t("eyebrow"), path: routes.federations() }];
 
@@ -102,14 +109,16 @@ export default async function FederationsPage({ params }: PageProps) {
         <p className="text-body-lg text-content-secondary">
           {t("nationalBody")}
         </p>
-        <div className="mt-6">
-          <Link
-            href={routes.competitions()}
-            className="text-label text-content-accent hover:underline"
-          >
-            {tRoot("nav.competitions")}
-          </Link>
-        </div>
+        {eventsEnabled && (
+          <div className="mt-6">
+            <Link
+              href={routes.competitions()}
+              className="text-label text-content-accent hover:underline"
+            >
+              {tRoot("nav.competitions")}
+            </Link>
+          </div>
+        )}
       </ContentSection>
 
       <SiteFooter />

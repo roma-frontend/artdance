@@ -160,7 +160,7 @@ function PlanCard({ plan, disabled = false, comingSoonLabel = 'Coming soon' }: {
       data-disabled={disabled || undefined}
       className={cn(
         'flex h-full flex-col rounded-xl p-8 transition',
-        disabled && 'opacity-60 grayscale-[0.15]',
+        disabled && 'grayscale-[0.15]',
         plan.highlighted
           ? 'border-2 border-accent bg-surface-card shadow-lg'
           : 'border border-border-default bg-surface-card',
