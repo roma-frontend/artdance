@@ -213,7 +213,7 @@ export function AnnouncementBarDismiss({ bannerKey, children }: AnnouncementBarD
           }
         >
           <ScrollTilt reduced={reduced}>
-            <div className="pointer-events-auto mx-auto flex w-full max-w-(--layout-content-max-width) items-center gap-3 rounded-lg border border-border-on-cinema bg-surface-cinema/95 px-4 py-3 text-content-on-cinema shadow-lg backdrop-blur-md">
+            <div className="pointer-events-auto mx-auto flex w-full max-w-(--layout-content-max-width) items-center gap-3 rounded-lg border border-border-on-cinema bg-surface-cinema px-4 py-3 text-content-on-cinema shadow-lg backdrop-blur-md">
               {children}
               <button
                 type="button"
