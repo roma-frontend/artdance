@@ -203,7 +203,7 @@ const config = [
    * God-mode таблица как в hr-project — фиксированные ширины ячеек и calc(100dvh)
    */
   {
-    files: ['src/components/superadmin/data-browser-client.tsx'],
+    files: ['src/components/superadmin/data-browser-client.tsx', 'src/components/admin/god-command-center.tsx', 'src/components/admin/god-queue.tsx', 'src/components/admin/god-tabs.tsx'],
     rules: {
       'no-restricted-syntax': 'off',
       'react-hooks/set-state-in-effect': 'off',

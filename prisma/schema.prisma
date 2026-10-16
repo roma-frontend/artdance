@@ -299,37 +299,40 @@ model User {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  sessions           Session[]
-  accounts           Account[]
-  notificationPrefs  NotificationPreference[]
-  addresses          Address[]
-  instructor         InstructorProfile?
-  venueMemberships   VenueMember[]
-  bookings           Booking[]                @relation("BookingCustomer")
-  orders             Order[]
-  reviews            Review[]                 @relation("ReviewAuthor")
-  favorites          Favorite[]
-  cart               Cart?
-  enrollments        CourseEnrollment[]
-  subscriptions      Subscription[]
-  classPasses        ClassPass[]
-  notifications      Notification[]
-  auditLogs          AuditLog[]               @relation("AuditActor")
-  waitlistEntries    WaitlistEntry[]
-  issuedGiftCards    GiftCard[]               @relation("GiftCardPurchaser")
-  savedSearches      SavedSearch[]
-  pushSubscriptions  PushSubscription[]
-  walletAccount      WalletAccount?
-  referralsMade      Referral[]               @relation("ReferralReferrer")
-  referralReceived   Referral?                @relation("ReferralReferee")
-  reliabilityEvents  ReliabilityEvent[]
-  referralCode       String?                  @unique
-  referredById       String?
-  reliabilityScore   Int                      @default(100)
-  marketingConsentAt DateTime?
-  athleteProfile     AthleteProfile?
-  blogPosts          BlogPost[]
-  avatarMedia        MediaAsset?              @relation("UserAvatar")
+  sessions            Session[]
+  accounts            Account[]
+  notificationPrefs   NotificationPreference[]
+  addresses           Address[]
+  instructor          InstructorProfile?
+  venueMemberships    VenueMember[]
+  bookings            Booking[]                @relation("BookingCustomer")
+  orders              Order[]
+  reviews             Review[]                 @relation("ReviewAuthor")
+  favorites           Favorite[]
+  cart                Cart?
+  enrollments         CourseEnrollment[]
+  subscriptions       Subscription[]
+  classPasses         ClassPass[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]               @relation("AuditActor")
+  waitlistEntries     WaitlistEntry[]
+  issuedGiftCards     GiftCard[]               @relation("GiftCardPurchaser")
+  savedSearches       SavedSearch[]
+  pushSubscriptions   PushSubscription[]
+  walletAccount       WalletAccount?
+  referralsMade       Referral[]               @relation("ReferralReferrer")
+  referralReceived    Referral?                @relation("ReferralReferee")
+  reliabilityEvents   ReliabilityEvent[]
+  referralCode        String?                  @unique
+  referredById        String?
+  reliabilityScore    Int                      @default(100)
+  marketingConsentAt  DateTime?
+  athleteProfile      AthleteProfile?
+  blogPosts           BlogPost[]
+  avatarMedia         MediaAsset?              @relation("UserAvatar")
+  assignedTickets     SupportTicket[]          @relation("TicketAssignee")
+  supportTemplates    SupportTemplate[]        @relation("TemplateAuthor")
+  uploadedAttachments SupportAttachment[]      @relation("AttachmentUploader")
 
   @@index([role, isActive])
   @@index([createdAt])
@@ -339,36 +342,87 @@ model User {
  * Support inbox. Contact requests are retained so an operator can resolve the
  * issue from the product instead of losing the thread in a mailbox.
  */
-model SupportTicket {
-  id           String    @id @default(cuid())
-  name         String
-  email        String
-  topic        String
-  message      String
-  locale       Locale
-  status       String    @default("OPEN")
-  resolvedAt   DateTime?
-  resolvedById String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+enum SupportPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
 
-  replies SupportReply[]
+model SupportTicket {
+  id              String          @id @default(cuid())
+  name            String
+  email           String
+  topic           String
+  message         String
+  locale          Locale
+  status          String          @default("OPEN")
+  priority        SupportPriority @default(NORMAL)
+  assigneeId      String?
+  slaDueAt        DateTime?
+  slaNotifiedAt   DateTime?
+  firstResponseAt DateTime?
+  resolvedAt      DateTime?
+  resolvedById    String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  replies     SupportReply[]
+  attachments SupportAttachment[]
+  assignee    User?               @relation("TicketAssignee", fields: [assigneeId], references: [id])
 
   @@index([status, createdAt])
   @@index([email, createdAt])
+  @@index([assigneeId, status])
+  @@index([priority, status])
+  @@index([slaDueAt])
 }
 
 model SupportReply {
-  id        String        @id @default(cuid())
-  ticketId  String
-  actorId   String
-  body      String
-  internal  Boolean       @default(false)
-  delivered Boolean       @default(false)
-  createdAt DateTime      @default(now())
-  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  id          String              @id @default(cuid())
+  ticketId    String
+  actorId     String
+  body        String
+  internal    Boolean             @default(false)
+  delivered   Boolean             @default(false)
+  createdAt   DateTime            @default(now())
+  ticket      SupportTicket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  attachments SupportAttachment[]
 
   @@index([ticketId, createdAt])
+}
+
+model SupportTemplate {
+  id          String   @id @default(cuid())
+  title       String
+  body        String
+  locale      Locale   @default(ru)
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User @relation("TemplateAuthor", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([locale, createdAt])
+}
+
+model SupportAttachment {
+  id           String   @id @default(cuid())
+  ticketId     String
+  replyId      String?
+  storageKey   String
+  fileName     String
+  mimeType     String
+  bytes        Int
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  reply      SupportReply? @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  uploadedBy User          @relation("AttachmentUploader", fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, createdAt])
+  @@index([replyId])
 }
 
 // Runtime operator configuration: translations, scheduled jobs, maintenance,
@@ -678,59 +732,66 @@ model VenueMember {
 }
 
 model City {
-  id            String           @id @default(cuid())
-  slug          String
-  name          String
-  description   String?
-  latitude      Float
-  longitude     Float
-  moderation    ModerationStatus @default(PENDING)
-  publishedAt   DateTime?
-  isActive      Boolean          @default(true)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  deletedAt     DateTime?
+  id           String            @id @default(cuid())
+  slug         String
+  name         String
+  description  String?
+  latitude     Float
+  longitude    Float
+  moderation   ModerationStatus  @default(PENDING)
+  publishedAt  DateTime?
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  deletedAt    DateTime?
   translations CityTranslation[]
   districts    District[]
+
   @@unique([slug], where: raw("\"deletedAt\" IS NULL"))
   @@index([moderation])
   @@index([deletedAt])
 }
+
 model CityTranslation {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   cityId      String
   locale      Locale
   name        String
   description String?
-  city City @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  city        City    @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
   @@unique([cityId, locale])
 }
+
 model District {
-  id            String           @id @default(cuid())
-  cityId        String
-  slug          String
-  name          String
-  description   String?
-  latitude      Float
-  longitude     Float
-  isActive      Boolean          @default(true)
-  sortOrder     Int              @default(0)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  deletedAt     DateTime?
-  city         City                @relation(fields: [cityId], references: [id], onDelete: Cascade)
+  id           String                @id @default(cuid())
+  cityId       String
+  slug         String
+  name         String
+  description  String?
+  latitude     Float
+  longitude    Float
+  isActive     Boolean               @default(true)
+  sortOrder    Int                   @default(0)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  deletedAt    DateTime?
+  city         City                  @relation(fields: [cityId], references: [id], onDelete: Cascade)
   translations DistrictTranslation[]
+
   @@unique([cityId, slug], where: raw("\"deletedAt\" IS NULL"))
   @@index([cityId, isActive, sortOrder])
   @@index([deletedAt])
 }
+
 model DistrictTranslation {
-  id          String @id @default(cuid())
+  id          String   @id @default(cuid())
   districtId  String
   locale      Locale
   name        String
   description String?
-  district District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  district    District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+
   @@unique([districtId, locale])
 }
 
@@ -2220,23 +2281,22 @@ model ReliabilityEvent {
 }
 
 model Banner {
-  id        String      @id @default(cuid())
-  key       String      @unique
-  title     String
-  imageKey  String?
-  href      String?
-  order     Int         @default(0)
-  isActive  Boolean     @default(true)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  adSlots   AdSlot[]
-  media     MediaAsset?
+  id           String              @id @default(cuid())
+  key          String              @unique
+  title        String
+  imageKey     String?
+  href         String?
+  order        Int                 @default(0)
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  adSlots      AdSlot[]
+  media        MediaAsset?
   translations BannerTranslation[]
 }
 
 /**
  * Перевод заголовка баннера.
- *
  * Баннер редактируется из админки, поэтому заголовок живёт в БД, а не в
  * `messages`: иначе текст промо сменил бы только разработчик. Базовый
  * `Banner.title` остаётся запасным вариантом для локали без перевода.

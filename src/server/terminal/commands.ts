@@ -10,7 +10,7 @@ import { cartStats, purgeEmptyCarts } from '@/server/cart/service';
 import { terminalCommands } from './registry';
 
 function helpLines(): string[] {
-  return ['Available commands:', ...terminalCommands.map((c) => `  ${c.usage.padEnd(48)} — ${c.description}`), '', 'Tip: Tab — автокомплит, ↑/↓ — история, Enter — выполнить.'];
+  return ['Available commands:', ...terminalCommands.map((c) => `  ${c.usage.padEnd(48)} — ${c.description}`), '', 'Tip: Tab — autocomplete, Arrow Up/Down — history, Enter — run.'];
 }
 
 function parseFlags(args: string[]): { flags: Map<string, string | true>; positional: string[] } {
@@ -69,13 +69,13 @@ async function handleJobs(args: string[]): Promise<string[]> {
 async function handleDb(args: string[]): Promise<string[]> {
   const sub = (args[0] ?? '').toLowerCase();
   if (!sub || sub === 'help') {
-    return [
-      'db models                          — список моделей',
-      'db counts [Model]                  — счётчики (все или одна модель)',
-      'db count <Model> [--where JSON]     — точный count с фильтром',
-      'db find <Model> [--where JSON] [--take N] [--q text] — первые записи (макс 25)',
-    ];
-  }
+     return [
+       'db models                          — list models',
+       'db counts [Model]                  — counts (all or one model)',
+       'db count <Model> [--where JSON]     — exact count with filter',
+       'db find <Model> [--where JSON] [--take N] [--q text] — first rows (max 25)',
+     ];
+   }
   if (sub === 'models') {
     const models = operatorModels().map((m) => m.name).sort();
     return [models.join(', ')];
@@ -145,22 +145,22 @@ async function handleDb(args: string[]): Promise<string[]> {
 async function handleCarts(args: string[]): Promise<string[]> {
   const sub = (args[0] ?? '').toLowerCase();
   if (!sub || sub === 'help') {
-    return [
-      'carts stats                                                   — сводка по корзинам',
-      'carts purge --empty [--anon] [--older-than 7d] [--dry-run] [--force]',
-      '  --empty       только пустые (без CartItem)',
-      '  --anon        только гостевые (anonymousId != null)',
-      '  --older-than 7d  только старше N дней (например 7d)',
-      '  --dry-run     показать сколько удалит, не удалять',
-      '  --force       выполнить удаление (без него — dry-run)',
-      'Примеры:',
-      '  carts stats',
-      '  carts purge --empty --dry-run',
-      '  carts purge --empty --force',
-      '  carts purge --empty --anon --older-than 7d --dry-run',
-      '  carts purge --empty --anon --older-than 7d --force',
-    ];
-  }
+     return [
+       'carts stats                                                   — carts summary',
+       'carts purge --empty [--anon] [--older-than 7d] [--dry-run] [--force]',
+       '  --empty       only empty (without CartItem)',
+       '  --anon        only guest (anonymousId != null)',
+       '  --older-than 7d  only older than N days (e.g. 7d)',
+       '  --dry-run     show how many would be removed, do not remove',
+       '  --force       execute deletion (without it — dry-run)',
+       'Examples:',
+       '  carts stats',
+       '  carts purge --empty --dry-run',
+       '  carts purge --empty --force',
+       '  carts purge --empty --anon --older-than 7d --dry-run',
+       '  carts purge --empty --anon --older-than 7d --force',
+     ];
+   }
   if (sub === 'stats') {
     const s = await cartStats();
     return [
@@ -180,7 +180,7 @@ async function handleCarts(args: string[]): Promise<string[]> {
     const dryRunFlag = flags.has('dry-run');
     const forceFlag = flags.has('force');
 
-    if (!empty) return ['carts purge требует --empty (удаляем только пустые корзины). Добавьте --dry-run чтобы посмотреть.'];
+    if (!empty) return ['carts purge requires --empty (only empty carts). Add --dry-run to preview.'];
 
     // Без --force считаем dry-run (безопасно)
     const dryRun = !forceFlag || dryRunFlag;
@@ -189,10 +189,10 @@ async function handleCarts(args: string[]): Promise<string[]> {
       olderThanDays: olderThan,
       dryRun,
     });
-    if (dryRun) {
-      return [`dry-run: будет удалено ${res.deleted} корзин (добавьте --force чтобы удалить)`];
-    }
-    return [`удалено ${res.deleted} корзин`];
+     if (dryRun) {
+       return [`dry-run: ${res.deleted} carts would be removed (add --force to remove)`];
+     }
+     return [`removed ${res.deleted} carts`];
   }
   return [`unknown carts subcommand: ${sub} — try: carts help`];
 }
@@ -233,9 +233,9 @@ async function handleClasses(args: string[]): Promise<string[]> {
     take,
   })) as unknown as Array<{ id: string; slug: string; title: string; style: string; level: string; price: number; isActive: boolean; media: Array<{ storageKey: string; altText: string; purpose: string | null }> }>;
   if (rows.length === 0) return ['no classes — try: classes salsa  or  db find DanceClass --q salsa --take 5'];
-  return rows.flatMap((r) => {
-    const header = `${r.title} — /classes/${r.slug} — ${r.style} · ${r.level} · ${r.price}֏ · ${r.isActive ? 'active' : 'inactive'} — id ${r.id}`;
-    const medias = r.media.length ? r.media.map(mediaLine) : ['(no media) — проверь админку занятия / добавь картинку'];
+   return rows.flatMap((r) => {
+     const header = `${r.title} — /classes/${r.slug} — ${r.style} · ${r.level} · ${r.price}֏ · ${r.isActive ? 'active' : 'inactive'} — id ${r.id}`;
+     const medias = r.media.length ? r.media.map(mediaLine) : ['(no media) — check the class admin / add an image'];
     return [header, ...medias, ''];
   });
 }
@@ -335,9 +335,9 @@ async function handleMedia(args: string[]): Promise<string[]> {
 async function handleOpen(args: string[]): Promise<string[]> {
   const raw = args.join(' ').trim() || args[0]?.trim() || '';
   if (!raw) return ['usage: open <path|slug>  e.g. open /en/classes/salsa  or  open salsa'];
-  if (raw.startsWith('/')) return [raw, `Открой: ${raw} — скопируй путь и вставь в адресную строку (откроется в новой вкладке, если кликнуть правой кнопкой)`];
-  // slug → подсказать пути
-  return [`/${raw}`, `/en/classes/${raw}`, `/en/instructors/${raw}`, `/en/shop/${raw}`, 'Скопируй нужный URL → открой в новой вкладке (терминал не открывает окна сам)'];
+  if (raw.startsWith('/')) return [raw, `Open: ${raw} — copy the path and paste into the address bar (opens in a new tab on right-click)`];
+  // slug → suggest paths
+  return [`/${raw}`, `/en/classes/${raw}`, `/en/instructors/${raw}`, `/en/shop/${raw}`, 'Copy the URL → open in a new tab (terminal does not open windows itself)'];
 }
 
 async function handleRevalidate(args: string[]): Promise<string[]> {

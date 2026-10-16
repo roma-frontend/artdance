@@ -295,7 +295,7 @@ export function OperatorTerminal() {
               className="group flex flex-col gap-1 rounded-xl border border-border-subtle bg-surface-sunken px-3 py-3 text-left transition hover:border-border-default hover:bg-surface-card dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700 dark:hover:bg-zinc-800"
             >
               <span className="font-mono text-caption font-semibold text-content-primary group-hover:text-content-primary dark:text-zinc-100 dark:group-hover:text-white">{cmd.usage}</span>
-              <span className="text-caption leading-snug text-content-secondary dark:text-zinc-400">{cmd.description}</span>
+              <span className="text-caption leading-snug text-content-secondary dark:text-zinc-400">{String(t(`terminalCmd${cmd.name.charAt(0).toUpperCase()}${cmd.name.slice(1)}` as never) ?? cmd.description)}</span>
               {cmd.examples?.length ? <span className="font-mono text-caption text-content-tertiary dark:text-zinc-500">{cmd.examples.join(' · ')}</span> : null}
             </button>
           ))}

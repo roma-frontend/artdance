@@ -61,7 +61,8 @@ export const sendContactMessage = publicAction
         topic: parsedInput.topic,
         message: parsedInput.message,
         locale: parsedInput.locale,
-      },
+        slaDueAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      } as never,
     });
 
     const result = await sendToSupport(parsedInput);

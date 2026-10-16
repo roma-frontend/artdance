@@ -161,6 +161,7 @@ const ALLOWED_IDENTICAL = [
   /* Универсальные символы-разделители не переводятся. */
   /^admin\.media\.purposeUnknown$/,
   /^footer\.applyEmailPlaceholder$/,
+  /^admin\.support\.god\.(kpiPendingApprovalsSub|healthCron|healthPostgres|queueTotalBadge|slaCronLabel|noActivesHint|allowlistBadge|liveSuffix)$/,
 ];
 
 for (const locale of locales) {

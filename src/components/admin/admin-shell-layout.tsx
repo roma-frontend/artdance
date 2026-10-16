@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/routing';
 import { HeaderLiteToggle } from '@/components/layout/header-lite-toggle';
 import { HeaderThemeToggle } from '@/components/layout/header-theme-toggle';
+import { LocaleSwitcher } from '@/components/layout/locale-switcher';
 
 interface Props {
   groups: readonly SidebarGroup[];
@@ -99,6 +100,7 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
           <div className="hidden items-center gap-2 lg:flex">
             <span className="max-w-[14ch] truncate text-body-sm text-content-secondary xl:max-w-none">{userName}</span>
             <Badge variant="metal" size="md" className="shrink-0">{roleLabel}</Badge>
+            <LocaleSwitcher solid />
             <HeaderLiteToggle solid />
             <HeaderThemeToggle solid />
             <Button asChild variant="ghost" size="sm"><Link href={routes.home()}>{backToSiteLabel}</Link></Button>
@@ -107,11 +109,13 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
 
           <div className="hidden items-center gap-1.5 sm:flex lg:hidden">
             <Badge variant="metal" size="sm" className="shrink-0 lg:max-w-[10ch] truncate">{roleLabel}</Badge>
+            <LocaleSwitcher solid />
             <HeaderLiteToggle solid />
             <HeaderThemeToggle solid />
           </div>
 
           <div className="flex items-center gap-2 lg:hidden">
+            <LocaleSwitcher solid />
             <HeaderLiteToggle solid />
             <HeaderThemeToggle solid />
             <Badge variant="metal" size="sm" className="hidden shrink-0 lg:max-w-[10ch] truncate sm:inline-flex">{roleLabel}</Badge>
@@ -170,6 +174,9 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
               <button type="button" onClick={() => setOpen(false)} className="inline-flex size-9 items-center justify-center rounded-full border border-border-default bg-surface-card text-content-secondary hover:bg-surface-sunken">
                 <X className="size-4" />
               </button>
+            </div>
+            <div className="border-t border-border-subtle px-3 py-3">
+              <LocaleSwitcher variant="sheet" />
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 scrollbar-none">
               <AdminSidebar groups={groups} onNavigate={() => setOpen(false)} variant="drawer" />
