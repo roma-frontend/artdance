@@ -49,10 +49,40 @@ export const terminalCommands: readonly TerminalCommandSpec[] = [
     examples: ['carts stats', 'carts purge --empty --dry-run', 'carts purge --empty --force', 'carts purge --empty --anon --older-than 7d --force'],
   },
   {
+    name: 'classes',
+    usage: 'classes [query] [--take N]',
+    description: 'Найти занятия DanceClass по salsa/названию/слагу и показать картинки',
+    examples: ['classes salsa', 'classes --take 5', 'classes bachata --take 3'],
+  },
+  {
+    name: 'instructors',
+    usage: 'instructors [query] [--take N]',
+    description: 'Найти инструкторов и показать аватарки',
+    examples: ['instructors --take 3', 'instructors salsa'],
+  },
+  {
+    name: 'products',
+    usage: 'products [query] [--take N]',
+    description: 'Найти товары и показать картинки',
+    examples: ['products --take 3', 'products salsa'],
+  },
+  {
+    name: 'media',
+    usage: 'media <Model> <id|slug>',
+    description: 'Показать медиа-активы сущности (картинки + URL)',
+    examples: ['media DanceClass <id>', 'media DanceClass salsa-bachata', 'media Product <id>'],
+  },
+  {
     name: 'revalidate',
     usage: 'revalidate [path]',
     description: 'Инвалидировать кэш Next.js (по умолчанию /)',
     examples: ['revalidate /', 'revalidate /en/admin/support/terminal'],
+  },
+  {
+    name: 'open',
+    usage: 'open <path|slug>',
+    description: 'Подсказать ссылку для открытия в новой вкладке (копируй URL)',
+    examples: ['open /en/classes/salsa', 'open salsa'],
   },
   {
     name: 'clear',

@@ -84,8 +84,11 @@ export function OperatorTerminal() {
   const [history, setHistory] = useState<Array<{ cmd: string; lines: string[]; ok: boolean }>>([]);
   const [cursor, setCursor] = useState(-1);
   const [dismissed, setDismissed] = useState('');
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  const paletteInputRef = useRef<HTMLInputElement>(null);
 
   const completions = useMemo(() => {
     const raw = command.trimStart().toLowerCase();
@@ -108,6 +111,9 @@ export function OperatorTerminal() {
       }
       return ['stats', 'purge', 'help'].filter((s) => s.startsWith(rest));
     }
+    if (raw.startsWith('classes')) return ['classes salsa --take 5', 'classes --take 10'];
+    if (raw.startsWith('media ')) return ['media DanceClass ', 'media Product ', 'media Instructor '];
+    if (raw.startsWith('open ')) return ['open /en/classes/'];
     return [];
   }, [command]);
 
@@ -122,6 +128,30 @@ export function OperatorTerminal() {
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' });
   }, [history]);
+
+  const paletteCommands = useMemo(() => {
+    const q = paletteQuery.trim().toLowerCase();
+    if (!q) return terminalCommands;
+    return terminalCommands.filter((c) => c.name.includes(q) || c.usage.toLowerCase().includes(q) || c.description.toLowerCase().includes(q));
+  }, [paletteQuery]);
+
+  useEffect(() => {
+    if (!paletteOpen) return;
+    paletteInputRef.current?.focus();
+  }, [paletteOpen]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.code === 'Space') {
+        e.preventDefault();
+        setPaletteOpen((v) => !v);
+        if (!paletteOpen) setPaletteQuery('');
+      }
+      if (e.key === 'Escape' && paletteOpen) setPaletteOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [paletteOpen]);
 
   const run = async (override?: string) => {
     const raw = (override ?? command).trim();
@@ -185,11 +215,75 @@ export function OperatorTerminal() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Command reference — always visible */}
-      <div className="rounded-2xl border border-border-default bg-surface-card p-4">
-        <h2 className="text-label font-semibold text-content-primary">Команды</h2>
-        <p className="mt-1 text-caption text-content-secondary">Подсказки: Tab — автокомплит, ↑/↓ — история, clear — очистить вывод.</p>
-        <div className="mt-4 grid gap-3">
+      {/* Ctrl+Space palette — above site header (header=1000, drawer=1200, modal=1300, commandPalette=1700) */}
+      {paletteOpen ? (
+        <div className="fixed inset-0 z-[1700] flex items-start justify-center bg-black/50 p-4 pt-[max(1.25rem,calc(var(--layout-nav-height)+0.75rem))]" onClick={() => setPaletteOpen(false)}>
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border-default bg-surface-card shadow-2xl dark:border-zinc-700 dark:bg-zinc-900" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 border-b border-border-default p-3 dark:border-zinc-700">
+              <span className="font-mono text-caption text-content-tertiary dark:text-zinc-500">⌘</span>
+              <input
+                ref={paletteInputRef}
+                value={paletteQuery}
+                onChange={(e) => setPaletteQuery(e.target.value)}
+                placeholder={String(t('terminalPaletteSearch' as never) ?? 'Search commands…')}
+                className="flex-1 bg-transparent font-mono text-caption text-content-primary placeholder:text-content-tertiary focus:outline-none dark:text-zinc-100"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && paletteCommands[0]) {
+                    const first = paletteCommands[0]!;
+                    setCommand(first.name === 'clear' ? 'clear' : first.usage.split('[')[0]!.trim() + ' ');
+                    setPaletteOpen(false);
+                    setPaletteQuery('');
+                    inputRef.current?.focus();
+                  }
+                }}
+              />
+              <button type="button" onClick={() => setPaletteOpen(false)} className="rounded-full border border-border-default px-2 py-1 font-mono text-caption text-content-secondary dark:border-zinc-700 dark:text-zinc-400">
+                Esc
+              </button>
+            </div>
+            <div className="max-h-80 overflow-auto p-2">
+              {paletteCommands.map((cmd) => (
+                <button
+                  key={cmd.name}
+                  type="button"
+                  onClick={() => {
+                    setCommand(cmd.name === 'clear' ? 'clear' : cmd.usage.split('[')[0]!.trim() + ' ');
+                    setPaletteOpen(false);
+                    setPaletteQuery('');
+                    inputRef.current?.focus();
+                  }}
+                  className="flex w-full flex-col gap-0.5 rounded-xl px-3 py-2 text-left hover:bg-surface-sunken dark:hover:bg-zinc-800"
+                >
+                  <span className="font-mono text-caption font-semibold text-content-primary dark:text-zinc-100">{cmd.usage}</span>
+                  <span className="text-caption text-content-secondary dark:text-zinc-400">{String(t(cmd.name === 'clear' ? ('terminalCmdClear' as never) : (`terminalCmd${cmd.name.charAt(0).toUpperCase()}${cmd.name.slice(1)}` as never)) ?? cmd.description)}</span>
+                </button>
+              ))}
+              {paletteCommands.length === 0 ? <p className="px-3 py-4 text-center text-caption text-content-tertiary">{String(t('terminalPaletteEmpty' as never) ?? 'Nothing found')}</p> : null}
+            </div>
+            <p className="border-t border-border-default px-3 py-2 font-mono text-caption text-content-tertiary dark:border-zinc-700 dark:text-zinc-500">{String(t('terminalPaletteHint' as never) ?? 'Ctrl+Space — open · Enter — insert · Esc — close')}</p>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Command reference — follows site theme (light → light card, dark → zinc) */}
+      <div className="overflow-hidden rounded-2xl border border-border-default bg-surface-card dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="border-b border-border-default bg-surface-sunken px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800/50">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="font-mono text-caption font-semibold tracking-wide text-content-primary dark:text-zinc-100">{String(t('terminalCommandsTitle' as never) ?? 'КОМАНДЫ')}</h2>
+            <button
+              type="button"
+              onClick={() => {
+                setPaletteOpen(true);
+                setPaletteQuery('');
+              }}
+              className="rounded-full border border-border-default bg-surface-card px-3 py-1 font-mono text-caption text-content-secondary hover:bg-surface-sunken dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            >
+              {String(t('terminalPaletteOpen' as never) ?? 'Ctrl+Space — all commands')}
+            </button>
+          </div>
+          <p className="mt-2 font-mono text-caption leading-relaxed text-content-secondary dark:text-zinc-400">{String(t('terminalCommandsHint' as never) ?? 'Tab — autocomplete · ↑/↓ — history · Ctrl+Space — palette · click card — insert')}</p>
+        </div>
+        <div className="grid gap-2 p-3 sm:grid-cols-2">
           {terminalCommands.map((cmd) => (
             <button
               key={cmd.name}
@@ -198,52 +292,78 @@ export function OperatorTerminal() {
                 setCommand(cmd.name === 'clear' ? 'clear' : cmd.usage.split('[')[0]!.trim() + ' ');
                 inputRef.current?.focus();
               }}
-              className="flex flex-col gap-1 rounded-xl border border-border-subtle bg-surface-sunken px-3 py-2.5 text-left transition hover:border-border-default hover:bg-surface-card"
+              className="group flex flex-col gap-1 rounded-xl border border-border-subtle bg-surface-sunken px-3 py-3 text-left transition hover:border-border-default hover:bg-surface-card dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700 dark:hover:bg-zinc-800"
             >
-              <span className="font-mono text-caption font-semibold text-content-primary">{cmd.usage}</span>
-              <span className="text-caption leading-snug text-content-secondary">{cmd.description}</span>
-              {cmd.examples?.length ? <span className="font-mono text-caption text-content-tertiary">{cmd.examples.join(' · ')}</span> : null}
+              <span className="font-mono text-caption font-semibold text-content-primary group-hover:text-content-primary dark:text-zinc-100 dark:group-hover:text-white">{cmd.usage}</span>
+              <span className="text-caption leading-snug text-content-secondary dark:text-zinc-400">{cmd.description}</span>
+              {cmd.examples?.length ? <span className="font-mono text-caption text-content-tertiary dark:text-zinc-500">{cmd.examples.join(' · ')}</span> : null}
             </button>
           ))}
         </div>
-        <div className="mt-4 rounded-xl bg-surface-inverse px-3 py-2.5 font-mono text-caption leading-relaxed text-content-on-cinema">
-          <p className="font-semibold text-content-inverse">Быстрый старт — пустые корзины</p>
-          <p className="mt-1 text-content-on-cinema-muted">1) carts stats — посмотреть сколько всего</p>
-          <p>carts purge --empty --dry-run — сколько удалит</p>
-          <p>carts purge --empty --force — удалить пустые</p>
-          <p className="mt-2 text-content-on-cinema-muted">Только anon и старше 7 дней: carts purge --empty --anon --older-than 7d --force</p>
+        <div className="border-t border-border-default bg-surface-sunken px-4 py-3 font-mono text-caption leading-relaxed dark:border-zinc-800 dark:bg-zinc-950">
+          <p className="font-semibold text-content-primary dark:text-zinc-100">{String(t('terminalQuickStartTitle' as never) ?? 'Quick start — empty carts')}</p>
+          <p className="mt-1 text-content-secondary dark:text-zinc-400">carts stats</p>
+          <p className="text-content-secondary dark:text-zinc-400">carts purge --empty --dry-run</p>
+          <p className="text-content-primary dark:text-zinc-300">carts purge --empty --force</p>
+          <p className="mt-2 text-content-tertiary dark:text-zinc-500">{String(t('terminalQuickStartAnon' as never) ?? 'Only anon older than 7 days: carts purge --empty --anon --older-than 7d --force')}</p>
         </div>
       </div>
 
-      {/* Terminal */}
-      <div className="overflow-hidden rounded-2xl border border-border-strong bg-surface-inverse shadow-lg">
-        <div ref={logRef} className="max-h-[60dvh] min-h-36 overflow-auto p-4 font-mono text-caption leading-relaxed">
+      {/* Terminal — follows site theme: light → светлый, dark → zinc-950 */}
+      <div className="overflow-hidden rounded-2xl border border-border-default bg-surface-card shadow-lg dark:border-zinc-800 dark:bg-zinc-950 dark:shadow-2xl">
+        {/* window chrome */}
+        <div className="flex items-center justify-between border-b border-border-default bg-surface-sunken px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="flex items-center gap-2">
+            <span className="size-3 rounded-full bg-red-500/90" aria-hidden />
+            <span className="size-3 rounded-full bg-yellow-500/90" aria-hidden />
+            <span className="size-3 rounded-full bg-green-500/90" aria-hidden />
+            <span className="ml-3 hidden font-mono text-caption tracking-wide text-content-secondary dark:text-zinc-400 sm:inline">artdance — operator console</span>
+            <span className="ml-3 font-mono text-caption tracking-wide text-content-tertiary dark:text-zinc-500 sm:hidden">console</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="hidden font-mono text-caption text-content-tertiary dark:text-zinc-500 sm:inline">audit · rate-limit · allowlist</span>
+            {history.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setHistory([])}
+                className="rounded-full border border-border-default bg-surface-card px-3 py-1 font-mono text-caption text-content-secondary hover:bg-surface-sunken dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white"
+              >
+                clear
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div ref={logRef} className="max-h-[60dvh] min-h-36 overflow-auto bg-surface-card p-4 font-mono text-caption leading-relaxed dark:bg-zinc-950">
           {history.length === 0 ? (
-            <p className="text-content-on-cinema-muted">{t('commandHelp')}</p>
+            <div className="space-y-2">
+              <p className="text-content-tertiary dark:text-zinc-500">{t('commandHelp')}</p>
+              <p className="text-content-tertiary dark:text-zinc-600">{String(t('terminalEmptyHint' as never) ?? 'Type help and press Enter — or click a card above.')}</p>
+            </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               {history.map((entry, idx) => (
                 <div key={`${entry.cmd}-${idx}`} className="flex flex-col gap-1">
                   <p className="flex gap-2">
-                    <span className="shrink-0 text-content-on-cinema-muted">$</span>
-                    <span className="break-words text-content-inverse">{entry.cmd}</span>
+                    <span className="shrink-0 text-accent dark:text-emerald-400">$</span>
+                    <span className="break-words text-content-primary dark:text-zinc-100">{entry.cmd}</span>
                   </p>
                   {entry.lines.map((line, i) => (
-                    <p key={`${line}-${i}`} className={entry.ok ? 'whitespace-pre-wrap break-words text-content-on-cinema' : 'whitespace-pre-wrap break-words text-[#ffb4ab]'}>
+                    <p key={`${line}-${i}`} className={entry.ok ? 'whitespace-pre-wrap break-words text-content-secondary dark:text-zinc-300' : 'whitespace-pre-wrap break-words text-red-600 dark:text-red-300'}>
                       {line}
                     </p>
                   ))}
                 </div>
               ))}
-              {action.status === 'executing' ? <p className="animate-pulse text-content-on-cinema-muted">…</p> : null}
+              {action.status === 'executing' ? <p className="animate-pulse text-content-tertiary dark:text-zinc-500">… executing</p> : null}
             </div>
           )}
         </div>
 
-        <div className="border-t border-white/10 p-3">
+        <div className="border-t border-border-default bg-surface-sunken p-3 dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-caption text-content-on-cinema-muted">$</span>
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 font-mono text-caption text-accent dark:text-emerald-400">$</span>
               <Input
                 ref={inputRef}
                 value={command}
@@ -253,10 +373,10 @@ export function OperatorTerminal() {
                 aria-label={t('terminalPlaceholder')}
                 autoComplete="off"
                 spellCheck={false}
-                className="border-border-on-cinema bg-surface-inverse pl-7 font-mono text-content-inverse placeholder:text-content-on-cinema-muted"
+                className="border-border-default bg-surface-card pl-7 font-mono text-content-primary placeholder:text-content-tertiary focus-visible:ring-border-focus dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:ring-zinc-700"
               />
               {suggest.length > 0 ? (
-                <div className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-xl border border-white/10 bg-surface-inverse shadow-xl">
+                <div className="absolute bottom-full left-0 right-0 mb-2 overflow-hidden rounded-xl border border-border-default bg-surface-card shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
                   {suggest.map((s) => (
                     <button
                       key={s}
@@ -270,7 +390,7 @@ export function OperatorTerminal() {
                         }
                         inputRef.current?.focus();
                       }}
-                      className="block w-full px-3 py-2 text-left font-mono text-caption text-content-on-cinema hover:bg-white/10"
+                      className="block w-full px-3 py-2 text-left font-mono text-caption text-content-secondary hover:bg-surface-sunken hover:text-content-primary dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
                     >
                       {s}
                     </button>
@@ -278,11 +398,16 @@ export function OperatorTerminal() {
                 </div>
               ) : null}
             </div>
-            <Button variant="onCinema" pending={action.status === 'executing'} onClick={() => void run()} className="shrink-0">
-              {t('runJob')}
+            <Button
+              variant="default"
+              pending={action.status === 'executing'}
+              onClick={() => void run()}
+              className="shrink-0 bg-accent font-mono text-white hover:bg-accent-hover dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+            >
+              run
             </Button>
           </div>
-          <p className="mt-2 font-mono text-caption leading-relaxed text-content-on-cinema-muted">Tab — дополнить · ↑/↓ — история · Enter — выполнить · clear — очистить</p>
+          <p className="mt-2 font-mono text-caption leading-relaxed text-content-tertiary dark:text-zinc-500">{String(t('terminalInputHint' as never) ?? 'Tab — complete · ↑/↓ — history · Enter — run · Esc — hide suggestions')}</p>
         </div>
       </div>
     </div>

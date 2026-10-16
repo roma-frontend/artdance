@@ -38,7 +38,7 @@ export default async function OperatorToolPage({ params, searchParams }: PagePro
     const q = text(query.q);
     const page = Math.max(Number(text(query.page)) || 1, 1);
     const requested = text(query.model);
-    const initialModel = (requested && models.some((m) => m.name === requested) ? requested : models[0]?.name) ?? null;
+    const initialModel = requested && models.some((m) => m.name === requested) ? requested : null;
     const [counts, payload] = await Promise.all([
       getOperatorCounts(),
       initialModel ? browseModel(initialModel, q, page).then((data) => ({ fields: data.fields, rows: data.rows as Array<Record<string, unknown> & { id: string }>, total: data.total })).catch(() => ({ fields: [], rows: [], total: 0 }) as { fields: string[]; rows: Array<Record<string, unknown> & { id: string }>; total: number }) : Promise.resolve(null as { fields: string[]; rows: Array<Record<string, unknown> & { id: string }>; total: number } | null),

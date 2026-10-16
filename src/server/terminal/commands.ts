@@ -2,6 +2,8 @@ import 'server-only';
 
 import { revalidatePath } from 'next/cache';
 
+import { mediaUrl } from '@/config/media';
+import { db } from '@/lib/db';
 import { browseModel, getOperatorCounts, operatorDelegate, operatorModels } from '@/server/admin/operator';
 import { operatorPulse } from '@/server/admin/operator';
 import { cartStats, purgeEmptyCarts } from '@/server/cart/service';
@@ -195,6 +197,149 @@ async function handleCarts(args: string[]): Promise<string[]> {
   return [`unknown carts subcommand: ${sub} — try: carts help`];
 }
 
+function mediaLine(asset: { storageKey: string; purpose?: string | null; altText?: string | null }): string {
+  const url = mediaUrl(asset.storageKey);
+  const label = asset.purpose ? ` [${asset.purpose}]` : '';
+  const alt = asset.altText ? ` alt="${asset.altText.slice(0, 60)}"` : '';
+  return `${asset.storageKey}${label}${alt} → ${url}`;
+}
+
+async function handleClasses(args: string[]): Promise<string[]> {
+  const { flags, positional } = parseFlags(args);
+  const q = positional.join(' ').trim() || (typeof flags.get('q') === 'string' ? String(flags.get('q')) : '');
+  const take = Math.min(25, Math.max(1, Number(flags.get('take') ?? 10) || 10));
+  const where = q
+    ? {
+        OR: [
+          { title: { contains: q, mode: 'insensitive' } },
+          { slug: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+        ],
+      }
+    : {};
+  const rows = (await db.danceClass.findMany({
+    where: where as never,
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      style: true,
+      level: true,
+      price: true,
+      isActive: true,
+      media: { select: { storageKey: true, altText: true, purpose: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } as never },
+    },
+    orderBy: { createdAt: 'desc' } as never,
+    take,
+  })) as unknown as Array<{ id: string; slug: string; title: string; style: string; level: string; price: number; isActive: boolean; media: Array<{ storageKey: string; altText: string; purpose: string | null }> }>;
+  if (rows.length === 0) return ['no classes — try: classes salsa  or  db find DanceClass --q salsa --take 5'];
+  return rows.flatMap((r) => {
+    const header = `${r.title} — /classes/${r.slug} — ${r.style} · ${r.level} · ${r.price}֏ · ${r.isActive ? 'active' : 'inactive'} — id ${r.id}`;
+    const medias = r.media.length ? r.media.map(mediaLine) : ['(no media) — проверь админку занятия / добавь картинку'];
+    return [header, ...medias, ''];
+  });
+}
+
+async function handleInstructors(args: string[]): Promise<string[]> {
+  const { flags, positional } = parseFlags(args);
+  const q = positional.join(' ').trim() || (typeof flags.get('q') === 'string' ? String(flags.get('q')) : '');
+  const take = Math.min(25, Math.max(1, Number(flags.get('take') ?? 10) || 10));
+  const where = q
+    ? { OR: [{ slug: { contains: q, mode: 'insensitive' } }, { headline: { contains: q, mode: 'insensitive' } }, { user: { name: { contains: q, mode: 'insensitive' } } }] }
+    : {};
+  const rows = (await db.instructorProfile.findMany({
+    where: where as never,
+    select: {
+      id: true,
+      slug: true,
+      headline: true,
+      isVerified: true,
+      user: { select: { name: true } },
+      media: { select: { storageKey: true, altText: true, purpose: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } as never },
+    },
+    take,
+    orderBy: { createdAt: 'desc' } as never,
+  })) as unknown as Array<{ id: string; slug: string; headline: string; isVerified: boolean; user: { name: string }; media: Array<{ storageKey: string; altText: string; purpose: string | null }> }>;
+  if (rows.length === 0) return ['no instructors'];
+  return rows.flatMap((r) => {
+    const header = `${r.user.name} — /instructors/${r.slug} — ${r.headline} ${r.isVerified ? '✓' : ''} — id ${r.id}`;
+    const medias = r.media.length ? r.media.map(mediaLine) : ['(no media)'];
+    return [header, ...medias, ''];
+  });
+}
+
+async function handleProducts(args: string[]): Promise<string[]> {
+  const { flags, positional } = parseFlags(args);
+  const q = positional.join(' ').trim() || (typeof flags.get('q') === 'string' ? String(flags.get('q')) : '');
+  const take = Math.min(25, Math.max(1, Number(flags.get('take') ?? 10) || 10));
+  const where = q ? { OR: [{ title: { contains: q, mode: 'insensitive' } }, { slug: { contains: q, mode: 'insensitive' } }] } : {};
+  const rows = (await db.product.findMany({
+    where: where as never,
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      basePrice: true,
+      isActive: true,
+      media: { select: { storageKey: true, altText: true, purpose: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } as never },
+    },
+    take,
+    orderBy: { createdAt: 'desc' } as never,
+  })) as unknown as Array<{ id: string; slug: string; title: string; basePrice: number; isActive: boolean; media: Array<{ storageKey: string; altText: string; purpose: string | null }> }>;
+  if (rows.length === 0) return ['no products'];
+  return rows.flatMap((r) => {
+    const header = `${r.title} — /shop/${r.slug} — ${r.basePrice}֏ ${r.isActive ? 'active' : 'inactive'} — id ${r.id}`;
+    const medias = r.media.length ? r.media.map(mediaLine) : ['(no media)'];
+    return [header, ...medias, ''];
+  });
+}
+
+async function handleMedia(args: string[]): Promise<string[]> {
+  const model = args[0]?.trim();
+  const idOrSlug = args[1]?.trim();
+  if (!model || !idOrSlug) return ['usage: media <Model> <id|slug>   e.g. media DanceClass <id>  or  media DanceClass my-salsa-class'];
+  const modelLower = model.toLowerCase();
+  if (['danceclass', 'dance_class', 'class', 'classes'].includes(modelLower)) {
+    const danceClass = (await db.danceClass.findFirst({
+      where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] } as never,
+      select: { id: true, slug: true, title: true, media: { select: { storageKey: true, altText: true, purpose: true, blurDataUrl: true, focalPoint: true } } },
+    })) as unknown as { id: string; slug: string; title: string; media: Array<{ storageKey: string; altText: string; purpose: string | null }> } | null;
+    if (!danceClass) return [`DanceClass not found: ${idOrSlug}`];
+    if (!danceClass.media.length) return [`${danceClass.title} (${danceClass.slug}) — no media`];
+    return [`${danceClass.title} — /classes/${danceClass.slug}`, ...danceClass.media.map(mediaLine)];
+  }
+  if (['product', 'products'].includes(modelLower)) {
+    const product = (await db.product.findFirst({
+      where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] } as never,
+      select: { id: true, slug: true, title: true, media: { select: { storageKey: true, altText: true, purpose: true } } },
+    })) as unknown as { id: string; slug: string; title: string; media: Array<{ storageKey: string; altText: string; purpose: string | null }> } | null;
+    if (!product) return [`Product not found: ${idOrSlug}`];
+    if (!product.media.length) return [`${product.title} — no media`];
+    return [`${product.title} — /shop/${product.slug}`, ...product.media.map(mediaLine)];
+  }
+  if (['instructor', 'instructors', 'instructorprofile'].includes(modelLower)) {
+    const profile = (await db.instructorProfile.findFirst({
+      where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] } as never,
+      select: { id: true, slug: true, headline: true, media: { select: { storageKey: true, altText: true, purpose: true } } },
+    })) as unknown as { id: string; slug: string; headline: string; media: Array<{ storageKey: string; altText: string; purpose: string | null }> } | null;
+    if (!profile) return [`Instructor not found: ${idOrSlug}`];
+    if (!profile.media.length) return [`${profile.slug} — no media`];
+    return [`${profile.slug}`, ...profile.media.map(mediaLine)];
+  }
+  if (['venue', 'venues', 'event', 'events'].includes(modelLower)) {
+    return ['usage: media DanceClass <id|slug>  |  media Product <id|slug>  |  media Instructor <id|slug>'];
+  }
+  return ['unknown media model — try: media DanceClass <id|slug>'];
+}
+
+async function handleOpen(args: string[]): Promise<string[]> {
+  const raw = args.join(' ').trim() || args[0]?.trim() || '';
+  if (!raw) return ['usage: open <path|slug>  e.g. open /en/classes/salsa  or  open salsa'];
+  if (raw.startsWith('/')) return [raw, `Открой: ${raw} — скопируй путь и вставь в адресную строку (откроется в новой вкладке, если кликнуть правой кнопкой)`];
+  // slug → подсказать пути
+  return [`/${raw}`, `/en/classes/${raw}`, `/en/instructors/${raw}`, `/en/shop/${raw}`, 'Скопируй нужный URL → открой в новой вкладке (терминал не открывает окна сам)'];
+}
+
 async function handleRevalidate(args: string[]): Promise<string[]> {
   const path = args[0]?.trim() || '/';
   revalidatePath(path, 'layout');
@@ -221,6 +366,11 @@ export async function runTerminalCommand(raw: string): Promise<{ lines: string[]
     if (cmd === 'jobs') return { lines: await handleJobs(args), ok: true };
     if (cmd === 'db') return { lines: await handleDb(args), ok: true };
     if (cmd === 'carts') return { lines: await handleCarts(args), ok: true };
+    if (cmd === 'classes') return { lines: await handleClasses(args), ok: true };
+    if (cmd === 'instructors') return { lines: await handleInstructors(args), ok: true };
+    if (cmd === 'products') return { lines: await handleProducts(args), ok: true };
+    if (cmd === 'media') return { lines: await handleMedia(args), ok: true };
+    if (cmd === 'open') return { lines: await handleOpen(args), ok: true };
     if (cmd === 'revalidate') return { lines: await handleRevalidate(args), ok: true };
     return { lines: [`Unknown command: ${cmd}`, '', ...helpLines()], ok: false };
   } catch (error) {
@@ -256,6 +406,11 @@ export function completeTerminal(input: string): string[] {
     return subs.filter((s) => s.startsWith(rest));
   }
   if (lower.startsWith('revalidate')) return ['revalidate /', 'revalidate /en/admin/support/terminal'];
+  if (lower.startsWith('classes')) return ['classes salsa --take 5', 'classes --take 10'];
+  if (lower.startsWith('instructors')) return ['instructors salsa', 'instructors --take 5'];
+  if (lower.startsWith('products')) return ['products --take 5'];
+  if (lower.startsWith('media ')) return ['media DanceClass ', 'media Product ', 'media Instructor '];
+  if (lower.startsWith('open ')) return ['open /en/classes/', 'open /en/shop/'];
   if (!trimmed.includes(' ')) {
     return terminalCommands.map((c) => c.name).filter((n) => n.startsWith(lower));
   }

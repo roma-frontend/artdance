@@ -1002,7 +1002,7 @@ export function DataBrowserClient({ models, initialModel, initialQuery, initialP
 
   if (fsRender && typeof document !== 'undefined') {
     return createPortal(
-      <div className={`fixed inset-0 z-[200] flex flex-col overflow-hidden bg-[#FDF8F0] dark:bg-surface-canvas transition-[opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${fsEnter ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
+      <div className={`fixed inset-0 z-[1400] flex flex-col overflow-hidden bg-[#FDF8F0] dark:bg-surface-canvas transition-[opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${fsEnter ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
         {/* Top bar — always visible, cozy, with two exit paths */}
         <div className={`flex shrink-0 items-center justify-between gap-3 border-b border-[#EDE3D3] dark:border-border-default bg-[#FFFBF5] dark:bg-surface-card px-4 py-3 shadow-sm sm:px-6 transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${fsEnter ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
           <div className="flex items-center gap-3 min-w-0">
