@@ -22,7 +22,12 @@ export async function codecraftChat(opts: CodecraftCallOptions): Promise<string>
   const url = `${base}/chat/completions`;
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+    headers: {
+      'content-type': 'application/json',
+      accept: 'application/json',
+      authorization: `Bearer ${key}`,
+      'user-agent': 'ArtDanceBot/1.0',
+    },
     body: JSON.stringify({
       model,
       messages: opts.messages,
