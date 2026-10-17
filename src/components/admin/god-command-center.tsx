@@ -220,11 +220,7 @@ export function GodCommandCenter({ snapshot, caller, locale }: Props) {
       <GodTabs active={activeTab} onChange={setActiveTab} counts={{ openTickets, pendingTickets, failedPayments: pulse.failedPayments, pendingApprovals: pulse.pendingApprovals }}>
         {/* OVERVIEW */}
         <GodTabPanel value="overview">
-          {/* e2e anchors — keep headings discoverable for existing test */}
-          <h2 id="support-queue" className="sr-only">{t('queueTitle')}</h2>
-          <h2 id="support-tools" className="sr-only">{t('toolsTitle')}</h2>
-          <section aria-labelledby="support-queue" className="sr-only" />
-          <section aria-labelledby="support-tools" className="sr-only" />
+          {/* e2e anchors — keep sections discoverable; empty sections have 0 width so skip boundingBox check — test now checks GodTabs content visibility instead */}
           {/* visible h2 for e2e getByRole heading inside overview */}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[

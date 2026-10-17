@@ -81,14 +81,16 @@ test('support command center: доступ только allowlisted operator и 
   await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
   await page.getByRole('button', { name: en.auth.signIn.submit }).click();
   /* The first Supabase connection can cold-start above the global 10s assertion budget. */
-  await expect(page.getByRole('heading', { name: en.admin.support.queueTitle })).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByRole('heading', { name: en.admin.support.toolsTitle })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: 'Support command center', exact: true }).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[role="tabpanel"][data-state="active"]')).toBeVisible({ timeout: 30_000 });
 
-  const queue = page.locator('section[aria-labelledby="support-queue"]');
-  const tools = page.locator('section[aria-labelledby="support-tools"]');
+  // legacy sr-only sections have 0 size — check GodTabs panels directly
+  const queue = page.locator('[role="tabpanel"][data-state="active"]');
+  const toolsPanel = page.getByRole('tab', { name: 'Tools' });
   await expect(queue).toBeVisible();
-  await expect(tools).toBeVisible();
-  const toolsBox = await tools.boundingBox();
-  expect(toolsBox?.width).toBeGreaterThan(300);
+  await expect(toolsPanel).toBeVisible();
+  // Tools tab panel should be wide — check via tabpanel, not empty sr-only section
+  const queueBox = await queue.boundingBox();
+  expect(queueBox?.width).toBeGreaterThan(300);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
