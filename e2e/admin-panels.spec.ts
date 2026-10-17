@@ -38,10 +38,14 @@ test('админка: общий скролл и правая sticky-колон�
     const scrollable = await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight + 120);
     if (scrollable) {
       const initialSidebarY = (await sidebar.boundingBox())!.y;
-      await page.evaluate(() => window.scrollTo(0, 280));
-      await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5_000 }).toBeGreaterThan(80);
+      // Lenis перехватывает wheel, но не instant scrollTo — однако с lerp 0.07
+      // scrollY доходит с инерцией, поэтому ждём через poll, а не мгновенно
+      await page.evaluate(() => window.scrollTo({ top: 280, behavior: 'instant' }));
+      await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 8_000 }).toBeGreaterThan(80);
+      // Lenis может «доехать» ещё 200-300ms после scrollTo — ждём стабилизацию
+      await page.waitForTimeout(600);
       // Левая колонка уехала вверх.
-      await expect.poll(async () => (await sidebar.boundingBox())!.y, { timeout: 5_000 }).toBeLessThan(initialSidebarY - 40);
+      await expect.poll(async () => (await sidebar.boundingBox())!.y, { timeout: 8_000 }).toBeLessThan(initialSidebarY - 40);
       // Правая остается видимой и не скроллит внутри себя.
       await expect(content).toBeVisible();
       expect(await content.evaluate(node => node.scrollTop)).toBe(0);

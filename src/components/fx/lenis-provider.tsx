@@ -28,10 +28,15 @@ export function LenisProvider() {
   const disabled = reducedMotion || lite;
 
   useEffect(() => {
+    // В тестах Lenis мешает instant scrollTo — instant превращается в lerp,
+    // и poll(sx.y < initial-40) флакает. В e2e отключаем.
     const isE2E =
       typeof navigator !== 'undefined' &&
       (navigator as unknown as { webdriver?: boolean }).webdriver === true;
-    if (isE2E) return;
+    if (isE2E) {
+      document.documentElement.classList.remove('lenis', 'lenis-smooth', 'lenis-scrolling', 'lenis-stopped');
+      return;
+    }
 
     if (disabled) {
       if (lenisRef.current) {
