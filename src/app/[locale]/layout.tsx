@@ -14,6 +14,7 @@ import { fontVariables } from '@/design/fonts';
 import { CommandPaletteLazy } from '@/components/layout/command-palette-lazy';
 import { LiteModeProvider } from '@/lib/perf/lite-mode';
 import { STORAGE_KEY, liteModeInlineScript } from '@/lib/perf/detect-weak-device';
+import { LenisProvider } from '@/components/fx/lenis-provider';
 import { FavoritesSync } from '@/components/favorites/favorites-sync';
 import { SearchOverlayProvider } from '@/components/search/search-overlay';
 import { JsonLdScript } from '@/components/seo/json-ld';
@@ -161,6 +162,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                 передавать фокус между двумя модальными слоями одновременно.
               */}
               <SearchOverlayProvider>
+                <LenisProvider />
                 {/* Палитра монтируется лениво: чанк cmdk не входит в гидратацию публичных страниц */}
                 <CommandPaletteLazy />
                 <FavoritesSync />

@@ -268,14 +268,32 @@
     }
   }
 
+  /* Lenis: ватная инерция как на trionn.com */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overscroll-behavior: none;
+  }
+
   /* View Transitions отключены: кастомный PortalTransition (Framer) управляет
-     переходом карточки → страница. Нативный @view-transition { navigation:auto }
-     внутри @supports не считался opt-in и давал в Chrome
-     «InvalidStateError: ViewTransition opt-in disabled» на каждом router.push.
-     Если понадобится нативный MPA-переход — выносить @view-transition
-     на верхний уровень, без вложенности в @supports. */
-   @supports (view-transition-name: none) {
-    ::view-transition-group(root) { animation-duration: 260ms; }
+      переходом карточки → страница. Нативный @view-transition { navigation:auto }
+      внутри @supports не считался opt-in и давал в Chrome
+      «InvalidStateError: ViewTransition opt-in disabled» на каждом router.push.
+      Если понадобится нативный MPA-переход — выносить @view-transition
+      на верхний уровень, без вложенности в @supports. */
+    @supports (view-transition-name: none) {
+     ::view-transition-group(root) { animation-duration: 260ms; }
   }
 
   /* Печать пропуска: только чек по центру, ровно 1 страница, цвета из токенов. */
