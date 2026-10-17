@@ -80,6 +80,14 @@ async function settleContent(page: Page): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 300));
     window.scrollTo(0, 0);
   });
+
+  //Баннер промо на /gift-cards (нет hero-viewport) фейдится 150ms даже при reducedMotion.
+  //Без ожидания axe ловит opacity 0.32 → #565452 на #0B0A09 = 2.62:1
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  const banner = page.locator('.announcement-banner');
+  if ((await banner.count()) > 0) {
+    await expect(banner).toHaveCSS('opacity', '1', { timeout: 2000 }).catch(() => {});
+  }
 }
 
 /**

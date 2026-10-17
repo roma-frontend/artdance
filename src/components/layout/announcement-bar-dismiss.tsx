@@ -167,6 +167,38 @@ export function AnnouncementBarDismiss({ bannerKey, children }: AnnouncementBarD
 
   const shown = revealed && hydrated && !dismissed && !stowed;
 
+  const bannerInner = (
+    <div className="pointer-events-auto mx-auto flex w-full max-w-(--layout-content-max-width) items-center gap-3 rounded-lg border border-border-on-cinema bg-surface-cinema px-4 py-3 text-content-on-cinema shadow-lg backdrop-blur-md">
+      {children}
+      <button
+        type="button"
+        className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-content-on-cinema-muted transition-colors duration-normal ease-brand hover:bg-content-on-cinema/10 hover:text-content-on-cinema focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
+        aria-label={t('actions.close')}
+        onClick={() => {
+          document.cookie = `${DISMISSED_BANNER_COOKIE}=${encodeURIComponent(bannerKey)}; Max-Age=${DISMISS_DAYS * 24 * 60 * 60}; Path=/; SameSite=Lax`;
+          setDismissed(true);
+        }}
+      >
+        <X className="size-4" aria-hidden="true" />
+      </button>
+    </div>
+  );
+
+  // При prefers-reduced-motion — без анимации, синхронно opacity:1
+  // Иначе axe на /gift-cards ловит mid-fade 0.32 → #565452 на #0B0A09 = 2.62:1
+  if (reduced) {
+    return shown ? (
+      <section
+        key="announcement"
+        data-banner-key={bannerKey}
+        aria-label={t('labels.promotion')}
+        className="announcement-banner above-mobile-dock pointer-events-none fixed inset-x-0 z-sticky px-4 sm:px-6"
+      >
+        {bannerInner}
+      </section>
+    ) : null;
+  }
+
   return (
     <AnimatePresence>
       {shown ? (
@@ -176,58 +208,29 @@ export function AnnouncementBarDismiss({ bannerKey, children }: AnnouncementBarD
           aria-label={t('labels.promotion')}
           className="announcement-banner above-mobile-dock pointer-events-none fixed inset-x-0 z-sticky px-4 sm:px-6"
           style={{ transformPerspective: motion.banner.perspectivePx, transformOrigin: 'bottom center' }}
-          initial={
-            reduced
-              ? { opacity: 0 }
-              : { opacity: 0, y: motion.banner.offsetFromPx, rotateX: motion.banner.rotateFromDeg }
-          }
-          animate={reduced ? { opacity: 1 } : { opacity: 1, y: 0, rotateX: 0 }}
-          /*
-           * Два разных ухода: уступка футеру — «нырок» вниз с откатом и
-           * ускорением; закрытие крестиком — спокойная складка на петле.
-           */
+          initial={{ opacity: 0, y: motion.banner.offsetFromPx, rotateX: motion.banner.rotateFromDeg }}
+          animate={{ opacity: 1, y: 0, rotateX: 0 }}
           exit={
             stowed
-              ? reduced
-                ? { opacity: 0 }
-                : {
-                    opacity: [1, 1, 0],
-                    y: [0, 36, motion.banner.dive.yPx],
-                    rotateX: [0, motion.banner.dive.retreatDeg, motion.banner.dive.plungeDeg],
-                    scale: motion.banner.dive.scale,
-                  }
-              : reduced
-                ? { opacity: 0 }
-                : { opacity: 0, y: motion.banner.offsetExitPx, rotateX: motion.banner.rotateExitDeg }
+              ? {
+                  opacity: [1, 1, 0],
+                  y: [0, 36, motion.banner.dive.yPx],
+                  rotateX: [0, motion.banner.dive.retreatDeg, motion.banner.dive.plungeDeg],
+                  scale: motion.banner.dive.scale,
+                }
+              : { opacity: 0, y: motion.banner.offsetExitPx, rotateX: motion.banner.rotateExitDeg }
           }
           transition={
-            reduced
-              ? { duration: motion.banner.reducedFadeMs / 1000 }
-              : stowed
-                ? {
-                    duration: motion.banner.dive.durationMs / 1000,
-                    times: [0, 0.55, 1],
-                    ease: motion.banner.dive.ease,
-                  }
-                : motion.banner.spring
+            stowed
+              ? {
+                  duration: motion.banner.dive.durationMs / 1000,
+                  times: [0, 0.55, 1],
+                  ease: motion.banner.dive.ease,
+                }
+              : motion.banner.spring
           }
         >
-          <ScrollTilt reduced={reduced}>
-            <div className="pointer-events-auto mx-auto flex w-full max-w-(--layout-content-max-width) items-center gap-3 rounded-lg border border-border-on-cinema bg-surface-cinema px-4 py-3 text-content-on-cinema shadow-lg backdrop-blur-md">
-              {children}
-              <button
-                type="button"
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-content-on-cinema-muted transition-colors duration-normal ease-brand hover:bg-content-on-cinema/10 hover:text-content-on-cinema focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
-                aria-label={t('actions.close')}
-                onClick={() => {
-                  document.cookie = `${DISMISSED_BANNER_COOKIE}=${encodeURIComponent(bannerKey)}; Max-Age=${DISMISS_DAYS * 24 * 60 * 60}; Path=/; SameSite=Lax`;
-                  setDismissed(true);
-                }}
-              >
-                <X className="size-4" aria-hidden="true" />
-              </button>
-            </div>
-          </ScrollTilt>
+          <ScrollTilt reduced={false}>{bannerInner}</ScrollTilt>
         </animated.section>
       ) : null}
     </AnimatePresence>
