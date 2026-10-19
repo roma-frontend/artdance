@@ -110,13 +110,6 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
             <SignOutButton />
           </div>
 
-          <div className="hidden items-center gap-1.5 sm:flex lg:hidden">
-            <Badge variant="metal" size="sm" className="shrink-0 lg:max-w-[10ch] truncate">{roleLabel}</Badge>
-            <LocaleSwitcher solid />
-            <HeaderLiteToggle solid />
-            <HeaderThemeToggle solid />
-          </div>
-
           <div className="flex items-center gap-2 lg:hidden">
             <LocaleSwitcher solid />
             <HeaderLiteToggle solid />
