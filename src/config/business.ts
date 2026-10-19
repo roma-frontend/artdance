@@ -378,6 +378,8 @@ export const rateLimits = {
    * работы (сохранить форму, переключить статус) и ниже машинной.
    */
   adminMutation: { requests: 120, windowSeconds: 300 },
+  /** Contextual terminal completion is read-only but may be requested per token. */
+  adminAutocomplete: { requests: 600, windowSeconds: 60 },
   /**
    * Выгрузка отчёта. Отдельный ключ: экспорт читает тысячи строк и стоит на
    * порядок дороже сохранения формы, поэтому его нельзя мерить тем же счётчиком.

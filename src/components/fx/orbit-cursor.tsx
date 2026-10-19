@@ -28,6 +28,8 @@ export function OrbitCursor() {
   const dotRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
+  const activeLabelRef = useRef<string>('');
+  const isHoveredRef = useRef(false);
   const [activeLabel, setActiveLabel] = useState<string>('');
   const [isHovered, setIsHovered] = useState(false);
 
@@ -44,6 +46,20 @@ export function OrbitCursor() {
     let ringY = -100;
     let frame = 0;
     let visible = false;
+
+    const setHoveredState = (next: boolean) => {
+      if (isHoveredRef.current !== next) {
+        isHoveredRef.current = next;
+        setIsHovered(next);
+      }
+    };
+
+    const setLabelState = (next: string) => {
+      if (activeLabelRef.current !== next) {
+        activeLabelRef.current = next;
+        setActiveLabel(next);
+      }
+    };
 
     const tick = () => {
       frame = 0;
@@ -89,14 +105,14 @@ export function OrbitCursor() {
 
       if (labelElement) {
         const text = labelElement.getAttribute('data-cursor-label') || '';
-        setActiveLabel(text);
-        setIsHovered(true);
+        setLabelState(text);
+        setHoveredState(true);
       } else if (clickableElement) {
-        setActiveLabel('');
-        setIsHovered(true);
+        setLabelState('');
+        setHoveredState(true);
       } else {
-        setActiveLabel('');
-        setIsHovered(false);
+        setLabelState('');
+        setHoveredState(false);
       }
 
       schedule();
@@ -107,8 +123,8 @@ export function OrbitCursor() {
       dot.style.opacity = '0';
       ring.style.opacity = '0';
       if (labelRef.current) labelRef.current.style.opacity = '0';
-      setIsHovered(false);
-      setActiveLabel('');
+      setHoveredState(false);
+      setLabelState('');
     };
 
     window.addEventListener('pointermove', onPointerMove, { passive: true });

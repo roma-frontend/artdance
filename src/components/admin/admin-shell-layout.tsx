@@ -16,6 +16,7 @@ import { Link, usePathname } from '@/i18n/routing';
 import { HeaderLiteToggle } from '@/components/layout/header-lite-toggle';
 import { HeaderThemeToggle } from '@/components/layout/header-theme-toggle';
 import { LocaleSwitcher } from '@/components/layout/locale-switcher';
+import { AdminGlobalSearch } from '@/components/admin/admin-global-search';
 
 interface Props {
   groups: readonly SidebarGroup[];
@@ -96,6 +97,8 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
               {subtitle}
             </span>
           </div>
+
+          <AdminGlobalSearch />
 
           <div className="hidden items-center gap-2 lg:flex">
             <span className="max-w-[14ch] truncate text-body-sm text-content-secondary xl:max-w-none">{userName}</span>

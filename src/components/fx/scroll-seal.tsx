@@ -48,6 +48,7 @@ export function ScrollSeal({ text = 'ARTDANCE · YEREVAN · ', scope = 'page', c
 
     const section = scope === 'section' ? node.parentElement : null;
     let frame = 0;
+    let lastTransform = '';
     const paint = () => {
       frame = 0;
       let degrees: number;
@@ -61,7 +62,11 @@ export function ScrollSeal({ text = 'ARTDANCE · YEREVAN · ', scope = 'page', c
         const progress = documentHeight > 0 ? window.scrollY / documentHeight : 0;
         degrees = progress * animationConfig.sealRotation.maxDegrees;
       }
-      node.style.transform = `rotate(${degrees}deg)`;
+      const nextTransform = `rotate(${Number(degrees.toFixed(3))}deg)`;
+      if (nextTransform !== lastTransform) {
+        lastTransform = nextTransform;
+        node.style.transform = nextTransform;
+      }
     };
     const schedule = () => {
       if (frame === 0) frame = window.requestAnimationFrame(paint);

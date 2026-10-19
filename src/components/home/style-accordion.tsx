@@ -89,6 +89,84 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
     return () => window.clearTimeout(timeout);
   }, [activeIndex, reducedMotion, lite]);
 
+  // GPU pointer depth & spotlight on the active stage curtain
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || isCoarse || reducedMotion || lite) return;
+    let raf = 0;
+    let cachedRect: DOMRect | null = null;
+    let cachedTime = 0;
+    let activePanel: HTMLElement | null = null;
+    let pointerX = 0;
+    let pointerY = 0;
+
+    const getPanelRect = (panel: HTMLElement) => {
+      const now = performance.now();
+      if (!cachedRect || now - cachedTime > 250) {
+        cachedRect = panel.getBoundingClientRect();
+        cachedTime = now;
+      }
+      return cachedRect;
+    };
+
+    const paint = () => {
+      raf = 0;
+      if (!activePanel) return;
+      const rect = getPanelRect(activePanel);
+      if (!rect.width || !rect.height) return;
+      const nx = Math.max(-0.5, Math.min(0.5, (pointerX - rect.left) / rect.width - 0.5));
+      const ny = Math.max(-0.5, Math.min(0.5, (pointerY - rect.top) / rect.height - 0.5));
+      activePanel.style.setProperty('--curtain-x', `${((nx + 0.5) * 100).toFixed(1)}%`);
+      activePanel.style.setProperty('--curtain-y', `${((ny + 0.5) * 100).toFixed(1)}%`);
+      activePanel.style.setProperty('--curtain-shift-x', `${(nx * -10).toFixed(2)}px`);
+      activePanel.style.setProperty('--curtain-shift-y', `${(ny * -8).toFixed(2)}px`);
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      const panel = (e.target as HTMLElement | null)?.closest<HTMLElement>('[data-style-panel][data-active="true"]');
+      if (panel !== activePanel) {
+        if (activePanel) {
+          activePanel.style.removeProperty('--curtain-shift-x');
+          activePanel.style.removeProperty('--curtain-shift-y');
+        }
+        activePanel = panel ?? null;
+        cachedRect = null;
+      }
+      if (!activePanel) return;
+      pointerX = e.clientX;
+      pointerY = e.clientY;
+      if (!raf) raf = window.requestAnimationFrame(paint);
+    };
+
+    const onPointerLeave = () => {
+      if (raf) {
+        window.cancelAnimationFrame(raf);
+        raf = 0;
+      }
+      if (activePanel) {
+        activePanel.style.removeProperty('--curtain-shift-x');
+        activePanel.style.removeProperty('--curtain-shift-y');
+        activePanel = null;
+      }
+      cachedRect = null;
+    };
+
+    const invalidate = () => {
+      cachedRect = null;
+    };
+
+    container.addEventListener('pointermove', onPointerMove, { passive: true });
+    container.addEventListener('pointerleave', onPointerLeave);
+    window.addEventListener('scroll', invalidate, { passive: true });
+    return () => {
+      if (raf) window.cancelAnimationFrame(raf);
+      container.removeEventListener('pointermove', onPointerMove);
+      container.removeEventListener('pointerleave', onPointerLeave);
+      window.removeEventListener('scroll', invalidate);
+    };
+  }, [isCoarse, reducedMotion, lite]);
+
   const selectPanel = (index: number) => {
     if (index === activeIndex) return;
     setPlayingIndex(null);
@@ -177,6 +255,10 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
                       : 'bg-gradient-to-t from-surface-cinema/90 via-surface-cinema/50 to-surface-cinema/20',
                   )}
                 />
+
+                {/* Сценический луч и 3D-свечение кулисы на GPU */}
+                <span aria-hidden="true" className="dance-style-spotlight" />
+                <span aria-hidden="true" className="dance-style-rim" />
 
                 {/* Стрелка перехода */}
                 <span

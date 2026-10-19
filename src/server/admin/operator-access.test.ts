@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
   db: {
-    user: { findUnique: vi.fn() },
+    user: { findUnique: vi.fn(), findMany: vi.fn() },
+    session: { deleteMany: vi.fn() },
     accessControl: { findMany: vi.fn() },
     accessGrant: { findMany: vi.fn() },
     operatorSetting: { findUnique: vi.fn(), findMany: vi.fn() },
@@ -133,6 +134,7 @@ describe.each(['ADMIN', 'SUPPORT'])('direct operator requests from unlisted %s',
       actions.stopImpersonation({}),
       actions.exportOperatorModel({ model: 'User' }),
       actions.runOperatorCommand({ command: 'health' }),
+      actions.completeOperatorCommand({ command: 'db get User ' }),
       actions.replyToSupportTicket({ ticketId: 'ticket', body: 'Reply', internal: true }),
       actions.setFeatureFlag({ key: 'shop', enabled: false }),
       setSupportTicketStatus({ id: 'ticket', status: 'RESOLVED' }),
@@ -150,5 +152,44 @@ describe.each(['ADMIN', 'SUPPORT'])('direct operator requests from unlisted %s',
     await Promise.all(requests.map((request) => expect(request).rejects.toMatchObject({ code: 'FORBIDDEN' })));
     expect(mocks.db.supportTicket.count).not.toHaveBeenCalled();
     expect(mocks.db.operatorSetting.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('operator terminal completion', () => {
+  it('returns live model ids for db get', async () => {
+    mocks.db.user.findUnique.mockResolvedValue({ ...user, email: support.ownerEmail, role: 'SUPPORT' });
+    (mocks.db as typeof mocks.db & { _runtimeDataModel: unknown })._runtimeDataModel = {
+      models: {
+        User: {
+          fields: [
+            { name: 'id', kind: 'scalar', type: 'String', isRequired: true },
+            { name: 'email', kind: 'scalar', type: 'String', isRequired: true },
+          ],
+        },
+      },
+    };
+    mocks.db.user.findMany.mockResolvedValue([{ id: 'user-1', email: 'person@example.com' }, { id: 'user-2', email: 'second@example.com' }]);
+
+    const result = await actions.completeOperatorCommand({ command: 'db get Users ' });
+    expect(result?.data?.items).toEqual([
+      { value: 'user-1', label: 'user-1', description: 'User · person@example.com' },
+      { value: 'user-2', label: 'user-2', description: 'User · second@example.com' },
+    ]);
+    expect(mocks.db.user.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 500 }));
+  });
+});
+
+describe('operator session controls', () => {
+  it('revokes all target sessions and records the count', async () => {
+    mocks.db.user.findUnique.mockImplementation((query: { where?: { id?: string } }) => query.where?.id === 'customer-1'
+      ? Promise.resolve({ ...user, id: 'customer-1', email: 'customer@example.com', role: 'CUSTOMER' })
+      : Promise.resolve({ ...user, id: 'actor', email: support.ownerEmail, role: 'SUPPORT' }));
+    mocks.db.session.deleteMany.mockResolvedValue({ count: 3 });
+
+    const result = await actions.revokeAllUserSessions({ userId: 'customer-1' });
+
+    expect(result?.data).toEqual({ revoked: 3 });
+    expect(mocks.db.session.deleteMany).toHaveBeenCalledWith({ where: { userId: 'customer-1' } });
+    expect(mocks.recordAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'session.revokedAll', entityId: 'customer-1', after: expect.objectContaining({ revoked: 3 }) }));
   });
 });

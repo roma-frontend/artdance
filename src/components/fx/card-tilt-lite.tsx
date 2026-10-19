@@ -33,27 +33,20 @@ export function CardTilt({ children, className, index = 0 }: CardTiltLiteProps) 
 
   useEffect(() => {
     const node = ref.current;
-    if (!node) return;
-    const size = { width: node.offsetWidth, height: node.offsetHeight };
-    const resize = new ResizeObserver(() => {
-      size.width = node.offsetWidth;
-      size.height = node.offsetHeight;
-    });
-    resize.observe(node);
+    if (!node || !cursor.enabled || motionDisabled) return;
     const writeX = (value: number) => {
-      node.style.setProperty('--card-cursor-x', `${(value + 0.5) * size.width}px`);
-      node.style.setProperty('--card-media-x', `${value * -motion.cardTilt.mediaTravelPx}px`);
+      node.style.setProperty('--card-cursor-x', `${((value + 0.5) * 100).toFixed(1)}%`);
+      node.style.setProperty('--card-media-x', `${(value * -motion.cardTilt.mediaTravelPx).toFixed(2)}px`);
     };
     const writeY = (value: number) => {
-      node.style.setProperty('--card-cursor-y', `${(value + 0.5) * size.height}px`);
-      node.style.setProperty('--card-media-y', `${value * -motion.cardTilt.mediaTravelPx}px`);
+      node.style.setProperty('--card-cursor-y', `${((value + 0.5) * 100).toFixed(1)}%`);
+      node.style.setProperty('--card-media-y', `${(value * -motion.cardTilt.mediaTravelPx).toFixed(2)}px`);
     };
     writeX(cursor.x.get());
     writeY(cursor.y.get());
     const stopX = cursor.x.on('change', writeX);
     const stopY = cursor.y.on('change', writeY);
     return () => {
-      resize.disconnect();
       stopX();
       stopY();
       node.style.removeProperty('--card-cursor-x');
@@ -61,7 +54,7 @@ export function CardTilt({ children, className, index = 0 }: CardTiltLiteProps) 
       node.style.removeProperty('--card-media-x');
       node.style.removeProperty('--card-media-y');
     };
-  }, [cursor.x, cursor.y]);
+  }, [cursor.enabled, cursor.x, cursor.y, motionDisabled]);
 
   useEffect(() => {
     if (motionDisabled) {

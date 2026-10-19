@@ -331,9 +331,9 @@ async function ExploreSections({ locale }: { locale: Locale }) {
 
           <Reveal variant="right">
             <ClassCarousel label={t('classes.title')}>
-              {classes.items.map((item) => (
+              {classes.items.map((item, index) => (
                 <li key={item.slug} className="max-w-75 shrink-0 grow basis-65 snap-start">
-                  <CardTilt>
+                  <CardTilt index={index}>
                     <ClassCard item={item} locale={locale} />
                   </CardTilt>
                 </li>
@@ -361,9 +361,9 @@ async function ExploreSections({ locale }: { locale: Locale }) {
           </Reveal>
 
           <Reveal as="ul" variant="stagger" className="grid gap-5 xs:grid-cols-2 lg:grid-cols-4">
-            {instructors.items.map((item) => (
+            {instructors.items.map((item, index) => (
               <li key={item.slug}>
-                <CardTilt>
+                <CardTilt index={index}>
                   <InstructorCard item={item} locale={locale} />
                 </CardTilt>
               </li>
@@ -390,9 +390,9 @@ async function ExploreSections({ locale }: { locale: Locale }) {
           </Reveal>
 
           <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {venues.items.map((item) => (
+            {venues.items.map((item, index) => (
               <li key={item.slug}>
-                <CardTilt>
+                <CardTilt index={index}>
                   <VenueCard item={item} locale={locale} />
                 </CardTilt>
               </li>

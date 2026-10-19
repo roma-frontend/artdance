@@ -80,9 +80,9 @@ export default async function InstructorsPage({ params, searchParams }: PageProp
         section="instructors"
       >
         <ul className="grid gap-5 xs:grid-cols-2 lg:grid-cols-4">
-          {result.items.map((item) => (
+          {result.items.map((item, index) => (
             <li key={item.slug}>
-              <CardTilt>
+              <CardTilt index={index}>
                 <InstructorCard item={item} locale={locale as Locale} />
               </CardTilt>
             </li>

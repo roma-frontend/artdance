@@ -23,10 +23,35 @@ export const terminalCommands: readonly TerminalCommandSpec[] = [
   { name: 'counts', usage: 'counts', description: 'Active sessions, locked login keys, open tickets' },
   { name: 'jobs', usage: 'jobs [n]', description: 'Recent JobRun entries (default 10)', examples: ['jobs', 'jobs 5'] },
   {
+    name: 'inspect',
+    usage: 'inspect <User|Order|Booking|SupportTicket> <id|key>',
+    description: 'Support snapshot with safe relations and recent activity',
+    examples: ['inspect User <id>', 'inspect Order AD-2026-00042', 'inspect SupportTicket <id>'],
+  },
+  {
+    name: 'search',
+    usage: 'search <email|id|name|reference|text>',
+    description: 'Search users, orders, bookings, classes, venues and support tickets',
+    examples: ['search anna@example.com', 'search AD-2026-00042', 'search payment'],
+  },
+  {
     name: 'db',
     usage: 'db <sub>',
-    description: 'Data access. Subcommands: models | counts [Model] | count <Model> [--where JSON] | find <Model> [--where JSON] [--take N] [--q text]',
-    examples: ['db models', 'db counts', 'db counts User', 'db count Cart --where {"anonymousId":{"not":null}}', 'db find Cart --take 3'],
+    description:
+      'Data access (all models). Subcommands: models | counts [Model] | count <Model> [--where JSON] | find <Model> [--where JSON] [--take N] [--q text] | get <Model> <id> | fields <Model> | create <Model> --data JSON | update <Model> <id> --set JSON | delete <Model> <id> [--force] [--hard] | restore <Model> <id>',
+    examples: [
+      'db models',
+      'db counts',
+      'db counts User',
+      'db count Cart --where {"anonymousId":{"not":null}}',
+      'db find Cart --take 3',
+      'db get User <id>',
+      'db fields DanceClass',
+      'db create PromoCode --data {"code":"TEST","type":"FIXED","value":1000}',
+      'db update User <id> --set {"name":"New Name"}',
+      'db delete DanceClass <id> --force',
+      'db restore DanceClass <id>',
+    ],
   },
   {
     name: 'carts',

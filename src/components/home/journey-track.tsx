@@ -31,6 +31,7 @@ export function JourneyTrack({ totalSteps = 4, className }: JourneyTrackProps) {
 
     let frame = 0;
     let lastStep = -1;
+    let lastHeight = '';
 
     const updateProgress = () => {
       frame = 0;
@@ -46,9 +47,11 @@ export function JourneyTrack({ totalSteps = 4, className }: JourneyTrackProps) {
       const linePercent = Math.min(100, Math.max(0, progress * 100));
       const nextStep = Math.min(totalSteps - 1, Math.floor(progress * totalSteps));
 
-      // WRITE фаза — batched
-      if (activeLineRef.current) {
-        activeLineRef.current.style.height = `${linePercent}%`;
+      // WRITE фаза — batched, пишем только при изменении
+      const nextHeight = `${linePercent.toFixed(2)}%`;
+      if (activeLineRef.current && nextHeight !== lastHeight) {
+        lastHeight = nextHeight;
+        activeLineRef.current.style.height = nextHeight;
       }
 
       // setState и DOM-атрибуты только при смене шага — избегаем лишних рендеров

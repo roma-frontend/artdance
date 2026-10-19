@@ -85,6 +85,9 @@ export function FooterParallaxFX() {
       if (raf === 0) raf = window.requestAnimationFrame(paintPointer);
     };
 
+    let lastWordTranslate = '';
+    let lastForegroundTransform = '';
+
     const paintScroll = () => {
       frame = 0;
       // Скролл на футере — почти без хода: слово уже в потоке внизу, толчок вниз выкидывает его за overflow
@@ -96,9 +99,16 @@ export function FooterParallaxFX() {
       // Мягкий ход — 1/3 от hero, иначе на высоком футере слово уезжает за нижнюю границу
       const depth = heroDepthFrame(progress, Math.min(rect.height, vh * 0.9), factor);
       // Двигаются ТОЛЬКО декоративные слои — интерактивный контент всегда на месте (клик попадает с первого раза)
-      const wordShift = depth.word * 0.14;
-      if (word) word.style.translate = `0 ${wordShift.toFixed(2)}px`;
-      if (foreground) foreground.style.transform = `translate3d(0, ${(depth.foreground * 0.18).toFixed(2)}px, 0)`;
+      const wordShift = `0 ${(depth.word * 0.14).toFixed(2)}px`;
+      const fgShift = `translate3d(0, ${(depth.foreground * 0.18).toFixed(2)}px, 0)`;
+      if (word && wordShift !== lastWordTranslate) {
+        lastWordTranslate = wordShift;
+        word.style.translate = wordShift;
+      }
+      if (foreground && fgShift !== lastForegroundTransform) {
+        lastForegroundTransform = fgShift;
+        foreground.style.transform = fgShift;
+      }
     };
 
     const onScroll = () => {

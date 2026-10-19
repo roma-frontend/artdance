@@ -40,21 +40,21 @@ const tabsListVariants = cva(
   }
 )
 
-function TabsList({
-  className,
-  variant = "default",
-  ...props
-}: React.ComponentProps<typeof TabsPrimitive.List> &
-  VariantProps<typeof tabsListVariants>) {
+const TabsList = React.forwardRef<
+  React.ElementRef<typeof TabsPrimitive.List>,
+  React.ComponentPropsWithoutRef<typeof TabsPrimitive.List> & VariantProps<typeof tabsListVariants>
+>(({ className, variant = "default", ...props }, ref) => {
   return (
     <TabsPrimitive.List
+      ref={ref}
       data-slot="tabs-list"
       data-variant={variant}
       className={cn(tabsListVariants({ variant }), className)}
       {...props}
     />
-  )
-}
+  );
+});
+TabsList.displayName = "TabsList"
 
 function TabsTrigger({
   className,

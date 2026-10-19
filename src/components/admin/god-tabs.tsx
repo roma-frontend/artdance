@@ -83,11 +83,38 @@ export function GodTabs({ active, onChange, counts, children }: Props) {
     { ...META.tools },
   ];
 
+  const listRef = React.useRef<HTMLDivElement>(null);
+
+  // Мышь с колесом на десктопе: вертикальный deltaY скроллит ленту вкладок
+  // горизонтально. Без этого на узком окне "Tools"/"Access" недостижимы
+  // без тачпада/перетаскивания. Lenis перехватывает колесо вертикально,
+  // поэтому помечаем ленту как data-lenis-prevent и сами маппим deltaY → scrollLeft.
+  React.useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const dominatedByVertical = Math.abs(e.deltaY) > Math.abs(e.deltaX);
+      if (!dominatedByVertical) return;
+      const maxLeft = el.scrollWidth - el.clientWidth;
+      if (maxLeft <= 1) return;
+      const atStart = el.scrollLeft <= 1;
+      const atEnd = el.scrollLeft >= maxLeft - 1;
+      if ((e.deltaY < 0 && atStart) || (e.deltaY > 0 && atEnd)) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
+
   return (
     <Tabs value={active} onValueChange={(v) => onChange(v as GodTabId)} className="w-full">
       {/* Sticky, scrollable tab bar — beautiful on mobile */}
       <div className="sticky top-0 z-20 -mx-4 border-b border-zinc-200 bg-white/80 px-4 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:border-white/10 dark:bg-zinc-900/70 sm:mx-0 sm:rounded-2xl sm:border sm:px-2 sm:py-2">
-        <TabsList className="h-auto w-full justify-start gap-1.5 overflow-x-auto bg-transparent p-1 scrollbar-none dark:bg-transparent">
+        <TabsList
+          ref={listRef}
+          data-lenis-prevent
+          className="h-auto w-full justify-start gap-1.5 overflow-x-auto bg-transparent p-1 scrollbar-none dark:bg-transparent">
           {tabs.map((tab) => {
             const isActive = active === tab.id;
             return (

@@ -123,19 +123,20 @@ export function SectionParallax({ children, className, scene }: SectionParallaxP
        * вверх. Знак хода отрицательный: слои движутся навстречу прокрутке.
        */
       const phase = (viewport - rect.top) / (viewport + rect.height) - 0.5;
+      const bgTransform = `translate3d(0, ${(phase * -backgroundTravelPx).toFixed(2)}px, 0) scale(${backgroundZoom})`;
+      const contentTransform = `translate3d(0, ${(phase * -contentTravelPx).toFixed(2)}px, 0)`;
+      const headingTransform = `translate3d(0, ${(phase * -headingTravelPx).toFixed(2)}px, 0) scale(${(1 + phase * headingScaleRange).toFixed(4)})`;
 
       for (const element of backgrounds) {
-        element.style.transform =
-          `translate3d(0, ${phase * -backgroundTravelPx}px, 0) scale(${backgroundZoom})`;
+        if (element.style.transform !== bgTransform) element.style.transform = bgTransform;
       }
 
       for (const element of contents) {
-        element.style.transform = `translate3d(0, ${phase * -contentTravelPx}px, 0)`;
+        if (element.style.transform !== contentTransform) element.style.transform = contentTransform;
       }
 
       for (const element of headings) {
-        element.style.transform =
-          `translate3d(0, ${phase * -headingTravelPx}px, 0) scale(${1 + phase * headingScaleRange})`;
+        if (element.style.transform !== headingTransform) element.style.transform = headingTransform;
       }
     };
 

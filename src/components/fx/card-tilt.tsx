@@ -30,6 +30,7 @@ import { useCursorFollow } from '@/hooks/use-cursor-follow';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { revealTransition } from '@/lib/animations/scroll-reveal';
 import { cn } from '@/lib/utils';
+import { useIsLiteMode } from '@/lib/perf/lite-mode';
 
 interface CardTiltProps {
   children: ReactNode;
@@ -41,6 +42,9 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
   const ref = useRef<HTMLDivElement>(null);
   const cursor = useCursorFollow(ref);
   const reducedMotion = usePrefersReducedMotion();
+  const lite = useIsLiteMode();
+  const motionDisabled = reducedMotion || lite;
+  const tiltEnabled = cursor.enabled && !motionDisabled;
   const rotateX = useTransform(cursor.y, (value) => -value * motion.cardTilt.maxRotateDeg);
   const rotateY = useTransform(cursor.x, (value) => value * motion.cardTilt.maxRotateDeg);
   const x = useTransform(cursor.x, (value) => value * motion.cardTilt.pointerTravelPx);
@@ -57,23 +61,15 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
    */
   useEffect(() => {
     const node = ref.current;
-    if (!node) return;
-
-    // Пиксели, а не проценты: кадр стоит в карточке первым, и прожектор внутри него берёт те же координаты.
-    const size = { width: node.offsetWidth, height: node.offsetHeight };
-    const resize = new ResizeObserver(() => {
-      size.width = node.offsetWidth;
-      size.height = node.offsetHeight;
-    });
-    resize.observe(node);
+    if (!node || !tiltEnabled) return;
 
     const writeX = (value: number) => {
-      node.style.setProperty('--card-cursor-x', `${(value + 0.5) * size.width}px`);
-      node.style.setProperty('--card-media-x', `${value * -motion.cardTilt.mediaTravelPx}px`);
+      node.style.setProperty('--card-cursor-x', `${((value + 0.5) * 100).toFixed(1)}%`);
+      node.style.setProperty('--card-media-x', `${(value * -motion.cardTilt.mediaTravelPx).toFixed(2)}px`);
     };
     const writeY = (value: number) => {
-      node.style.setProperty('--card-cursor-y', `${(value + 0.5) * size.height}px`);
-      node.style.setProperty('--card-media-y', `${value * -motion.cardTilt.mediaTravelPx}px`);
+      node.style.setProperty('--card-cursor-y', `${((value + 0.5) * 100).toFixed(1)}%`);
+      node.style.setProperty('--card-media-y', `${(value * -motion.cardTilt.mediaTravelPx).toFixed(2)}px`);
     };
 
     writeX(cursor.x.get());
@@ -82,7 +78,6 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
     const stopY = cursor.y.on('change', writeY);
 
     return () => {
-      resize.disconnect();
       stopX();
       stopY();
       node.style.removeProperty('--card-cursor-x');
@@ -90,10 +85,10 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
       node.style.removeProperty('--card-media-x');
       node.style.removeProperty('--card-media-y');
     };
-  }, [cursor.x, cursor.y]);
+  }, [tiltEnabled, cursor.x, cursor.y]);
 
   useEffect(() => {
-    if (reducedMotion) {
+    if (motionDisabled) {
       controls.stop();
       controls.set({ opacity: 1, scale: 1 });
       return;
@@ -110,14 +105,14 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
     } else {
       controls.set({ opacity: 0, scale: 0.94 });
     }
-  }, [controls, inView, index, reducedMotion]);
+  }, [controls, inView, index, motionDisabled]);
 
   return (
     <animated.div
       ref={ref}
       data-slot="card-tilt"
       data-animation-card=""
-      data-cursor-depth={cursor.enabled ? '' : undefined}
+      data-cursor-depth={tiltEnabled ? '' : undefined}
       className={cn('relative h-full', className)}
       initial={false}
       animate={controls}
@@ -137,11 +132,11 @@ export function CardTilt({ children, className, index = 0 }: CardTiltProps) {
         controls.set({ opacity: 1, scale: 1 });
       }}
       style={{
-        rotateX: cursor.enabled ? rotateX : 0,
-        rotateY: cursor.enabled ? rotateY : 0,
-        x: cursor.enabled ? x : 0,
-        y: cursor.enabled ? y : 0,
-        transformPerspective: cursor.enabled ? motion.cardTilt.perspectivePx : undefined,
+        rotateX: tiltEnabled ? rotateX : 0,
+        rotateY: tiltEnabled ? rotateY : 0,
+        x: tiltEnabled ? x : 0,
+        y: tiltEnabled ? y : 0,
+        transformPerspective: tiltEnabled ? motion.cardTilt.perspectivePx : undefined,
       }}
     >
       {children}

@@ -4,9 +4,15 @@ import { revalidatePath } from 'next/cache';
 
 import { mediaUrl } from '@/config/media';
 import { db } from '@/lib/db';
-import { browseModel, getOperatorCounts, operatorDelegate, operatorModels } from '@/server/admin/operator';
+import { browseModel, getOperatorCounts, globalOperatorSearch, modelFields, operatorDelegate, operatorModelName, operatorModels } from '@/server/admin/operator';
 import { operatorPulse } from '@/server/admin/operator';
+import { isTrashedModel } from '@/config/trash';
+import { onlyTrashed } from '@/domain/trash';
+import { recordAudit } from '@/lib/audit';
+import { requireOperator } from '@/lib/auth/guards';
 import { cartStats, purgeEmptyCarts } from '@/server/cart/service';
+import { formatInspect, inspectOperatorRecord } from '@/server/admin/inspect';
+import { redactRecord } from '@/domain/operator';
 import { terminalCommands } from './registry';
 
 function helpLines(): string[] {
@@ -66,6 +72,28 @@ async function handleJobs(args: string[]): Promise<string[]> {
   return jobs.map((job) => `${job.jobName} · ${job.succeeded === false ? 'failed' : job.succeeded === true ? 'ok' : 'running'} · ${job.startedAt.toISOString()}`);
 }
 
+async function handleInspect(args: string[]): Promise<string[]> {
+  const model = args[0]?.trim();
+  const key = args[1]?.trim();
+  if (!model || !key) return ['usage: inspect <User|Order|Booking|SupportTicket> <id|email|number|reference>'];
+  const result = await inspectOperatorRecord(model, key);
+  if (!result) return [`not found: ${model} ${key}`];
+  return formatInspect(result);
+}
+
+async function handleSearch(args: string[]): Promise<string[]> {
+  const query = args.join(' ').trim();
+  if (query.length < 2) return ['usage: search <email|id|name|reference|text> (minimum 2 characters)'];
+  const results = await globalOperatorSearch(query);
+  if (results.length === 0) return [`no matches for: ${query}`];
+  return [
+    `matches for: ${query}`,
+    ...results.map((result) => `${result.kind.padEnd(10)} ${result.label} → ${result.href}`),
+    '',
+    'Tip: use inspect User|Order|Booking|SupportTicket <id|key> for a full support snapshot.',
+  ];
+}
+
 async function handleDb(args: string[]): Promise<string[]> {
   const sub = (args[0] ?? '').toLowerCase();
   if (!sub || sub === 'help') {
@@ -74,6 +102,13 @@ async function handleDb(args: string[]): Promise<string[]> {
        'db counts [Model]                  — counts (all or one model)',
        'db count <Model> [--where JSON]     — exact count with filter',
        'db find <Model> [--where JSON] [--take N] [--q text] — first rows (max 25)',
+       'db get <Model> <id>                — one row by id',
+       'db fields <Model>                  — list writable fields',
+       'db create <Model> --data JSON      — create row (returns id)',
+       'db update <Model> <id> --set JSON  — patch row by id',
+       'db delete <Model> <id> [--force] [--hard] — soft-delete (--hard purges)',
+       'db restore <Model> <id>            — restore soft-deleted row',
+       'db mutations support --dry-run     — preview without writing',
      ];
    }
   if (sub === 'models') {
@@ -129,15 +164,99 @@ async function handleDb(args: string[]): Promise<string[]> {
     const result = await browseModel(model, q, page);
     // Если передан where — делаем прямой findMany с where (browseModel не поддерживает произвольный where)
     if (Object.keys(where).length > 0) {
-      const delegate = operatorDelegate(model);
-      const rows = await delegate.findMany({ where, take, orderBy: { id: 'desc' } as never });
+      const canonical = operatorModelName(model);
+      const select = Object.fromEntries(modelFields(canonical).map((field) => [field.name, true]));
+      const delegate = operatorDelegate(canonical);
+      const rows = await delegate.findMany({ where, select, take, orderBy: { id: 'desc' } as never });
       if (rows.length === 0) return ['no rows'];
-      return rows.map((r) => JSON.stringify(r));
+      return rows.map((r) => JSON.stringify(redactRecord(r, canonical)));
     }
     // Иначе используем browseModel (с секретами уже вырезаны)
     const rows = result.rows.slice(0, take);
     if (rows.length === 0) return ['no rows'];
     return rows.map((r) => JSON.stringify(r));
+  }
+  if (sub === 'get') {
+    const model = args[1]?.trim(); const id = args[2]?.trim();
+    if (!model || !id) return ['usage: db get <Model> <id>'];
+    const BLOCKED = new Set(['Account','VerificationToken','Session','PushSubscription','OperatorSetting']);
+    if (BLOCKED.has(model)) return ['model not available: ' + model];
+    try {
+      const canonical = operatorModelName(model);
+      const select = Object.fromEntries(modelFields(canonical).map((field) => [field.name, true]));
+      const d = operatorDelegate(canonical);
+      const row = await d.findUnique({ where: { id }, select });
+      if (!row) return ['not found: ' + canonical + ' ' + id];
+      return [JSON.stringify(redactRecord(row, canonical))];
+    } catch (e) { return ['error: ' + (e instanceof Error ? e.message.slice(0,400) : String(e).slice(0,400))]; }
+  }
+  if (sub === 'fields') {
+    const model = args[1]?.trim(); if (!model) return ['usage: db fields <Model>'];
+    const BLOCKED = new Set(['Account','VerificationToken','Session','PushSubscription','OperatorSetting']); if (BLOCKED.has(model)) return ['model not available: ' + model];
+    try { const fields = modelFields(model); const SENS = new Set(['password','passwordHash','token','tokenHash','accessToken','refreshToken','idToken','secret','value','p256dh','auth','endpoint','providerPayload','rawPayload','payload','bankAccountIban','bankAccountNumber','accountNumber']); const IMM = new Set(['id','createdAt','updatedAt']); const lines = fields.map((f) => { const req = f.isRequired && !f.hasDefaultValue ? ' *' : ''; const lst = f.isList ? '[]' : ''; const mut = IMM.has(f.name) ? ' (immutable)' : SENS.has(f.name) ? ' (blocked)' : ''; return (f.name.padEnd(24) + ' ' + f.type + lst + req + mut); }); return [model + ' fields:', ...lines]; } catch (e) { return ['error: ' + (e instanceof Error ? e.message.slice(0,400) : String(e).slice(0,400))]; }
+  }
+  if (sub === 'create') {
+    const model = args[1]?.trim(); if (!model) return ['usage: db create <Model> --data JSON'];
+    const BLOCKED = new Set(['Account','VerificationToken','Session','PushSubscription','OperatorSetting']); if (BLOCKED.has(model)) return ['model not available: ' + model];
+    const { flags } = parseFlags(args.slice(2)); const raw = flags.get('data');
+    if (typeof raw !== 'string') return ['db create requires --data JSON  e.g. db create Banner --data {"key":"promo","title":"Hi"}'];
+    let data; try { data = JSON.parse(raw); } catch { return ['invalid --data JSON']; }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return ['--data must be a JSON object'];
+    const SENS = new Set(['password','passwordHash','token','tokenHash','accessToken','refreshToken','idToken','secret','value','p256dh','auth','endpoint','providerPayload','rawPayload','payload','bankAccountIban','bankAccountNumber','accountNumber']); const IMM = new Set(['id','createdAt','updatedAt']); const dropped: string[] = []; const patch: Record<string, unknown> = {}; for (const [k,v] of Object.entries(data as Record<string, unknown>)) { if (SENS.has(k) || IMM.has(k) || ['__proto__','constructor','prototype'].includes(k)) { dropped.push(k); continue; } if (k === 'deletedAt') { dropped.push(k); continue; } patch[k]=v; }
+    if (Object.keys(patch).length === 0) return ['nothing to create (all fields blocked/immutable)'];
+    const createGuard = genericWriteGuard(model, patch); if (createGuard) return [createGuard];
+    if (flags.has('dry-run')) return [`dry-run: create ${model}`, `  data: ${JSON.stringify(redactRecord(patch, model))}`, 'no changes were made'];
+    let delegate; try { delegate = operatorDelegate(model); } catch { return ['unknown model: ' + model]; }
+    try { const created = await delegate.create({ data: patch, select: { id: true } }); try { const caller = await requireOperator(); await recordAudit({ actor: caller, action: 'admin.database.create', entityType: model, entityId: String(created.id), after: patch, ipAddress: undefined }); } catch {} const tip = dropped.length ? ' (dropped: ' + dropped.join(', ') + ')' : ''; return ['created ' + model + ' ' + created.id + tip]; } catch (e) { return ['create failed: ' + (e instanceof Error ? e.message.slice(0,600) : String(e).slice(0,600))]; }
+  }
+  if (sub === 'update') {
+    const model = args[1]?.trim(); const id = args[2]?.trim();
+    if (!model || !id) return ['usage: db update <Model> <id> --set JSON   e.g. db update User <id> --set {"name":"New"}'];
+    const BLOCKED = new Set(['Account','VerificationToken','Session','PushSubscription','OperatorSetting']); if (BLOCKED.has(model)) return ['model not available: ' + model];
+    const { flags } = parseFlags(args.slice(3)); const raw = flags.get('set');
+    if (typeof raw !== 'string') return ['db update requires --set JSON'];
+    let data; try { data = JSON.parse(raw); } catch { return ['invalid --set JSON']; }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return ['--set must be a JSON object'];
+    const SENS = new Set(['password','passwordHash','token','tokenHash','accessToken','refreshToken','idToken','secret','value','p256dh','auth','endpoint','providerPayload','rawPayload','payload','bankAccountIban','bankAccountNumber','accountNumber']); const dropped: string[] = []; const patch: Record<string, unknown> = {}; for (const [k,v] of Object.entries(data as Record<string, unknown>)) { if (k==='id' || k==='createdAt' || SENS.has(k) || ['__proto__','constructor','prototype'].includes(k)) { dropped.push(k); continue; } if (k==='deletedAt') { dropped.push(k); continue; } patch[k]=v; }
+    if (Object.keys(patch).length === 0) return ['nothing to update' + (dropped.length ? ' (dropped: ' + dropped.join(', ') + ')' : '')];
+    const updateGuard = genericWriteGuard(model, patch); if (updateGuard) return [updateGuard];
+    let delegate; try { delegate = operatorDelegate(model); } catch { return ['unknown model: ' + model]; }
+    try {
+      const before = await delegate.findUnique({ where: { id } }).catch(() => null);
+      if (!before) return ['not found: ' + model + ' ' + id];
+      const after = { ...before, ...patch };
+      if (flags.has('dry-run')) return dryRunLines('update', model, id, before, after);
+      await delegate.update({ where: { id }, data: patch });
+      try { const caller = await requireOperator(); const canonical = operatorModelName(model); await recordAudit({ actor: caller, action: 'admin.database.patch', entityType: canonical, entityId: id, before: redactRecord(before, canonical), after: redactRecord(after, canonical), ipAddress: undefined }); } catch {}
+      const tip = dropped.length ? ' (dropped: ' + dropped.join(', ') + ')' : '';
+      return ['updated ' + model + ' ' + id + tip];
+    } catch (e) { return ['update failed: ' + (e instanceof Error ? e.message.slice(0,600) : String(e).slice(0,600))]; }
+  }
+  if (sub === 'delete') {
+    const model = args[1]?.trim(); const id = args[2]?.trim();
+    if (!model || !id) return ['usage: db delete <Model> <id> [--force] [--hard]'];
+    const BLOCKED = new Set(['Account','VerificationToken','Session','PushSubscription','OperatorSetting']); if (BLOCKED.has(model)) return ['model not available: ' + model];
+    const { flags } = parseFlags(args.slice(3)); if (!flags.has('force') && !flags.has('dry-run')) return ['refusing without --force. Re-run with --force to confirm. Add --hard to purge permanently (trashed models).'];
+    const deleteGuard = genericWriteGuard(model); if (deleteGuard) return [deleteGuard];
+    const hard = flags.has('hard'); let delegate; try { delegate = operatorDelegate(model); } catch { return ['unknown model: ' + model]; }
+    try {
+      const row = await delegate.findUnique({ where: { id } }).catch(() => null);
+      if (!row) return ['not found: ' + model + ' ' + id];
+      if (flags.has('dry-run')) return [`dry-run: ${hard ? 'purge' : 'delete'} ${model} ${id}`, 'no changes were made'];
+      const canonical = operatorModelName(model);
+      if (hard) { await delegate.delete({ where: { id } }); try { const caller = await requireOperator(); await recordAudit({ actor: caller, action: 'admin.database.delete', entityType: canonical, entityId: id, before: redactRecord(row, canonical), after: { hard: true }, ipAddress: undefined }); } catch {} return ['purged ' + canonical + ' ' + id]; }
+      if (isTrashedModel(canonical)) { try { await delegate.update({ where: { id }, data: { deletedAt: new Date() }, select: { id: true } }); } catch { await delegate.delete({ where: { id } }); } try { const caller = await requireOperator(); await recordAudit({ actor: caller, action: 'admin.database.delete', entityType: canonical, entityId: id, before: redactRecord(row, canonical), after: { deletedAt: 'now' }, ipAddress: undefined }); } catch {} return ['deleted ' + canonical + ' ' + id + ' (soft \u2014 restore: db restore ' + canonical + ' ' + id + ')']; }
+      await delegate.delete({ where: { id } }); try { const caller = await requireOperator(); await recordAudit({ actor: caller, action: 'admin.database.delete', entityType: canonical, entityId: id, before: redactRecord(row, canonical), after: { deleted: true }, ipAddress: undefined }); } catch {} return ['deleted ' + canonical + ' ' + id];
+    } catch (e) { return ['delete failed: ' + (e instanceof Error ? e.message.slice(0,600) : String(e).slice(0,600))]; }
+  }
+  if (sub === 'restore') {
+    const model = args[1]?.trim(); const id = args[2]?.trim();
+    if (!model || !id) return ['usage: db restore <Model> <id>'];
+    if (!isTrashedModel(model)) return [model + ' does not support restore (no deletedAt)'];
+    const BLOCKED = new Set(['Account','VerificationToken','Session','PushSubscription','OperatorSetting']); if (BLOCKED.has(model)) return ['model not available: ' + model];
+    const restoreGuard = genericWriteGuard(model); if (restoreGuard) return [restoreGuard];
+    let delegate; try { delegate = operatorDelegate(model); } catch { return ['unknown model: ' + model]; }
+    try { const row = await (delegate as unknown as { findFirst: (a: { where: Record<string, unknown>; select: Record<string, boolean> }) => Promise<Record<string, unknown> | null> }).findFirst({ where: { id, ...onlyTrashed }, select: { id: true } } as never).catch(() => null); if (!row) return ['not found in trash: ' + model + ' ' + id]; await (delegate as unknown as { update: (a: { where: { id: string }; data: Record<string, unknown>; select: { id: boolean } }) => Promise<unknown> }).update({ where: { id }, data: { deletedAt: null }, select: { id: true } }); try { const caller = await requireOperator(); await recordAudit({ actor: caller, action: 'admin.database.restore', entityType: model, entityId: id, ipAddress: undefined }); } catch {} return ['restored ' + model + ' ' + id]; } catch (e) { return ['restore failed: ' + (e instanceof Error ? e.message.slice(0,600) : String(e).slice(0,600))]; }
   }
   return [`unknown db subcommand: ${sub} — try: db help`];
 }
@@ -347,12 +466,13 @@ async function handleRevalidate(args: string[]): Promise<string[]> {
 }
 
 export async function runTerminalCommand(raw: string): Promise<{ lines: string[]; ok: boolean }> {
+  await requireOperator();
   const trimmed = raw.trim();
   if (!trimmed) return { lines: ['(empty)'], ok: false };
   // Лимит 400 символов — чтобы не протащить большой JSON в URL
-  if (trimmed.length > 500) return { lines: ['command too long (max 500)'], ok: false };
+  if (trimmed.length > 4000) return { lines: ['command too long (max 4000)'], ok: false };
 
-  const parts = trimmed.split(/\s+/);
+  const parts = tokenizeTerminalCommand(trimmed);
   const cmd = parts[0]!.toLowerCase();
   const args = parts.slice(1);
 
@@ -361,6 +481,8 @@ export async function runTerminalCommand(raw: string): Promise<{ lines: string[]
   if (cmd === 'help') return { lines: helpLines(), ok: true };
 
   try {
+    if (cmd === 'inspect') return { lines: await handleInspect(args), ok: true };
+    if (cmd === 'search') return { lines: await handleSearch(args), ok: true };
     if (cmd === 'health') return { lines: await handleHealth(), ok: true };
     if (cmd === 'counts') return { lines: await handleCounts(), ok: true };
     if (cmd === 'jobs') return { lines: await handleJobs(args), ok: true };
@@ -379,40 +501,212 @@ export async function runTerminalCommand(raw: string): Promise<{ lines: string[]
   }
 }
 
-// Используется фронтом для подсказок
-export function completeTerminal(input: string): string[] {
-  const trimmed = input.trimStart();
-  if (!trimmed) return terminalCommands.map((c) => c.name);
-  const lower = trimmed.toLowerCase();
-  // Если уже есть пробел — подсказываем подкоманды
-  if (lower.startsWith('db ')) {
-    const rest = lower.slice(3).trim();
-    const subs = ['models', 'counts', 'count', 'find', 'help'];
-    if (!rest) return subs;
-    return subs.filter((s) => s.startsWith(rest));
-  }
-  if (lower.startsWith('carts ')) {
-    const rest = lower.slice(6).trim();
-    const subs = ['stats', 'purge', 'help'];
-    if (!rest) return subs;
-    // подсказки флагов после purge
-    if (rest.startsWith('purge')) {
-      const flags = ['--empty', '--anon', '--older-than', '--dry-run', '--force'];
-      const last = rest.split(/\s+/).pop() ?? '';
-      if (last.startsWith('--')) return flags.filter((f) => f.startsWith(last));
-      if (rest.includes('--')) return flags.filter((f) => !rest.includes(f));
-      return flags;
+export interface TerminalCompletion {
+  value: string;
+  label: string;
+  description?: string;
+}
+
+/** Split command input without breaking JSON or quoted arguments containing spaces. */
+export function tokenizeTerminalCommand(input: string): string[] {
+  const tokens: string[] = [];
+  let token = '';
+  let depth = 0;
+  let quote: '"' | "'" | null = null;
+  let escaped = false;
+  for (const char of input.trim()) {
+    if (escaped) { token += char; escaped = false; continue; }
+    if (char === '\\' && quote) { token += char; escaped = true; continue; }
+    if (quote) {
+      if (char === quote) quote = null;
+      else token += char;
+      continue;
     }
-    return subs.filter((s) => s.startsWith(rest));
+    if ((char === '"' || char === "'") && depth === 0) { quote = char; continue; }
+    if (char === '{' || char === '[' || char === '(') depth += 1;
+    if (char === '}' || char === ']' || char === ')') depth = Math.max(0, depth - 1);
+    if (/\s/.test(char) && depth === 0) {
+      if (token) { tokens.push(token); token = ''; }
+    } else token += char;
   }
-  if (lower.startsWith('revalidate')) return ['revalidate /', 'revalidate /en/admin/support/terminal'];
-  if (lower.startsWith('classes')) return ['classes salsa --take 5', 'classes --take 10'];
-  if (lower.startsWith('instructors')) return ['instructors salsa', 'instructors --take 5'];
-  if (lower.startsWith('products')) return ['products --take 5'];
-  if (lower.startsWith('media ')) return ['media DanceClass ', 'media Product ', 'media Instructor '];
-  if (lower.startsWith('open ')) return ['open /en/classes/', 'open /en/shop/'];
-  if (!trimmed.includes(' ')) {
-    return terminalCommands.map((c) => c.name).filter((n) => n.startsWith(lower));
+  if (token) tokens.push(token);
+  return tokens;
+}
+
+function dryRunLines(action: string, model: string, id: string, before: Record<string, unknown>, after: Record<string, unknown>): string[] {
+  const changed = Object.keys({ ...before, ...after }).filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
+  return [
+    `dry-run: ${action} ${model} ${id}`,
+    ...changed.map((key) => `  ${key}: ${JSON.stringify(redactRecord({ [key]: before[key] }, model)[key])} → ${JSON.stringify(redactRecord({ [key]: after[key] }, model)[key])}`),
+    'no changes were made',
+  ];
+}
+
+const BLOCKED_GENERIC_WRITE_MODELS = new Set([
+  'Account', 'VerificationToken', 'Session', 'PushSubscription', 'OperatorSetting',
+  'AuditLog', 'Payment', 'Refund', 'Payout', 'WalletAccount', 'WalletLedger', 'CommissionRecord',
+]);
+const USER_SAFE_WRITE_FIELDS = new Set(['name', 'phone', 'locale', 'timeZone', 'isActive']);
+
+function genericWriteGuard(model: string, patch?: Record<string, unknown>): string | null {
+  let canonical: string;
+  try { canonical = operatorModelName(model); } catch { return `unknown model: ${model}`; }
+  if (BLOCKED_GENERIC_WRITE_MODELS.has(canonical)) return `${canonical} is protected; use its dedicated support workflow`;
+  if (canonical === 'User' && patch) {
+    const unsafe = Object.keys(patch).filter((field) => !USER_SAFE_WRITE_FIELDS.has(field));
+    if (unsafe.length) return `User fields blocked in generic terminal: ${unsafe.join(', ')}; use a dedicated workflow`;
   }
+  return null;
+}
+
+const DB_SUBCOMMANDS = ['models', 'counts', 'count', 'find', 'get', 'fields', 'create', 'update', 'delete', 'restore', 'help'];
+const DB_MODEL_COMMANDS = new Set(['counts', 'count', 'find', 'fields', 'create', 'get', 'update', 'delete', 'restore']);
+const DB_FLAGS: Record<string, string[]> = {
+  count: ['--where'],
+  find: ['--where', '--take', '--q'],
+  create: ['--data', '--dry-run'],
+  update: ['--set', '--dry-run'],
+  delete: ['--force', '--hard', '--dry-run'],
+};
+const INSPECT_MODELS = ['User', 'Order', 'Booking', 'SupportTicket'];
+const MAX_ID_COMPLETIONS = 500;
+
+function completion(value: string, description?: string): TerminalCompletion {
+  return { value, label: value, ...(description ? { description } : {}) };
+}
+
+function matching(values: readonly string[], prefix: string): TerminalCompletion[] {
+  const lower = prefix.toLowerCase();
+  return values.filter((value) => value.toLowerCase().startsWith(lower)).map((value) => completion(value));
+}
+
+function splitCompletionInput(input: string): { tokens: string[]; current: string } {
+  const trimmed = input.trimStart();
+  const trailingSpace = /\s$/.test(trimmed);
+  const tokens = trimmed.trim().split(/\s+/).filter(Boolean);
+  return { current: trailingSpace ? '' : (tokens.pop() ?? ''), tokens };
+}
+
+async function modelCompletions(prefix: string): Promise<TerminalCompletion[]> {
+  return matching(operatorModels().map((model) => model.name).sort(), prefix);
+}
+
+async function idCompletions(model: string, prefix: string): Promise<TerminalCompletion[]> {
+  try {
+    const canonical = operatorModelName(model);
+    const fields = modelFields(canonical);
+    if (!fields.some((field) => field.name === 'id')) return [];
+    const displayField = ['name', 'email', 'title', 'slug', 'reference', 'orderNumber', 'code', 'key']
+      .find((name) => fields.some((field) => field.name === name));
+    const select: Record<string, boolean> = { id: true };
+    if (displayField) select[displayField] = true;
+    const delegate = operatorDelegate(canonical);
+    const rows = await delegate.findMany({
+      where: prefix ? { id: { startsWith: prefix } } : {},
+      select,
+      orderBy: { id: 'asc' },
+      take: MAX_ID_COMPLETIONS,
+    });
+    return rows
+      .map((row) => {
+        const id = typeof row.id === 'string' ? row.id : String(row.id ?? '');
+        if (!id) return null;
+        const display = displayField && row[displayField] != null ? String(row[displayField]) : '';
+        return completion(id, display ? `${canonical} · ${display}` : canonical);
+      })
+      .filter((item): item is TerminalCompletion => item !== null);
+  } catch {
+    return [];
+  }
+}
+
+async function inspectCompletions(model: string, prefix: string): Promise<TerminalCompletion[]> {
+  try {
+    const canonical = operatorModelName(model);
+    const preferred = canonical === 'User' ? 'email' : canonical === 'Order' ? 'orderNumber' : canonical === 'Booking' ? 'reference' : 'id';
+    const fields = modelFields(canonical);
+    const select: Record<string, boolean> = { id: true };
+    if (fields.some((field) => field.name === preferred)) select[preferred] = true;
+    const rows = await operatorDelegate(canonical).findMany({ select, orderBy: { id: 'asc' }, take: MAX_ID_COMPLETIONS });
+    const lower = prefix.toLowerCase();
+    return rows.flatMap((row) => {
+      const id = String(row.id ?? '');
+      const key = preferred === 'id' ? id : String(row[preferred] ?? id);
+      if (!key || (!key.toLowerCase().includes(lower) && !id.toLowerCase().includes(lower))) return [];
+      return [completion(key, id === key ? canonical : `${canonical} · ${id}`)];
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function dbCompletions(tokens: string[], current: string): Promise<TerminalCompletion[]> {
+  const sub = (tokens[1] ?? '').toLowerCase();
+  if (tokens.length <= 1) return matching(DB_SUBCOMMANDS, current);
+  if (!DB_SUBCOMMANDS.includes(sub) || !DB_MODEL_COMMANDS.has(sub)) return [];
+  if (tokens.length === 2) {
+    // Ctrl+Space is commonly pressed immediately after the model word
+    // (`db get Users`), so an exact model name advances to its next values
+    // instead of making the operator add a trailing space first.
+    try {
+      operatorModelName(current);
+      if (new Set(['get', 'update', 'delete', 'restore']).has(sub)) return idCompletions(current, '');
+      return matching(DB_FLAGS[sub] ?? [], '');
+    } catch {
+      return modelCompletions(current);
+    }
+  }
+
+  const model = tokens[2]!;
+  const idCommands = new Set(['get', 'update', 'delete', 'restore']);
+  if (idCommands.has(sub) && tokens.length === 3) return idCompletions(model, current);
+  if (sub === 'update' && tokens.length === 4) return matching(DB_FLAGS.update ?? [], current);
+  if (sub === 'delete' && tokens.length === 4) return matching(DB_FLAGS.delete ?? [], current);
+  if (sub === 'restore' || sub === 'get') return [];
+  if (sub === 'create' && tokens.length === 3) return matching(DB_FLAGS.create ?? [], current);
+  if ((sub === 'count' || sub === 'find') && tokens.length === 3) return matching(DB_FLAGS[sub] ?? [], current);
+  return [];
+}
+
+/**
+ * Resolve values against the live database for the current cursor position.
+ * This stays server-side so model names and record IDs are not exposed to an
+ * unauthorised browser.
+ */
+export async function completeTerminal(input: string): Promise<TerminalCompletion[]> {
+  await requireOperator();
+  const { tokens, current } = splitCompletionInput(input);
+  const head = (tokens[0] ?? current).toLowerCase();
+  if (tokens.length === 0 && head === 'db') {
+    const exactSub = DB_SUBCOMMANDS.find((sub) => sub === current.toLowerCase());
+    if (exactSub && DB_MODEL_COMMANDS.has(exactSub)) return modelCompletions('');
+    return matching(DB_SUBCOMMANDS, current === 'db' ? '' : current);
+  }
+  if (tokens.length === 0 && head === 'carts') return matching(['stats', 'purge', 'help'], '');
+  if (tokens.length === 0 && head === 'media') return matching(['DanceClass', 'Product', 'Instructor'], '');
+  if (tokens.length === 0) return matching(terminalCommands.map((command) => command.name), current);
+  if (head === 'inspect') {
+    if (tokens.length <= 1) return matching(INSPECT_MODELS, current);
+    if (tokens.length === 2) return inspectCompletions(tokens[1]!, current);
+    return [];
+  }
+  if (tokens.length === 1 && head === 'db' && current === '') return matching(DB_SUBCOMMANDS, '');
+  if (head === 'db') return dbCompletions(tokens, current);
+
+  if (head === 'carts') {
+    const sub = tokens[1] ?? current;
+    if (tokens.length <= 1) return matching(['stats', 'purge', 'help'], sub);
+    if (sub === 'purge') {
+      const used = new Set(tokens.slice(2).filter((token) => token.startsWith('--')));
+      return matching(['--empty', '--anon', '--older-than', '--dry-run', '--force'].filter((flag) => !used.has(flag)), current);
+    }
+    return [];
+  }
+  if (head === 'media') {
+    if (tokens.length <= 1) return matching(['DanceClass', 'Product', 'Instructor'], current);
+    if (tokens.length === 2) return idCompletions(tokens[1]!, current);
+    return [];
+  }
+  if (tokens.length === 1) return matching(terminalCommands.map((command) => command.name), current);
   return [];
 }

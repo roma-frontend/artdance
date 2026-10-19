@@ -53,3 +53,18 @@ Workflow `.github/workflows/ci.yml` сверён с локальными ком�
 - Полный локальный e2e выявил 1 падение Full/Lite и 1 flaky замер шапки при 833 passed / 242 skipped. Full/Lite теперь ожидает клиентское чтение сохранённого режима до клика; замер шапки проверяет настоящий CSS transition в фиксированных точках времени вместо случайного числа кадров.
 - После исправления оба сценария проверены тремя параллельными повторами: 12 passed, 6 предусмотренных device skips, без failed/flaky. Полный CI нового коммита проверяется после пуша; старый зелёный CI не выдается за результат новых изменений.
 - Изучен предыдущий GitHub Actions run `37945891635` (`3fd0084`): все пять jobs success, 839 e2e passed / 238 skipped, Vercel status success. Последние восемь запусков CI успешны.
+
+## Support / God Mode — текущая проверка
+
+- Добавлены operator-only global search по `Ctrl+K`, entity preview, User 360 с
+  timeline и быстрые действия копирования/отзыва сессий. Поведение и границы
+  безопасности описаны в [support-operator-manual.md](./support-operator-manual.md).
+- Все новые server/API пути используют operator guard, явные `select`, лимиты,
+  `no-store`, redaction и audit для отзывов сессий. Добавлены EN/RU/HY-ключи.
+- Targeted regression suite: 34 passed. Полный `npm test`: 959 passed в 76 test files.
+- `npm run typecheck`, `npm run lint`,
+  `npm run i18n:check`, `npm run build` и `git diff --check` прошли.
+- Полный GitHub Actions run `39030105000` для SHA `28357ef495723fd103faf1b38de348d8c08b0433`
+  был зелёным по всем пяти jobs, включая typecheck/lint/tests, Prisma/schema,
+  build/security и browser/e2e. Это последний опубликованный SHA; локальные
+  незакоммиченные изменения требуют нового CI run после push.

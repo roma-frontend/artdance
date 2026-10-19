@@ -37,6 +37,11 @@ export function CinemaAperture({ children }: { children: ReactNode }) {
     const panels = Array.from(root.children) as HTMLElement[];
 
     let frame = 0;
+    const setProp = (el: HTMLElement, name: string, value: string) => {
+      if (el.style.getPropertyValue(name) !== value) {
+        el.style.setProperty(name, value);
+      }
+    };
     const paint = () => {
       frame = 0;
       const viewport = window.innerHeight;
@@ -44,9 +49,9 @@ export function CinemaAperture({ children }: { children: ReactNode }) {
       for (const [index, panel] of panels.entries()) {
         const rect = rects[index]!;
         const open = apertureOpen(rect.top, viewport, config.openSpan);
-        panel.style.setProperty('--aperture-open', open.toFixed(3));
-        panel.style.setProperty('--aperture-flare', apertureFlare(open).toFixed(3));
-        panel.style.setProperty('--aperture-exit', apertureExit(rect.bottom, viewport).toFixed(3));
+        setProp(panel, '--aperture-open', open.toFixed(3));
+        setProp(panel, '--aperture-flare', apertureFlare(open).toFixed(3));
+        setProp(panel, '--aperture-exit', apertureExit(rect.bottom, viewport).toFixed(3));
       }
     };
     const schedule = () => {

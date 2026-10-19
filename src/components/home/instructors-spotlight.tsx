@@ -39,6 +39,17 @@ export function InstructorsSpotlight({ className }: InstructorsSpotlightProps) {
     let currentY = 0;
     let isHovered = false;
     let rafId = 0;
+    let cachedRect: DOMRect | null = null;
+    let cachedRectTime = 0;
+
+    const getCachedRect = () => {
+      const now = performance.now();
+      if (!cachedRect || now - cachedRectTime > 300) {
+        cachedRect = parent.getBoundingClientRect();
+        cachedRectTime = now;
+      }
+      return cachedRect;
+    };
 
     const lerp = (start: number, end: number, factor: number) =>
       start + (end - start) * factor;
@@ -47,8 +58,8 @@ export function InstructorsSpotlight({ className }: InstructorsSpotlightProps) {
       currentX = lerp(currentX, targetX, 0.15);
       currentY = lerp(currentY, targetY, 0.15);
 
-      parent.style.setProperty('--spotlight-x', `${currentX}px`);
-      parent.style.setProperty('--spotlight-y', `${currentY}px`);
+      parent.style.setProperty('--spotlight-x', `${currentX.toFixed(1)}px`);
+      parent.style.setProperty('--spotlight-y', `${currentY.toFixed(1)}px`);
 
       if (Math.abs(targetX - currentX) > 0.1 || Math.abs(targetY - currentY) > 0.1) {
         rafId = requestAnimationFrame(updatePosition);
@@ -58,7 +69,7 @@ export function InstructorsSpotlight({ className }: InstructorsSpotlightProps) {
     };
 
     const handlePointerMove = (e: PointerEvent) => {
-      const rect = parent.getBoundingClientRect();
+      const rect = getCachedRect();
       targetX = e.clientX - rect.left;
       targetY = e.clientY - rect.top;
 
@@ -72,6 +83,10 @@ export function InstructorsSpotlight({ className }: InstructorsSpotlightProps) {
       }
     };
 
+    const invalidateRect = () => {
+      cachedRect = null;
+    };
+
     const handlePointerLeave = () => {
       isHovered = false;
       parent.removeAttribute('data-spotlight-active');
@@ -83,10 +98,14 @@ export function InstructorsSpotlight({ className }: InstructorsSpotlightProps) {
 
     parent.addEventListener('pointermove', handlePointerMove, { passive: true });
     parent.addEventListener('pointerleave', handlePointerLeave);
+    window.addEventListener('scroll', invalidateRect, { passive: true });
+    window.addEventListener('resize', invalidateRect, { passive: true });
 
     return () => {
       parent.removeEventListener('pointermove', handlePointerMove);
       parent.removeEventListener('pointerleave', handlePointerLeave);
+      window.removeEventListener('scroll', invalidateRect);
+      window.removeEventListener('resize', invalidateRect);
       if (rafId) cancelAnimationFrame(rafId);
       parent.removeAttribute('data-spotlight-active');
       parent.style.removeProperty('--spotlight-x');

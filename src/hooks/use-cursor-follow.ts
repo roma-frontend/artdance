@@ -22,11 +22,22 @@ export function useCursorFollow(ref: RefObject<HTMLElement | null>, selector?: s
     let point: { x: number; y: number } | null = null;
     let frame = 0;
     let previous = 0;
+    let cachedRect: DOMRect | null = null;
+    let cachedRectTime = 0;
+    const getRect = (el: HTMLElement) => {
+      const now = performance.now();
+      if (!cachedRect || now - cachedRectTime > 250) {
+        cachedRect = el.getBoundingClientRect();
+        cachedRectTime = now;
+      }
+      return cachedRect;
+    };
     const reset = () => {
       cancelAnimationFrame(frame);
       frame = 0;
       previous = 0;
       point = null;
+      cachedRect = null;
       x.set(0);
       y.set(0);
       if (target && selector) target.style.transform = original;
@@ -36,14 +47,14 @@ export function useCursorFollow(ref: RefObject<HTMLElement | null>, selector?: s
     const paint = (time: number) => {
       frame = 0;
       if (!target || !point) return;
-      const rect = target.getBoundingClientRect();
+      const rect = getRect(target);
       const dx = cursorOffset(point.x, rect.left, rect.width);
       const dy = cursorOffset(point.y, rect.top, rect.height);
       const elapsed = previous ? time - previous : 1000 / 60;
       previous = time;
       x.set(lerp(x.get(), dx, elapsed));
       y.set(lerp(y.get(), dy, elapsed));
-      if (selector) target.style.transform = `translate3d(${x.get() * 12}px, ${y.get() * 12}px, 0) ${original}`;
+      if (selector) target.style.transform = `translate3d(${(x.get() * 12).toFixed(2)}px, ${(y.get() * 12).toFixed(2)}px, 0) ${original}`;
       if (x.get() !== dx || y.get() !== dy) frame = requestAnimationFrame(paint);
       else previous = 0;
     };

@@ -15,9 +15,15 @@ import { runBookingCron, runDailyDigest } from '@/server/cron/tasks';
 import { sendEmail } from '@/lib/email/send';
 import { authedAction } from '@/server/safe-action';
 import { requireOperator } from '@/lib/auth/guards';
-import { runTerminalCommand } from '@/server/terminal/commands';
+import { completeTerminal, runTerminalCommand, tokenizeTerminalCommand } from '@/server/terminal/commands';
 
 const id = z.string().trim().min(1).max(128);
+
+function auditCommandSummary(raw: string): string {
+  const tokens = tokenizeTerminalCommand(raw);
+  const redacted = new Set(['--data', '--set', '--where']);
+  return tokens.map((token, index) => redacted.has(tokens[index - 1] ?? '') ? '[redacted]' : token).join(' ');
+}
 
 export const saveTranslationOverride = authedAction
   .metadata({ rateLimit: 'adminMutation', audit: 'admin.operator.translation' })
@@ -57,6 +63,19 @@ export const revokeSession = authedAction
     await db.session.delete({ where: { id: session.id } });
     await recordAudit({ actor: caller, action: 'admin.operator.sessionRevoke', entityType: 'Session', entityId: session.id, after: { userId: session.userId }, ipAddress: ctx.identifier });
     return { revoked: true };
+  });
+
+export const revokeAllUserSessions = authedAction
+  .metadata({ rateLimit: 'adminMutation', audit: 'session.revokedAll' })
+  .inputSchema(z.object({ userId: id }))
+  .action(async ({ parsedInput, ctx }) => {
+    const caller = await requireOperator();
+    if (parsedInput.userId === caller.id) throw new Error('Cannot revoke your own operator sessions');
+    const target = await db.user.findUnique({ where: { id: parsedInput.userId }, select: { id: true, email: true } });
+    if (!target) throw new Error('User not found');
+    const result = await db.session.deleteMany({ where: { userId: target.id } });
+    await recordAudit({ actor: caller, action: 'session.revokedAll', entityType: 'User', entityId: target.id, after: { revoked: result.count, email: target.email }, ipAddress: ctx.identifier });
+    return { revoked: result.count };
   });
 
 export const runOperatorJob = authedAction
@@ -123,15 +142,21 @@ export const exportOperatorModel = authedAction
 
 export const runOperatorCommand = authedAction
   .metadata({ rateLimit: 'adminMutation', audit: 'admin.operator.command' })
-  .inputSchema(z.object({ command: z.string().trim().min(1).max(500) }))
+  .inputSchema(z.object({ command: z.string().trim().min(1).max(4000) }))
   .action(async ({ parsedInput, ctx }) => {
     const caller = await requireOperator();
     const raw = parsedInput.command.trim();
     const head = raw.split(/\s+/)[0]?.toLowerCase() ?? 'unknown';
     const { lines, ok } = await runTerminalCommand(raw);
-    await recordAudit({ actor: caller, action: 'admin.operator.command', entityType: 'OperatorCommand', entityId: head, after: { command: raw, ok }, ipAddress: ctx.identifier });
+    const summary = auditCommandSummary(raw);
+    await recordAudit({ actor: caller, action: 'admin.operator.command', entityType: 'OperatorCommand', entityId: head, after: { command: summary, ok }, ipAddress: ctx.identifier });
     return { lines, ok };
   });
+
+export const completeOperatorCommand = authedAction
+  .metadata({ rateLimit: 'adminAutocomplete' })
+  .inputSchema(z.object({ command: z.string().max(4000) }))
+  .action(async ({ parsedInput }) => ({ items: await completeTerminal(parsedInput.command) }));
 
 export const replyToSupportTicket = authedAction
   .metadata({ rateLimit: 'adminMutation', audit: 'admin.support.reply' })

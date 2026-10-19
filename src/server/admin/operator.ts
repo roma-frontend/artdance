@@ -36,15 +36,34 @@ export function operatorModels() {
   return runtimeModels().filter((m) => !['Account', 'VerificationToken', 'Session', 'PushSubscription', 'OperatorSetting'].includes(m.name));
 }
 
+/** Resolve model names typed by an operator, including case and simple plurals. */
+export function operatorModelName(name: string): string {
+  const raw = name.trim();
+  const models = operatorModels();
+  const exact = models.find((m) => m.name === raw);
+  if (exact) return exact.name;
+  const insensitive = models.find((m) => m.name.toLowerCase() === raw.toLowerCase());
+  if (insensitive) return insensitive.name;
+
+  const singular = raw.toLowerCase().endsWith('ies')
+    ? `${raw.slice(0, -3)}y`
+    : raw.toLowerCase().endsWith('s')
+      ? raw.slice(0, -1)
+      : raw;
+  const pluralMatch = models.find((m) => m.name.toLowerCase() === singular.toLowerCase());
+  if (pluralMatch) return pluralMatch.name;
+  throw domainErrors.validationFailed('model');
+}
+
 export function operatorModel(name: string) {
-  const model = operatorModels().find((m) => m.name === name);
+  const model = operatorModels().find((m) => m.name === operatorModelName(name));
   if (!model) throw domainErrors.validationFailed('model');
   return model;
 }
 
 export function operatorDelegate(name: string, client: unknown = db): OperatorDelegate {
-  operatorModel(name);
-  const delegate = (client as Record<string, OperatorDelegate | undefined>)[name.charAt(0).toLowerCase() + name.slice(1)];
+  const canonicalName = operatorModelName(name);
+  const delegate = (client as Record<string, OperatorDelegate | undefined>)[canonicalName.charAt(0).toLowerCase() + canonicalName.slice(1)];
   if (!delegate) throw domainErrors.validationFailed('model');
   return delegate;
 }
@@ -175,11 +194,11 @@ export async function globalOperatorSearch(q: string) {
     db.supportTicket.findMany({ where: { OR: [{ id: q }, { email: contains }, { message: contains }] }, take: 5, select: { id: true, name: true } }),
   ]);
   return [
-    ...users.map((u) => ({ label: `${u.name} · ${u.email}`, href: routes.adminUser(u.id), kind: 'users' as const })),
-    ...bookings.map((b) => ({ label: b.reference, href: routes.adminBooking(b.id), kind: 'bookings' as const })),
-    ...orders.map((o) => ({ label: o.orderNumber, href: routes.adminOrder(o.id), kind: 'orders' as const })),
-    ...classes.map((c) => ({ label: c.title, href: routes.adminResourceEdit('classes', c.id), kind: 'classes' as const })),
-    ...venues.map((v) => ({ label: v.name, href: routes.adminResourceEdit('venues', v.id), kind: 'venues' as const })),
-    ...tickets.map((t) => ({ label: t.name, href: routes.adminOperatorTool('tickets', { id: t.id }), kind: 'tickets' as const })),
+    ...users.map((u) => ({ label: `${u.name} · ${u.email}`, href: routes.adminUser(u.id), kind: 'users' as const, entityId: u.id, entityType: 'User' as const })),
+    ...bookings.map((b) => ({ label: b.reference, href: routes.adminBooking(b.id), kind: 'bookings' as const, entityId: b.id, entityType: 'Booking' as const })),
+    ...orders.map((o) => ({ label: o.orderNumber, href: routes.adminOrder(o.id), kind: 'orders' as const, entityId: o.id, entityType: 'Order' as const })),
+    ...classes.map((c) => ({ label: c.title, href: routes.adminResourceEdit('classes', c.id), kind: 'classes' as const, entityId: c.id, entityType: 'DanceClass' as const })),
+    ...venues.map((v) => ({ label: v.name, href: routes.adminResourceEdit('venues', v.id), kind: 'venues' as const, entityId: v.id, entityType: 'Venue' as const })),
+    ...tickets.map((t) => ({ label: t.name, href: routes.adminOperatorTool('tickets', { id: t.id }), kind: 'tickets' as const, entityId: t.id, entityType: 'SupportTicket' as const })),
   ];
 }

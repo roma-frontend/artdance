@@ -117,19 +117,33 @@ export function HeroParallaxFX() {
 
     /* --- Глубина при прокрутке -------------------------------------------- */
 
+    let lastBack = '';
+    let lastWord = '';
+    let lastContentTranslate = '';
+    let lastContentOpacity = '';
+    let lastFront = '';
+
+    const setStyle = (el: HTMLElement | null, prop: 'transform' | 'translate' | 'opacity', val: string, prev: string) => {
+      if (!el || val === prev) return prev;
+      el.style[prop] = val;
+      return val;
+    };
+
     const paintScroll = () => {
       frame = 0;
       const rect = root.getBoundingClientRect();
-      const progress = -rect.top / (rect.height || 1);
+      // Когда hero полностью ушёл далеко за верх экрана, замораживаем на финальном кадре (1), не переписывая DOM на каждом пикселе скролла ниже
+      const rawProgress = -rect.top / (rect.height || 1);
+      const progress = Math.min(1, Math.max(0, rawProgress));
       const depth = heroDepthFrame(progress, rect.height, factor);
       const focused = root.matches(':focus-within');
-      if (background) background.style.transform = `translate3d(0, ${depth.background}px, 0) scale(${depth.zoom})`;
-      if (word) word.style.translate = `0 ${depth.word}px`;
+      lastBack = setStyle(background, 'transform', `translate3d(0, ${depth.background.toFixed(2)}px, 0) scale(${depth.zoom.toFixed(4)})`, lastBack);
+      lastWord = setStyle(word, 'translate', `0 ${depth.word.toFixed(2)}px`, lastWord);
       if (content) {
-        content.style.translate = `0 ${focused ? 0 : depth.content}px`;
-        content.style.opacity = focused ? '' : String(depth.contentOpacity);
+        lastContentTranslate = setStyle(content, 'translate', `0 ${focused ? 0 : Number(depth.content.toFixed(2))}px`, lastContentTranslate);
+        lastContentOpacity = setStyle(content, 'opacity', focused ? '' : depth.contentOpacity.toFixed(3), lastContentOpacity);
       }
-      if (foreground) foreground.style.transform = `translate3d(0, ${depth.foreground}px, 0)`;
+      lastFront = setStyle(foreground, 'transform', `translate3d(0, ${depth.foreground.toFixed(2)}px, 0)`, lastFront);
     };
 
     const onScroll = () => {

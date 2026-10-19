@@ -67,7 +67,7 @@ import {
   type SearchResponse,
   type SearchScope,
 } from '@/domain/search';
-import { Link, useRouter } from '@/i18n/routing';
+import { Link, usePathname, useRouter } from '@/i18n/routing';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { highlightMatches } from '@/lib/search/normalize';
 import { cn } from '@/lib/utils';
@@ -99,6 +99,7 @@ export function useSearchOverlay(): SearchOverlayApi {
 
 export function SearchOverlayProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   /**
    * Элемент, которому возвращается фокус после закрытия.
@@ -131,6 +132,7 @@ export function SearchOverlayProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'k') return;
+      if (pathname.includes('/admin')) return;
       event.preventDefault();
 
       if (open) {
@@ -143,7 +145,7 @@ export function SearchOverlayProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, rememberFocus]);
+  }, [open, pathname, rememberFocus]);
 
   const api = useMemo<SearchOverlayApi>(
     () => ({

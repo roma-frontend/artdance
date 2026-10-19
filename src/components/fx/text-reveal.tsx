@@ -57,7 +57,7 @@ export function TextReveal({ children }: { children: string }) {
           animate={controls}
           custom={word++}
           variants={{
-            hidden: { opacity: 0, y: 12, filter: 'blur(10px)' },
+            hidden: { opacity: 0, y: 12, filter: 'blur(4px)' },
             visible: (order: number) => ({ opacity: 1, y: 0, filter: 'blur(0px)', transition: revealTransition(order) }),
           }}
         >

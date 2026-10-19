@@ -13,6 +13,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { UserAccessActions } from '@/components/admin/user-access-actions';
 import { ImpersonationButton } from '@/components/admin/operator-actions';
+import { UserSupportActions } from '@/components/admin/user-support-actions';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { Badge } from '@/components/ui/badge';
 import { routes } from '@/config';
@@ -21,6 +22,7 @@ import type { Locale } from '@/i18n/config';
 import { getRootTranslate } from '@/i18n/translate';
 import { adminAccess } from '@/server/admin/access';
 import { activeAdminCount, getUserDetail } from '@/server/admin/people';
+import { getUser360 } from '@/server/admin/user-360';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -41,6 +43,7 @@ export default async function AdminUserPage({ params }: PageProps) {
   const format = await getFormatter();
 
   const adminCount = await activeAdminCount();
+  const user360 = await getUser360(id);
   const isLastAdmin = user.role === 'ADMIN' && user.isActive && adminCount <= 1;
 
   return (
@@ -114,11 +117,12 @@ export default async function AdminUserPage({ params }: PageProps) {
             canChangeRole={can('users.roleChange')}
             canSuspend={can('users.edit')}
            />
-           {can('users.impersonate') && user.id !== caller.id && user.role !== 'ADMIN' && user.role !== 'SUPPORT' ? (
+            {can('users.impersonate') && user.id !== caller.id && user.role !== 'ADMIN' && user.role !== 'SUPPORT' ? (
              <div className="mt-4 border-t border-border-subtle pt-4">
                <ImpersonationButton userId={user.id} />
              </div>
-           ) : null}
+            ) : null}
+            <UserSupportActions userId={user.id} email={user.email} />
 
           {user.deletionRequestedAt ? (
             <p className="text-body-sm mt-6 text-content-warning">
@@ -128,6 +132,39 @@ export default async function AdminUserPage({ params }: PageProps) {
           ) : null}
         </section>
       </div>
+
+      {user360 ? (
+        <section aria-labelledby="user-timeline" className="mt-6 rounded-2xl border border-border-default bg-surface-card p-4 shadow-sm sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 id="user-timeline" className="text-card-title text-content-primary">{t('timelineTitle')}</h2>
+              <p className="mt-1 text-body-sm text-content-secondary">{t('timelineHint')}</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="neutral" size="sm">{user360.bookings.length} {t('timelineBookings')}</Badge>
+              <Badge variant="neutral" size="sm">{user360.orders.length} {t('timelineOrders')}</Badge>
+              <Badge variant="neutral" size="sm">{user360.tickets.length} {t('timelineTickets')}</Badge>
+              <Badge variant="neutral" size="sm">{user360.sessions.length} {t('timelineSessions')}</Badge>
+            </div>
+          </div>
+          <div className="mt-5 space-y-2">
+            {user360.timeline.slice(0, 24).map((item) => (
+              <div key={item.id} className="flex gap-3 rounded-xl border border-border-subtle bg-surface-sunken/40 p-3">
+                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-accent" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-body-sm font-semibold text-content-primary">{item.title}</p>
+                    {item.status ? <Badge variant="neutral" size="sm">{item.status}</Badge> : null}
+                  </div>
+                  {item.subtitle ? <p className="mt-0.5 truncate text-caption text-content-secondary">{item.subtitle}</p> : null}
+                </div>
+                <time dateTime={item.occurredAt} className="shrink-0 text-caption text-content-tertiary">{format.dateTime(new Date(item.occurredAt), 'bookingStamp')}</time>
+              </div>
+            ))}
+            {user360.timeline.length === 0 ? <p className="rounded-xl border border-dashed border-border-default p-6 text-center text-body-sm text-content-tertiary">{t('timelineEmpty')}</p> : null}
+          </div>
+        </section>
+      ) : null}
     </>
   );
 }

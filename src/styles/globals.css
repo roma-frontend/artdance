@@ -2359,7 +2359,8 @@ html:has(body[data-scroll-locked]) {
     radial-gradient(ellipse 55% 45% at 78% 22%, rgba(212, 175, 55, 0.08) 0%, transparent 55%);
 }
 
-/* Плёночное зерно — SVG turbulence как у 35mm, едва заметно, но даёт фактуру */
+/* Плёночное зерно — SVG turbulence как у 35mm, едва заметно, но даёт фактуру.
+ * Статический композитный слой без steps-перерисовки feTurbulence на весь экран. */
 .hero-mythic-grain {
   position: absolute;
   inset: 0;
@@ -2369,19 +2370,6 @@ html:has(body[data-scroll-locked]) {
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E");
   background-size: 220px 220px;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .hero-mythic-grain {
-    animation: hero-mythic-grain 0.55s steps(3) infinite;
-  }
-}
-
-@keyframes hero-mythic-grain {
-  0%   { transform: translate3d(0, 0, 0); }
-  33%  { transform: translate3d(-1.5%, -1%, 0); }
-  66%  { transform: translate3d(1%, 0.8%, 0); }
-  100% { transform: translate3d(0, 0, 0); }
 }
 
 /* Пыль — canvas screen-blend, частицы рисует JS. Размер задаёт JS через dpr. */
@@ -2827,25 +2815,46 @@ html:has(body[data-scroll-locked]) {
 [data-aperture='on'] > [data-curtain],
 [data-aperture='on'] > [data-curtain][data-revealed] {
   overflow: clip;
-  clip-path: none;
+  clip-path: inset(
+    calc(var(--aperture-closed) * var(--aperture-inset-y))
+    calc(var(--aperture-closed) * var(--aperture-inset-x))
+    round calc(var(--aperture-closed) * var(--aperture-radius))
+  );
   transition: none;
 }
 
 [data-aperture='on'] > [data-curtain] [data-parallax='background'] {
-  scale: 1;
+  scale: calc(1 + var(--aperture-closed) * var(--aperture-zoom));
 }
 
 [data-aperture='on'] > [data-curtain] .page-container,
 [data-aperture='on'] > section h2 {
   filter: none;
-  translate: none;
+  translate: 0 calc(var(--aperture-closed) * 24px);
+}
+
+/* Анаморфный кино-блик на середине раскрытия экрана */
+[data-aperture='on'] > [data-curtain]::before {
+  content: '';
+  position: absolute;
+  inset-inline: 10%;
+  top: 0;
+  height: 2px;
+  z-index: 20;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--metal) 65%, transparent) 30%,
+    var(--content-on-cinema) 50%,
+    color-mix(in srgb, var(--metal) 65%, transparent) 70%,
+    transparent
+  );
+  opacity: calc(var(--aperture-flare) * 0.85);
+  transform: scaleX(calc(0.4 + var(--aperture-open) * 0.6));
 }
 
 [data-aperture='on'] > [data-curtain]::after {
-  display: none;
-}
-
-[data-aperture='on'] > [data-curtain]::before {
   display: none;
 }
 
@@ -2859,7 +2868,7 @@ html:has(body[data-scroll-locked]) {
   transform-origin: calc(50% - var(--aperture-side) * 50%) 50%;
   translate: 0 calc(var(--aperture-closed) * var(--aperture-rise)) calc(var(--aperture-closed) * -160px);
   rotate: y calc(var(--aperture-side) * var(--aperture-closed) * var(--aperture-tilt));
-  filter: brightness(calc(1 - var(--aperture-closed) * 0.6));
+  opacity: calc(1 - var(--aperture-closed) * 0.45);
 }
 
 [data-aperture='on'] [data-aperture-card]:nth-child(even) {
@@ -3123,29 +3132,39 @@ html:has(body[data-scroll-locked]) {
     opacity: 1;
   }
 
-  /* Конус сценического прожектора сверху секции к точке курсора */
+  /* Конус сценического прожектора сверху секции к точке курсора (композитная геометрия вместо перерисовки градиента) */
   .instructors-spotlight-cone {
     position: absolute;
-    inset: 0;
+    left: 0;
+    top: 0;
+    width: 72rem;
+    height: 56rem;
     pointer-events: none;
     background: radial-gradient(
-      ellipse 36rem 28rem at var(--spotlight-x) var(--spotlight-y),
-      color-mix(in srgb, var(--accent-glow) 35%, transparent),
+      ellipse 50% 50% at 50% 50%,
+      color-mix(in srgb, var(--accent-glow) 38%, transparent),
       transparent 75%
     );
     mix-blend-mode: screen;
+    transform: translate3d(calc(var(--spotlight-x) - 36rem), calc(var(--spotlight-y) - 28rem), 0);
+    will-change: transform;
   }
 
   .instructors-spotlight-beam {
     position: absolute;
-    inset: 0;
+    left: 0;
+    top: 0;
+    width: 36rem;
+    height: 36rem;
     pointer-events: none;
     background: radial-gradient(
-      circle 18rem at var(--spotlight-x) var(--spotlight-y),
-      color-mix(in srgb, var(--content-on-cinema) 15%, transparent),
+      circle 50% at 50% 50%,
+      color-mix(in srgb, var(--content-on-cinema) 18%, transparent),
       transparent 60%
     );
     mix-blend-mode: soft-light;
+    transform: translate3d(calc(var(--spotlight-x) - 18rem), calc(var(--spotlight-y) - 18rem), 0);
+    will-change: transform;
   }
 }
 
@@ -3380,6 +3399,12 @@ html:has(body[data-scroll-locked]) {
   --style-media-width: 100%;
   --style-media-height: 100%;
 }
+.dance-style-panel {
+  --curtain-x: 50%;
+  --curtain-y: 35%;
+  --curtain-shift-x: 0px;
+  --curtain-shift-y: 0px;
+}
 .dance-style-media {
   position: absolute;
   left: 50%;
@@ -3392,9 +3417,46 @@ html:has(body[data-scroll-locked]) {
   backface-visibility: hidden;
   transition: transform 700ms cubic-bezier(0.32, 0.72, 0, 1);
 }
+.dance-style-spotlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(
+      circle 18rem at var(--curtain-x) var(--curtain-y),
+      color-mix(in srgb, var(--accent-glow) 32%, transparent),
+      transparent 70%
+    ),
+    conic-gradient(
+      from 180deg at 50% -10%,
+      transparent 40%,
+      color-mix(in srgb, var(--metal) 18%, transparent) 50%,
+      transparent 60%
+    );
+  mix-blend-mode: screen;
+  transition: opacity 600ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.dance-style-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--metal) 55%, transparent),
+    inset 0 0 36px color-mix(in srgb, var(--accent-glow) 22%, transparent);
+  transition: opacity 600ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.dance-style-panel[data-active='true'] .dance-style-spotlight,
+.dance-style-panel[data-active='true'] .dance-style-rim {
+  opacity: 1;
+}
 .dance-style-panel [data-tile-video] { opacity: 0; transition: opacity 250ms var(--ease-standard); }
 .dance-style-panel [data-tile-video][data-playing] { opacity: 1; }
 [data-lite='true'] .dance-style-media { transform: none !important; transition: none; }
+[data-lite='true'] .dance-style-spotlight,
+[data-lite='true'] .dance-style-rim { display: none !important; }
 
 /* Dance experience: the interface stays stable; the photographic gesture changes by style. */
 .dance-finder { background-image: radial-gradient(ellipse at 100% 0%, var(--metal-soft), transparent 55%); }
@@ -3460,10 +3522,10 @@ html:has(body[data-scroll-locked]) {
   .dance-style-panel[data-dance-mood='flow'] { transition-duration: 1200ms; }
   .dance-style-panel[data-dance-mood='pulse'] { transition-duration: 500ms; }
   .dance-style-panel[data-dance-mood='stage'] { transition-duration: 800ms; }
-  .dance-style-panel[data-active='true'][data-dance-mood='flow'] .dance-style-image { transform: scale(1.06) translateY(-1%); }
-  .dance-style-panel[data-active='true'][data-dance-mood='embrace'] .dance-style-image { transform: scale(1.07) translateX(1%); }
-  .dance-style-panel[data-active='true'][data-dance-mood='pulse'] .dance-style-image { transform: scale(1.04) rotate(-0.5deg); }
-  .dance-style-panel[data-active='true'][data-dance-mood='stage'] .dance-style-image { transform: scale(1.05); }
+  .dance-style-panel[data-active='true'][data-dance-mood='flow'] .dance-style-image { transform: translate3d(var(--curtain-shift-x, 0px), calc(-1% + var(--curtain-shift-y, 0px)), 0) scale(1.06); }
+  .dance-style-panel[data-active='true'][data-dance-mood='embrace'] .dance-style-image { transform: translate3d(calc(1% + var(--curtain-shift-x, 0px)), var(--curtain-shift-y, 0px), 0) scale(1.07); }
+  .dance-style-panel[data-active='true'][data-dance-mood='pulse'] .dance-style-image { transform: translate3d(var(--curtain-shift-x, 0px), var(--curtain-shift-y, 0px), 0) scale(1.04) rotate(-0.5deg); }
+  .dance-style-panel[data-active='true'][data-dance-mood='stage'] .dance-style-image { transform: translate3d(var(--curtain-shift-x, 0px), var(--curtain-shift-y, 0px), 0) scale(1.05); }
   .event-spotlight:hover .event-spotlight-image, .event-spotlight:focus-within .event-spotlight-image { transform: scale(1.03); }
   .event-spotlight:hover .event-poster-light, .event-spotlight:focus-within .event-poster-light { opacity: 1; }
 }
