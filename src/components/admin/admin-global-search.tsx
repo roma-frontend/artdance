@@ -97,7 +97,7 @@ export function AdminGlobalSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-10 min-w-0 items-center gap-2 rounded-full border border-border-default bg-surface-card px-3 text-body-sm text-content-tertiary shadow-sm transition hover:border-border-strong hover:bg-surface-sunken sm:min-w-60"
+        className="inline-flex h-10 w-full items-center gap-2 rounded-full border border-border-default bg-surface-card px-3 text-body-sm text-content-tertiary shadow-sm transition hover:border-border-strong hover:bg-surface-sunken sm:min-w-60 lg:max-w-md"
         aria-label={t('adminSearchPlaceholder')}
       >
         <Search className="size-4 shrink-0" />

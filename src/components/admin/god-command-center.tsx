@@ -48,6 +48,7 @@ export function GodCommandCenter({ snapshot, caller, locale }: Props) {
   const tg = useTranslations('admin.support.god');
   const tRoot = useTranslations();
   const [activeTab, setActiveTab] = useState<GodTabId>('overview');
+  const [queueFilter, setQueueFilter] = useState<'all' | 'OPEN' | 'PENDING' | 'RESOLVED'>('all');
   const [pulse, setPulse] = useState(snapshot.counts);
   const [stats, setStats] = useState(snapshot.stats);
   const [liveAt, setLiveAt] = useState<string | null>(null);
@@ -226,19 +227,27 @@ export function GodCommandCenter({ snapshot, caller, locale }: Props) {
             {[
               { label: tg('kpiActiveSessions'), value: pulse.sessions, icon: Activity, sub: tg('kpiActiveSessionsSub'), href: routes.adminOperatorTool('sessions') },
               { label: tg('kpiFailedPayments'), value: pulse.failedPayments, icon: Wallet, sub: tg('kpiFailedPaymentsSub'), href: routes.adminOrders(), tone: pulse.failedPayments > 0 ? 'warn' : 'ok' as const },
-              { label: tg('kpiOpenTickets'), value: pulse.openTickets, icon: MessageSquare, sub: tg('kpiOpenSuffix', { count: pendingTickets } as never), href: routes.adminSupport(), tone: openTickets > 0 ? 'accent' : 'ok' as const },
+              { label: tg('kpiOpenTickets'), value: pulse.openTickets, icon: MessageSquare, sub: tg('kpiOpenSuffix', { count: pendingTickets } as never), tab: 'queue' as const, queueFilter: 'OPEN' as const, tone: openTickets > 0 ? 'accent' : 'ok' as const },
               { label: tg('kpiPendingApprovals'), value: pulse.pendingApprovals, icon: ShieldCheck, sub: tg('kpiPendingApprovalsSub'), href: routes.adminApprovals(), tone: pulse.pendingApprovals > 0 ? 'warn' : 'ok' as const },
-            ].map((kpi) => (
+            ].map((kpi) => {
+              const tab = (kpi as { tab?: GodTabId }).tab;
+              const qf = (kpi as { queueFilter?: typeof queueFilter }).queueFilter;
+              return (
               <Card key={kpi.label} className={cn('rounded-2xl border shadow-sm', (kpi as { tone?: string }).tone === 'warn' ? 'border-amber-200 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-900/30' : (kpi as { tone?: string }).tone === 'accent' ? 'border-amber-200 bg-[#FFF8EB] dark:bg-zinc-900 dark:border-white/10' : 'border-[#EDE3D3] bg-white dark:bg-zinc-900 dark:border-white/10')}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div><p className="text-xs font-semibold tracking-wide text-zinc-500 dark:text-zinc-400">{kpi.label.toUpperCase()}</p><p className="mt-1 text-3xl font-black tracking-tight text-zinc-900 dark:text-white">{kpi.value}</p><p className="text-xs text-zinc-500 dark:text-zinc-400">{kpi.sub}</p></div>
                     <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-sm border border-zinc-200 dark:bg-zinc-800 dark:border-white/10"><kpi.icon className="h-5 w-5 text-zinc-700 dark:text-zinc-300" /></span>
                   </div>
-                  <Link href={kpi.href} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:underline dark:text-amber-300">{tg('kpiOpenLink')} <ArrowUpRight className="h-3 w-3" /></Link>
+                  {tab ? (
+                    <button type="button" onClick={() => { if (qf) setQueueFilter(qf); setActiveTab(tab); }} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:underline dark:text-amber-300">{tg('kpiOpenLink')} <ArrowUpRight className="h-3 w-3" /></button>
+                  ) : (
+                    <Link href={(kpi as { href: string }).href} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-amber-700 hover:underline dark:text-amber-300">{tg('kpiOpenLink')} <ArrowUpRight className="h-3 w-3" /></Link>
+                  )}
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
           <Card className="rounded-2xl border-[#EDE3D3] bg-white dark:bg-zinc-900 dark:border-white/10">
             <CardContent className="flex flex-wrap items-center gap-2 p-3 sm:gap-3 sm:p-4">
@@ -254,7 +263,7 @@ export function GodCommandCenter({ snapshot, caller, locale }: Props) {
                   <s.icon className="h-3 w-3" /> {s.label} {s.ok ? '●' : '○'}
                 </span>
               ))}
-              <span className="ml-auto inline-flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><span className="hidden sm:inline">{tg('healthDb')}</span> {tg('healthPostgres')} · {snapshot.pulse.services.cron ? tg('healthCronReady') : 'cron —'} · {tg('healthLocked', { count: pulse.lockedLogins } as never)} · {tg('healthSla')} · <Link href="/api/cron/support-sla" className="underline">support-sla</Link></span>
+              <span className="ml-auto inline-flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><span className="hidden sm:inline">{tg('healthDb')}</span> {tg('healthPostgres')} · {snapshot.pulse.services.cron ? tg('healthCronReady') : 'cron —'} · {tg('healthLocked', { count: pulse.lockedLogins } as never)} · {tg('healthSla')} · <a href="/api/cron/support-sla" className="underline">support-sla</a></span>
             </CardContent>
           </Card>
           {/* Quick preview so overview is not empty */}
@@ -288,7 +297,7 @@ export function GodCommandCenter({ snapshot, caller, locale }: Props) {
         {/* QUEUE */}
         <GodTabPanel value="queue">
           <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">{t('queueTitle')}</h2>
-          <GodQueue tickets={tickets} operators={snapshot.operators} templates={snapshot.templates} locale={locale} onTicketsChange={setTickets} />
+          <GodQueue tickets={tickets} operators={snapshot.operators} templates={snapshot.templates} locale={locale} initialStatusFilter={queueFilter} onTicketsChange={setTickets} />
         </GodTabPanel>
 
         {/* OPERATIONS */}

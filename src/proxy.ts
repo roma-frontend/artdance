@@ -109,6 +109,30 @@ export default async function proxy(request: NextRequest) {
     );
   }
 
+  // API не участвует в локализации, но next-intl <Link> может префиксить
+  // /api URL локалью (напр. /ru/api/cron/support-sla?_rsc=... при prefetch).
+  // Проверяем stripped path до вызова intlMiddleware — иначе улетает в 404.
+  const pathWithoutLocaleEarly = stripLocale(pathname);
+
+  /**
+   * Backstop от флуда на всё API. Точечные лимиты (логин, платежи, брони)
+   * применяются в самих операциях по ключам из `rateLimits`.
+   */
+  if (pathWithoutLocaleEarly.startsWith('/api/')) {
+    const flood = await checkApiFloodLimit(clientIdentifier(request.headers));
+    if (!flood.allowed) {
+      return applySecurityHeaders(
+        NextResponse.json(
+          { error: 'RATE_LIMITED' },
+          { status: 429, headers: { 'Retry-After': String(flood.retryAfterSeconds) } },
+        ),
+        pathname,
+      );
+    }
+    /** API не участвует в локализации URL. */
+    return applySecurityHeaders(NextResponse.next(), pathname);
+  }
+
   /**
    * Медиа через origin (proxy-режим): браузер не ходит на `.r2.dev` напрямую —
    * корпоративные прокси режут такие cross-site запросы (403 Zscaler). Worker
@@ -151,28 +175,9 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  /**
-   * Backstop от флуда на всё API. Точечные лимиты (логин, платежи, брони)
-   * применяются в самих операциях по ключам из `rateLimits`.
-   */
-  if (pathname.startsWith('/api/')) {
-    const flood = await checkApiFloodLimit(clientIdentifier(request.headers));
-    if (!flood.allowed) {
-      return applySecurityHeaders(
-        NextResponse.json(
-          { error: 'RATE_LIMITED' },
-          { status: 429, headers: { 'Retry-After': String(flood.retryAfterSeconds) } },
-        ),
-        pathname,
-      );
-    }
-    /** API не участвует в локализации URL. */
-    return applySecurityHeaders(NextResponse.next(), pathname);
-  }
-
   const response = intlMiddleware(request);
 
-  const pathWithoutLocale = stripLocale(pathname);
+  const pathWithoutLocale = pathWithoutLocaleEarly;
 
   if (
     isProtectedPath(pathWithoutLocale) &&

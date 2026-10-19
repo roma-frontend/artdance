@@ -226,6 +226,17 @@ const config = [
       '@next/next/no-html-link-for-pages': 'off',
     },
   },
+  /**
+   * Cron-диагностика: /api/cron/* — не страница. next-intl <Link> к api даёт
+   * префикс локали (/ru/api/...) и prefetch с ?_rsc= → 404 и спам в консоли.
+   * ADR: API-маршруты всегда через <a href="...">, never <Link>.
+   */
+  {
+    files: ['src/components/admin/god-command-center.tsx'],
+    rules: {
+      '@next/next/no-html-link-for-pages': 'off',
+    },
+  },
 ];
 
 export default config;

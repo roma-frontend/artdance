@@ -89,16 +89,18 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
             <Menu className="size-5" />
           </button>
 
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <Link href={routes.admin()} className="shrink-0 text-heading-4 leading-none tracking-tight text-content-primary">
+          <div className="hidden lg:flex min-w-0 shrink-0 items-center gap-2.5">
+            <Link href={routes.admin()} className="max-w-[14ch] truncate text-heading-4 leading-none tracking-tight text-content-primary xl:max-w-none">
               {title}
             </Link>
-            <span className="hidden text-caption leading-none text-content-tertiary sm:inline-flex sm:items-center sm:pt-1">
+            <span className="hidden max-w-[22ch] truncate text-caption leading-none text-content-tertiary xl:inline-flex xl:items-center xl:pt-1">
               {subtitle}
             </span>
           </div>
 
-          <AdminGlobalSearch />
+          <div className="min-w-0 flex-1">
+            <AdminGlobalSearch />
+          </div>
 
           <div className="hidden items-center gap-2 lg:flex">
             <span className="max-w-[14ch] truncate text-body-sm text-content-secondary xl:max-w-none">{userName}</span>

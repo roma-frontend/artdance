@@ -45,15 +45,16 @@ interface Props {
   operators: GodSnapshot['operators'];
   templates: GodSnapshot['templates'];
   locale: string;
+  initialStatusFilter?: 'all' | 'OPEN' | 'PENDING' | 'RESOLVED';
   onTicketsChange?: (next: GodTicketRow[]) => void;
 }
 
-export function GodQueue({ tickets: initialTickets, operators, templates, locale, onTicketsChange }: Props) {
+export function GodQueue({ tickets: initialTickets, operators, templates, locale, initialStatusFilter, onTicketsChange }: Props) {
   const t = useTranslations('admin.support');
   const tg = useTranslations('admin.support.god');
   const router = useRouter();
   const [tickets, setTickets] = useState<GodTicketRow[]>(initialTickets);
-  const [filter, setFilter] = useState<'all' | 'OPEN' | 'PENDING' | 'RESOLVED'>('all');
+  const [filter, setFilter] = useState<'all' | 'OPEN' | 'PENDING' | 'RESOLVED'>(initialStatusFilter ?? 'all');
   const [q, setQ] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'URGENT' | 'HIGH' | 'NORMAL' | 'LOW'>('all');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all');
@@ -67,6 +68,7 @@ export function GodQueue({ tickets: initialTickets, operators, templates, locale
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setTickets(initialTickets), [initialTickets]);
+  useEffect(() => { if (initialStatusFilter) setFilter(initialStatusFilter); }, [initialStatusFilter]);
   const onTicketsChangeRef = useRef<Props['onTicketsChange']>(undefined);
   useEffect(() => { onTicketsChangeRef.current = onTicketsChange; }, [onTicketsChange]);
   useEffect(() => { onTicketsChangeRef.current?.(tickets); }, [tickets]);
