@@ -53,7 +53,7 @@ export function HeroSearchBar({
   }, [isOpen]);
 
   return (
-    <div className={cn('relative', className)}>
+    <div className={cn('hero-search-depth relative', className)}>
       {/* ── Круглая кнопка поиска в самом правом верхнем углу ── */}
       <button
         type="button"

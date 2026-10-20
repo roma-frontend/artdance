@@ -2084,9 +2084,59 @@ html:has(body[data-scroll-locked]) {
   /* Параллакс: до ±0.18 единиц кадра, сглажено lerp-ом в HeroParallaxFX. */
   --hero-parallax-x: 0;
   --hero-parallax-y: 0;
+  /* Stage Depth 2.0: значения пишет тот же rAF, что и существующий параллакс. */
+  --hero-stage-perspective: 1200px;
+  --hero-stage-rotate-x: 0deg;
+  --hero-stage-rotate-y: 0deg;
+  --hero-stage-depth: 0px;
   /* Ступень входа контента (заполняется инлайн-стилем на детях). */
   --hero-enter-index: 0;
   --hero-enter-stagger: 120ms;
+}
+
+/* --- 1a. Stage Depth 2.0: две ноды, одна лёгкая камера -------------------- */
+
+/*
+ * Сцена абсолютна и клипуется: она не участвует в раскладке и не создаёт
+ * горизонтальную прокрутку при наклоне. Камера — единственная нода, которую
+ * вращает pointer-rAF; все существующие планы остаются её детьми.
+ */
+.hero-depth-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: clip;
+  perspective: var(--hero-stage-perspective, 1200px);
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.hero-depth-camera {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+@media (hover: hover) and (pointer: fine) and (width >= 768px) and (prefers-reduced-motion: no-preference) {
+  .hero-depth-camera {
+    transform:
+      translate3d(0, 0, var(--hero-stage-depth, 0px))
+      rotateX(var(--hero-stage-rotate-x, 0deg))
+      rotateY(var(--hero-stage-rotate-y, 0deg));
+    will-change: transform;
+  }
+}
+
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .hero-depth-camera {
+    transform: none;
+    will-change: auto;
+  }
+}
+
+[data-lite='true'] .hero-depth-camera {
+  transform: none !important;
+  will-change: auto;
 }
 
 .hero-viewport .hero-video-main {
@@ -2135,6 +2185,27 @@ html:has(body[data-scroll-locked]) {
   box-shadow:
     0 16px 40px rgba(0, 0, 0, 0.55),
     0 0 25px -4px var(--accent-glow);
+}
+
+/* Поисковая кнопка — ближайший план: тот же вектор, но в меньшем масштабе. */
+.hero-search-depth {
+  transform: none;
+}
+
+@media (hover: hover) and (pointer: fine) and (width >= 768px) and (prefers-reduced-motion: no-preference) {
+  .hero-search-depth {
+    transform: translate3d(
+      calc(var(--hero-parallax-x) * 10px),
+      calc(var(--hero-parallax-y) * 7px),
+      0
+    );
+    will-change: transform;
+  }
+}
+
+[data-lite='true'] .hero-search-depth {
+  transform: none !important;
+  will-change: auto;
 }
 
 /*
@@ -2395,7 +2466,8 @@ html:has(body[data-scroll-locked]) {
 @media (prefers-reduced-motion: reduce) {
   .hero-viewport .hero-video-main,
   .hero-viewport .hero-content,
-  .hero-depth-word {
+  .hero-depth-word,
+  .hero-depth-camera {
     transform: none;
     translate: none;
     opacity: 1;

@@ -90,12 +90,10 @@ test.describe('живая петля первого экрана', () => {
       return {
         height: hero.getBoundingClientRect().height,
         viewport: window.innerHeight,
-        stageCount: document.querySelectorAll('[data-hero-stage]').length,
       };
     });
 
     expect(measured, 'первый экран не найден').not.toBeNull();
-    expect(measured!.stageCount).toBe(0);
     /* Допуск 5% — dvh против innerHeight на мобильных отличается адресной строкой. */
     expect(Math.abs(measured!.height - measured!.viewport) / measured!.viewport).toBeLessThan(0.05);
   });

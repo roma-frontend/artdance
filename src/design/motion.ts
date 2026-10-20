@@ -129,6 +129,12 @@ export const heroDepth = {
   narrowFactor: 0.5,
   /** Сглаживание ведения за курсором: доля пути за кадр. */
   pointerLerp: 0.12,
+  /** Stage Depth 2.0: камера едва заметно поворачивается и приближается. */
+  stage: {
+    perspectivePx: 1200,
+    maxRotateDeg: 1.25,
+    maxDepthPx: 5,
+  },
 } as const;
 
 /**

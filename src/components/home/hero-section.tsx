@@ -11,6 +11,7 @@ import { HeroParallaxFX } from '@/components/home/hero-parallax-fx';
 import { TextReveal } from '@/components/fx/text-reveal';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/config';
+import { motion } from '@/design/motion';
 import type { HomeContent } from '@/domain/content';
 import { Link } from '@/i18n/routing';
 import type { Locale } from '@/i18n/config';
@@ -23,6 +24,10 @@ function heroEnterOrder(name: (typeof HERO_ENTER_ORDER)[number]): CSSProperties 
   return { '--hero-enter-index': index } as CSSProperties;
 }
 
+const HERO_STAGE_STYLE = {
+  '--hero-stage-perspective': `${motion.heroDepth.stage.perspectivePx}px`,
+} as CSSProperties;
+
 interface HeroSectionProps {
   hero: HomeContent['hero'];
   locale: Locale;
@@ -34,27 +39,35 @@ export async function HeroSection({ hero, locale, children, className }: HeroSec
   const t = await getTranslations('home.hero');
 
   return (
-    <section className={cn('hero-viewport hero-mythic cinema-surface relative overflow-hidden', className)}>
+    <section
+      data-hero-stage-root="depth-2"
+      style={HERO_STAGE_STYLE}
+      className={cn('hero-viewport hero-mythic cinema-surface relative overflow-hidden', className)}
+    >
       <HeroParallaxFX />
 
-      <HeroVideo video={hero.video} poster={hero.image} locale={locale} />
+      <div data-hero-stage="depth-2" className="hero-depth-stage">
+        <div data-hero-camera="pointer" className="hero-depth-camera">
+          <HeroVideo video={hero.video} poster={hero.image} locale={locale} />
 
-      {/*
-        Контурное слово ARTDANCE — нижний план глубины.
-        Теперь над ним нет цифр, текст поднят выше, и слово открыто полностью!
-      */}
-      <span aria-hidden data-hero-depth="word" className="hero-depth-word">
-        ARTDANCE
-      </span>
+          {/*
+            Контурное слово ARTDANCE — нижний план глубины.
+            Теперь над ним нет цифр, текст поднят выше, и слово открыто полностью!
+          */}
+          <span aria-hidden data-hero-depth="word" className="hero-depth-word">
+            ARTDANCE
+          </span>
 
-      <div aria-hidden className="hero-scrim absolute inset-0 z-[1]" />
-      <div aria-hidden data-slot="hero-light-sweep" className="hero-light-sweep" />
-      {/* Mythic Aura — храмовый слой поверх видео: rays + vignette + grain. CSS, без JS. */}
-      <div aria-hidden className="hero-mythic-rays" />
-      <div aria-hidden className="hero-mythic-vignette" />
-      <div aria-hidden className="hero-mythic-grain" />
-      {/* Золотая пыль в луче — canvas screen-blend, уважает reduced motion. */}
-      <HeroMythicDust />
+          <div aria-hidden className="hero-scrim absolute inset-0 z-[1]" />
+          <div aria-hidden data-slot="hero-light-sweep" className="hero-light-sweep" />
+          {/* Mythic Aura — храмовый слой поверх видео: rays + vignette + grain. CSS, без JS. */}
+          <div aria-hidden className="hero-mythic-rays" />
+          <div aria-hidden className="hero-mythic-vignette" />
+          <div aria-hidden className="hero-mythic-grain" />
+          {/* Золотая пыль в луче — canvas screen-blend, уважает reduced motion. */}
+          <HeroMythicDust />
+        </div>
+      </div>
 
       {children !== undefined && (
         <div className="absolute top-24 right-5 z-20 md:top-28 md:right-8 lg:right-12">

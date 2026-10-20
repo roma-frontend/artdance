@@ -6,8 +6,9 @@
  * **1. Параллакс за курсором** (только `fine pointer` на широком экране): кадр
  * уходит от курсора, контурное слово — ещё дальше, текстовая колонка следует
  * за курсором. Разница векторов создаёт планы между кадром и контентом.
- * Величины пишутся в CSS-переменные `--hero-parallax-x/y` на секции и
- * сглаживаются lerp-ом в rAF-цикле: прямое присваивание «за палец» дрожит.
+ * Величины пишутся в CSS-переменные `--hero-parallax-x/y` и переменные камеры
+ * Stage Depth 2.0 на секции и сглаживаются lerp-ом в rAF-цикле:
+ * прямое присваивание «за палец» дрожит.
  *
  * **2. Глубина при прокрутке** (все устройства, на узком — ослабленная): четыре
  * плана уходят с разной скоростью (`heroDepthFrame`, числа в
@@ -55,6 +56,7 @@ export function HeroParallaxFX() {
     const foreground = root.querySelector<HTMLElement>('.hero-light-sweep');
     const factor = wide ? 1 : motion.heroDepth.narrowFactor;
     const pointerEnabled = finePointer && wide;
+    const stageMotion = motion.heroDepth.stage;
 
     let frame = 0;
     let raf = 0;
@@ -94,6 +96,12 @@ export function HeroParallaxFX() {
       currentY += (targetY - currentY) * motion.heroDepth.pointerLerp;
       root.style.setProperty('--hero-parallax-x', currentX.toFixed(4));
       root.style.setProperty('--hero-parallax-y', currentY.toFixed(4));
+      root.style.setProperty('--hero-stage-rotate-x', `${(-currentY * stageMotion.maxRotateDeg).toFixed(3)}deg`);
+      root.style.setProperty('--hero-stage-rotate-y', `${(currentX * stageMotion.maxRotateDeg).toFixed(3)}deg`);
+      root.style.setProperty(
+        '--hero-stage-depth',
+        `${(Math.hypot(currentX, currentY) * Math.SQRT2 * stageMotion.maxDepthPx).toFixed(2)}px`,
+      );
 
       if (Math.abs(targetX - currentX) + Math.abs(targetY - currentY) > 0.001) {
         raf = window.requestAnimationFrame(paintPointer);
@@ -186,6 +194,9 @@ export function HeroParallaxFX() {
       if (foreground) foreground.style.transform = '';
       root.style.removeProperty('--hero-parallax-x');
       root.style.removeProperty('--hero-parallax-y');
+      root.style.removeProperty('--hero-stage-rotate-x');
+      root.style.removeProperty('--hero-stage-rotate-y');
+      root.style.removeProperty('--hero-stage-depth');
     };
   }, [finePointer, reducedMotion, lite, scrollY, wide]);
 
