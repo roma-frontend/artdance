@@ -120,7 +120,7 @@ export default async function InstructorProfilePage({ params }: PageProps) {
       <PageHero
         title={item.name}
         eyebrow={item.headline}
-        image={item.image}
+        image={item.heroImage ?? item.image}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />

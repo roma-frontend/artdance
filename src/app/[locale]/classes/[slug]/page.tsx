@@ -137,7 +137,7 @@ export default async function ClassDetailPage({ params }: PageProps) {
       <PageHero
         title={item.title}
         eyebrow={styleLabel}
-        image={item.image}
+        image={item.heroImage ?? item.image}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       >

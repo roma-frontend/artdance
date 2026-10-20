@@ -414,6 +414,8 @@ export interface ClassDetail extends ClassCardItem {
   reviews: readonly ReviewItem[];
   /** Похожие занятия: то же направление, другой слаг. */
   similar: readonly ClassCardItem[];
+  /** Отдельный фон шапки 16:9 (`purpose === 'background'`), если задан. */
+  heroImage?: MediaRef;
 }
 
 export interface InstructorExperienceEntry {
@@ -450,6 +452,8 @@ export interface InstructorDetail extends InstructorCardItem {
   venues: readonly VenueLinkItem[];
   rating: RatingSummary;
   reviews: readonly ReviewItem[];
+  /** Отдельный фон шапки 16:9 (`purpose === 'background'`), если задан. */
+  heroImage?: MediaRef;
 }
 
 export interface VenueDetail extends VenueCardItem {
@@ -464,6 +468,8 @@ export interface VenueDetail extends VenueCardItem {
   events: readonly EventCardItem[];
   rating: RatingSummary;
   reviews: readonly ReviewItem[];
+  /** Отдельный фон шапки 16:9 (`purpose === 'background'`), если задан. */
+  heroImage?: MediaRef;
 }
 
 export interface EventDetail extends EventCardItem {
@@ -479,6 +485,8 @@ export interface EventDetail extends EventCardItem {
   venueDistrict?: string;
   latitude?: number;
   longitude?: number;
+  /** Отдельный фон шапки 16:9 (`purpose === 'background'`), если задан. */
+  heroImage?: MediaRef;
 }
 
 export interface CompetitionCategoryItem {

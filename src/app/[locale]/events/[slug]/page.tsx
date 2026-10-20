@@ -106,7 +106,7 @@ export default async function EventDetailPage({ params }: PageProps) {
       <PageHero
         title={item.title}
         eyebrow={typeLabel}
-        image={item.image}
+        image={item.heroImage ?? item.image}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       >

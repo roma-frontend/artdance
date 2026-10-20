@@ -55,7 +55,7 @@ import { defineQuery } from '@/server/query';
 
 import { classCardsBy } from './classes';
 import { ratingFrom, reviewSelect, type ReviewRow } from './reviews';
-import { firstMediaRef, type MediaRow } from './media';
+import { firstMediaRef, heroMediaRef, type MediaRow } from './media';
 import { mediaRelation, notTrashed } from './relations';
 export const instructorSelect = {
   slug: true,
@@ -309,8 +309,11 @@ export const getInstructorDetail = defineQuery({
       ).values(),
     ];
 
+    const hero = heroMediaRef(row.media);
+
     return {
       ...toInstructorCard(row),
+      ...(hero ? { heroImage: hero } : {}),
       bio: row.bio,
        specializations: row.specializations,
        ...(row.danceSportDisciplines?.length ? { danceSportDisciplines: row.danceSportDisciplines } : {}),

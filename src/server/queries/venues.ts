@@ -39,7 +39,7 @@ import { defineQuery } from '@/server/query';
 
 import { classCardsBy } from './classes';
 import { eventCardsBy } from './events';
-import { firstMediaRef, type MediaRow } from './media';
+import { firstMediaRef, heroMediaRef, type MediaRow } from './media';
 import { approvedReviewsWhere, ratingFrom, reviewSelect, type ReviewRow } from './reviews';
 import { activeRoomsRelation, mediaRelation, notTrashed, roomPricesRelation } from './relations';
 
@@ -209,9 +209,11 @@ export const getVenueDetail = defineQuery({
 
     /* Площадь и вместимость — самого большого зала: он определяет, что здесь возможно. */
     const largest = [...row.rooms].sort((left, right) => right.capacity - left.capacity)[0];
+    const hero = heroMediaRef(row.media);
 
     return {
       ...toVenueCard(row),
+      ...(hero ? { heroImage: hero } : {}),
       areaSqm: largest?.areaSqm ?? 0,
       capacity: largest?.capacity ?? 0,
       latitude: row.latitude,

@@ -77,7 +77,7 @@ import { formatClock } from '@/lib/time/clock';
 import { zonedParts } from '@/lib/time/schedule';
 import { defineQuery } from '@/server/query';
 
-import { firstMediaRef, type MediaRow } from './media';
+import { firstMediaRef, heroMediaRef, type MediaRow } from './media';
 import { approvedReviewsWhere, ratingFrom, reviewSelect, type ReviewRow } from './reviews';
 import { mediaRelation, notTrashed, upcomingSessionsRelation } from './relations';
 
@@ -385,8 +385,11 @@ export const getClassDetail = defineQuery({
       take: limits.styleHub.classes,
     })) as unknown as ClassRow[];
 
+    const hero = heroMediaRef(row.media) ?? heroMediaRef(row.instructor.media);
+
     return {
       ...toClassCard(row),
+      ...(hero ? { heroImage: hero } : {}),
       description: row.description,
       learningPoints: row.learningPoints,
       capacity: row.capacity,

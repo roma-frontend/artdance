@@ -12,12 +12,13 @@
 
 import { getFormatter, getTranslations } from 'next-intl/server';
 
+import { MediaCropDialog } from '@/components/admin/media-crop-dialog';
 import { PhotoDeleteButton } from '@/components/admin/photo-delete-button';
 import { PhotoUploader } from '@/components/form/photo-uploader';
 import { SingleImageUploader } from '@/components/form/single-image-uploader';
 import { Media } from '@/components/ui/media';
 import { mediaUrl, routes, type AdminResource } from '@/config';
-import { uploadPolicies, type UploadKind } from '@/config/security';
+import { uploadPolicies, type MediaPurpose, type UploadKind } from '@/config/security';
 import { Link } from '@/i18n/routing';
 import { db } from '@/lib/db';
 
@@ -69,9 +70,15 @@ export async function MediaSection({ resource, id, canUpload, canDelete }: Media
       height: true,
       bytes: true,
       blurDataUrl: true,
+      focalPoint: true,
       purpose: true,
     },
   });
+
+  const aspectForResource =
+    resource === 'classes' || resource === 'venues' || resource === 'rooms' || resource === 'events' || resource === 'blog-posts' || resource === 'courses'
+      ? 'classCard'
+      : 'instructorCard';
 
   return (
     <section aria-labelledby="admin-form-media" className="flex flex-col gap-4">
@@ -83,45 +90,67 @@ export async function MediaSection({ resource, id, canUpload, canDelete }: Media
         <p className="text-body-sm text-content-tertiary">{t('media.empty')}</p>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {assets.map((asset) => (
-            <li
-              key={asset.id}
-              className="flex flex-col gap-2 rounded-md border border-border-subtle bg-surface-card p-3"
-            >
-              <Media
-                preset="thumbnail"
-                src={asset.storageKey}
-                alt={asset.altText}
-                {...(asset.width ? { width: asset.width } : {})}
-                {...(asset.height ? { height: asset.height } : {})}
-                {...(asset.blurDataUrl ? { blurDataUrl: asset.blurDataUrl } : {})}
-              />
+          {assets.map((asset) => {
+            const itemPreset =
+              asset.purpose === 'background' ? 'heroFullBleed' : aspectForResource;
 
-              <p className="text-caption text-content-secondary">{asset.altText}</p>
-              <p className="text-caption text-content-tertiary">
-                {asset.width && asset.height ? `${asset.width}×${asset.height} · ` : ''}
-                {format.number(Math.round(asset.bytes / 1024), 'plain')} KB ·{' '}
-                {asset.purpose === 'background'
-                  ? t('media.purposeBackground')
-                  : asset.purpose === 'card'
-                    ? t('media.purposeCard')
-                    : t('media.purposeUnknown')}
-              </p>
+            return (
+              <li
+                key={asset.id}
+                className="flex flex-col gap-2 rounded-md border border-border-subtle bg-surface-card p-3"
+              >
+                <Media
+                  preset={itemPreset}
+                  src={asset.storageKey}
+                  alt={asset.altText}
+                  {...(asset.focalPoint ? { objectPosition: asset.focalPoint } : {})}
+                  {...(asset.width ? { width: asset.width } : {})}
+                  {...(asset.height ? { height: asset.height } : {})}
+                  {...(asset.blurDataUrl ? { blurDataUrl: asset.blurDataUrl } : {})}
+                />
 
-              <div className="mt-auto flex flex-wrap items-center justify-between gap-2">
-                <Link
-                  href={routes.adminResourceEdit('media', asset.id)}
-                  className="text-caption text-content-accent underline-offset-4 hover:underline"
-                >
-                  {t('actions.openRecord')}
-                </Link>
+                <p className="text-caption text-content-secondary">{asset.altText}</p>
+                <p className="text-caption text-content-tertiary">
+                  {asset.width && asset.height ? `${asset.width}×${asset.height} · ` : ''}
+                  {format.number(Math.round(asset.bytes / 1024), 'plain')} KB ·{' '}
+                  {asset.purpose === 'background'
+                    ? t('media.purposeBackground')
+                    : asset.purpose === 'card'
+                      ? t('media.purposeCard')
+                      : t('media.purposeUnknown')}
+                  {asset.focalPoint ? ` · ${asset.focalPoint}` : ''}
+                </p>
 
-                {canDelete ? (
-                  <PhotoDeleteButton assetId={asset.id} altText={asset.altText} />
-                ) : null}
-              </div>
-            </li>
-          ))}
+                <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    {canUpload ? (
+                      <MediaCropDialog
+                        assetId={asset.id}
+                        imageUrl={mediaUrl(asset.storageKey)}
+                        altText={asset.altText}
+                        initialFocalPoint={asset.focalPoint}
+                        kind={owner.kind}
+                        ownerField={owner.field}
+                        ownerId={id}
+                        purpose={(asset.purpose as MediaPurpose | null) ?? null}
+                      />
+                    ) : null}
+
+                    <Link
+                      href={routes.adminResourceEdit('media', asset.id)}
+                      className="text-caption text-content-accent underline-offset-4 hover:underline"
+                    >
+                      {t('actions.openRecord')}
+                    </Link>
+                  </div>
+
+                  {canDelete ? (
+                    <PhotoDeleteButton assetId={asset.id} altText={asset.altText} />
+                  ) : null}
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -131,9 +160,10 @@ export async function MediaSection({ resource, id, canUpload, canDelete }: Media
             kind={owner.kind}
             ownerField={owner.field}
             ownerId={id}
-            currentUrl={assets[0] ? mediaUrl(assets[0].storageKey) : null}
+            currentAssetId={assets[0]?.id ?? null}
             currentAlt={assets[0]?.altText ?? null}
             purpose={(assets[0]?.purpose as 'card' | 'background' | null) ?? null}
+            showPurpose={owner.kind !== 'bannerImage' && owner.kind !== 'avatar'}
           />
         ) : (
           <PhotoUploader

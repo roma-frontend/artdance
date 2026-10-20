@@ -2027,7 +2027,9 @@ body[data-scroll-locked] .above-mobile-dock {
  * работает для всех модальных окон проекта — диалогов, шторок, поиска — и не
  * требует ни своего провайдера, ни правок в компонентах.
  */
-html:has(body[data-scroll-locked]) {
+html:has(body[data-scroll-locked]),
+html:has(body[data-admin-drawer-locked]),
+html:has(body[data-fullscreen-locked]) {
   overflow: hidden;
 }
 

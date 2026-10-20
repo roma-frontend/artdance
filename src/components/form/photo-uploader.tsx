@@ -30,6 +30,7 @@ export function PhotoUploader({ kind, ownerField, ownerId, existingCount, purpos
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [altText, setAltText] = useState('');
+  const [localPurpose, setLocalPurpose] = useState<MediaPurpose>(purpose ?? 'card');
   const [done, setDone] = useState(0);
   const [total, setTotal] = useState(0);
   const [failed, setFailed] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export function PhotoUploader({ kind, ownerField, ownerId, existingCount, purpos
   const [previews, setPreviews] = useState<string[]>([]);
 
   const policy = uploadPolicies[kind];
+  const effectivePurpose = purpose ?? localPurpose;
   const remaining = Math.max(policy.maxPerEntity - existingCount - uploaded, 0);
   const busy = total > 0 && done < total;
 
@@ -63,7 +65,7 @@ export function PhotoUploader({ kind, ownerField, ownerId, existingCount, purpos
       body.set('kind', kind);
       body.set('altText', altText.trim());
       body.set(ownerField, ownerId);
-      if (purpose) body.set('purpose', purpose);
+      body.set('purpose', effectivePurpose);
 
       const response = await fetch(apiRoutes.mediaUpload(), { method: 'POST', body });
 
@@ -123,6 +125,23 @@ export function PhotoUploader({ kind, ownerField, ownerId, existingCount, purpos
           placeholder={t('altPlaceholder')}
           className="form-input"
         />
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setLocalPurpose('card')}
+          className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${effectivePurpose === 'card' ? 'border-accent bg-accent/10 text-accent' : 'border-border-default bg-surface-sunken text-content-secondary hover:border-accent/50'}`}
+        >
+          {t('purposeCard')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setLocalPurpose('background')}
+          className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium transition ${effectivePurpose === 'background' ? 'border-accent bg-accent/10 text-accent' : 'border-border-default bg-surface-sunken text-content-secondary hover:border-accent/50'}`}
+        >
+          {t('purposeBackground')}
+        </button>
       </div>
 
       <p className="text-caption text-content-tertiary">

@@ -70,6 +70,11 @@ const deleteInput = z.object({
   id: z.string().trim().min(1).max(64),
 });
 
+const focalPointInput = z.object({
+  id: z.string().trim().min(1).max(64),
+  focalPoint: z.string().trim().regex(/^\d{1,3}%\s+\d{1,3}%$/, 'validation.required').nullable(),
+});
+
 const bulkActions = ['activate', 'deactivate', 'publish', 'unpublish', 'delete'] as const;
 
 const bulkInput = z.object({
@@ -169,6 +174,40 @@ export const deleteAdminResource = authedAction
 
     revalidate(parsedInput.resource);
     return { deleted: true };
+  });
+
+/* ─────────────────────────── Точка кадрирования ─────────────────────────── */
+
+export const updateMediaFocalPoint = authedAction
+  .metadata({ rateLimit: 'adminMutation', audit: 'admin.media.focalPoint' })
+  .inputSchema(focalPointInput)
+  .action(async ({ parsedInput, ctx }): Promise<{ updated: true }> => {
+    const spec = adminResourceSpecs.media;
+    const caller = await requireCapability(spec.edit);
+
+    const before = await resourceSnapshot('media', parsedInput.id);
+    if (!before) throw domainErrors.notFound();
+
+    const { db } = await import('@/lib/db');
+    await db.mediaAsset.update({
+      where: { id: parsedInput.id },
+      data: { focalPoint: parsedInput.focalPoint },
+      select: { id: true },
+    });
+
+    const after = await resourceSnapshot('media', parsedInput.id);
+    await recordAudit({
+      actor: caller,
+      action: 'admin.media.focalPoint',
+      entityType: 'MediaAsset',
+      entityId: parsedInput.id,
+      before,
+      after,
+      ipAddress: ctx.identifier,
+    });
+
+    revalidate('media');
+    return { updated: true };
   });
 
 /* ──────────────────────────── Массовое действие ──────────────────────────── */

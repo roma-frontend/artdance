@@ -21,6 +21,8 @@
 import { getTranslations } from 'next-intl/server';
 
 import { AnnouncementBarDismiss } from '@/components/layout/announcement-bar-dismiss';
+import { Media } from '@/components/ui/media';
+import { resolveMedia } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import { getLiveBanners, type LiveBanner } from '@/server/content/banners';
@@ -36,15 +38,38 @@ export async function AnnouncementBar({ locale }: AnnouncementBarProps) {
 
   return (
     <AnnouncementBarDismiss bannerKey={banner.key}>
-      <BannerContent banner={banner} linkLabel={t('actions.viewDetails')} />
+      <BannerContent banner={banner} locale={locale} linkLabel={t('actions.viewDetails')} />
     </AnnouncementBarDismiss>
   );
 }
 
-function BannerContent({ banner, linkLabel }: { banner: LiveBanner; linkLabel: string }) {
+function BannerContent({
+  banner,
+  locale,
+  linkLabel,
+}: {
+  banner: LiveBanner;
+  locale: Locale;
+  linkLabel: string;
+}) {
+  const mediaProps = banner.image
+    ? resolveMedia(banner.image, locale)
+    : banner.imageKey
+      ? { src: banner.imageKey, alt: banner.title }
+      : null;
+
   const inner = (
     <>
-      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-metal" />
+      {mediaProps ? (
+        <Media
+          preset="avatar"
+          className="size-8 shrink-0 rounded-sm border border-border-on-cinema"
+          imageClassName="transition-transform duration-normal ease-brand group-hover/banner:scale-105"
+          {...mediaProps}
+        />
+      ) : (
+        <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-metal" />
+      )}
       <span className="text-body-sm min-w-0 truncate text-content-on-cinema">{banner.title}</span>
       {banner.href ? (
         <span className="text-label ml-auto inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap text-metal-on-cinema uppercase transition-colors duration-normal ease-brand group-hover/banner:text-content-on-cinema">

@@ -126,6 +126,11 @@ export async function POST(request: Request): Promise<Response> {
     const purposeRaw = String(form.get('purpose') ?? '').trim();
     const purpose = purposeRaw === 'card' || purposeRaw === 'background' ? purposeRaw : null;
 
+    const focalPointRaw = String(form.get('focalPoint') ?? '').trim();
+    const focalPoint = /^\d{1,3}%\s+\d{1,3}%$/.test(focalPointRaw) ? focalPointRaw : null;
+
+    const replaceAssetId = String(form.get('replaceAssetId') ?? '').trim() || null;
+
     /* Владелец: ровно одно поле, иначе непонятно, к чему привязан кадр. */
     const owner = ownerFields
       .map((field) => ({ field, id: String(form.get(field) ?? '').trim() }))
@@ -149,10 +154,26 @@ export async function POST(request: Request): Promise<Response> {
     })();
     if (!ownerExists) throw domainErrors.notFound();
 
+    const replacingAsset = replaceAssetId
+      ? await db.mediaAsset.findFirst({
+          where: { id: replaceAssetId, [ownerEntry.field]: ownerEntry.id },
+          select: { id: true, sortOrder: true, purpose: true, focalPoint: true },
+        })
+      : null;
+
     /* Сколько кадров уже привязано — для проверки предела на сущность. */
-    const existingCount = await db.mediaAsset.count({
+    const rawExistingCount = await db.mediaAsset.count({
       where: { [ownerEntry.field]: ownerEntry.id },
     });
+    const isSingleOwner =
+      ownerEntry.field === 'bannerId' ||
+      ownerEntry.field === 'blogPostId' ||
+      ownerEntry.field === 'courseId' ||
+      ownerEntry.field === 'avatarOwnerId';
+    const existingCount =
+      replacingAsset || (isSingleOwner && rawExistingCount > 0)
+        ? Math.max(0, rawExistingCount - 1)
+        : rawExistingCount;
 
     const validation = validateUpload({
       fileName: file.name,
@@ -202,22 +223,55 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    const asset = await db.mediaAsset.create({
-      data: {
-        storageKey: master.key,
-        mimeType: `image/${image.master.format}`,
-        bytes: image.master.bytes,
-        width: image.width,
-        height: image.height,
-        altText,
-        blurDataUrl: image.blurDataUrl,
-        sortOrder: existingCount,
-        uploadedById: caller.id,
-        ...(purpose ? { purpose } : {}),
-        [ownerEntry.field]: ownerEntry.id,
-      },
-      select: { id: true, storageKey: true, width: true, height: true, bytes: true },
-    });
+    const asset = replacingAsset
+      ? await db.mediaAsset.update({
+          where: { id: replacingAsset.id },
+          data: {
+            storageKey: master.key,
+            mimeType: `image/${image.master.format}`,
+            bytes: image.master.bytes,
+            width: image.width,
+            height: image.height,
+            altText,
+            blurDataUrl: image.blurDataUrl,
+            ...(purpose ? { purpose } : {}),
+            ...(focalPoint ? { focalPoint } : {}),
+          },
+          select: { id: true, storageKey: true, width: true, height: true, bytes: true },
+        })
+      : isSingleOwner && rawExistingCount > 0
+        ? await db.mediaAsset.update({
+            where: { [ownerEntry.field]: ownerEntry.id } as never,
+            data: {
+              storageKey: master.key,
+              mimeType: `image/${image.master.format}`,
+              bytes: image.master.bytes,
+              width: image.width,
+              height: image.height,
+              altText,
+              blurDataUrl: image.blurDataUrl,
+              ...(purpose ? { purpose } : {}),
+              ...(focalPoint ? { focalPoint } : {}),
+            },
+            select: { id: true, storageKey: true, width: true, height: true, bytes: true },
+          })
+        : await db.mediaAsset.create({
+            data: {
+              storageKey: master.key,
+              mimeType: `image/${image.master.format}`,
+              bytes: image.master.bytes,
+              width: image.width,
+              height: image.height,
+              altText,
+              blurDataUrl: image.blurDataUrl,
+              sortOrder: existingCount,
+              uploadedById: caller.id,
+              ...(purpose ? { purpose } : {}),
+              ...(focalPoint ? { focalPoint } : {}),
+              [ownerEntry.field]: ownerEntry.id,
+            },
+            select: { id: true, storageKey: true, width: true, height: true, bytes: true },
+          });
 
     await recordAudit({
       actor: caller,

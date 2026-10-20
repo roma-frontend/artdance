@@ -14,6 +14,7 @@
  */
 
 import Lenis from 'lenis';
+import { usePathname } from '@/i18n/routing';
 import { useEffect, useRef } from 'react';
 
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
@@ -22,12 +23,31 @@ import { useIsLiteMode } from '@/lib/perf/lite-mode';
 export function LenisProvider() {
   const reducedMotion = usePrefersReducedMotion();
   const lite = useIsLiteMode();
+  const pathname = usePathname();
   const lenisRef = useRef<Lenis | null>(null);
   const rafRef = useRef<number | null>(null);
 
-  const disabled = reducedMotion || lite;
+  // Админка живёт на общем документе, но ей не нужна вата от Lenis:
+  // инерция ломает мгновенный scrollTo и конфликтует с Radix скролл-локом.
+  const isAdminRoute = typeof pathname === 'string' && pathname.includes('/admin');
+  const disabled = reducedMotion || lite || isAdminRoute;
 
   useEffect(() => {
+    // На админ-маршрутах гарантированно снимаем классы Lenis — даже если
+    // предыдущая навигация оставила их на <html>.
+    if (isAdminRoute) {
+      if (lenisRef.current) {
+        lenisRef.current.destroy();
+        lenisRef.current = null;
+      }
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      document.documentElement.classList.remove('lenis', 'lenis-smooth', 'lenis-scrolling', 'lenis-stopped');
+      return;
+    }
+
     // В тестах Lenis мешает instant scrollTo — instant превращается в lerp,
     // и poll(sx.y < initial-40) флакает. В e2e отключаем.
     const isE2E =
@@ -91,12 +111,16 @@ export function LenisProvider() {
     document.addEventListener('visibilitychange', onVisibility, { passive: true });
 
     const onOverflowCheck = () => {
-      const overflow = getComputedStyle(document.documentElement).overflowY;
-      if (overflow === 'hidden' || overflow === 'clip') lenis.stop();
+      const htmlOverflow = getComputedStyle(document.documentElement).overflowY;
+      const bodyLocked = document.body.hasAttribute('data-scroll-locked') || getComputedStyle(document.body).overflowY === 'hidden';
+      if (htmlOverflow === 'hidden' || htmlOverflow === 'clip' || bodyLocked) lenis.stop();
       else lenis.start();
     };
     const mo = new MutationObserver(onOverflowCheck);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+    mo.observe(document.body, { attributes: true, attributeFilter: ['style', 'class', 'data-scroll-locked'] });
+    // первичная синхронизация (диалог мог быть открыт до монтирования)
+    onOverflowCheck();
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
@@ -106,7 +130,7 @@ export function LenisProvider() {
       lenis.destroy();
       lenisRef.current = null;
     };
-  }, [disabled]);
+  }, [disabled, isAdminRoute]);
 
   return null;
 }

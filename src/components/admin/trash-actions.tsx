@@ -16,6 +16,7 @@
 
 import { useAction } from 'next-safe-action/hooks';
 import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 
 import {
   AlertDialog,
@@ -49,9 +50,10 @@ export function TrashActions({ resource, id, label, canRestore, canPurge }: Tras
   const tActions = useTranslations('admin.actions');
   const tRoot = useTranslations() as unknown as Translate;
   const router = useRouter();
+  const [purgeOpen, setPurgeOpen] = useState(false);
 
   const restore = useAction(restoreAdminResource, { onSuccess: () => router.refresh() });
-  const purge = useAction(purgeAdminResource, { onSuccess: () => router.refresh() });
+  const purge = useAction(purgeAdminResource, { onSuccess: () => { setPurgeOpen(false); router.refresh(); } });
 
   const busy = restore.status === 'executing' || purge.status === 'executing';
   const error = restore.result.serverError ?? purge.result.serverError;
@@ -76,7 +78,7 @@ export function TrashActions({ resource, id, label, canRestore, canPurge }: Tras
       ) : null}
 
       {canPurge ? (
-        <AlertDialog>
+        <AlertDialog open={purgeOpen} onOpenChange={setPurgeOpen}>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="sm" disabled={busy}>
               {tActions('purge')}

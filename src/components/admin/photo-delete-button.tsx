@@ -19,6 +19,7 @@
 
 import { useAction } from 'next-safe-action/hooks';
 import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 
 import {
   AlertDialog,
@@ -48,16 +49,20 @@ export function PhotoDeleteButton({ assetId, altText }: PhotoDeleteButtonProps) 
   const t = useTranslations('admin.media');
   const tRoot = useTranslations() as unknown as Translate;
   const router = useRouter();
+  const [open, setOpen] = useState(false);
 
   const { execute, status, result } = useAction(deleteAdminResource, {
-    onSuccess: () => router.refresh(),
+    onSuccess: () => {
+      setOpen(false);
+      router.refresh();
+    },
   });
 
   const busy = status === 'executing';
   const serverError = result.serverError;
 
   return (
-    <AlertDialog>
+    <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <Button variant="ghost" size="sm" disabled={busy}>
           {t('deletePhoto')}

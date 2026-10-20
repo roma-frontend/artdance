@@ -45,20 +45,41 @@ export function AdminShellLayout({ groups, userName, roleLabel, title, subtitle,
   }, [pathname]);
 
   // Общий скролл документа, как на странице инструктора.
+  // instant, а не smooth: в админке Lenis отключён и smooth даёт ложную «залипшую» инерцию.
   useEffect(() => {
     if (prevPathRef.current === pathname) return;
     prevPathRef.current = pathname;
     const id = requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: reduce ? 'instant' : 'smooth' });
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
     });
     return () => cancelAnimationFrame(id);
-  }, [pathname, reduce]);
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    // Drawer lock — через атрибут, а не inline style: не конфликтует с Radix
+    // (`data-scroll-locked`) и не ломает восстановление при router.refresh.
+    const body = document.body;
+    const html = document.documentElement;
+    const prevBodyOverflow = body.style.overflow;
+    const hadAttr = body.hasAttribute('data-admin-drawer-locked');
+    const hadHtmlOverflow = html.style.overflow;
+    body.setAttribute('data-admin-drawer-locked', '');
+    // страховка на случай если CSS не применён (например SSR без has)
+    if (getComputedStyle(html).overflowY !== 'hidden') body.style.overflow = 'hidden';
+    return () => {
+      if (!hadAttr) body.removeAttribute('data-admin-drawer-locked');
+      // восстанавливаем только то, что сами поставили — не трогаем Radix-лок
+      if (body.getAttribute('data-admin-drawer-locked') === null) {
+        if (prevBodyOverflow) body.style.overflow = prevBodyOverflow;
+        else body.style.removeProperty('overflow');
+        // html overflow трогали только если не было Radix-лока
+        if (!document.body.hasAttribute('data-scroll-locked') && !document.body.hasAttribute('data-fullscreen-locked')) {
+          if (hadHtmlOverflow) html.style.overflow = hadHtmlOverflow;
+          else html.style.removeProperty('overflow');
+        }
+      }
+    };
   }, [open]);
 
   useEffect(() => {

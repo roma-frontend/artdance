@@ -108,7 +108,7 @@ export default async function StudioDetailPage({ params }: PageProps) {
         title={item.name}
         eyebrow={item.district}
         subtitle={item.description}
-        image={item.image}
+        image={item.heroImage ?? item.image}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       >

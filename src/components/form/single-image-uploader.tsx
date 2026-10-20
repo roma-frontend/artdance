@@ -19,6 +19,7 @@ interface SingleImageUploaderProps {
   kind: UploadKind;
   ownerField: string;
   ownerId: string;
+  currentAssetId?: string | null;
   currentUrl?: string | null;
   currentAlt?: string | null;
   hint?: string;
@@ -31,6 +32,7 @@ export function SingleImageUploader({
   kind,
   ownerField,
   ownerId,
+  currentAssetId,
   currentUrl,
   currentAlt,
   hint,
@@ -78,6 +80,7 @@ export function SingleImageUploader({
     body.set('altText', altText.trim());
     body.set(ownerField, ownerId);
     body.set('purpose', effectivePurpose);
+    if (currentAssetId) body.set('replaceAssetId', currentAssetId);
 
     try {
       const res = await fetch(apiRoutes.mediaUpload(), { method: 'POST', body });
@@ -100,6 +103,7 @@ export function SingleImageUploader({
   }
 
   const displayUrl = preview ?? currentUrl ?? null;
+  const hasExistingImage = Boolean(displayUrl || currentAlt || currentAssetId);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border-default bg-surface-card p-4">
@@ -107,7 +111,7 @@ export function SingleImageUploader({
         <div className={`relative overflow-hidden rounded-lg border ${effectivePurpose === 'background' ? 'aspect-video' : 'aspect-square'}`}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={displayUrl} alt={altText || 'preview'} className="h-full w-full object-cover" />
-          {!preview && (
+          {preview ? (
             <button
               type="button"
               onClick={() => setPreview(null)}
@@ -116,7 +120,7 @@ export function SingleImageUploader({
             >
               ✕
             </button>
-          )}
+          ) : null}
         </div>
       ) : null}
 
@@ -162,11 +166,13 @@ export function SingleImageUploader({
       ) : null}
 
       <p className="text-xs text-content-tertiary">{uploadHint}</p>
-      <p className="text-xs text-content-tertiary">
-        {t('cardTargetHint', {
-          target: effectivePurpose === 'background' ? t('cardTargetBackground') : t('cardTargetCard'),
-        })}
-      </p>
+      {showPurpose ? (
+        <p className="text-xs text-content-tertiary">
+          {t('cardTargetHint', {
+            target: effectivePurpose === 'background' ? t('cardTargetBackground') : t('cardTargetCard'),
+          })}
+        </p>
+      ) : null}
 
       <input
         ref={inputRef}
@@ -193,7 +199,7 @@ export function SingleImageUploader({
         className="inline-flex items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border-default px-4 py-3 text-sm font-medium text-content-secondary hover:border-accent hover:text-accent disabled:opacity-50"
       >
         <ImagePlus className="h-4 w-4" />
-        {uploading ? t('uploadingSingle') : displayUrl ? t('replaceImage') : t('uploadImage')}
+        {uploading ? t('uploadingSingle') : hasExistingImage ? t('replaceImage') : t('uploadImage')}
       </button>
 
       {error ? (

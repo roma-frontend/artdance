@@ -183,8 +183,17 @@ export function resourceCacheTags(resource: AdminResource): readonly string[] {
     case 'lessons':
       return [cacheTags.courses()];
     case 'media':
-      return [cacheTags.instructors(), cacheTags.classes(), cacheTags.venues(), cacheTags.products(),
-        cacheTags.events(), cacheTags.content('media')];
+      return [
+        cacheTags.instructors(),
+        cacheTags.classes(),
+        cacheTags.venues(),
+        cacheTags.products(),
+        cacheTags.events(),
+        cacheTags.courses(),
+        cacheTags.blog(),
+        cacheTags.content('banners'),
+        cacheTags.content('media'),
+      ];
     case 'blog-posts':
       return [cacheTags.blog()];
     case 'banners':

@@ -34,7 +34,7 @@ import { formatClock } from '@/lib/time/clock';
 import { zonedParts } from '@/lib/time/schedule';
 import { defineQuery } from '@/server/query';
 
-import { firstMediaRef, type MediaRow } from './media';
+import { firstMediaRef, heroMediaRef, type MediaRow } from './media';
 import { mediaRelation } from './relations';
 
 export const eventSelect = {
@@ -249,9 +249,11 @@ export const getEventDetail = defineQuery({
     })) as unknown as EventRow | null;
 
     if (!row) return null;
+    const hero = heroMediaRef(row.media);
 
     return {
       ...toEventCard(row),
+      ...(hero ? { heroImage: hero } : {}),
       description: row.description,
       capacity: row.capacity,
       ...(row.federation ? { federation: row.federation } : {}),

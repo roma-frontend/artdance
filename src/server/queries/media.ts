@@ -43,6 +43,7 @@ export const mediaSelect = {
   height: true,
   blurDataUrl: true,
   focalPoint: true,
+  purpose: true,
   sortOrder: true,
   translations: { select: { locale: true, altText: true } },
 } as const;
@@ -54,6 +55,7 @@ export interface MediaRow {
   height: number | null;
   blurDataUrl: string | null;
   focalPoint: string | null;
+  purpose?: string | null;
   sortOrder: number;
   translations: ReadonlyArray<{ locale: Locale; altText: string }>;
 }
@@ -100,7 +102,15 @@ export function toMediaRef(row: MediaRow): MediaRef {
  */
 export function firstMediaRef(rows: readonly MediaRow[]): MediaRef | null {
   const sorted = [...rows].sort((left, right) => left.sortOrder - right.sortOrder);
-  return sorted[0] ? toMediaRef(sorted[0]) : null;
+  const preferred = sorted.find((item) => item.purpose !== 'background') ?? sorted[0];
+  return preferred ? toMediaRef(preferred) : null;
+}
+
+/** Фоновый кадр страницы (`purpose === 'background'`), а при его отсутствии — первый кадр. */
+export function heroMediaRef(rows: readonly MediaRow[]): MediaRef | null {
+  const sorted = [...rows].sort((left, right) => left.sortOrder - right.sortOrder);
+  const preferred = sorted.find((item) => item.purpose === 'background') ?? sorted[0];
+  return preferred ? toMediaRef(preferred) : null;
 }
 
 /** Галерея: все кадры сущности в объявленном порядке. */

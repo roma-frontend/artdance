@@ -147,11 +147,19 @@ export function DataBrowserClient({ models, initialModel, initialQuery, initialP
       if (e.key === 'Escape' && !detailRow && !creatingRow) exitFullscreen();
     };
     document.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const body = document.body;
+    const hadAttr = body.hasAttribute('data-fullscreen-locked');
+    const prevOverflow = body.style.overflow;
+    body.setAttribute('data-fullscreen-locked', '');
+    if (getComputedStyle(document.documentElement).overflowY !== 'hidden') body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
+      if (!hadAttr) body.removeAttribute('data-fullscreen-locked');
+      if (body.getAttribute('data-fullscreen-locked') === null && !body.hasAttribute('data-scroll-locked') && !body.hasAttribute('data-admin-drawer-locked')) {
+        if (prevOverflow) body.style.overflow = prevOverflow;
+        else body.style.removeProperty('overflow');
+        document.documentElement.style.removeProperty('overflow');
+      }
     };
   }, [fullscreen, detailRow, creatingRow, exitFullscreen]);
 
