@@ -38,8 +38,24 @@ const optionalEmail = z.preprocess(
 );
 
 const requiredString = z.string().min(1);
-const boolFlag = z
-  .preprocess((v) => (v === undefined ? undefined : String(v).toLowerCase()), z.enum(['true', 'false']).optional())
+
+/**
+ * Флаг модуля обязан быть задан на сборке.
+ *
+ * Причина не в педантизме: пропущенная переменная превратилась бы в `false`,
+ * а env — это fallback, к которому приложение обращается, когда в БД ещё нет
+ * пресета или она недоступна. Не заданный флаг на проде означал бы404 на
+ * магазине без всякой ошибки в логах — увидели бы его только по отвалившимся
+ * продажам. Падение на `env:check` до сборки дешевле любого из этих сценариев.
+ *
+ * Значение декларирует состояние «до выбора пресета», а не финальное: его
+ * перекрывает `OperatorSetting entitlement.preset`.
+ */
+const requiredBoolFlag = z
+  .preprocess(
+    (v) => (v === undefined ? undefined : String(v).toLowerCase()),
+    z.enum(['true', 'false'], { message: 'нужно true или false — скопируйте значение из .env.example' }),
+  )
   .transform((v) => v === 'true');
 
 /* ──────────────────────────── CLIENT ──────────────────────────── */
@@ -63,11 +79,11 @@ const clientSchema = z.object({
   NEXT_PUBLIC_MAPS_API_KEY: optionalString,
   NEXT_PUBLIC_MEDIA_CDN_URL: optionalUrl,
   /** Runtime-переключатели, которые обязаны быть видны клиенту. */
-  NEXT_PUBLIC_FEATURE_SHOP: boolFlag,
-  NEXT_PUBLIC_FEATURE_COURSES: boolFlag,
-  NEXT_PUBLIC_FEATURE_EVENTS: boolFlag,
-  NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS: boolFlag,
-  NEXT_PUBLIC_FEATURE_VIDEO: boolFlag,
+  NEXT_PUBLIC_FEATURE_SHOP: requiredBoolFlag,
+  NEXT_PUBLIC_FEATURE_COURSES: requiredBoolFlag,
+  NEXT_PUBLIC_FEATURE_EVENTS: requiredBoolFlag,
+  NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS: requiredBoolFlag,
+  NEXT_PUBLIC_FEATURE_VIDEO: requiredBoolFlag,
 });
 
 /**

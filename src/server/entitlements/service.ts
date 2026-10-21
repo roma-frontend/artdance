@@ -103,6 +103,35 @@ export async function getEffectiveEntitlements(): Promise<Record<FeatureKey, boo
   return out;
 }
 
+/**
+ * Снимок, который не бросает НИКОГДА — точка входа для страниц и API.
+ *
+ * Отличие от `getEffectiveEntitlements()`: любой неожиданный отказ (битая строка
+ * в `OperatorSetting`, сломанный импорт, выключенная таблица) откатывается на
+ * env-флаги, а не на `true`. Разница видна только при сбое: раньше страница
+ * решала «сбой базы = модуль включён», то есть при недоступной БД на проде
+ * открывались все разделы, включая те, что заказчик не оплатил. Env-флаги —
+ * явно заданный на сборке контракт, и откат к ним не меняет решения в пользу
+ * включённого.
+ *
+ * Возвращает полный набор ключей: вызывающий не должен проверять
+ * «ключ есть в объекте», ему нужен ответ «включён/выключен».
+ */
+export async function getEffectiveEntitlementsSafe(): Promise<Record<FeatureKey, boolean>> {
+  try {
+    return await getEffectiveEntitlements();
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'test') {
+      console.warn('[entitlements] state unavailable, falling back to env flags', error);
+    }
+    const out = {} as Record<FeatureKey, boolean>;
+    for (const key of Object.keys(presetDefaults.mvp) as FeatureKey[]) {
+      out[key] = features[key] ?? false;
+    }
+    return out;
+  }
+}
+
 export function effectiveFromState(state: EntitlementsState): Record<FeatureKey, boolean> {
   const out = {} as Record<FeatureKey, boolean>;
   for (const key of Object.keys(presetDefaults.mvp) as FeatureKey[]) {

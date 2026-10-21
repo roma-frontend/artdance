@@ -45,7 +45,6 @@ import { limits, routes, site } from '@/config';
 import { parseCatalogQuery, type RawSearchParams } from '@/domain/catalog';
 import { danceStyles } from '@/domain/enums';
 import {
-  enabledSearchScopes,
   parseSearchScope,
   searchScopeLabelKey,
   type SearchHit,
@@ -57,6 +56,7 @@ import { buildMetadata } from '@/lib/seo/metadata';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
 import {
+  enabledSearchScopesFor,
   getClassList,
   getInstructorList,
   getListingHero,
@@ -172,7 +172,7 @@ async function SearchResults({
 
       {/* Переключатель разделов: ссылки, потому что раздел — часть адреса. */}
       <ul className="mb-10 flex flex-wrap gap-2">
-        {enabledSearchScopes().map((candidate) => {
+        {(await enabledSearchScopesFor()).map((candidate) => {
           const count = countFor(candidate);
           const active = candidate === scope;
 

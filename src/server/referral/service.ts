@@ -3,18 +3,12 @@ import 'server-only';
 import { db } from '@/lib/db';
 import { domainErrors } from '@/domain/errors';
 import { creditWallet } from '@/server/wallet/service';
+import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 
 const BONUS = 3000; // AMD, единый бонус обеим сторонам — измеримый CAC, без процентов
 
 async function assertReferralsEnabled(): Promise<void> {
-  try {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    const enabled = await isEntitlementEnabled('referrals').catch(() => true);
-    if (!enabled) throw domainErrors.featureDisabled();
-  } catch (error) {
-    if (error instanceof Error && (error as { code?: string }).code === 'FEATURE_DISABLED') throw error;
-    // DB unavailable on build — do not block
-  }
+  await assertEntitlementOrThrow('referrals');
 }
 
 function codeFor(userId: string): string {
@@ -46,8 +40,14 @@ export async function bindReferral(input: { refereeId: string; code: string }) {
   return { referrerId: r.referrerId, id: r.id };
 }
 
-export async function payReferralBonus(referralId: string) {
-  await assertReferralsEnabled();
+/**
+ * Выплата бонуса по уже привязанному рефералу.
+ *
+ * `deliverOnly` — вызов из доставки оплаченного заказа: бонус обещан человеку,
+ * который уже заплатил, и выключение модуля после этого не отменяет обещания.
+ */
+export async function payReferralBonus(referralId: string, options?: { deliverOnly?: boolean }) {
+  if (!options?.deliverOnly) await assertReferralsEnabled();
   const referral = await db.referral.findUnique({ where: { id: referralId } } as never);
   if (!referral) throw domainErrors.notFound();
   const r = referral as unknown as { referrerId: string; refereeId: string | null; bonusPaidAt: Date | null; id: string };

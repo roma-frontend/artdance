@@ -11,9 +11,10 @@ import { db } from '@/lib/db';
 import { domainErrors } from '@/domain/errors';
 import { getPaymentProvider, type PaymentProviderId } from '@/lib/payments';
 import { recordAudit } from '@/lib/audit';
+import { settlePaidOrder } from '@/server/payments/settle';
 import type { PaymentStatus } from '@/domain/enums';
 
-const TERMINAL_STATUSES = new Set(['PAID', 'REFUNDED', 'CANCELLED', 'CHARGEBACK', 'FAILED', 'REFUNDED_PARTIALLY' as string]);
+const TERMINAL_STATUSES = new Set(['PAID', 'REFUNDED', 'PARTIALLY_REFUNDED', 'CANCELLED', 'CHARGEBACK', 'FAILED']);
 
 function isTerminal(status: string): boolean {
   return TERMINAL_STATUSES.has(status);
@@ -69,6 +70,14 @@ export async function reconcilePayment(input: ReconcileInput) {
         await db.order.update({ where: { id: payment.orderId }, data: { status: 'PAID', paidAt: new Date() } as never });
         await recordAudit({ actor: null, action: 'payment.reconciled', entityType: 'Order', entityId: payment.orderId });
       }
+      /*
+       * Оплата подтверждена — доставляем купленное. Ошибка здесь не отменяет
+       * подтверждение (деньги получены), а оставляет заказ на повторную доставку:
+       * `settledAt` не поставлен, следующая сверка или вебхук попробуют снова.
+       */
+      await settlePaidOrder(payment.orderId).catch((error) => {
+        console.error('[payments] settle after reconcile failed', error);
+      });
     }
   }
 

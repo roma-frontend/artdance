@@ -14,6 +14,7 @@ import { purgeExpiredHolds } from '@/server/hold/service';
 import { runBookingCron, runDailyDigest } from '@/server/cron/tasks';
 import { sendEmail } from '@/lib/email/send';
 import { authedAction } from '@/server/safe-action';
+import { invalidateEntitlementsCache } from '@/server/entitlements/service';
 import { requireOperator } from '@/lib/auth/guards';
 import { completeTerminal, runTerminalCommand, tokenizeTerminalCommand } from '@/server/terminal/commands';
 
@@ -186,6 +187,7 @@ export const setFeatureFlag = authedAction
     const caller = await requireOperator();
     const row = await db.featureFlagOverride.upsert({ where: { key: parsedInput.key }, create: { key: parsedInput.key, enabled: parsedInput.enabled, updatedBy: caller.id }, update: { enabled: parsedInput.enabled, updatedBy: caller.id } });
     await recordAudit({ actor: caller, action: 'admin.operator.featureFlag', entityType: 'FeatureFlagOverride', entityId: row.id, after: { key: parsedInput.key, enabled: parsedInput.enabled }, ipAddress: ctx.identifier });
+    invalidateEntitlementsCache();
     revalidatePath('/', 'layout');
     return { enabled: row.enabled };
   });

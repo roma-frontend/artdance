@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { cacheControl } from '@/config/cache';
 import { httpStatusFor, isDomainError } from '@/domain/errors';
 import { getCaller } from '@/lib/auth/guards';
+import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 import {
   addCartItem,
   applyPromoCode,
@@ -36,10 +37,7 @@ function errorFromDomain(error: unknown) {
 
 export async function GET(request: Request) {
   try {
-    {
-      const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-      if (!(await isEntitlementEnabled('shop').catch(() => true))) return json({ error: 'FEATURE_DISABLED', messageKey: 'common.states.comingSoon' }, 403);
-    }
+    await assertEntitlementOrThrow('shop');
     const caller = await getCaller();
     const snapshot = await getCartSnapshot({ userId: caller?.id ?? null, anonymousId: anonFrom(request) });
     return json({ snapshot }, 200);
@@ -60,8 +58,7 @@ export async function POST(request: Request) {
   const parsed = addSchema.safeParse(body);
   if (!parsed.success) return json({ error: 'VALIDATION_FAILED' }, 400);
   try {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    if (!(await isEntitlementEnabled('shop').catch(() => true))) return json({ error: 'FEATURE_DISABLED', messageKey: 'common.states.comingSoon' }, 403);
+    await assertEntitlementOrThrow('shop');
     const caller = await getCaller();
     const snapshot = await addCartItem({ userId: caller?.id ?? null, anonymousId: anonFrom(request), variantId: parsed.data.variantId, quantity: parsed.data.quantity });
     return json({ snapshot }, 200);
@@ -82,10 +79,7 @@ export async function PATCH(request: Request) {
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return json({ error: 'VALIDATION_FAILED' }, 400);
   try {
-    {
-      const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-      if (!(await isEntitlementEnabled('shop').catch(() => true))) return json({ error: 'FEATURE_DISABLED', messageKey: 'common.states.comingSoon' }, 403);
-    }
+    await assertEntitlementOrThrow('shop');
     const caller = await getCaller();
     const snapshot = await updateCartItem({ userId: caller?.id ?? null, anonymousId: anonFrom(request), itemId: parsed.data.itemId, quantity: parsed.data.quantity });
     return json({ snapshot }, 200);
@@ -99,10 +93,7 @@ export async function DELETE(request: Request) {
   const itemId = url.searchParams.get('itemId');
   const codeOp = url.searchParams.get('op');
   try {
-    {
-      const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-      if (!(await isEntitlementEnabled('shop').catch(() => true))) return json({ error: 'FEATURE_DISABLED', messageKey: 'common.states.comingSoon' }, 403);
-    }
+    await assertEntitlementOrThrow('shop');
     const caller = await getCaller();
     if (codeOp === 'removePromo') {
       const snapshot = await removePromoCode({ userId: caller?.id ?? null, anonymousId: anonFrom(request) });
@@ -132,8 +123,7 @@ export async function PUT(request: Request) {
   const parsed = promoSchema.safeParse(body);
   if (!parsed.success) return json({ error: 'VALIDATION_FAILED' }, 400);
   try {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    if (!(await isEntitlementEnabled('shop').catch(() => true))) return json({ error: 'FEATURE_DISABLED', messageKey: 'common.states.comingSoon' }, 403);
+    await assertEntitlementOrThrow('shop');
     const caller = await getCaller();
     const snapshot = await applyPromoCode({ userId: caller?.id ?? null, anonymousId: anonFrom(request), code: parsed.data.code });
     return json({ snapshot }, 200);

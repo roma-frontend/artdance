@@ -12,7 +12,9 @@ import type { Locale } from '@/i18n/config';
 import { Link, redirect } from '@/i18n/routing';
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { AccountNav } from '@/components/account/account-nav';
 import { ViewToggle } from '@/components/account/view-toggle';
 import { resolveAccountView } from '@/components/account/view-toggle.helpers';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink } from '@/components/ui/pagination';
@@ -58,6 +60,7 @@ export default async function AccountOrdersPage({ params, searchParams }: PagePr
   const t = await getTranslations({ locale: locale as Locale, namespace: 'account' });
   const tCommon = await getTranslations({ locale: locale as Locale, namespace: 'common' });
   const tNav = await getTranslations({ locale: locale as Locale, namespace: 'nav' });
+  const entitlements = await getEffectiveEntitlementsSafe();
 
   if (total === 0) {
     return (
@@ -87,6 +90,7 @@ export default async function AccountOrdersPage({ params, searchParams }: PagePr
           </div>
           <ViewToggle value={view} />
         </div>
+        <AccountNav locale={locale as Locale} pathname={routes.accountOrders()} entitlements={entitlements} />
         {view === 'grid' ? (
           <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {orders.map((o) => (

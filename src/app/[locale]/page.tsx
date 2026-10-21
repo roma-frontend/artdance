@@ -48,7 +48,6 @@ import { Button } from '@/components/ui/button';
 import { Price } from '@/components/ui/price';
 import { SectionHeading } from '@/components/ui/section-heading';
 import {
-  features,
   orderedSubscriptionPlans,
   routes,
   site,
@@ -58,6 +57,7 @@ import {
 import { danceStyles } from '@/domain/enums';
 import { Link } from '@/i18n/routing';
 import { getHomeContent } from '@/server/content/home';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 import type { Locale } from '@/i18n/config';
 import { JourneyLazy } from '@/components/home/journey-lazy';
 import { NewsletterLazy } from '@/components/home/newsletter-lazy';
@@ -77,13 +77,14 @@ export default async function HomePage({ params }: PageProps) {
   const tPricing = await getTranslations('pricing');
   /** Корневой переводчик — для ключей, собранных из данных (`MessageKey`). */
   const tRoot = await getTranslations();
-  let eventsEnabled = features.events;
-  try {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    eventsEnabled = await isEntitlementEnabled('events');
-  } catch {
-    // Env flags remain the fallback when the entitlement store is unavailable.
-  }
+  /**
+   * Один снимок на страницу: три секции (афиша, магазин, тарифы) решает один
+   * и тот же тумблер, и каждая обращение к БД отдельно удлиняло бы первый экран.
+   * Отказ здесь не `404`: главная обязана открываться всегда и просто
+   * показывать те секции, что заказаны.
+   */
+  const entitlements = await getEffectiveEntitlementsSafe();
+  const eventsEnabled = entitlements.events;
 
   return (
     <main id={site.mainContentId}>
@@ -253,15 +254,8 @@ export default async function HomePage({ params }: PageProps) {
         </div>
       </section>
 
-      {/* ── SHOP: раздел появляется только при включённом entitlements (приватно — fallback на features) ── */}
-      {await (async () => {
-        try {
-          const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-          return await isEntitlementEnabled('shop').catch(() => features.shop);
-        } catch {
-          return features.shop;
-        }
-      })() && (
+      {/* ── SHOP: раздел появляется только при включённом entitlements ── */}
+      {entitlements.shop && (
         <section className="section-y">
           <div className="page-container">
             <Reveal className="mb-12">
@@ -355,14 +349,7 @@ export default async function HomePage({ params }: PageProps) {
       />
 
       {/* ── PRICING: суммы и квоты приходят из config/pricing, не из разметки ── */}
-      {await (async () => {
-        try {
-          const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-          return await isEntitlementEnabled('subscriptions').catch(() => features.subscriptions);
-        } catch {
-          return features.subscriptions;
-        }
-      })() && (
+      {entitlements.subscriptions && (
         <section className="section-y bg-surface-raised">
           <div className="page-container">
             <Reveal as="div" className="mb-12">

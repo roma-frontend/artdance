@@ -8,7 +8,6 @@
  */
 
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { CatalogShell } from "@/components/catalog/catalog-shell";
@@ -26,6 +25,7 @@ import {
   getEventList,
   getVenueFacets,
 } from "@/server/content/catalog";
+import { assertEntitlementOrNotFound } from "@/server/entitlements/guard";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -53,10 +53,7 @@ export default async function CompetitionsPage({
   params,
   searchParams,
 }: PageProps) {
-  {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    if (!(await isEntitlementEnabled('events').catch(() => true))) notFound();
-  }
+  await assertEntitlementOrNotFound('events');
 
   const { locale } = await params;
   setRequestLocale(locale as Locale);

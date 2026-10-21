@@ -13,6 +13,7 @@ import { db } from '@/lib/db';
 import { Prisma } from '@/generated/prisma/client';
 import { notifyBookingCancelled, notifyBookingConfirmed, notifyWaitlistReady } from '@/server/booking/notify';
 import { creditWallet } from '@/server/wallet/service';
+import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 function isUniqueViolation(error: unknown): boolean { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'; }
 function refFromId(id: string): string { return 'BK-' + id.slice(-8).toUpperCase(); }
 export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; partnerName?: string | null; useClassPass?: boolean; now: Date; }
@@ -109,15 +110,7 @@ export async function createBookingFromHold(input: CreateBookingInput) {
         if (input.useClassPass) {
           if (lessonType !== 'GROUP') throw domainErrors.validationFailed('classPass');
           // Entitlement guard (server-side, inside tx): packages disabled → FEATURE_DISABLED
-          {
-            try {
-              const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-              const enabled = await isEntitlementEnabled('packages').catch(() => true);
-              if (!enabled) throw domainErrors.featureDisabled();
-            } catch (error) {
-              if (error instanceof Error && (error as { code?: string }).code === 'FEATURE_DISABLED') throw error;
-            }
-          }
+          await assertEntitlementOrThrow('packages');
           const pass = await tx.classPass.findFirst({
            where: { purchaserId: customerId, lessonsRemaining: { gt: 0 }, expiresAt: { gt: now } },
            orderBy: [{ expiresAt: 'asc' }, { lessonsRemaining: 'asc' }],

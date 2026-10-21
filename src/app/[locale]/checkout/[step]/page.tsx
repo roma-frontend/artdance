@@ -23,6 +23,7 @@ import { CheckoutStepper } from '@/components/checkout/checkout-stepper';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { checkoutSteps, routes, site, type CheckoutStep } from '@/config';
 import { getCheckoutContent } from '@/server/content/checkout';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -55,10 +56,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CheckoutStepPage({ params }: PageProps) {
-  {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    if (!(await isEntitlementEnabled('shop').catch(() => true))) notFound();
-  }
+  await assertEntitlementOrNotFound('shop');
   const { locale, step } = await params;
   setRequestLocale(locale as Locale);
 

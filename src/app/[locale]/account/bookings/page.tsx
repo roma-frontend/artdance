@@ -13,6 +13,8 @@ import { Link, redirect } from '@/i18n/routing';
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
+import { AccountNav } from '@/components/account/account-nav';
 import { ViewToggle } from '@/components/account/view-toggle';
 import { resolveAccountView } from '@/components/account/view-toggle.helpers';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationEllipsis } from '@/components/ui/pagination';
@@ -71,6 +73,7 @@ export default async function AccountBookingsPage({ params, searchParams }: Page
   const tBooking = await getTranslations({ locale: locale as Locale, namespace: 'booking' });
   const tCommon = await getTranslations({ locale: locale as Locale, namespace: 'common' });
   const tNav = await getTranslations({ locale: locale as Locale, namespace: 'nav' });
+  const entitlements = await getEffectiveEntitlementsSafe();
   const tFooter = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
 
   if (total === 0) {
@@ -107,6 +110,7 @@ export default async function AccountBookingsPage({ params, searchParams }: Page
           </div>
           <ViewToggle value={view} />
         </div>
+        <AccountNav locale={locale as Locale} pathname={routes.accountBookings()} entitlements={entitlements} />
 
         {view === 'grid' ? (
           <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

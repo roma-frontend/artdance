@@ -478,6 +478,28 @@ export function payoutStatusLabelKey(status: PayoutStatus): MessageKey {
   return `status.payout.${payoutStatusI18nKeys[status]}`;
 }
 
+/**
+ * Статус подписки клиента платформы (не пресета заказчика).
+ *
+ * Отдельный список, а не общий с выплатами: `ACTIVE` у подписки и `PAID` у
+ * выплаты описывают разные вещи, и общий тип заставил бы страницу подписки
+ * принимать статусы выплат.
+ */
+export const subscriptionStatuses = ['TRIALING', 'ACTIVE', 'PAST_DUE', 'CANCELLED', 'EXPIRED'] as const;
+export type SubscriptionStatus = (typeof subscriptionStatuses)[number];
+
+const subscriptionStatusI18nKeys = {
+  TRIALING: 'trialing',
+  ACTIVE: 'active',
+  PAST_DUE: 'pastDue',
+  CANCELLED: 'cancelled',
+  EXPIRED: 'expired',
+} as const satisfies Record<SubscriptionStatus, string>;
+
+export function subscriptionStatusLabelKey(status: SubscriptionStatus): MessageKey {
+  return `status.subscription.${subscriptionStatusI18nKeys[status]}`;
+}
+
 export const moderationStatuses = ['PENDING', 'APPROVED', 'REJECTED'] as const;
 export type ModerationStatus = (typeof moderationStatuses)[number];
 

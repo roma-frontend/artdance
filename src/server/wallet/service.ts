@@ -2,15 +2,10 @@ import 'server-only';
 
 import { db } from '@/lib/db';
 import { domainErrors } from '@/domain/errors';
+import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 
 async function assertWalletEnabled(): Promise<void> {
-  try {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    const enabled = await isEntitlementEnabled('wallet').catch(() => true);
-    if (!enabled) throw domainErrors.featureDisabled();
-  } catch (error) {
-    if (error instanceof Error && (error as { code?: string }).code === 'FEATURE_DISABLED') throw error;
-  }
+  await assertEntitlementOrThrow('wallet');
 }
 
 export async function ensureWallet(userId: string) {
@@ -28,10 +23,14 @@ export async function walletBalance(userId: string): Promise<number> {
 }
 
 export async function creditWallet(input: { userId: string; amount: number; kind: string; refId?: string | null }) {
-  // Allow internal credit on cancellation/refund path — do not block credited refunds even if wallet feature is hidden.
-  // Direct credit (gift, manual, referral) requires `wallet` entitlement.
-  const internalCreditKinds = new Set(['CREDIT_REFUND']);
-  if (!internalCreditKinds.has(input.kind)) {
+  /*
+   * Тумблер спрашивается только у пополнений по нашей инициативе (акция, ручная
+   * корректировка). Деньги по уже полученным платежам — возврат и оплаченное
+   * пополнение — зачисляются всегда: если заказчик выключил кошелёк между
+   * оплатой и доставкой, отказ означал бы «деньги взяли, баланс не дали».
+   */
+  const paidObligations = new Set(['CREDIT_REFUND', 'CREDIT_TOPUP']);
+  if (!paidObligations.has(input.kind)) {
     await assertWalletEnabled();
   }
   if (input.amount <= 0) throw domainErrors.validationFailed('amount');
@@ -49,7 +48,11 @@ export async function creditWallet(input: { userId: string; amount: number; kind
 }
 
 export async function debitWallet(input: { userId: string; amount: number; kind: string; refId?: string | null }) {
-  await assertWalletEnabled();
+  /* То же, что у `creditWallet`: оплата уже начавшегося оформления гейту не подчиняется. */
+  const paidObligations = new Set(['DEBIT_CHECKOUT']);
+  if (!paidObligations.has(input.kind)) {
+    await assertWalletEnabled();
+  }
   if (input.amount <= 0) throw domainErrors.validationFailed('amount');
   const account = await ensureWallet(input.userId);
   if (account.balance < input.amount) throw domainErrors.validationFailed('balance');
@@ -67,7 +70,12 @@ export async function debitWallet(input: { userId: string; amount: number; kind:
 }
 
 export async function applyWalletToPayment(input: { userId: string; amount: number; orderId: string }) {
-  await assertWalletEnabled();
+  /*
+   * Кошелёк гейтится в `createOrderPayment` до вызова: тумблер решает, появится
+   * ли «списать баланс» в оформлении. Здесь проверки нет намеренно — баланс,
+   * которым однажды уже заплатили, обязан доехать до заказа и после выключения
+   * модуля, иначе оформление встанет на середине.
+   */
   // Списывает не более баланса, идемпотентно по orderId — можно звать из reconcile/webhook повторно
   if (input.amount <= 0) return { applied: 0, balance: await walletBalance(input.userId) };
   const capped = Math.min(input.amount, await walletBalance(input.userId));

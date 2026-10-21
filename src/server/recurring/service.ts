@@ -6,15 +6,10 @@ import { booking } from '@/config/business';
 import { site } from '@/config/site';
 import { db } from '@/lib/db';
 import { createBookingFromHold, type CreateBookingInput } from '@/server/booking/service';
+import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 
 async function assertRecurringEnabled(): Promise<void> {
-  try {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    const enabled = await isEntitlementEnabled('recurring').catch(() => true);
-    if (!enabled) throw domainErrors.featureDisabled();
-  } catch (error) {
-    if (error instanceof Error && (error as { code?: string }).code === 'FEATURE_DISABLED') throw error;
-  }
+  await assertEntitlementOrThrow('recurring');
 }
 
 export interface CreateRecurringSeriesInput {

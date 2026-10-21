@@ -185,6 +185,9 @@ export const routes = {
   accountFavorites: () => '/account/favorites',
   accountReviews: () => '/account/reviews',
   accountSubscription: () => '/account/subscription',
+  accountWallet: () => '/account/wallet',
+  accountReferrals: () => '/account/referrals',
+  accountNotifications: () => '/account/notifications',
   accountSettings: () => '/account/settings',
   accountData: () => '/account/data',
 

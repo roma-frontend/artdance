@@ -24,6 +24,7 @@ import {
   type SearchCandidate,
 } from '@/domain/search-ranking';
 import {
+  enabledSearchScopes,
   isSearchScopeEnabled,
   type SearchHit,
   type SearchHitScope,
@@ -32,6 +33,7 @@ import {
 import type { Locale } from '@/i18n/config';
 import { db } from '@/lib/db';
 import { defineQuery } from '@/server/query';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 
 import { classSelect, publicClassWhere } from './classes';
 import { instructorSelect, publicInstructorWhere } from './instructors';
@@ -306,6 +308,18 @@ const getProductCandidates = defineQuery({
   handler: productCandidates,
 });
 
+/**
+ * Разделы переключателя поиска, доступные по тумблерам.
+ *
+ * `domain/search` отдаёт синхронную версию по env — она нужна тестам и тем
+ * местам, где снимок уже прочитан. Страница результатов обязана спрашивать
+ * пресет: иначе на выключенном `events` или `shop` чип раздела остаётся в
+ * переключателе и всегда возвращает ноль находок — раздел выглядит сломанным.
+ */
+export async function enabledSearchScopesFor(): Promise<readonly SearchScope[]> {
+  return enabledSearchScopes(await getEffectiveEntitlementsSafe());
+}
+
 /** Ищет только по включённым публичным разделам и отдаёт локализованные поля. */
 export async function searchCatalog(
   term: string,
@@ -313,22 +327,11 @@ export async function searchCatalog(
   limit: number,
   locale: Locale,
 ): Promise<readonly SearchHit[]> {
-  // Prefer entitlements runtime (preset-aware) over static `features`.
-  // When DB is unavailable (build/test without preset), fall back to `isSearchScopeEnabled`.
-  let enabledForScope: (s: SearchHitScope) => boolean;
-  try {
-    const { getEffectiveEntitlements } = await import('@/server/entitlements/service');
-    const eff = await getEffectiveEntitlements();
-    enabledForScope = (s: SearchHitScope) => {
-      if (s === 'events') return !!eff.events;
-      if (s === 'products') return !!eff.shop;
-      return true;
-    };
-  } catch {
-    enabledForScope = isSearchScopeEnabled;
-  }
+  // Рантайм-тумблеры вместо статических `features`: при недоступной БД снимок
+  // откатывается на env, а не на «включено».
+  const effective = await getEffectiveEntitlementsSafe();
   const wants = (candidate: SearchHitScope): boolean =>
-    (scope === 'all' || scope === candidate) && enabledForScope(candidate);
+    (scope === 'all' || scope === candidate) && isSearchScopeEnabled(candidate, effective);
 
   const [classes, instructors, venues, events, products] = await Promise.all([
     wants('classes') ? getClassCandidates(locale) : Promise.resolve([]),

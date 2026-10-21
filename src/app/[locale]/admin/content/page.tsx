@@ -23,6 +23,7 @@ import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import { getRootTranslate } from '@/i18n/translate';
 import { adminAccess } from '@/server/admin/access';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 import { db } from '@/lib/db';
 
 interface PageProps {
@@ -36,6 +37,15 @@ export default async function AdminContentPage({ params }: PageProps) {
   const { can } = await adminAccess();
   const canView = can('content.manage') || can('catalog.view');
   if (!canView) return <AccessDenied />;
+
+  /*
+   * Тумблер `cms` из панели тарифов. Раздел входит в каждый пресет, но его
+   * можно выключить отдельно — и тогда админка не должна предлагать редактор
+   * контента, который заказчик не оплатил. Отказ здесь не 404: оператор заходит
+   * в админку по прямой ссылке, и ему нужен ответ «раздела нет», а не страница
+   * ошибки.
+   */
+  if (!(await getEffectiveEntitlementsSafe()).cms) return <AccessDenied />;
 
   const t = await getTranslations({ locale: locale as Locale, namespace: 'admin.content' });
   const tRoot = await getRootTranslate();

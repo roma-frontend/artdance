@@ -37,6 +37,8 @@ import { Link, redirect } from '@/i18n/routing';
 import { getCaller } from '@/lib/auth/guards';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { getFavorites } from '@/server/queries/favorites';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
+import { AccountNav } from '@/components/account/account-nav';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,6 +73,7 @@ export default async function FavoritesPage({ params }: PageProps) {
 
   const t = await getTranslations('favorites');
   const tNav = await getTranslations('nav');
+  const entitlements = await getEffectiveEntitlementsSafe();
 
   return (
     <>
@@ -79,6 +82,7 @@ export default async function FavoritesPage({ params }: PageProps) {
           <p className="text-eyebrow uppercase text-content-tertiary">{tNav('account')}</p>
           <h1 className="text-heading-2 mt-2">{t('title')}</h1>
         </header>
+        <AccountNav locale={locale as Locale} pathname={routes.accountFavorites()} entitlements={entitlements} />
 
         {favorites.total === 0 ? (
           <div className="mt-10">

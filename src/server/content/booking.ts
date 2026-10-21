@@ -29,6 +29,7 @@ import 'server-only';
 
 import { db } from '@/lib/db';
 import { getCaller } from '@/lib/auth/guards';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 import { defaultLocale, type Locale } from '@/i18n/config';
 import { slotBlockingBookingStatuses } from '@/domain/enums';
 import { publicInstructorWhere, instructorSelect, toInstructorCard } from '../queries/instructors';
@@ -333,10 +334,7 @@ export async function getInstructorBookingContent(
 
 /** Пакеты доступны только после входа и никогда не кешируются вместе с публичным каталогом. */
 export async function getUsableClassPasses(now: Date = new Date()) {
-  try {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    if (!(await isEntitlementEnabled('packages').catch(() => true))) return [] as const;
-  } catch {}
+  if (!(await getEffectiveEntitlementsSafe()).packages) return [] as const;
   const caller = await getCaller();
   if (!caller) return [] as const;
   const rows = await db.classPass.findMany({

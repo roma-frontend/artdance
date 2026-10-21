@@ -13,13 +13,14 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ContentSection } from "@/components/content/content-section";
 import { PageHero, breadcrumbsFromTrail } from "@/components/layout/page-hero";
 import { SiteFooter } from "@/components/layout/site-footer";
-import { features, routes, site } from "@/config";
+import { routes, site } from "@/config";
 import { federations, federationDescriptionKey } from "@/domain/dancesport";
 import type { Locale } from "@/i18n/config";
 import { Link } from "@/i18n/routing";
 import type { Crumb } from "@/lib/seo/jsonld";
 import { buildMetadata } from "@/lib/seo/metadata";
 import { getDancesportHero } from "@/server/content/catalog";
+import { getEffectiveEntitlementsSafe } from "@/server/entitlements/service";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -48,13 +49,8 @@ export default async function FederationsPage({ params }: PageProps) {
 
   const t = await getTranslations("federations");
   const tRoot = await getTranslations();
-  let eventsEnabled = features.events;
-  try {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    eventsEnabled = await isEntitlementEnabled('events');
-  } catch {
-    // Env flags remain the fallback when the entitlement store is unavailable.
-  }
+  /* Страница остаётся доступной без афиши, поэтому здесь снимок, а не гвард. */
+  const { events: eventsEnabled } = await getEffectiveEntitlementsSafe();
 
   const trail: Crumb[] = [{ name: t("eyebrow"), path: routes.federations() }];
 

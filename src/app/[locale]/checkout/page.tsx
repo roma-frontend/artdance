@@ -13,19 +13,14 @@
 import { routes } from '@/config';
 import type { Locale } from '@/i18n/config';
 import { redirect } from '@/i18n/routing';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
 }
 
 export default async function CheckoutIndexPage({ params }: PageProps) {
-  {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    if (!(await isEntitlementEnabled('shop').catch(() => true))) {
-      const { notFound } = await import('next/navigation');
-      notFound();
-    }
-  }
+  await assertEntitlementOrNotFound('shop');
   const { locale } = await params;
   redirect({ href: routes.checkoutStep('contact'), locale: locale as Locale });
 }

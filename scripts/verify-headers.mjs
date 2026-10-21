@@ -26,7 +26,19 @@ const EXPECTATIONS = [
   ['/hy', 'permissions-policy', (v) => v?.includes('camera=()'), 'Permissions-Policy'],
   ['/hy', 'cross-origin-opener-policy', (v) => v === 'same-origin', 'COOP'],
   ['/hy', 'x-powered-by', (v) => v === undefined, 'x-powered-by удалён'],
-  ['/hy', 'cache-control', (v) => v?.includes('s-maxage=180'), 'каталог кешируется CDN'],
+  ['/hy/classes', 'cache-control', (v) => v?.includes('s-maxage=180'), 'каталог кешируется CDN'],
+  /*
+   * Раздел, состав которого решает тумблер MVP/FULL/PREMIUM, не должен помнить
+   * старое решение: заказчик, включивший PREMIUM, увидит его тем же переходом.
+   */
+  ['/hy/shop', 'cache-control', (v) => v?.includes('no-store'), 'раздел за тумблером не кешируется'],
+  /*
+   * Главная — единственная страница за тумблером, которую кешируем: она самая
+   * тяжёлая, но её секции тоже решает тариф. Короткий срок вместо каталожных
+   * 180 секунд и вместо отказа от CDN.
+   */
+  ['/hy', 'cache-control', (v) => v?.includes('s-maxage=30'), 'главная кешируется коротко'],
+  ['/sitemap.xml', 'cache-control', (v) => v?.includes('no-store'), 'карта сайта не кешируется'],
   ['/hy/account', 'cache-control', (v) => v?.includes('no-store'), 'приватный раздел не кешируется'],
   ['/hy/about', 'cache-control', (v) => v?.includes('s-maxage=3600'), 'контентные страницы'],
   ['/hy/legal/terms', 'cache-control', (v) => v?.includes('s-maxage=86400'), 'правовые страницы'],

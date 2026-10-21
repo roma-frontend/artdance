@@ -65,9 +65,38 @@ export default async function OperatorToolPage({ params, searchParams }: PagePro
   }
 
   if (tool === 'features') {
-    const overrides = await db.featureFlagOverride.findMany({ select: { key: true, enabled: true } });
-    const overrideMap = new Map(overrides.map((item) => [item.key, item.enabled]));
-    return <><AdminPageHeader title={t('featuresTitle')} subtitle={t('featuresHint')} actions={back} /><div className="grid gap-3 sm:grid-cols-2">{Object.entries(features).map(([key, defaultValue]) => { const enabled = overrideMap.get(key) ?? defaultValue; return <div key={key} className="flex items-center justify-between gap-3 rounded-xl border border-border-default bg-surface-card p-4"><div><p className="font-mono text-body-sm text-content-primary">{key}</p><p className="text-caption text-content-tertiary">{overrideMap.has(key) ? t('flagOverride') : t('flagDefault')}</p></div><FeatureFlagButton flag={key} enabled={enabled} /></div>; })}</div></>;
+    /*
+     * Тот же снимок, что у панели тарифов, а не env-флаги.
+     *
+     * Раньше экран показывал `features` плюс оверрайды: при выбранном пресете
+     * оператор видел «включено по умолчанию» там, где пресет реально выключил
+     * модуль, и переключатель врал о том, что сейчас работает на сайте.
+     * Статус подписи читает одну из трёх причин значения: оверрайд, пресет, env.
+     */
+    const state = await getEntitlementsState();
+    const rows = (Object.keys(features) as (keyof typeof features)[]).map((key) => ({
+      key: key as string,
+      effective: resolveEffectiveEnabled(state.preset, state.overrides, key),
+      overridden: state.overrides.has(key),
+    }));
+    const origin = (overridden: boolean) =>
+      overridden ? t('flagOverride') : state.preset ? t('fromPreset') : t('flagDefault');
+    return (
+      <>
+        <AdminPageHeader title={t('featuresTitle')} subtitle={t('featuresHint')} actions={back} />
+        <div className="grid gap-3 sm:grid-cols-2">
+          {rows.map((row) => (
+            <div key={row.key} className="flex items-center justify-between gap-3 rounded-xl border border-border-default bg-surface-card p-4">
+              <div>
+                <p className="font-mono text-body-sm text-content-primary">{row.key}</p>
+                <p className="text-caption text-content-tertiary">{origin(row.overridden)}</p>
+              </div>
+              <FeatureFlagButton flag={row.key} enabled={row.effective} />
+            </div>
+          ))}
+        </div>
+      </>
+    );
   }
 
   if (tool === 'operations') return <><AdminPageHeader title={t('operationsTitle')} subtitle={t('operationsHint')} actions={back} /><div className="grid gap-3 sm:grid-cols-2"><JobButton job="booking" /><JobButton job="holds" /><JobButton job="trash" /><JobButton job="digest" /></div></>;

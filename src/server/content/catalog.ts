@@ -16,7 +16,7 @@ export {
 } from '../queries/products';
 export { getStyleHub, getStyleHubSlugs, getStyleSummaries } from '../queries/styles';
 export { getCatalogSlugs } from '../queries/slugs';
-export { searchCatalog } from '../queries/search';
+export { enabledSearchScopesFor, searchCatalog } from '../queries/search';
 export { emptyCatalogPage } from '@/domain/content';
 
 /** Выбор кадра пока фиксирован; описания и параметры медиа читаются из БД. */

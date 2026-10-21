@@ -2,7 +2,6 @@
  * GIFT CARDS REDEEM — A-21: активация карты по коду.
  */
 
-import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
@@ -13,6 +12,7 @@ import { routes, site } from '@/config';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { getContentHero } from '@/server/content/catalog';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 import type { Crumb } from '@/lib/seo/jsonld';
 
 interface PageProps {
@@ -26,8 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function GiftCardRedeemPage({ params }: PageProps) {
-  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-  if (!(await isEntitlementEnabled('shop').catch(() => true))) notFound();
+  await assertEntitlementOrNotFound('shop');
   const { locale } = await params;
   setRequestLocale(locale as Locale);
   const tFooter = await getTranslations('footer');

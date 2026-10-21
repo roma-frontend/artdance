@@ -921,6 +921,10 @@ const en = {
       favorites: 'Favorites',
       reviews: 'My reviews',
       subscription: 'Subscription',
+      wallet: 'Wallet',
+      referrals: 'Referrals',
+      notifications: 'Notifications',
+      data: 'My data',
       settings: 'Settings',
     },
     bookings: {
@@ -953,6 +957,55 @@ const en = {
       deleteAccount: 'Delete account',
       deleteAccountNote:
         'Your account will be deactivated immediately and permanently deleted after {days}.',
+    },
+    subscription: {
+      title: 'My subscription',
+      empty: 'No active subscription',
+      emptyHint: 'Pick a plan and book classes at a member rate.',
+      choosePlanCta: 'Choose a plan',
+      plan: 'Plan',
+      period: 'Current period',
+      renewsOn: 'Renews on {date}',
+      cancelAtPeriodEnd: 'Cancels at the end of the period',
+      usageTitle: 'This period',
+      usageEmpty: 'Nothing used yet',
+      /** Квоты: подписи метрик из `SubscriptionUsage.metric`. */
+      metrics: {
+        groupClasses: 'Group classes',
+        privateSessions: 'Private sessions',
+      },
+      manageNote: 'To change or cancel, contact support — self-service is not available yet.',
+    },
+    referrals: {
+      title: 'Referrals',
+      hint: 'Share your code — you and your friend each get {bonus} after their first paid order.',
+      codeLabel: 'Your code',
+      copyCta: 'Copy',
+      copied: 'Copied',
+      invited: 'Invited',
+      pending: 'Waiting for a first purchase',
+      paid: 'Paid',
+      empty: 'No one has joined with your code yet.',
+    },
+    walletScreen: {
+      title: 'Wallet',
+      balanceTitle: 'Available balance',
+      hint: 'Refunds, referral bonuses and top-ups go here. You can spend the balance at checkout.',
+      topUpTitle: 'Top up',
+      topUpCta: 'Top up {amount}',
+      topUpHint: 'The amount is credited after the payment is confirmed.',
+      historyTitle: 'History',
+      historyEmpty: 'No entries yet',
+      /** Виды проводок из `WalletEntry.kind`. */
+      kinds: {
+        CREDIT_TOPUP: 'Top-up',
+        CREDIT_REFUND: 'Refund',
+        CREDIT_REFERRAL: 'Referral bonus',
+        CREDIT_GIFT: 'Gift card',
+        DEBIT_CHECKOUT: 'Order payment',
+        DEBIT_MANUAL: 'Adjustment',
+      },
+      disabled: 'The wallet is not available on this plan.',
     },
   },
 
@@ -1041,7 +1094,7 @@ const en = {
       lessonsCount: '{count, plural, one {# lesson} other {# lessons}}',
       validity: '{days} days',
       fromPerLesson: 'From {price} / lesson',
-      cta: 'Buy {lessons} lessons',
+      cta: 'Buy {lessons} lessons — {total}',
       success: 'Pass created — {lessons} lessons until {date}',
       unavailable: 'Purchase available after payments are connected',
       empty: 'No active passes',
@@ -1098,7 +1151,7 @@ const en = {
       },
       presetHint: {
         mvp: 'Contract volume: catalog, instructors, studios, booking, shop, auth, email, SEO. No video, no marketplace, no CRM.',
-        full: 'Adds booking engine, venues, Paynet, Email+SMS, reviews, favorites, promo, maps, i18n (3), QA.',
+        full: 'Adds booking engine, venues, Paynet, Email and Push, reviews, favorites, promo, maps, i18n (3), QA.',
         premium: 'Adds video courses, marketplace commissions & payouts, CRM, reminders, calendar sync, advanced analytics.',
       },
       presetPrice: {
@@ -1376,6 +1429,14 @@ const en = {
       delivered: 'Delivered',
       cancelled: 'Cancelled',
       returned: 'Returned',
+    },
+    /** Статусы подписки клиента платформы (`SubscriptionStatus`). */
+    subscription: {
+      trialing: 'Trial',
+      active: 'Active',
+      pastDue: 'Payment overdue',
+      cancelled: 'Cancelled',
+      expired: 'Expired',
     },
     payout: {
       scheduled: 'Scheduled',
@@ -3333,6 +3394,8 @@ const en = {
         PRODUCT: 'Product',
         GIFT_CARD: 'Gift card',
         SUBSCRIPTION: 'Subscription',
+        CLASS_PASS: 'Class pass',
+        WALLET_TOPUP: 'Wallet top-up',
         TRAVEL_FEE: 'Travel fee',
         DELIVERY_FEE: 'Delivery fee',
       },

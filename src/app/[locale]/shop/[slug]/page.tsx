@@ -21,6 +21,7 @@ import { breadcrumbSchema } from '@/lib/seo/jsonld';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import type { Crumb } from '@/lib/seo/jsonld';
 import { getCatalogSlugs, getProductDetail } from '@/server/content/catalog';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 
 interface PageProps {
   params: Promise<{ locale: string; slug: string }>;
@@ -44,8 +45,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
-  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-  if (!(await isEntitlementEnabled('shop').catch(() => true))) notFound();
+  await assertEntitlementOrNotFound('shop');
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 

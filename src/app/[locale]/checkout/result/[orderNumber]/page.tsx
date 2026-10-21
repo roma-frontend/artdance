@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
 import { SiteFooter } from '@/components/layout/site-footer';
+import { ResultReconcile } from '@/components/checkout/result-reconcile';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Price } from '@/components/ui/price';
@@ -13,6 +14,7 @@ import { Link } from '@/i18n/routing';
 import { db } from '@/lib/db';
 import { getCaller } from '@/lib/auth/guards';
 import { isSupportOperator } from '@/config/security';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 interface PageProps { params: Promise<{ locale: string; orderNumber: string }>; }
@@ -24,10 +26,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CheckoutResultPage({ params }: PageProps) {
-  {
-    const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-    if (!(await isEntitlementEnabled('shop').catch(() => true))) notFound();
-  }
+  await assertEntitlementOrNotFound('shop');
   const caller = await getCaller();
   const { locale, orderNumber } = await params;
   setRequestLocale(locale as Locale);
@@ -39,7 +38,7 @@ export default async function CheckoutResultPage({ params }: PageProps) {
     select: {
       id: true, orderNumber: true, status: true, total: true, placedAt: true, userId: true,
       items: { select: { titleSnapshot: true, quantity: true, lineTotal: true } },
-      payments: { select: { status: true, provider: true, method: true }, orderBy: { createdAt: 'desc' }, take: 1 },
+      payments: { select: { id: true, status: true, provider: true, method: true }, orderBy: { createdAt: 'desc' }, take: 1 },
     },
   });
   // Ownership guard: чужой заказ не отдаём (IDOR). Support может смотреть любой.
@@ -104,6 +103,14 @@ export default async function CheckoutResultPage({ params }: PageProps) {
   return (
     <>
       <main id={site.mainContentId} className="page-container inner-page">
+        {/*
+          Возврат с провайдера приходит раньше webhook, поэтому «обрабатывается»
+          здесь — обычное состояние, а не ошибка. Сверка просит провайдера
+          один раз и перерисовывает страницу, если статус уже изменился.
+        */}
+        {o.payments[0] ? (
+          <ResultReconcile paymentId={o.payments[0].id} status={o.payments[0].status} />
+        ) : null}
         {orderKnown ? <StatusBadge kind="order" status={o.status as OrderStatus} /> : <Badge variant={paid ? 'success' : failed ? 'warning' : 'neutral'}>{o.status}</Badge>}{o.payments[0] ? <span className="ml-2 text-body-sm text-content-tertiary">· {o.payments[0].status}</span> : null}
         <h1 className="text-heading-2 mt-3">{paid ? t('result.successTitle') : failed ? t('result.failedTitle') : t('result.pendingTitle')}</h1>
         <p className="text-body mt-2 text-content-secondary">{paid ? t('result.successSubtitle', { orderNumber: o.orderNumber } as never) : failed ? t('result.failedSubtitle') : t('result.pendingSubtitle')}</p>

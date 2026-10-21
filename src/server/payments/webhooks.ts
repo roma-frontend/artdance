@@ -18,6 +18,7 @@ import { getServerEnv } from '@/config/env';
 import { db } from '@/lib/db';
 import { getPaymentProvider, type PaymentProviderId } from '@/lib/payments';
 import { recordAudit } from '@/lib/audit';
+import { settlePaidOrder } from '@/server/payments/settle';
 import { verifyBodySignature, verifyTimestampedSignature } from '@/lib/security/webhook';
 import { webhookSecurity } from '@/config/security';
 
@@ -233,6 +234,15 @@ export async function processWebhookPayment(input: ProcessWebhookInput): Promise
           await db.order.update({ where: { id: payment.orderId }, data: { status: 'PAID', paidAt: new Date() } as never });
           await recordAudit({ actor: null, action: 'payment.confirmed', entityType: 'Order', entityId: payment.orderId });
         }
+        /*
+         * Доставляем купленное (пакет, подписка, пополнение кошелька, комиссия).
+         * Сбой не должен превратиться в ответ 500 — провайдер станет ретраить
+         * событие бесконечно. `settledAt` не поставлен, поэтому заказ останется
+         * на повторную доставку при следующем событии или сверке.
+         */
+        await settlePaidOrder(payment.orderId).catch((error) => {
+          console.error('[payments] settle after webhook failed', error);
+        });
       }
     }
   }

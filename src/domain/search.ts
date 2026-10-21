@@ -89,14 +89,20 @@ const searchScopeFeatures = {
   products: 'shop',
 } as const satisfies Record<SearchScope, FeatureKey | null>;
 
-export function isSearchScopeEnabled(scope: SearchScope): boolean {
+export function isSearchScopeEnabled(scope: SearchScope, snapshot?: Partial<Record<FeatureKey, boolean>>): boolean {
   const feature = searchScopeFeatures[scope];
-  return feature === null || isEnabled(feature);
+  if (feature === null) return true;
+  /*
+   * Без снимка — env-флаги: так решает тест и любой код, вызванный до чтения
+   * тумблеров. Со снимком — тумблер, и пропущенный ключ означает выключен,
+   * потому что снимок полный и несовпадение означает опечатку.
+   */
+  return snapshot ? snapshot[feature] === true : isEnabled(feature);
 }
 
 /** Разделы, доступные в текущей поставке. Порядок сохраняется. */
-export function enabledSearchScopes(): readonly SearchScope[] {
-  return searchScopes.filter(isSearchScopeEnabled);
+export function enabledSearchScopes(snapshot?: Partial<Record<FeatureKey, boolean>>): readonly SearchScope[] {
+  return searchScopes.filter((scope) => isSearchScopeEnabled(scope, snapshot));
 }
 
 /* ─────────────────────────── Форма результата ─────────────────────────── */

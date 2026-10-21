@@ -497,33 +497,6 @@ export const importCatalogCsv = authedAction
     return { imported, errors: [] };
   });
 
-/* ──────────────────── Флаги из админки (E-07) ──────────────────── */
-
-export const setFeatureFlag = authedAction
-  .metadata({ rateLimit: 'adminMutation', audit: 'admin.featureFlag.set' })
-  .inputSchema(z.object({ key: z.string().min(1).max(64), enabled: z.boolean() }))
-  .action(async ({ parsedInput, ctx }): Promise<{ key: string; enabled: boolean }> => {
-    const caller = await requireCapability('settings.edit');
-    const { db: dbClient } = await import('@/lib/db');
-    await (dbClient as unknown as { featureFlagOverride: { upsert(a: unknown): Promise<unknown> } }).featureFlagOverride.upsert({
-      where: { key: parsedInput.key },
-      create: { key: parsedInput.key, enabled: parsedInput.enabled, updatedBy: caller.id },
-      update: { enabled: parsedInput.enabled, updatedBy: caller.id },
-    });
-
-    const { recordAudit: audit } = await import('@/lib/audit');
-    await audit({
-      actor: caller,
-      action: 'admin.featureFlag.set',
-      entityType: 'FeatureFlagOverride',
-      entityId: parsedInput.key,
-      after: { enabled: parsedInput.enabled },
-      ipAddress: ctx.identifier,
-    });
-
-    return { key: parsedInput.key, enabled: parsedInput.enabled };
-  });
-
 /* ───────────────────── Предпросмотр писем (E-02) ───────────────────── */
 
 export type PreviewTemplate = 'verify' | 'booking';

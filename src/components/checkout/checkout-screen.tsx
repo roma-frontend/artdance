@@ -19,13 +19,17 @@
  * **Сводка справа считается `domain/cart.ts`**, а зона доставки выбирается на
  * своём шаге: до него доставка не посчитана, а не «бесплатна».
  *
- * **Что здесь заглушка и почему это честно видно.** Значения полей не переживают
- * переход между шагами: каждый шаг — свой URL, а черновик заказа (`Order` в
- * статусе `DRAFT` плюс server action на каждом шаге) — задача волны commerce.
- * По той же причине последняя кнопка не создаёт платёж: он идёт только через
- * `getPaymentProvider()`, и подтверждение приходит после `getPayment()` или
- * проверенного webhook — redirect клиента доказательством оплаты не является.
- * Пока платёж не подключён, кнопка отвечает «скоро», а не рисует успех.
+ * **Значения полей переживают переход между шагами.** Каждый шаг — свой URL и
+ * новый экземпляр компонента, поэтому введённое копится в черновике
+ * (`lib/checkout/draft.ts`, `sessionStorage`) и подставляется при открытии
+ * шага. Без этого последний шаг отправлял бы заказ без контактов.
+ *
+ * **Последняя кнопка действительно создаёт заказ и платёж.** Порядок:
+ * `createOrderAction` → `POST /api/payments/intent` → редирект на провайдера.
+ * Успех здесь не рисуется никогда: подтверждение приходит от webhook или
+ * сверки, а redirect клиента доказательством оплаты не является — поэтому
+ * экран уводит на страницу возврата `/checkout/result/:orderNumber`, которая
+ * показывает статус из базы и сама просит сверку.
  */
 
 'use client';
@@ -34,6 +38,11 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { cartValidate, fetchCart } from '@/lib/cart/api';
 import { useCartStore } from '@/lib/cart/store';
+import { getAnonymousId } from '@/lib/client/anonymous-id';
+import { clearDraft, draftContactName, readDraft, writeDraft } from '@/lib/checkout/draft';
+import { toActionMessageKey } from '@/lib/payments/action-message';
+import { createPaymentIntent } from '@/lib/payments/api';
+import { createOrderAction } from '@/server/actions/orders';
 
 import { OrderSummary, type OrderSummaryLine } from '@/components/checkout/order-summary';
 import { PaymentMethodPicker } from '@/components/checkout/payment-method-picker';
@@ -122,13 +131,32 @@ export function CheckoutScreen({
   const format = useFormatter();
   const router = useRouter();
 
-  const [values, setValues] = useState<FieldValues>({});
+  /*
+   * Начальные значения — из черновика. `readDraft` синхронно читает
+   * sessionStorage и безопасен на сервере (вернёт пустой черновик), поэтому
+   * нет кадра, в котором поле пустое и через мгновение заполняется: введённый
+   * ранее email не мигает на каждом переходе.
+   */
+  const [values, setValues] = useState<FieldValues>(() => {
+    const draft = readDraft();
+    return {
+      firstName: draft.firstName || undefined,
+      lastName: draft.lastName || undefined,
+      email: draft.email || undefined,
+      phone: draft.phone || undefined,
+      address: draft.address || undefined,
+      city: draft.city || undefined,
+      postalCode: draft.postalCode || undefined,
+      notes: draft.notes || undefined,
+    };
+  });
   const [errors, setErrors] = useState<FieldErrors>({});
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | undefined>(undefined);
-  const [method, setMethod] = useState<PaymentMethod | undefined>(undefined);
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | undefined>(() => readDraft().deliveryMethod ?? undefined);
+  const [method, setMethod] = useState<PaymentMethod | undefined>(() => readDraft().paymentMethod ?? undefined);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsError, setTermsError] = useState(false);
-  const [notice, setNotice] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<MessageKey | null>(null);
   const [cartChanged, setCartChanged] = useState(false);
 
   const set = (name: FieldName) => (value: string) => {
@@ -143,6 +171,16 @@ export function CheckoutScreen({
     else if (name === 'cardholder') next = formatCardholder(value);
     setValues((current) => ({ ...current, [name]: next }));
     setErrors((current) => (current[name] ? { ...current, [name]: undefined } : current));
+
+    /*
+     * Контактные и адресные поля сразу уходят в черновик — это они переезжают
+     * между шагами. Реквизиты карты не сохраняются: `writeDraft` их вырезает,
+     * а форма карты живёт только на шаге оплаты.
+     */
+    if (name === 'firstName' || name === 'lastName' || name === 'email' || name === 'phone' ||
+        name === 'address' || name === 'city' || name === 'postalCode' || name === 'notes') {
+      writeDraft({ [name]: next });
+    }
   };
 
   /*
@@ -262,19 +300,101 @@ export function CheckoutScreen({
     };
   }, [step]);
 
+  /**
+   * Последний шаг: заказ → платёж → провайдер.
+   *
+   * Три отказа различаются по смыслу и показываются тем ключом, который
+   * вернул сервер: «магазин выключен» (`FEATURE_DISABLED`), «корзина
+   * изменилась» (`VALIDATION_FAILED`) и «сеть» (`INTERNAL`). Общее «что-то
+   * пошло не так» на этом шаге означало бы, что человек не знает, списали
+   * ли с него деньги.
+   */
+  const submitOrder = async () => {
+    if (!termsAccepted) {
+      setTermsError(true);
+      return;
+    }
+
+    const draft = readDraft();
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      /*
+       * Проверка корзины на сервере перед созданием заказа: цены и остатки под
+       * оформлением могли измениться. Заказ создаётся из `Cart` в БД, а не из
+       * того, что нарисовано на экране, — поэтому «итог в сводке» и «итог
+       * заказа» расходятся только в том случае, если корзина правда изменилась,
+       * и тогда честнее показать это, чем продать по старой цене.
+       */
+      const fresh = await cartValidate();
+      if (fresh) useCartStore.getState().setSnapshot(fresh as never);
+
+      const order = await createOrderAction({
+        contactEmail: draft.email,
+        contactPhone: draft.phone,
+        contactName: draftContactName(draft),
+        deliveryMethod: draft.deliveryMethod === 'courier' ? 'COURIER' : draft.deliveryMethod === 'pickup' ? 'PICKUP_POINT' : null,
+        deliveryAddress:
+          draft.deliveryMethod === 'courier'
+            ? { street: draft.address, city: draft.city, postalCode: draft.postalCode || null }
+            : null,
+        deliveryNotes: draft.notes || null,
+        anonymousId: getAnonymousId(),
+      });
+
+      if (order?.serverError) {
+        setSubmitError(toActionMessageKey(order.serverError.messageKey));
+        return;
+      }
+      if (!order?.data?.id) {
+        setSubmitError('errors.generic.description');
+        return;
+      }
+
+      const intent = await createPaymentIntent({
+        orderId: order.data.id,
+        method: method ?? 'CARD',
+        useWallet: true,
+        anonymousId: getAnonymousId(),
+      });
+
+      if (!intent.ok) {
+        setSubmitError(intent.error.messageKey);
+        return;
+      }
+
+      /* Черновик больше не нужен: заказ и платёж созданы. */
+      clearDraft();
+
+      if (intent.data.redirectUrl) {
+        /*
+         * Полный переход, а не `router.push`: провайдер ждёт обычный GET от
+         * браузера, а не клиентскую навигацию, и адрес ведёт на чужой origin.
+         */
+        window.location.assign(intent.data.redirectUrl);
+        return;
+      }
+
+      /*
+       * Redirect отсутствует: баланс закрыл заказ целиком, или провайдер
+       * работает по QR. В обоих случаях статус есть только в базе — страница
+       * возврата покажет правду и не нарисует «успех» от себя.
+       */
+      router.push(routes.checkoutResult(order.data.orderNumber));
+    } catch {
+      setSubmitError('errors.generic.description');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!validate()) return;
 
     if (step === 'confirm') {
-      if (!termsAccepted) {
-        setTermsError(true);
-        return;
-      }
-        // Оформление заказа: платёжный провайдер выбирается из env (PAYMENT_PROVIDER).
-        // mock — локальная разработка, stripe — прод (см. docs/launch/banks-acquiring.md).
-        // Нарисовать «успех» без провайдера нельзя — это деньги.
-       setNotice(true);
+      void submitOrder();
       return;
     }
 
@@ -345,7 +465,10 @@ export function CheckoutScreen({
           <StepCard title={t('checkout.delivery.title')}>
             <RadioGroup
               value={deliveryMethod}
-              onValueChange={(next) => setDeliveryMethod(next as DeliveryMethod)}
+              onValueChange={(next) => {
+                setDeliveryMethod(next as DeliveryMethod);
+                writeDraft({ deliveryMethod: next as DeliveryMethod });
+              }}
               className="gap-2"
             >
               {(['courier', 'pickup'] as const).map((option) => (
@@ -424,7 +547,10 @@ export function CheckoutScreen({
           <PaymentMethodPicker
             methods={paymentMethods}
             value={method}
-            onChange={setMethod}
+            onChange={(next) => {
+              setMethod(next);
+              writeDraft({ paymentMethod: next });
+            }}
             inlineCardForm={inlineCardForm}
           >
             <div className="flex flex-col gap-4">
@@ -528,12 +654,12 @@ export function CheckoutScreen({
               </p>
             )}
 
-            {notice && (
+            {submitError && (
               <p
-                role="status"
-                className="text-body-sm rounded-md bg-accent-soft px-4 py-3 text-content-secondary"
+                role="alert"
+                className="text-caption rounded-md bg-danger-soft px-3 py-2 font-semibold text-content-danger"
               >
-                {t('common.states.comingSoon')}
+                {t(submitError)}
               </p>
             )}
           </StepCard>
@@ -549,14 +675,16 @@ export function CheckoutScreen({
           <Button
             type="submit"
             size="lg"
-            /* На шаге оплаты нельзя идти дальше, не выбрав способ. */
-            disabled={step === 'payment' && method === undefined}
+            /* На шаге оплаты нельзя идти дальше, не выбрав способ; на последнем — пока идёт заказ. */
+            disabled={(step === 'payment' && method === undefined) || (step === 'confirm' && submitting)}
             className="ms-auto"
           >
             {step === 'confirm'
-              ? t('checkout.payment.submitCta', {
-                  total: format.number(totals.total, 'price'),
-                })
+              ? submitting
+                ? t('common.states.processing')
+                : t('checkout.payment.submitCta', {
+                    total: format.number(totals.total, 'price'),
+                  })
               : t('common.actions.continue')}
           </Button>
         </div>

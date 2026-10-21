@@ -21,13 +21,13 @@ import { PageHero, breadcrumbsFromTrail } from '@/components/layout/page-hero';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { notFound } from 'next/navigation';
 import { promotions, routes, site } from '@/config';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import type { Crumb } from '@/lib/seo/jsonld';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { getContentHero } from '@/server/content/catalog';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -46,8 +46,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function GiftCardsPage({ params }: PageProps) {
-  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-  if (!(await isEntitlementEnabled('shop').catch(() => true))) notFound();
+  await assertEntitlementOrNotFound('shop');
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 

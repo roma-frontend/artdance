@@ -21,6 +21,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { routes, site } from '@/config';
 import { availablePaymentMethodsWithGlobal } from '@/lib/payments';
 import { getCartContent } from '@/server/content/cart';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -41,11 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CartPage({ params }: PageProps) {
-  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-  if (!(await isEntitlementEnabled('shop').catch(() => true))) {
-    const { notFound } = await import('next/navigation');
-    notFound();
-  }
+  await assertEntitlementOrNotFound('shop');
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 

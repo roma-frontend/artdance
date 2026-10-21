@@ -1,15 +1,20 @@
 /**
  * ENTITLEMENTS CATALOG — единый реестр пакетов и фич.
  *
- * Связан с договорами Proposal_EN (MVP/FULL/PREMIUM) и ArtDance_Plan_RU
- * (фикс 5 000 000 ֏, MVP+3 языка+QA). Пресет = коммерческий пакет:
+ * Пресет = коммерческий пакет из `docs/01-commercial-proposal.md`:
  *   MVP     — 5 000 000 ֏, база для показа клиенту
- *   FULL    — 5–6 млн AMD (Proposal_EN Recommended)
+ *   FULL    — 5–6 млн AMD (Recommended)
  *   PREMIUM — 7–8+ млн (видео, комиссии, выплаты, CRM)
  *
  * Fine-toggles — по ключам из `src/config/features.ts` (FeatureKey).
  * Причина: навигация, sitemap и поиск уже фильтруются ровно этими ключами.
  * Отдельный enum «entitlement-key» означал бы две системы флагов и их рассинхрон.
+ *
+ * **SMS в состав пакетов не входит:** шлюза нет ни в коде, ни у заказчика
+ * (`SMS_SENDER_ID` — 2–3 недели на регистрацию), а канал, который не
+ * отправляется, хуже его отсутствия. FULL/PREMIUM включают Email и Push;
+ * SMS возвращается вместе с провайдером — отдельной строкой в
+ * `docs/06-implementation-plan.md` («вне договора»).
  */
 
 import type { FeatureKey } from '@/config/features';
@@ -28,23 +33,23 @@ export interface FeatureMeta {
 }
 
 export const entitlementFeatureCatalog: readonly FeatureMeta[] = [
-  { key: 'shop', labelKey: 'shop', tier: 'mvp', group: 'store', docsRef: 'ArtDance_Plan_RU: Магазин' },
-  { key: 'events', labelKey: 'events', tier: 'full', group: 'content', docsRef: 'Proposal_EN FULL: events' },
-  { key: 'courses', labelKey: 'courses', tier: 'premium', group: 'content', docsRef: 'Proposal_EN PREMIUM: video + courses' },
-  { key: 'videoCourses', labelKey: 'videoCourses', tier: 'premium', group: 'content', docsRef: 'Proposal_EN Phase 2' },
-  { key: 'subscriptions', labelKey: 'subscriptions', tier: 'premium', group: 'platform', docsRef: 'Proposal_EN PREMIUM: subscriptions' },
-  { key: 'wallet', labelKey: 'wallet', tier: 'premium', group: 'platform', docsRef: 'PREMIUM: commissions' },
-  { key: 'referrals', labelKey: 'referrals', tier: 'premium', group: 'platform', docsRef: 'PREMIUM: loyalty' },
-  { key: 'packages', labelKey: 'packages', tier: 'premium', group: 'platform', docsRef: 'PREMIUM: classPass' },
-  { key: 'recurring', labelKey: 'recurring', tier: 'full', group: 'platform', docsRef: 'FULL: booking engine' },
-  { key: 'push', labelKey: 'push', tier: 'full', group: 'platform', docsRef: 'FULL: Email+SMS' },
-  { key: 'boost', labelKey: 'boost', tier: 'premium', group: 'platform', docsRef: 'PREMIUM: CRM/boost' },
-  { key: 'cms', labelKey: 'cms', tier: 'mvp', group: 'platform', docsRef: 'MVP: базовая админка' },
+  { key: 'shop', labelKey: 'shop', tier: 'mvp', group: 'store', docsRef: 'docs/01-commercial-proposal.md §2 — PLATFORM: магазин, корзина, склад' },
+  { key: 'events', labelKey: 'events', tier: 'full', group: 'content', docsRef: 'docs/06-implementation-plan.md — движок бронирования' },
+  { key: 'courses', labelKey: 'courses', tier: 'premium', group: 'content', docsRef: 'docs/01-commercial-proposal.md §2 — MARKETPLACE: онлайн-курсы' },
+  { key: 'videoCourses', labelKey: 'videoCourses', tier: 'premium', group: 'content', docsRef: 'docs/01-commercial-proposal.md §2 — MARKETPLACE: онлайн-курсы с видео' },
+  { key: 'subscriptions', labelKey: 'subscriptions', tier: 'premium', group: 'platform', docsRef: 'docs/01-commercial-proposal.md §2 — MARKETPLACE: подписки' },
+  { key: 'wallet', labelKey: 'wallet', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md B-04 — кошелёк и единая книга' },
+  { key: 'referrals', labelKey: 'referrals', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md B-05 — рефералы' },
+  { key: 'packages', labelKey: 'packages', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md B-01 — пакеты занятий' },
+  { key: 'recurring', labelKey: 'recurring', tier: 'full', group: 'platform', docsRef: 'docs/07-feature-backlog.md B-02 — регулярные брони' },
+  { key: 'push', labelKey: 'push', tier: 'full', group: 'platform', docsRef: 'docs/07-feature-backlog.md C-07 — web push' },
+  { key: 'boost', labelKey: 'boost', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md B-07 — промо-размещение' },
+  { key: 'cms', labelKey: 'cms', tier: 'mvp', group: 'platform', docsRef: 'docs/06-implementation-plan.md — базовая админка' },
 ] as const;
 
 /**
  * Дефолты пресета. `true` = фича включена в пакете (до overrides).
- * Совпадают с таблицей «Состав MVP и границы» + Proposal_EN Packages.
+ * Совпадают с таблицей «Состав MVP и границы» + `docs/01-commercial-proposal.md`.
  */
 export const presetDefaults: Record<EntitlementPreset, Record<FeatureKey, boolean>> = {
   mvp: {

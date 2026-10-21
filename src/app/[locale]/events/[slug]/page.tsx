@@ -42,6 +42,7 @@ import { buildMetadata } from '@/lib/seo/metadata';
 import { breadcrumbSchema, eventSchema, type Crumb } from '@/lib/seo/jsonld';
 import { Link } from '@/i18n/routing';
 import { getCatalogSlugs, getEventDetail } from '@/server/content/catalog';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 
 interface PageProps {
   params: Promise<{ locale: string; slug: string }>;
@@ -66,8 +67,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function EventDetailPage({ params }: PageProps) {
-  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-  if (!(await isEntitlementEnabled('events').catch(() => true))) notFound();
+  await assertEntitlementOrNotFound('events');
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
 

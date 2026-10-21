@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 
 import { features, type FeatureKey } from '@/config/features';
 import {
-  footerNavGroups as staticFooterGroups,
-  headerIconItems as staticHeaderIcons,
+  footerGroupsUngated as staticFooterGroups,
+  headerIconItemsUngated as staticHeaderIcons,
   headerMegaGroups as staticMegaGroups,
-  primaryNavItems as staticPrimary,
-  allMegaChildren as staticMegaChildren,
+  megaChildrenUngated as staticMegaChildren,
+  primaryNavUngated as staticPrimary,
 } from '@/config/navigation';
 
 type Snapshot = Record<FeatureKey, boolean>;

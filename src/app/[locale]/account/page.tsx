@@ -37,8 +37,10 @@ import type { Locale } from '@/i18n/config';
 import { Link, redirect } from '@/i18n/routing';
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 import { buildMetadata } from '@/lib/seo/metadata';
 
+import { AccountNav } from '@/components/account/account-nav';
 import { ViewToggle } from '@/components/account/view-toggle';
 import { resolveAccountView } from '@/components/account/view-toggle.helpers';
 
@@ -100,12 +102,9 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
     ? await db.instructorProfile.findUnique({ where: { userId: user.id }, select: { id: true } })
     : null;
 
-  const packagesEnabled = await (async () => {
-    try {
-      const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-      return await isEntitlementEnabled('packages').catch(() => true);
-    } catch { return true; }
-  })();
+  /* Один снимок тарифов: он решает и пакеты, и состав меню кабинета. */
+  const entitlements = await getEffectiveEntitlementsSafe();
+  const packagesEnabled = entitlements.packages;
   const [bookings, orders, classPasses] = await Promise.all([
     db.booking.findMany({
       where: { customerId: caller.id },
@@ -165,7 +164,9 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
           </div>
         </header>
 
-        <div className="mt-6 flex min-w-0 items-center justify-end">
+        <AccountNav locale={locale as Locale} pathname={routes.account()} entitlements={entitlements} />
+
+        <div className="mt-4 flex min-w-0 items-center justify-end">
           <ViewToggle value={view} />
         </div>
 

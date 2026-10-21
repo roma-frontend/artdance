@@ -10,7 +10,6 @@
  */
 
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { CatalogShell } from '@/components/catalog/catalog-shell';
@@ -23,6 +22,7 @@ import { parseCatalogQuery, type RawSearchParams } from '@/domain/catalog';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { eventSortOptions, getEventList, getListingHero, getVenueFacets } from '@/server/content/catalog';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -42,8 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function EventsPage({ params, searchParams }: PageProps) {
-  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-  if (!(await isEntitlementEnabled('events').catch(() => true))) notFound();
+  await assertEntitlementOrNotFound('events');
 
   const { locale } = await params;
   setRequestLocale(locale as Locale);

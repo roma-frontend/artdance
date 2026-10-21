@@ -22,6 +22,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { ContentSection } from '@/components/content/content-section';
 import { PlanComparisonTable } from '@/components/content/plan-comparison-table';
 import { ClassPassGrid } from '@/components/pricing/class-pass-grid';
+import { SubscribeButton } from '@/components/pricing/subscribe-button';
 import { PageHero, breadcrumbsFromTrail } from '@/components/layout/page-hero';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { Badge } from '@/components/ui/badge';
@@ -40,8 +41,11 @@ import {
 } from '@/config';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
+import { getCaller } from '@/lib/auth/guards';
+import { availablePaymentMethodsWithGlobal } from '@/lib/payments';
 import type { Crumb } from '@/lib/seo/jsonld';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 import { cn } from '@/lib/utils';
 
 interface PageProps {
@@ -64,8 +68,19 @@ export default async function PricingPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 
-  const { isEntitlementEnabled } = await import('@/server/entitlements/service');
-  const subscriptionsEnabled = await isEntitlementEnabled('subscriptions').catch(() => true);
+  /*
+   * Один снимок на страницу: две разные проверки (подписки и пакеты) не должны
+   * читать БД по разу на каждую.
+   *
+   * `/pricing` НЕ закрывается 404 при выключенных подписках — это витрина:
+   * раздел показывает карточки с бейджем «Coming soon», а не исчезает.
+   */
+  const entitlements = await getEffectiveEntitlementsSafe();
+  const subscriptionsEnabled = entitlements.subscriptions;
+
+  const caller = await getCaller();
+  /* Способы оплаты — от настроенного провайдера; пустой список = купить нельзя. */
+  const paymentMethods = availablePaymentMethodsWithGlobal();
 
   const t = await getTranslations('pricing');
   const tNav = await getTranslations('nav');
@@ -96,7 +111,12 @@ export default async function PricingPage({ params }: PageProps) {
         <ul className="grid gap-6 lg:grid-cols-3">
           {orderedSubscriptionPlans.map((plan) => (
             <li key={plan.id} className="flex">
-              <PlanCard plan={plan} disabled={!subscriptionsEnabled} comingSoonLabel={t('comingSoon.title' as never) as unknown as string} />
+              <PlanCard
+                plan={plan}
+                disabled={!subscriptionsEnabled}
+                comingSoonLabel={t('comingSoon.title' as never) as unknown as string}
+                signedIn={Boolean(caller)}
+              />
             </li>
           ))}
         </ul>
@@ -114,9 +134,19 @@ export default async function PricingPage({ params }: PageProps) {
         <PlanComparisonTable plans={orderedSubscriptionPlans} />
       </ContentSection>
 
-      {await (async () => { try { const { isEntitlementEnabled } = await import('@/server/entitlements/service'); return await isEntitlementEnabled('packages').catch(() => true); } catch { return true; } })() ? (
+      {entitlements.packages ? (
         <ContentSection title={t('classPasses.title' as never)} subtitle={t('classPasses.subtitle' as never)}>
-          <ClassPassGrid locale={locale as Locale} />
+          {/*
+            Вход и платежи читаются здесь, а не в клиентской кнопке: сессия —
+            серверное знание, а способы оплаты приходят от настроенного
+            провайдера. Клиент получает два готовых флага и не делает запросов
+            ради того, чтобы решить, какую кнопку нарисовать.
+          */}
+          <ClassPassGrid
+            locale={locale as Locale}
+            signedIn={Boolean(caller)}
+            paymentsEnabled={paymentMethods.length > 0}
+          />
         </ContentSection>
       ) : (
         <ContentSection title={t('classPasses.title' as never)} subtitle={t('classPasses.subtitle' as never)}>
@@ -150,7 +180,17 @@ export default async function PricingPage({ params }: PageProps) {
  * квоты того же плана. Ни одной пары «строка перевода — число» в разметке нет:
  * подпись знает, что ей нужно `{count}`, а сколько именно — знает конфигурация.
  */
-function PlanCard({ plan, disabled = false, comingSoonLabel = 'Coming soon' }: { plan: SubscriptionPlan; disabled?: boolean; comingSoonLabel?: string }) {
+function PlanCard({
+  plan,
+  disabled = false,
+  comingSoonLabel = 'Coming soon',
+  signedIn = false,
+}: {
+  plan: SubscriptionPlan;
+  disabled?: boolean;
+  comingSoonLabel?: string;
+  signedIn?: boolean;
+}) {
   const t = useTranslations('pricing');
   const tRoot = useTranslations();
   const format = useFormatter();
@@ -212,11 +252,19 @@ function PlanCard({ plan, disabled = false, comingSoonLabel = 'Coming soon' }: {
           {t('selectCta', { plan: tRoot(subscriptionPlanNameKey(plan.id)) })}
         </Button>
       ) : (
-        <Button asChild block className="mt-8" variant={plan.highlighted ? 'accent' : 'outline'}>
-          <Link href={routes.contact()}>
-            {t('selectCta', { plan: tRoot(subscriptionPlanNameKey(plan.id)) })}
-          </Link>
-        </Button>
+        /*
+         * Кнопка покупает, а не звонит. Раньше она вела на `/contact`: витрина
+         * была, а покупки нет. Гость получает ссылку на вход — подписка
+         * привязана к аккаунту.
+         */
+        <SubscribeButton
+          planId={plan.id}
+          interval="MONTHLY"
+          planName={tRoot(subscriptionPlanNameKey(plan.id))}
+          label={t('selectCta', { plan: tRoot(subscriptionPlanNameKey(plan.id)) })}
+          variant={plan.highlighted ? 'accent' : 'outline'}
+          signedIn={signedIn}
+        />
       )}
     </article>
   );

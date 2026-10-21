@@ -193,6 +193,8 @@ enum LineItemType {
   PRODUCT
   GIFT_CARD
   SUBSCRIPTION
+  CLASS_PASS
+  WALLET_TOPUP
   TRAVEL_FEE
   DELIVERY_FEE
 }
@@ -1312,6 +1314,16 @@ model Order {
   id          String      @id @default(cuid())
   orderNumber String      @unique
   userId      String?
+  /**
+   * Гостевой заказ: владелец — либо `userId`, либо `anonymousId`, но не оба.
+   *
+   * Оформление гостю разрешено (`guestNote` в чекауте), а оплата и возврат
+   * должны найти владельца тем же ключом, что и корзина (`ARTDANCE_ANON_ID`).
+   * Без этого поля гостевой заказ создаётся, но оплатить его некому: сервер
+   * спрашивает владельца, а `userId` у гостя нет — получается заказ, который
+   * невозможно закрыть.
+   */
+  anonymousId String?
   status      OrderStatus @default(CREATED)
 
   contactEmail String
@@ -1322,6 +1334,16 @@ model Order {
   deliveryAddressId String?
   deliveryNotes     String?
   pickupPointCode   String?
+  /**
+   * Адрес, введённый в оформлении, как снимок строкой.
+   *
+   * `deliveryAddressId` ссылается на `Address`, а тот принадлежит пользователю:
+   * у гостя адресной книги нет. Снимок нужен и гостю, и залогиненному —
+   * адрес в оформлении можно ввести с нуля, не сохраняя в книгу, а курьеру
+   * нужен адрес именно того заказа, даже если запись в книге потом изменят
+   * или удалят.
+   */
+  deliveryAddressSnapshot Json?
 
   subtotal      Int
   discountTotal Int     @default(0)
@@ -1330,6 +1352,9 @@ model Order {
   total         Int
   currencyCode  String  @default("AMD")
   promoCodeId   String?
+  // Сколько баланса кошелька списано в этот заказ — см. миграцию:
+  // без этого повторный клик «Оплатить» списал бы баланс второй раз.
+  walletApplied Int     @default(0)
 
   // Снимок налоговых правил на момент заказа — для перевыпуска счёта.
   vatRate          Decimal @db.Decimal(5, 4)
@@ -1337,6 +1362,8 @@ model Order {
 
   placedAt    DateTime  @default(now())
   paidAt      DateTime?
+  // Оплачен и доставлен до конца: пакет выдан, подписка активирована, комиссия записана.
+  settledAt   DateTime?
   shippedAt   DateTime?
   deliveredAt DateTime?
   cancelledAt DateTime?
@@ -1352,6 +1379,7 @@ model Order {
   invoice         Invoice?
 
   @@index([userId, status])
+  @@index([anonymousId, placedAt])
   @@index([status, placedAt])
   @@index([placedAt])
 }

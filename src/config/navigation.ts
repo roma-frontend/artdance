@@ -168,6 +168,19 @@ export const primaryNavItems = enabled(primaryNav);
 export const headerIconItems = enabled(iconActions);
 
 /**
+ * Негатированные списки — фильтрацию выполняет вызывающий.
+ *
+ * Разделение нужно, потому что `enabled()` выше решает по env-флагам в момент
+ * сборки, а тумблер тарифа меняется в рантайме. Линованная константа не может
+ * вернуть раздел, скрытый на сборке, сколько бы раз клиент ни перечитал
+ * `/api/entitlements`. Эти списки рендерятся только после применения снимка
+ * (`lib/entitlements/use-entitlements`), поэтому выключенный модуль в них
+ * не попадёт.
+ */
+export const primaryNavUngated: readonly NavItem[] = primaryNav;
+export const headerIconItemsUngated: readonly NavIconItem[] = iconActions;
+
+/**
  * Мега-меню шапки — одно горизонтальное меню с подменю (по образцу
  * Desktop/hr-project: PlatformMegaMenu / SolutionsMenu — одна полоса,
  * группы раскрываются вниз).
@@ -236,6 +249,9 @@ export const headerMegaGroups: readonly MegaGroup[] = [
 export const allMegaChildren: readonly MegaChild[] = headerMegaGroups
   .flatMap((g) => [...g.children])
   .filter((c) => c.feature === undefined || features[c.feature] as boolean);
+
+/** То же без фильтра по env — см. `primaryNavUngated`. */
+export const megaChildrenUngated: readonly MegaChild[] = headerMegaGroups.flatMap((g) => [...g.children]);
 
 /**
  * Мобильная навигация: нижний док и сетка разделов.
@@ -399,6 +415,9 @@ const footerGroups: readonly NavGroup[] = [
 export const footerNavGroups: readonly NavGroup[] = footerGroups
   .map((group) => ({ ...group, items: enabled(group.items) }))
   .filter((group) => group.items.length > 0);
+
+/** Подвал до фильтра — см. `primaryNavUngated`. Объявлен здесь, где определён сам список. */
+export const footerGroupsUngated: readonly NavGroup[] = footerGroups;
 
 export function hasCinemaHero(pathname: string): boolean {
   return cinemaHeroPaths.includes(pathname);

@@ -23,6 +23,13 @@ function orderNumber(): string {
   return `${prefix}${rand}`;
 }
 
+/** Адрес, введённый в оформлении. Снимок, а не ссылка на адресную книгу. */
+export interface OrderAddressSnapshot {
+  street: string;
+  city: string;
+  postalCode?: string | null;
+}
+
 export interface CreateOrderInput {
   userId?: string | null;
   anonymousId?: string | null; // для гостя — создаём Order без userId, свяжем при входе отдельно
@@ -31,6 +38,7 @@ export interface CreateOrderInput {
   contactName: string;
   deliveryMethod?: 'COURIER' | 'PICKUP_POINT' | null;
   deliveryAddressId?: string | null;
+  deliveryAddress?: OrderAddressSnapshot | null;
   deliveryNotes?: string | null;
   pickupPointCode?: string | null;
 }
@@ -52,6 +60,17 @@ export async function createOrder(input: CreateOrderInput) {
     if (!input.userId && addr.userId) throw domainErrors.forbidden();
   }
   if (input.deliveryNotes && input.deliveryNotes.length > 500) throw domainErrors.validationFailed('deliveryNotes');
+  /*
+   * Курьеру адрес обязателен, а пункту выдачи — нет. Проверка здесь, а не в
+   * форме: действие вызывается напрямую, и «адрес не пришёл» должно стать
+   * отказом с кодом, а не заказом, который некуда везти.
+   */
+  if (input.deliveryMethod === 'COURIER') {
+    const street = input.deliveryAddress?.street?.trim() ?? '';
+    const city = input.deliveryAddress?.city?.trim() ?? '';
+    if (!street || !city) throw domainErrors.validationFailed('deliveryAddress');
+    if (street.length > 200 || city.length > 120) throw domainErrors.validationFailed('deliveryAddress');
+  }
   // Корзину пересчитываем по БД (validateCart-логика кусочно)
   const where = input.userId ? { userId: input.userId } : input.anonymousId ? { anonymousId: input.anonymousId } : null;
   if (!where) throw domainErrors.unauthorized();
@@ -116,12 +135,15 @@ export async function createOrder(input: CreateOrderInput) {
       data: {
         orderNumber: num,
         userId: input.userId ?? null,
+        /* Гость оплачивает тем же ключом, что и корзину — см. `payments/service`. */
+        anonymousId: input.userId ? null : (input.anonymousId ?? null),
         status: 'CREATED',
         contactEmail: input.contactEmail,
         contactPhone: input.contactPhone,
         contactName: input.contactName,
         deliveryMethod: input.deliveryMethod ?? null,
         deliveryAddressId: input.deliveryAddressId ?? null,
+        ...(input.deliveryAddress ? { deliveryAddressSnapshot: input.deliveryAddress as never } : {}),
         deliveryNotes: input.deliveryNotes ?? null,
         pickupPointCode: input.pickupPointCode ?? null,
         subtotal: totals.subtotal,
@@ -204,6 +226,111 @@ export async function createOrder(input: CreateOrderInput) {
   });
 
   return created;
+}
+
+/* ──────────── Заказы, которые не собираются из корзины ──────────── */
+
+export interface DirectOrderLine {
+  type: LineItemType;
+  title: string;
+  unitPrice: number;
+  quantity?: number;
+  /** Служебные поля для доставки после оплаты: `passId`, `planId`, сумма пополнения. */
+  metadata?: Record<string, string | number>;
+}
+
+export interface CreateDirectOrderInput {
+  userId: string;
+  contact: { email: string; phone: string; name: string };
+  lines: readonly DirectOrderLine[];
+}
+
+export interface DirectOrderResult {
+  id: string;
+  orderNumber: string;
+  total: number;
+}
+
+/**
+ * Заказ из готовых позиций: пакет занятий, пополнение кошелька, подписка.
+ *
+ * Отдельная точка входа, а не корзина с фиктивным товаром: у этих покупок нет
+ * склада, доставки и промокода, а писать их в `Cart` — провести клиента через
+ * шаги, которые для него бессмысленны. Итоги считает тот же `cartTotals`, что и
+ * магазин: НДС и округление не должны расходиться между двумя способами купить.
+ */
+export async function createDirectOrder(input: CreateDirectOrderInput): Promise<DirectOrderResult> {
+  const email = input.contact.email.trim().toLowerCase();
+  if (!/^[^\s@]+@\S+\.\S{2,}$/.test(email) || email.length > 254) {
+    throw domainErrors.validationFailed('contactEmail');
+  }
+  /*
+   * Телефон пакета/подписки необязателен: это цифровая покупка, её не везут
+   * курьером, а требование номера в профиле не гарантировано. Пустая строка
+   * пропускается; непустая — проверяется по тем же правилам, что и в магазине,
+   * чтобы формат не разъезжался между двумя кассами.
+   */
+  const phoneTrace = input.contact.phone.trim();
+  const phoneDigits = phoneTrace.replace(/\D/g, '');
+  if (phoneTrace && (phoneDigits.length < 6 || phoneDigits.length > 20)) {
+    throw domainErrors.validationFailed('contactPhone');
+  }
+  const name = input.contact.name.trim();
+  if (name.length < 1 || name.length > 80 || /[<>]/.test(name)) throw domainErrors.validationFailed('contactName');
+
+  if (input.lines.length === 0) throw domainErrors.validationFailed('lines');
+  for (const line of input.lines) {
+    if (!Number.isSafeInteger(line.unitPrice) || line.unitPrice <= 0) throw domainErrors.validationFailed('unitPrice');
+    const quantity = line.quantity ?? 1;
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 50) throw domainErrors.validationFailed('quantity');
+  }
+
+  const lines: CartLine[] = input.lines.map((line, index) => ({
+    id: `direct-${index}`,
+    lineType: line.type,
+    unitPrice: line.unitPrice,
+    quantity: line.quantity ?? 1,
+  }));
+  const totals = cartTotals({ lines });
+
+  return db.$transaction(async (tx) => {
+    const order = await tx.order.create({
+      data: {
+        orderNumber: orderNumber(),
+        userId: input.userId,
+        status: 'CREATED',
+        contactEmail: email,
+        /* Пустой телефон хранится пустой строкой: колонка обязательная, а NULL в ней нет. */
+        contactPhone: phoneTrace,
+        contactName: name,
+        subtotal: totals.subtotal,
+        discountTotal: 0,
+        deliveryFee: 0,
+        vatAmount: totals.vat,
+        total: totals.total,
+        currencyCode: 'AMD',
+        vatRate: tax.vatRate,
+        pricesIncludeVat: tax.pricesIncludeVat,
+      },
+      select: { id: true, orderNumber: true, total: true },
+    });
+
+    for (const line of input.lines) {
+      await tx.orderItem.create({
+        data: {
+          orderId: order.id,
+          type: line.type,
+          titleSnapshot: line.title.slice(0, 200),
+          quantity: line.quantity ?? 1,
+          unitPrice: line.unitPrice,
+          lineTotal: line.unitPrice * (line.quantity ?? 1),
+          ...(line.metadata ? { metadata: line.metadata as never } : {}),
+        },
+      });
+    }
+
+    return order;
+  });
 }
 
 /** 4.8 Единый переходник статусов, идемпотентность — повтор того же статуса = no-op */
