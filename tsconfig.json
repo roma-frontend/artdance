@@ -49,6 +49,17 @@
     ".wrangler",
     "cloudflare-env.d.ts",
     ".next/dev",
-    ".next/dev/types"
+    ".next/dev/types",
+    /*
+     * Презентационный ролик — отдельный пакет со своим package.json,
+     * tsconfig.json и зависимостями (Remotion, React). В корневой программе
+     * его файлы не проверяются: без `motion/node_modules` они дают восемь
+     * ошибок `Cannot find module 'remotion'`, а CI ставит только корневые
+     * пакеты — `npm ci` не заходит во вложенные проекты.
+     *
+     * Типы ролика проверяются там, где он собирается: `npx tsc --noEmit`
+     * из каталога `motion/` (см. motion/README.md).
+     */
+    "motion"
   ]
 }
