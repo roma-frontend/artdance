@@ -87,6 +87,27 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
 
   const user = caller;
 
+  /*
+   * Танцор, который ещё не прошёл тур анкеты, попадает в кабинет — и сразу в
+   * тур. Именно это и требовалось: «после регистрации, когда танцор попадёт в
+   * дашборд» он должен ответить на вопросы, иначе инструктор не знает, с чего
+   * начинать.
+   *
+   * Перенаправление только для клиента и атлета: у инструктора свой профиль
+   * с опытом и направлениями, а «уровень» в его анкете означал бы другое.
+   * Инструктору и так есть что заполнить в `/studio/profile`.
+   */
+  if (user.role === 'CUSTOMER' || user.role === 'ATHLETE') {
+    const dancerProfile = await db.dancerProfile.findUnique({
+      where: { userId: user.id },
+      select: { onboardingCompleted: true },
+    });
+    if (!dancerProfile?.onboardingCompleted) {
+      redirect({ href: routes.onboardingDancer(), locale: locale as Locale });
+      return null;
+    }
+  }
+
   const t = await getTranslations('account');
   const tCommon = await getTranslations('common');
   const tRoot = await getTranslations();

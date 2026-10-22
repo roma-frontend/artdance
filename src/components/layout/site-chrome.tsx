@@ -43,7 +43,16 @@ const PointerGlow = dynamic(() => import('@/components/fx/pointer-glow').then((m
 const OrbitCursor = dynamic(() => import('@/components/fx/orbit-cursor').then((m) => m.OrbitCursor), { ssr: false });
 const Magnetic = dynamic(() => import('@/components/fx/magnetic').then((m) => m.Magnetic), { ssr: false });
 
-const AUTH_PREFIXES = ['/sign-in', '/sign-up', '/forgot-password', '/reset-password', '/verify-email'] as const;
+const AUTH_PREFIXES = [
+  '/sign-in',
+  '/sign-up',
+  '/forgot-password',
+  '/reset-password',
+  '/verify-email',
+  /* Тур анкеты — тоже сфокусированный экран: публичная шапка и док здесь
+     только мешают, а адрес и так закрыт от индексации. */
+  '/onboarding',
+] as const;
 
 function isAuthPath(pathWithoutLocale: string): boolean {
   return AUTH_PREFIXES.some((p) => pathWithoutLocale === p || pathWithoutLocale.startsWith(`${p}/`));

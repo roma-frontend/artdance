@@ -229,7 +229,15 @@ export async function getBookingDetail(id: string) {
       completedAt: true,
       notes: true,
       createdAt: true,
-      customer: { select: { id: true, name: true, email: true } },
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          /* Анкета танцора — «с чего начать» инструктору прямо в броне. */
+          dancerProfile: { select: { level: true, styles: true, goal: true, note: true } },
+        },
+      },
       instructor: { select: { slug: true, user: { select: { name: true } } } },
       venue: { select: { name: true } },
       room: { select: { name: true } },

@@ -55,8 +55,11 @@ for (const locale of locales) {
     for (const family of [typography.display, typography.sans, typography.armenian]) {
       expect(family, 'CSS-переменная гарнитуры должна быть определена').not.toBe('');
     }
-    expect(typography.bodyFamily.split(',')[0]!.trim()).toBe(
-      locale === 'hy' ? typography.armenian : typography.sans,
+    // next/font/google ставит кавычки вокруг имени ("DM Sans"), localFont — нет (armenianFont).
+    // Сравниваем нормализованно, без кавычек, иначе hy с localFont упадёт на '"armenianFont" !== armenianFont'.
+    const stripQuotes = (value: string) => value.replace(/^["']|["']$/g, '');
+    expect(stripQuotes(typography.bodyFamily.split(',')[0]!.trim())).toBe(
+      stripQuotes(locale === 'hy' ? typography.armenian : typography.sans),
     );
     for (const face of typography.loaded) {
       expect(face.count, `${face.descriptor}: ${face.text} не должен уходить в fallback`).toBeGreaterThan(0);

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useLocale, useTranslations } from 'next-intl';
 
+import { DancerProfileCard, type DancerProfileView } from '@/components/dancer/dancer-profile-card';
 import { Button } from '@/components/ui/button';
 
 type Peek = {
@@ -19,6 +20,7 @@ type Peek = {
     instructorName: string | null;
     venueName: string | null;
     checkInAt: string | null;
+    dancerProfile: DancerProfileView | null;
   };
 };
 
@@ -261,6 +263,7 @@ export function CheckInScanner({ initialToken, hint }: { initialToken?: string |
               </div>
             ) : null}
           </div>
+          <DancerProfileCard profile={peek.booking.dancerProfile} className="mx-0 my-2 rounded-xl" />
           <div className="flex gap-3 px-5 pb-5 print:hidden">
             <Button variant="accent" onClick={() => void doCheckIn()} disabled={busy || peek.alreadyCheckedIn}>
               {peek.alreadyCheckedIn ? t('checkInAlreadyCheckedIn') : t('checkInMarkAttendance')}

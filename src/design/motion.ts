@@ -388,6 +388,35 @@ export const adminMotion = {
 } as const;
 
 /**
+ * ОНБОРДИНГ-ТУР — плавный переход между шагами.
+ *
+ * Отдельные числа, а не `adminMotion`: тур ведёт человека, а не показывает
+ * инструмент. Здесь важнее пауза между шагами и то, что карточка ответа
+ * откликается мгновенно — по кнопке «Далее» человек ждёт реакцию, а не
+ * кинематографичный переход.
+ */
+export const onboardingMotion = {
+  /** Тот же изгиб, что в админке: одно движение на весь продукт. */
+  ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
+  /** Смена шага: уходит вбок, появляется — поднимаясь. Направление читается. */
+  step: {
+    enterMs: 380,
+    exitMs: 220,
+    xPx: 28,
+    yPx: 12,
+  },
+  /** Карточки уровня появляются по очереди — волна, а не разом. */
+  staggerMs: 60,
+  /** Пружина для нажатой карточки: без перелёта, с лёгким отскоком. */
+  spring: {
+    type: 'spring' as const,
+    stiffness: 380,
+    damping: 28,
+    mass: 0.7,
+  },
+} as const;
+
+/**
  * Что отключается при `prefers-reduced-motion: reduce`.
  *
  * Список явный, потому что «отключить все анимации» — неверно: скрытые
@@ -504,6 +533,7 @@ export const motion = {
   loading: loadingMotion,
   portal: portalTransition,
   admin: adminMotion,
+  onboarding: onboardingMotion,
   banner: bannerMotion,
   reducedMotionDisables,
   /** Базовые шкалы — чтобы не импортировать primitives отдельно. */

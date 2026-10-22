@@ -17,6 +17,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { BookingStatusActions } from '@/components/admin/status-actions';
 import { StatusBadge } from '@/components/data/status-badge';
+import { DancerProfileCard } from '@/components/dancer/dancer-profile-card';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { routes } from '@/config';
 import type { BookingStatus } from '@/domain/enums';
@@ -112,6 +113,12 @@ export default async function AdminBookingPage({ params }: PageProps) {
               <Row label={tRoot('admin.fields.reason')} value={booking.cancellationReason} />
             ) : null}
           </dl>
+
+          {booking.customer.dancerProfile ? (
+            <div className="mt-6">
+              <DancerProfileCard profile={booking.customer.dancerProfile} />
+            </div>
+          ) : null}
         </section>
 
         <aside className="flex flex-col gap-6">

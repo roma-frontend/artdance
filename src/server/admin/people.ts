@@ -113,6 +113,10 @@ export async function getUserDetail(id: string) {
       lastSeenAt: true,
       deletionRequestedAt: true,
       instructor: { select: { id: true, slug: true } },
+      /* Анкета танцора: администратор видит то же, что инструктор. */
+      dancerProfile: {
+        select: { level: true, styles: true, goal: true, note: true, onboardingCompleted: true },
+      },
       _count: { select: { bookings: true, orders: true, reviews: true } },
     },
   });

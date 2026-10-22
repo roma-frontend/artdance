@@ -14,6 +14,7 @@ import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { UserAccessActions } from '@/components/admin/user-access-actions';
 import { ImpersonationButton } from '@/components/admin/operator-actions';
 import { UserSupportActions } from '@/components/admin/user-support-actions';
+import { DancerProfileCard } from '@/components/dancer/dancer-profile-card';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { Badge } from '@/components/ui/badge';
 import { routes } from '@/config';
@@ -88,6 +89,12 @@ export default async function AdminUserPage({ params }: PageProps) {
               />
             ) : null}
           </dl>
+
+          {user.dancerProfile ? (
+            <div className="mt-6">
+              <DancerProfileCard profile={user.dancerProfile} />
+            </div>
+          ) : null}
 
           <h2 className="text-card-title mt-8 mb-4 text-content-primary">{t('activitySection')}</h2>
           <dl className="flex flex-col gap-2">

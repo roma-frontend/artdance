@@ -924,6 +924,7 @@ const en = {
       wallet: 'Wallet',
       referrals: 'Referrals',
       notifications: 'Notifications',
+      dancerProfile: 'My level',
       data: 'My data',
       settings: 'Settings',
     },
@@ -1007,6 +1008,51 @@ const en = {
       },
       disabled: 'The wallet is not available on this plan.',
     },
+  },
+
+  onboarding: {
+    dancer: {
+      meta: { title: 'Your dance level', description: 'Tell us about your dance experience.' },
+      eyebrow: 'Dancer profile',
+      step: 'Step {current} of {total}',
+      progressLabel: 'Progress',
+      back: 'Back',
+      next: 'Continue',
+      finish: 'Finish',
+      saving: 'Saving…',
+      level: {
+        title: 'How would you rate your level?',
+        hint: 'This helps our instructors know where to start.',
+        beginner: { description: 'I am just starting.' },
+        intermediate: { description: 'I take classes and know the basics.' },
+        advanced: { description: 'I dance confidently and want to grow further.' },
+      },
+      styles: {
+        title: 'Which styles interest you?',
+        hint: 'Pick a few — we will suggest suitable classes and instructors.',
+        optional: 'Optional',
+        selected: '{count, plural, one {# style selected} other {# styles selected}}',
+      },
+      goal: {
+        title: 'What is your goal?',
+        hint: 'A short note so the instructor understands what you want.',
+        optional: 'Optional',
+        goalLabel: 'Goal',
+        goalPlaceholder: 'E.g. learn wedding dance, prepare for a performance',
+        noteLabel: 'Note for the instructor',
+        notePlaceholder: 'E.g. previous injury, preferences',
+        visibleToInstructor: 'Your instructor will see these answers when viewing your booking.',
+      },
+      edit: { title: 'My dance profile', hint: 'Update your answers whenever you want — instructors will see the latest version.' },
+    },
+  },
+  /** Что инструктор / администратор видит о танцоре. */
+  dancerProfile: {
+    title: 'About the dancer',
+    level: 'Level',
+    styles: 'Styles',
+    goal: 'Goal',
+    note: 'Note',
   },
 
   pricing: {

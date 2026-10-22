@@ -52,7 +52,14 @@ export async function POST(req: Request) {
       instructorId: true,
       venueId: true,
       checkInAt: true,
-      customer: { select: { name: true, email: true } },
+      customer: {
+        select: {
+          name: true,
+          email: true,
+          /* Анкета танцора — на кассе это ответ на вопрос «с чего начать». */
+          dancerProfile: { select: { level: true, styles: true, goal: true, note: true } },
+        },
+      },
       instructor: { select: { user: { select: { name: true } } } },
       venue: { select: { name: true } },
     },
@@ -72,6 +79,15 @@ export async function POST(req: Request) {
         endsAt: booking.endsAt.toISOString(),
         customerName: booking.customer.name,
         customerEmail: booking.customer.email,
+        /* Анкета танцора: на кассе инструктор сразу видит уровень клиента. */
+        dancerProfile: booking.customer.dancerProfile
+          ? {
+              level: booking.customer.dancerProfile.level,
+              styles: booking.customer.dancerProfile.styles,
+              goal: booking.customer.dancerProfile.goal,
+              note: booking.customer.dancerProfile.note,
+            }
+          : null,
         instructorName: booking.instructor?.user.name ?? null,
         venueName: booking.venue?.name ?? null,
         checkInAt: booking.checkInAt?.toISOString() ?? null,
