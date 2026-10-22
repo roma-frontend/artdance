@@ -7,7 +7,8 @@
  * из основных гарнитур не покрывает армянский алфавит полностью.
  */
 
-import { DM_Sans, Noto_Sans_Armenian, Playfair_Display } from 'next/font/google';
+import { DM_Sans, Playfair_Display } from 'next/font/google';
+import localFont from 'next/font/local';
 
 export const displayFont = Playfair_Display({
   subsets: ['latin', 'cyrillic'],
@@ -34,9 +35,20 @@ export const sansFont = DM_Sans({
   fallback: ['system-ui', 'Segoe UI', 'sans-serif'],
 });
 
-export const armenianFont = Noto_Sans_Armenian({
-  subsets: ['armenian'],
-  weight: ['400', '600'],
+/**
+ * Noto Sans Armenian — локально, не через `next/font/google`.
+ *
+ * Причина: Turbopack на сборке падал с `next/font/google queries have exactly
+ * one entry` ровно на армянском CSS (см. CI 22.10.2026) — ресолвер не справлялся
+ * с подстановкой gstatic-URL. Файл лежит в репозитории: сборка больше не ходит
+ * в сеть за этим шрифтом и не зависит от того, что вернёт fonts.googleapis.com.
+ *
+ * Взят только армянский сабсет (U+0530-058F и соседи), variable 100-900 —
+ * латиница и кириллица приходят из DM Sans, дублировать их незачем.
+ */
+export const armenianFont = localFont({
+  src: './fonts/noto-sans-armenian.woff2',
+  weight: '100 900',
   display: 'swap',
   variable: '--font-noto-armenian',
   preload: false,
