@@ -1,10 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, CalendarDays, Eye, MapPin, MessageSquare, Package, Search, UserRound, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
+import { motion as designMotion } from '@/design/motion';
 import { Link, useRouter } from '@/i18n/routing';
+
+const admin = designMotion.admin;
+const ease = admin.ease;
 
 type SearchHit = { label: string; href: string; kind: string; entityId?: string; entityType?: string };
 type EntityPreview = { model: string; id: string; title: string; subtitle: string; status: string | null; fields: Array<{ label: string; value: string }> };
@@ -78,7 +83,11 @@ export function AdminGlobalSearch() {
     return () => { if (debounceRef.current) window.clearTimeout(debounceRef.current); controller.abort(); };
   }, [open, query]);
 
-  const close = () => { setOpen(false); setQuery(''); setHits([]); setFailed(false); setPreview(null); };
+  const reduce = useReducedMotion();
+
+  // Сброс — после ухода окна, иначе список пропадает на глазах.
+  const reset = () => { setQuery(''); setHits([]); setFailed(false); setPreview(null); };
+  const close = () => setOpen(false);
 
   const loadPreview = async (hit: SearchHit) => {
     if (!hit.entityId || !hit.entityType || !['User', 'Order', 'Booking', 'SupportTicket'].includes(hit.entityType)) return;
@@ -105,11 +114,35 @@ export function AdminGlobalSearch() {
         <kbd className="hidden rounded border border-border-subtle bg-surface-sunken px-1.5 py-0.5 font-mono text-caption text-content-tertiary sm:inline">Ctrl K</kbd>
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-modal flex items-start justify-center bg-black/50 p-3 pt-4" onClick={close}>
-          <div className="w-full max-w-4xl overflow-hidden rounded-3xl border border-border-default bg-surface-card shadow-2xl dark:border-zinc-700 dark:bg-zinc-900" onClick={(event) => event.stopPropagation()}>
+      <AnimatePresence onExitComplete={reset}>
+        {open ? (
+        <motion.div
+          key="palette"
+          className="fixed inset-0 z-modal flex items-start justify-center bg-black/50 p-3 pt-4"
+          onClick={close}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduce ? 0 : 0.22, ease }}
+        >
+          <motion.div
+            className="w-full max-w-4xl overflow-hidden rounded-3xl border border-border-default bg-surface-card shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
+            onClick={(event) => event.stopPropagation()}
+            initial={reduce ? false : { opacity: 0, y: -14, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduce ? { opacity: 0 } : { opacity: 0, y: -10, scale: 0.98 }}
+            transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 32, mass: 0.8 }}
+            style={{ willChange: 'transform, opacity' }}
+          >
             <div className="flex items-center gap-3 border-b border-border-default px-4 py-3 dark:border-zinc-700">
-              <Search className="size-5 shrink-0 text-accent" />
+              <motion.span
+                initial={reduce ? false : { opacity: 0, scale: 0.6, rotate: -25 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                transition={reduce ? { duration: 0 } : { delay: 0.08, type: 'spring', stiffness: 420, damping: 24 }}
+                className="shrink-0"
+              >
+                <Search className="size-5 text-accent" />
+              </motion.span>
               <input
                 ref={inputRef}
                 value={query}
@@ -142,34 +175,58 @@ export function AdminGlobalSearch() {
               {!loading && failed ? <p className="px-4 py-10 text-center text-body-sm text-content-warning">{t('adminSearchFailed')}</p> : null}
               {!loading && !failed && query.trim().length < 2 ? <p className="px-4 py-10 text-center text-body-sm text-content-tertiary">{t('adminSearchHint')}</p> : null}
               {!loading && !failed && query.trim().length >= 2 && hits.length === 0 ? <p className="px-4 py-10 text-center text-body-sm text-content-tertiary">{t('adminSearchEmpty')}</p> : null}
-              {!loading && !failed ? hits.map((hit, index) => {
+              {!loading && !failed ? (
+                <motion.div
+                  initial="hidden"
+                  animate="show"
+                  variants={{ show: { transition: { staggerChildren: reduce ? 0 : 0.03 } } }}
+                >
+                  {hits.map((hit, index) => {
                 const Icon = icons[hit.kind] ?? Search;
                 return (
-                  <div key={`${hit.kind}-${hit.href}`} className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition ${index === selected ? 'bg-surface-sunken dark:bg-zinc-800' : 'hover:bg-surface-sunken dark:hover:bg-zinc-800'}`}>
+                  <motion.div
+                    key={`${hit.kind}-${hit.href}`}
+                    variants={{
+                      hidden: reduce ? { opacity: 1 } : { opacity: 0, y: 8 },
+                      show: { opacity: 1, y: 0, transition: { duration: 0.24, ease } },
+                    }}
+                    className={`flex items-center gap-3 rounded-2xl px-3 py-3 transition ${index === selected ? 'bg-surface-sunken dark:bg-zinc-800' : 'hover:bg-surface-sunken dark:hover:bg-zinc-800'}`}
+                  >
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent"><Icon className="size-4" /></span>
                     <Link href={hit.href} onClick={close} className="min-w-0 flex-1 truncate text-body-sm font-semibold text-content-primary hover:underline dark:text-zinc-100">{hit.label}</Link>
                     <span className="rounded-full border border-border-subtle px-2 py-1 font-mono text-caption uppercase tracking-wide text-content-tertiary">{kindLabel(hit.kind)}</span>
                     {hit.entityId && hit.entityType && ['User', 'Order', 'Booking', 'SupportTicket'].includes(hit.entityType) ? <button type="button" onClick={() => void loadPreview(hit)} className="rounded-full border border-border-default p-2 text-content-tertiary hover:bg-surface-card hover:text-content-primary" aria-label={`${t('adminSearchPreview')}: ${hit.label}`}><Eye className="size-4" /></button> : null}
-                  </div>
+                  </motion.div>
                 );
-              }) : null}
+                  })}
+                </motion.div>
+              ) : null}
             </div>
-            {preview ? <aside className="border-t border-border-default p-4 dark:border-zinc-700 lg:border-l lg:border-t-0">
+            <AnimatePresence>
+            {preview ? <motion.aside
+              key="preview"
+              initial={reduce ? false : { opacity: 0, x: 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 12 }}
+              transition={{ duration: reduce ? 0 : 0.26, ease }}
+              className="border-t border-border-default p-4 dark:border-zinc-700 lg:border-l lg:border-t-0">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0"><p className="font-mono text-caption uppercase tracking-wide text-content-tertiary">{preview.model}</p><h2 className="mt-1 truncate text-heading-4 text-content-primary dark:text-zinc-100">{preview.title}</h2><p className="truncate text-body-sm text-content-secondary">{preview.subtitle}</p></div>
                 {previewLoading ? <span className="text-caption text-content-tertiary">Loading…</span> : preview.status ? <span className="rounded-full border border-border-subtle px-2 py-1 text-caption text-content-secondary">{preview.status}</span> : null}
               </div>
               <dl className="mt-5 space-y-2">{preview.fields.map((field) => <div key={field.label} className="flex items-start justify-between gap-3 border-b border-border-subtle pb-2"><dt className="text-caption text-content-tertiary">{field.label}</dt><dd className="max-w-[60%] truncate text-right text-body-sm text-content-primary dark:text-zinc-200">{field.value}</dd></div>)}</dl>
               <div className="mt-5 flex flex-wrap gap-2"><Link href={hits.find((hit) => hit.entityId === preview.id)?.href ?? '#'} onClick={close} className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-2 text-caption font-semibold text-white">{t('adminSearchOpenRecord')} <ArrowUpRight className="size-3.5" /></Link><button type="button" onClick={() => setPreview(null)} className="rounded-full border border-border-default px-3 py-2 text-caption text-content-secondary">{t('adminSearchClosePreview')}</button></div>
-            </aside> : null}
+            </motion.aside> : null}
+            </AnimatePresence>
             </div>
             <div className="flex items-center justify-between border-t border-border-default px-4 py-2.5 font-mono text-caption text-content-tertiary dark:border-zinc-700">
               <span>↑/↓ {t('adminSearchNavigate')} · Enter {t('adminSearchOpen')}</span>
               <span>Esc {t('adminSearchClose')}</span>
             </div>
-          </div>
-        </div>
-      ) : null}
+          </motion.div>
+        </motion.div>
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }
