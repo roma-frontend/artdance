@@ -71,9 +71,10 @@ const base =
   cachedBase &&
   'supportTicket' in cachedBase &&
   'operatorSetting' in cachedBase &&
+  'bannerTranslation' in cachedBase &&
   /* Новая модель, добавленная при работающем `next dev`: старый экземпляр
    * отдаст `undefined` вместо делегата, если не пересоздать клиент. */
-  'bannerTranslation' in cachedBase
+  'dancerProfile' in cachedBase
     ? cachedBase
     : createBaseClient();
 
