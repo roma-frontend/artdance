@@ -236,6 +236,11 @@ jobs:
       - run: npx playwright install --with-deps chromium
       # Проверки идут против production-сборки: у dev-сервера другой CSS-конвейер.
       - run: npm run build
+      # TEMP диагностика: что видит приложение перед e2e (пресет и override модулей).
+      - name: Диагностика entitlements
+        run: |
+          psql "$DATABASE_URL" -c "select key, value, \"updatedBy\" from \"OperatorSetting\" where key like 'entitlement%'"
+          psql "$DATABASE_URL" -c "select key, enabled from \"FeatureFlagOverride\""
       - run: npm run e2e
       - name: Отчёт при падении
         if: failure()
