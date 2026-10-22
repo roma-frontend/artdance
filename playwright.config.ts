@@ -26,6 +26,18 @@ import { config as loadEnv } from 'dotenv';
  */
 loadEnv({ path: '.env.local' });
 
+/*
+ * e2e создаёт реальные записи (пользователи, обращения, брони), поэтому пишет
+ * только в локальную базу. Облачная база из .env.local сюда не попадает: прогон
+ * против неё раньше засорял рабочие таблицы тикетами и корзинами.
+ */
+const dbUrl = process.env.DATABASE_URL ?? '';
+if (!dbUrl || !['localhost', '127.0.0.1', '[::1]'].includes(new URL(dbUrl).hostname)) {
+  throw new Error(
+    'e2e пишет тестовые данные: нужна локальная база (DATABASE_URL на localhost), а не рабочая.',
+  );
+}
+
 const PORT = Number(process.env.PLAYWRIGHT_PORT ?? 3100);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
