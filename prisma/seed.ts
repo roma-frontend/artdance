@@ -302,6 +302,18 @@ async function seedAccounts(): Promise<void> {
   for (const account of demoAccounts) {
     const userId = await upsertUser(account);
     await setDemoPassword(userId);
+    /*
+     * Demo Client заходит в /account в e2e/auth и ожидает увидеть кабинет,
+     * а не редирект в /onboarding/dancer. Без анкеты он бы туда улетел.
+     * Новые регистрации бесшовно получат тур в кабинете — им он и нужен.
+     */
+    if (account.role === 'CUSTOMER') {
+      await prisma.dancerProfile.upsert({
+        where: { userId },
+        update: {},
+        create: { userId, level: 'BEGINNER', onboardingCompleted: true },
+      });
+    }
   }
   console.log(`  аккаунты: ${demoAccounts.length} (пароль — demoPassword из фикстур)`);
 }

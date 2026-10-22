@@ -171,8 +171,9 @@ test.describe('Регистрация', () => {
     await page.getByRole('checkbox').check();
     await page.getByRole('button', { name: en.auth.signUp.submit }).click();
 
-    await page.waitForURL(new RegExp(`${routes.account()}$`));
-    await expect(page.getByText(email)).toBeVisible();
+    // Новый CUSTOMER попадает в онбординг танцора, а не сразу в /account — так и задумано.
+    await page.waitForURL(new RegExp(`${routes.onboardingDancer()}$`));
+    await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
   });
 
   test('занятый адрес называет поле, а не общую ошибку', async ({ page }) => {
