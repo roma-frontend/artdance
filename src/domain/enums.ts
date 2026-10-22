@@ -313,6 +313,35 @@ export function skillLevelLabelKey(level: SkillLevel): MessageKey {
   return `levels.${skillLevelI18nKeys[level]}`;
 }
 
+/* ──────────────────────── Уровень танцора ────────────────────────
+ *
+ * Самооценка клиента, а не уровень занятия: `SkillLevel` описывает, кому
+ * инструктор ведёт сет, и там есть «любой уровень» и «профессиональный» —
+ * в ответе «я хочу танцевать» оба бессмысленны.
+ *
+ * Подписи те же, что у `levels.*`: названия уровней одинаковы в обоих
+ * смыслах, а заводить второй набор строк значит переводить одно и то же
+ * дважды.
+ */
+
+export const dancerLevels = ['BEGINNER', 'INTERMEDIATE', 'ADVANCED'] as const;
+export type DancerLevel = (typeof dancerLevels)[number];
+
+const dancerLevelI18nKeys = {
+  BEGINNER: 'beginner',
+  INTERMEDIATE: 'intermediate',
+  ADVANCED: 'advanced',
+} as const satisfies Record<DancerLevel, string>;
+
+export function dancerLevelLabelKey(level: DancerLevel): MessageKey {
+  return `levels.${dancerLevelI18nKeys[level]}`;
+}
+
+/** Уровень из строки базы: неизвестное значение — не уровень, а мусор. */
+export function isDancerLevel(value: unknown): value is DancerLevel {
+  return typeof value === 'string' && (dancerLevels as readonly string[]).includes(value);
+}
+
 /* ──────────────────────── DanceSport classification ──────────────────────── */
 
 export const danceSportPrograms = ['STANDARD', 'LATINE'] as const;

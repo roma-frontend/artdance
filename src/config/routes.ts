@@ -190,6 +190,15 @@ export const routes = {
   accountNotifications: () => '/account/notifications',
   accountSettings: () => '/account/settings',
   accountData: () => '/account/data',
+  /** Анкета танцора: уровень, направления, цель. Правится в любой момент. */
+  accountDancerProfile: () => '/account/dancer-profile',
+
+  /* Онбординг */
+  /**
+   * Тур анкеты танцора. Отдельный адрес, а не шаг кабинета: человек попадает
+   * сюда сразу после регистрации, до того как у него появился кабинет.
+   */
+  onboardingDancer: () => '/onboarding/dancer',
 
   /* Кабинет инструктора */
   instructorDashboard: () => '/studio',
@@ -425,7 +434,14 @@ export const listingRoute: Record<ListingSection, (params?: ShopParams) => strin
 };
 
 /** Пути, требующие аутентификации. Используется middleware — не дублировать список. */
-export const protectedPathPrefixes = ['/account', '/studio', '/venue', '/admin', '/checkout'] as const;
+export const protectedPathPrefixes = [
+  '/account',
+  '/studio',
+  '/venue',
+  '/admin',
+  '/checkout',
+  '/onboarding',
+] as const;
 
 /**
  * Путь под защитой?
@@ -445,6 +461,7 @@ export function isProtectedPath(pathWithoutLocale: string): boolean {
 /** Пути, закрытые от индексации. Попадает в `robots.ts`. */
 export const noIndexPathPrefixes = [
   '/account',
+  '/onboarding',
   '/studio',
   '/venue',
   '/admin',

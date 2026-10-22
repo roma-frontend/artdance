@@ -79,6 +79,19 @@ enum SkillLevel {
 }
 
 /**
+ * Самооценка танцора — его собственное представление о своём уровне.
+ *
+ * Отдельный enum, а не `SkillLevel`: у занятия уровень задаёт инструктор
+ * («этот сет — для среднего»), а здесь человек отвечает сам, и «любой уровень»
+ * или «профессиональный» в ответе «я хочу танцевать» невозможны.
+ */
+enum DancerLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+/**
  * Спортивные программы и десять официальных дисциплин DanceSport.
  */
 enum DanceSportProgram {
@@ -330,6 +343,7 @@ model User {
   reliabilityScore    Int                      @default(100)
   marketingConsentAt  DateTime?
   athleteProfile      AthleteProfile?
+  dancerProfile       DancerProfile?
   blogPosts           BlogPost[]
   avatarMedia         MediaAsset?              @relation("UserAvatar")
   assignedTickets     SupportTicket[]          @relation("TicketAssignee")
@@ -1173,6 +1187,41 @@ model AthleteProfile {
   bookings                 Booking[]
   competitionRegistrations CompetitionRegistration[] @relation("CompetitionRegistrationAthlete")
   partnerRegistrations     CompetitionRegistration[] @relation("CompetitionRegistrationPartner")
+}
+
+/**
+ * ═══════════════════════ ПРОФИЛЬ ТАНЦОРА ═══════════════════════
+ *
+ * Ответы онбординга. Читает их инструктор, когда видит клиента: без этого
+ * «с чего начать» приходилось угадывать по пустому профилю.
+ *
+ * `level` — обязателен и не имеет значения «не знаю»: человек, который не
+ * танцевал, честно отвечает «новичок», и это полезнее пропуска.
+ * `styles` и `goal` — необязательные: тур не должен блокировать из-за
+ * второстепенных вопросов.
+ *
+ * `onboardingCompleted` — отвечает не «профиль заполнен», а «человек дошёл до
+ * конца тура». Пока он не дошёл, его можно звать в тур снова; перезаполненный
+ * анкета после этого остаётся перезаполненной.
+ */
+model DancerProfile {
+  id     String     @id @default(cuid())
+  userId String     @unique
+  level  DancerLevel
+  /** Направления, которые человека интересуют. */
+  styles DanceStyle[] @default([])
+  /** Чего хочет от танца: «выучить вальс», «подготовиться к свадьбе». */
+  goal  String?     @db.Text
+  /** Заметка для инструктора: травмы, договорённости, пожелания. */
+  note  String?     @db.Text
+  onboardingCompleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([level])
 }
 
 /**

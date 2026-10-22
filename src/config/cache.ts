@@ -117,6 +117,9 @@ export const privatePaths = [
   '/instructors/:slug/book',
   '/account',
   '/account/:path*',
+  /* Онбординг зависит от сессии: у вошедшего и гостя — разные экраны. */
+  '/onboarding',
+  '/onboarding/:path*',
   '/studio',
   '/studio/:path*',
   '/venue',
