@@ -1,7 +1,7 @@
 /**
  * Фоны страниц направлений — картинки из Downloads/background.
  * Переопределяют обложку занятия в PageHero, один-в-один как HIP_HOP warp.
- * Лежат в public/media/style-hero/<style>.jpg -> отдаются как /media/style-hero/*.jpg
+ * Лежат в R2 (`media/style-hero/<style>.jpg`), отдаются как /media/style-hero/*.jpg
  */
 
 import { mediaUrl } from '@/config/media';

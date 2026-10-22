@@ -103,6 +103,6 @@ fileMatchPattern: 'src/{components,app}/**'
 те же инструкторы, занятия, цены, залы, товары и события. Не выдумывай тестовые
 данные — используй эти, тогда результат сравним с макетом один-в-один.
 
-Изображения после `npm run design:import` лежат в `public/media/seed/` под
+Изображения после `npm run design:import` попадают в `public/media/seed/` (рабочая папка, после `media:r2:sync` её можно удалить) под
 семантическими именами (`hero-dancer`, `instructor-anna-mkrtchyan`,
 `style-salsa`). Соответствие оригиналам — `design/asset-manifest.ts`.

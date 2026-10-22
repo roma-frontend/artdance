@@ -19,7 +19,8 @@ const contentTypes: Record<string, string> = {
 
 async function main() {
   const env = getServerEnv();
-  if (storageDriver() !== 'r2' || !env.R2_PUBLIC_BASE_URL) {
+  const publicBase = env.resolvedR2PublicBaseUrl || env.R2_PUBLIC_BASE_URL;
+  if (storageDriver() !== 'r2' || !publicBase) {
     throw new Error('Configure R2 credentials, R2_BUCKET and R2_PUBLIC_BASE_URL first.');
   }
   const checkOnly = process.argv.includes('--check');
@@ -45,16 +46,15 @@ async function main() {
       });
     }
   }
-  if (checkOnly) {
-    const recorded = await readFile(manifestPath, 'utf8').catch((error: NodeJS.ErrnoException) => {
-      if (error.code === 'ENOENT') return '[]';
-      throw error;
-    });
-    const inventory = new Map<string, (typeof files)[number]>();
-    for (const file of JSON.parse(recorded) as typeof files) inventory.set(file.key, file);
-    for (const file of files) inventory.set(file.key, file);
-    files = [...inventory.values()];
-  }
+  // Записанные объекты остаются в манифесте, даже когда локальной копии уже нет.
+  const recorded = await readFile(manifestPath, 'utf8').catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') return '[]';
+    throw error;
+  });
+  const byKey = new Map<string, (typeof files)[number]>();
+  for (const file of JSON.parse(recorded) as typeof files) byKey.set(file.key, file);
+  for (const file of files) byKey.set(file.key, file);
+  files = [...byKey.values()];
   if (!files.length) throw new Error('No local media or recorded R2 objects to verify.');
 
   let verified = 0;
@@ -63,10 +63,10 @@ async function main() {
   await Promise.all(Array.from({ length: 4 }, async () => {
     for (const file of pending) {
       const size = file.bytes;
-      if (!checkOnly) {
-        await putMediaObject(file.key, await readFile(file.path!), file.contentType);
+      if (!checkOnly && file.path) {
+        await putMediaObject(file.key, await readFile(file.path), file.contentType);
       }
-      const url = `${env.R2_PUBLIC_BASE_URL!.replace(/\/$/, '')}/${file.key.split('/').map(encodeURIComponent).join('/')}`;
+      const url = `${publicBase!.replace(/\/$/, '')}/${file.key.split('/').map(encodeURIComponent).join('/')}`;
       const response = await fetch(url, { method: 'HEAD', cache: 'no-store', signal: AbortSignal.timeout(30_000) });
       if (!response.ok || Number(response.headers.get('content-length')) !== size
         || response.headers.get('content-type')?.split(';')[0] !== file.contentType) {
@@ -81,7 +81,7 @@ async function main() {
     key,
     contentType,
     bytes,
-    url: `${env.R2_PUBLIC_BASE_URL!.replace(/\/$/, '')}/${key.split('/').map(encodeURIComponent).join('/')}`,
+    url: `${publicBase!.replace(/\/$/, '')}/${key.split('/').map(encodeURIComponent).join('/')}`,
   }));
   await writeFile(manifestPath, `${JSON.stringify(inventory, null, 2)}\n`);
   console.log(`Verified ${verified} objects, ${(bytes / 1024 / 1024).toFixed(1)} MiB. Inventory: ${manifestPath}.`);

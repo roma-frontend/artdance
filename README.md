@@ -114,7 +114,7 @@ DATABASE_URL/AUTH_SECRET нужны в Build environment, серверные с�
 | `npm run perf:budget` | бюджет веса по gzip: JS-бандл и статические ассеты (после `build`) |
 | `npm run design:import` | импорт утверждённого прототипа и его изображений |
 | `npm run design:status` | какие компоненты готовы, какие классы макета не покрыты |
-| `npm run media:optimize` | пережать ассеты `public/media/seed` и обновить сгенерированный манифест |
+| `npm run media:optimize` | пережать ассеты (из `public/media/seed` либо из R2) и обновить сгенерированный манифест |
 | `npm run media:check` | проверить, что медиа оптимизировано и укладывается в бюджет (входит в `verify`) |
 | `npm run promo:upload` | залить три версии презентационного ролика в R2 и проверить их HEAD-запросом |
 | `npm run tokens:build` | перегенерировать `src/styles/tokens.css` из TypeScript-токенов |

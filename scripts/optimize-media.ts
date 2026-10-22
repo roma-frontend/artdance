@@ -15,8 +15,8 @@
  *   • `--check` в CI не даёт вернуть в репозиторий мегабайтный PNG: бюджет
  *     проверяется автоматически, а не на глаз при ревью.
  *
- * Оригиналы из папки прототипа остаются нетронутыми: скрипт работает только с
- * `public/media/seed`, куда файлы попадают через `npm run design:import`.
+ * Источник — `public/media/seed` (куда файлы попадают через `npm run design:import`)
+ * и объекты, уже лежащие в R2. Локальная копия после `media:r2:sync` не нужна.
  */
 
 import { createHash } from 'node:crypto';
@@ -87,7 +87,7 @@ function kb(bytes: number): string {
 }
 
 /**
- * Все файлы ассета в папке сида: и оптимизированный, и ещё не тронутый исходник.
+ * Все файлы ассета: локальные из папки сида и уже загруженные в R2.
  *
  * Сравнение по префиксу, а не по равенству: у оптимизированного файла в имени стоит
  * отпечаток содержимого (`hero-loop-poster.f4fca815.webp`), поэтому равенство
@@ -95,9 +95,10 @@ function kb(bytes: number): string {
  */
 function filesFor(name: string): string[] {
   const local = existsSync(SEED_DIR) ? readdirSync(SEED_DIR) : [];
-  const files = checkOnly && local.length === 0
-    ? r2Inventory.filter((entry) => entry.key.startsWith('media/seed/')).map((entry) => entry.key.slice('media/seed/'.length))
-    : local;
+  const remote = r2Inventory
+    .filter((entry) => entry.key.startsWith('media/seed/'))
+    .map((entry) => entry.key.slice('media/seed/'.length));
+  const files = [...new Set([...local, ...remote])];
   return files.filter((file) => {
     const base = file.slice(0, file.length - extname(file).length);
     return base === name || base.startsWith(`${name}.`);
@@ -205,7 +206,12 @@ async function main(): Promise<void> {
        * прежнюю производную из кеша оптимизатора.
        */
       if (optimized !== expected) {
-        if (checkOnly) {
+        if (!existsSync(localPath)) {
+          problems.push(
+            `${optimized}: в R2 имя не совпадает с содержимым (ожидается ${expected}). ` +
+              'Восстановите файл локально и выполните npm run media:optimize && npm run media:r2:sync',
+          );
+        } else if (checkOnly) {
           problems.push(
             `${optimized}: отпечаток в имени не совпадает с содержимым (ожидается ${expected}). ` +
               'Выполните npm run media:optimize',
@@ -270,7 +276,7 @@ async function main(): Promise<void> {
        * в папке и уехали в деплой мёртвым грузом.
        */
       for (const file of files) {
-        if (file !== targetFile) unlinkSync(join(SEED_DIR, file));
+        if (file !== targetFile && existsSync(join(SEED_DIR, file))) unlinkSync(join(SEED_DIR, file));
       }
       const saved = Math.round((1 - master.bytes / sourceBytes) * 100);
       console.log(

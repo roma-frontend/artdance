@@ -82,9 +82,9 @@ export const mediaProcessing = {
     seedTotal: 3 * 1024 * 1024,
   },
   /**
-   * Ассеты репозитория (`public/media/seed`) — демо-контент, который заменит
+   * Сид-ассеты (`public/media/seed` до загрузки, затем R2) — демо-контент, который заменит
    * контент заказчика. Их мастер режется агрессивнее, чем пользовательская
-   * загрузка: держать в git 2560px-кадры незачем, а `next/image` всё равно
+   * загрузка: держать 2560px-кадры в R2 незачем, а `next/image` всё равно
    * отдаёт браузеру производную под его экран.
    */
   seedMaxWidth: {
@@ -108,6 +108,7 @@ export const presetBudget: Record<ImagePresetKey, MediaBudgetGroup> = {
   instructorHero: 'fullBleed',
   productGallery: 'fullBleed',
   categoryCard: 'card',
+  journeyCard: 'card',
   classCard: 'card',
   instructorCard: 'card',
   studioCard: 'card',

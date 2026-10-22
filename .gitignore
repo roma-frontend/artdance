@@ -40,12 +40,10 @@ next-env.d.ts
 cloudflare-env.d.ts
 
 # Uploads живут только на R2 + DB (MediaAsset.storageKey), не в git.
-# Seed-статика (`public/media/seed`, `video`, `warp`, `style-*`) нужна для
-# локальных проверок `npm run media:check` / `video:check` и CI consistency
-# job'а — без файлов эти проверки нечем сверять.
-# Исключение — именно seed и производные видео, а не произвольные загрузки.
-/public/media/uploads/
-/public/media/og/
+# Все медиа живут в R2 (`design/media-r2-manifest.json`), в git их нет.
+# `public/media` — рабочая папка для design:import и media:optimize; после
+# media:r2:sync её можно удалить. Проверки сверяются с манифестом, не с диском.
+/public/media/
 # brand logos живут в R2 (`brand/logo*.png`), а не в `public/` — см. src/components/brand/brand-mark.tsx
 
 # Договорные приложения — локальные документы для подписи, не попадают в git

@@ -63,6 +63,12 @@ export const imagePresets = {
     quality: imageQuality.thumbnail,
     priority: false,
   },
+  journeyCard: {
+    aspectRatio: raw.aspectRatio.square,
+    sizes: `(max-width: ${raw.breakpoint.md}px) 0px, (max-width: ${raw.breakpoint.xl}px) 50vw, 640px`,
+    quality: imageQuality.standard,
+    priority: false,
+  },
   classCard: {
     aspectRatio: raw.aspectRatio.landscape,
     sizes: `(max-width: ${raw.breakpoint.md}px) 85vw, 320px`,
@@ -185,7 +191,7 @@ export const uploadImagePresets = {
   courseCover: 'classCard' as const,
 } as const;
 
-/** Публичный URL по ключу бакета или пути из `public/media`. */
+/** Публичный URL по ключу бакета или пути `/media/...` (всё медиа лежит в R2). */
 export function mediaUrl(key: string): string {
   if (!key) return '';
   const hashAt = key.indexOf('#');
@@ -237,7 +243,7 @@ export function mediaProxyUrl(key: string): string {
   return `/media-proxy/${rel}`;
 }
 
-/** URL для ассетов из `public/media/...` — оборачивает `mediaUrl` для читаемости. */
+/** URL для ассетов `/media/...` — оборачивает `mediaUrl` для читаемости. */
 export function publicMediaUrl(path: string): string {
   return mediaUrl(path);
 }

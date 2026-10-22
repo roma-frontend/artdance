@@ -350,6 +350,36 @@ export const designAssets: readonly DesignAsset[] = [
     subject: 'Пара танцует бачату — обложка страницы занятия',
     usedFor: [{ entity: 'class', id: 'latin-fusion' }],
   },
+
+  /* Journey — Четыре шага до паркета */
+  {
+    name: 'journey-step-1',
+    source: 'journey-step-1.png',
+    preset: 'journeyCard',
+    subject: 'Выбор стиля — девушка у входа в студию, за ней силуэты направлений',
+    usedFor: [{ entity: 'page', id: 'home.journey.style' }],
+  },
+  {
+    name: 'journey-step-2',
+    source: 'journey-step-2.png',
+    preset: 'journeyCard',
+    subject: 'Поиск наставника — инструктор поправляет руку ученицы',
+    usedFor: [{ entity: 'page', id: 'home.journey.master' }],
+  },
+  {
+    name: 'journey-step-3',
+    source: 'journey-step-3.png',
+    preset: 'journeyCard',
+    subject: 'Бронь в два клика — телефон на балетном станке',
+    usedFor: [{ entity: 'page', id: 'home.journey.book' }],
+  },
+  {
+    name: 'journey-step-4',
+    source: 'journey-step-4.png',
+    preset: 'journeyCard',
+    subject: 'Выход на паркет — пара DanceSport под прожекторами',
+    usedFor: [{ entity: 'page', id: 'home.journey.stage' }],
+  },
 ];
 
 /**

@@ -110,6 +110,42 @@ export const seedMedia = {
     blurDataUrl:
       'data:image/webp;base64,UklGRmYAAABXRUJQVlA4IFoAAADQAQCdASoMABAAAwBSJYgCdADZdVfBgAD+kXuj6OIAhf2QoVIU6tGRT9UDXj7KuGlNtCD5D/isP/KlgYi3z7lRcj4Z4cE8jVMOB+Z9vyhG2tYYTByIm+jvAAA=',
   },
+  'journey-step-1': {
+    file: 'journey-step-1.06b86791.webp',
+    width: 1024,
+    height: 1024,
+    bytes: 60926,
+    fingerprint: '06b86791',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRl4AAABXRUJQVlA4IFIAAACwAQCdASoMAAwAAwBSJYgCdACy0rPgAP58bKxuLw+DmtdMj9dU3Etniq/EopCarZYBOQAU7GE1+mWogMpq31xDGXLGDbjZVrXvctIktFNvg8AA',
+  },
+  'journey-step-2': {
+    file: 'journey-step-2.88224dc0.webp',
+    width: 1024,
+    height: 1024,
+    bytes: 45492,
+    fingerprint: '88224dc0',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRmgAAABXRUJQVlA4IFwAAABwAgCdASoMAAwAAwBSJYgCdAYul2t1GsjEsX7gAP5nhkcHk+9bPHCa7w3AdwYc9m8TezRDH3TawRdLa99j725afo9iDY0EH5Vz90q8fQEUhxChaXsgT2ebyCAAAA==',
+  },
+  'journey-step-3': {
+    file: 'journey-step-3.0f222e0d.webp',
+    width: 1024,
+    height: 1024,
+    bytes: 33202,
+    fingerprint: '0f222e0d',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRmAAAABXRUJQVlA4IFQAAADQAQCdASoMAAwAAwBSJZgCdADdgaExAAD+6KdVNiXX6aCXNbuqltnmi/tC2AULx67ZIk+VbowF17pRIfZNUxluTh/+Pux1MW6V71BsSKtlIHGiAAA=',
+  },
+  'journey-step-4': {
+    file: 'journey-step-4.cdd3ab28.webp',
+    width: 1024,
+    height: 1024,
+    bytes: 76134,
+    fingerprint: 'cdd3ab28',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAAAQAgCdASoMAAwAAwBSJbACdADdltXPJyAAAP75yOY1e2626abdk6TS12SRhKYjyZ+8ulu4eSTDtkPZFH4Nh0ZA43Ja7BMP542YUAAA',
+  },
   'product-dance-bag': {
     file: 'product-dance-bag.f332ff31.webp',
     width: 765,
@@ -241,4 +277,4 @@ export const seedMedia = {
 export type SeedMediaName = keyof typeof seedMedia;
 
 /** Суммарный вес папки сид-медиа, байт. Сверяется с `mediaProcessing.budgetBytes.seedTotal`. */
-export const seedMediaTotalBytes = 1234744;
+export const seedMediaTotalBytes = 1450498;

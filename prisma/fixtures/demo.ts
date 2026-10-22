@@ -901,6 +901,26 @@ export const demoMediaAlt: Record<string, { hy: string; ru: string; en: string }
     ru: 'Подарочная карта в бургунди с золотом',
     en: 'A gift card in burgundy and gold',
   },
+  'journey-step-1': {
+    hy: 'Ընտրիր ոճը — երիտասարդ պարուհին ստուդիայի մուտքի մոտ',
+    ru: 'Выбери стиль — девушка у входа в студию, за ней силуэты направлений',
+    en: 'Pick a style — a young dancer at the studio entrance with style silhouettes behind',
+  },
+  'journey-step-2': {
+    hy: 'Գտիր ուսուցչիդ — պարուսույցը ուղղում է աշակերտուհու ձեռքը',
+    ru: 'Найди своего учителя — наставник поправляет руку ученицы',
+    en: 'Find your teacher — an instructor correcting a student\'s arm',
+  },
+  'journey-step-3': {
+    hy: 'Ամրագրիր երկու սեղմումով — հեռախոսը բալետի հենակին',
+    ru: 'Забронируй в два клика — телефон на балетном станке',
+    en: 'Book in two clicks — a phone resting on a ballet barre',
+  },
+  'journey-step-4': {
+    hy: 'Դուրս արի պարահրապարակ — DanceSport զույգը լուսարձակների ներքո',
+    ru: 'Выйди на паркет — пара DanceSport под прожекторами',
+    en: 'Take the floor — a DanceSport couple under spotlights',
+  },
 };
 
 /**

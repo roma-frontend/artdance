@@ -32,19 +32,16 @@ const steps = [
 interface JourneySectionProps {
   /** Кадр на каждый шаг, по порядку; недостающие шаги остаются без кадра. */
   images: readonly MediaRef[];
-  /** Соревнования скрываются вместе с выключенным events entitlement. */
-  includeCompetition?: boolean;
   locale: Locale;
 }
 
-export function JourneySection({ images, includeCompetition = true, locale }: JourneySectionProps) {
+export function JourneySection({ images, locale }: JourneySectionProps) {
   const t = useTranslations('home.journey');
-  const visibleSteps = includeCompetition ? steps : steps.slice(0, -1);
 
   return (
     <section className="section-y relative">
       <div className="page-container relative">
-        <JourneyTrack totalSteps={visibleSteps.length} />
+        <JourneyTrack totalSteps={steps.length} />
 
         <Reveal variant="none" className="mb-12">
           <SectionHeading
@@ -57,7 +54,7 @@ export function JourneySection({ images, includeCompetition = true, locale }: Jo
         </Reveal>
 
         <StackCards aria-label={t('title')}>
-          {visibleSteps.map((step, index) => {
+          {steps.map((step, index) => {
             const image = images[index];
             return (
               <li key={step.key} data-journey-step="">
@@ -85,7 +82,7 @@ export function JourneySection({ images, includeCompetition = true, locale }: Jo
                       <Media
                         {...resolveMedia(image, locale)}
                         alt=""
-                        preset="categoryCard"
+                        preset="journeyCard"
                         fill
                         className="size-full"
                       />
