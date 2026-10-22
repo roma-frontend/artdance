@@ -69,10 +69,14 @@ export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminS
     const behavior: ScrollBehavior = reduce ? 'auto' : 'smooth';
 
     const doScroll = () => {
-      // scrollIntoView центрирует внутри ближайшего скролл-контейнера
-      // (десктоп: [data-admin-sidebar-scroll], drawer: div.overflow-y-auto)
-      // — без ручного дельта-расчёта, который давал инверсию
-      el.scrollIntoView({ behavior, block: 'center', inline: 'nearest' });
+      // Прокручиваем только сам контейнер сайдбара. scrollIntoView двигал бы
+      // и окно страницы, из-за чего админка прыгала вверх и центрировалась.
+      const container = findScrollParent(el);
+      if (!container) return;
+      const itemRect = el.getBoundingClientRect();
+      const boxRect = container.getBoundingClientRect();
+      const offset = itemRect.top - boxRect.top - (boxRect.height - itemRect.height) / 2;
+      container.scrollTo({ top: container.scrollTop + offset, behavior });
     };
 
     // stagger групп до ~400мс — ждём окончания анимации, иначе координаты съезжают
@@ -190,6 +194,17 @@ export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminS
  * `/admin` — когда открыт любой раздел вообще. Это та же ловушка, из-за которой
  * публичный листинг залов однажды уезжал на страницу входа.
  */
+/** Ближайший предок, который реально прокручивается по вертикали. */
+function findScrollParent(node: HTMLElement): HTMLElement | null {
+  let current = node.parentElement;
+  while (current && current !== document.body) {
+    const { overflowY } = getComputedStyle(current);
+    if ((overflowY === 'auto' || overflowY === 'scroll') && current.scrollHeight > current.clientHeight) return current;
+    current = current.parentElement;
+  }
+  return null;
+}
+
 function isActive(pathname: string, href: string): boolean {
   if (href === routes.admin()) return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
