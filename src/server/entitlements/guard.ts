@@ -18,8 +18,6 @@
 
 import 'server-only';
 
-import { notFound } from 'next/navigation';
-
 import type { FeatureKey } from '@/config/features';
 import { domainErrors } from '@/domain/errors';
 
@@ -33,7 +31,12 @@ export async function assertEntitlementOrNotFound(
   snapshot?: EntitlementSnapshot,
 ): Promise<void> {
   const effective = snapshot ?? (await getEffectiveEntitlementsSafe());
-  if (!effective[feature]) notFound();
+  if (!effective[feature]) {
+    // Ленивый импорт: сервисы, которые используют `assertEntitlementOrThrow`, грузятся
+    // и вне Next (скрипты проверки БД), а `next/navigation` там не инициализируется.
+    const { notFound } = await import('next/navigation');
+    notFound();
+  }
 }
 
 /** Для API и server actions: выключенный модуль = `FEATURE_DISABLED`, а не 404. */

@@ -18,16 +18,11 @@
 import { z } from 'zod';
 
 import { domainErrors } from '@/domain/errors';
+import { walletTopUpLimits } from '@/domain/wallet';
 import { translateForSnapshot } from '@/i18n/snapshot';
 import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 import { createDirectOrder } from '@/server/orders/service';
 import { authedAction } from '@/server/safe-action';
-
-/** Пределы пополнения, драмы. */
-export const walletTopUpLimits = { min: 500, max: 500_000 } as const;
-
-/** Шаг кнопок пополнения — круглые суммы, а не любое число из поля. */
-export const walletTopUpPresets = [5_000, 10_000, 25_000] as const;
 
 export const topUpWalletAction = authedAction
   .metadata({ rateLimit: 'paymentIntent', audit: 'wallet.topup' })

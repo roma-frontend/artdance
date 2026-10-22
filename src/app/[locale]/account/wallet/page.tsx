@@ -25,7 +25,7 @@ import { redirect } from '@/i18n/routing';
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
 import { buildMetadata } from '@/lib/seo/metadata';
-import { walletTopUpPresets } from '@/server/actions/wallet';
+import { walletTopUpPresets } from '@/domain/wallet';
 import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 

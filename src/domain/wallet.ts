@@ -1,27 +1,7 @@
-/**
- * WALLET — единая книга (B-03/B-04): CREDIT_REFUND/DEBIT_CHECKOUT + бонусы/рефералы/подарочки.
- * Одна таблица WalletEntry — чекаут применяет баланс одной транзакцией, история единая.
- */
+/** Пределы и шаг кнопок пополнения кошелька. Общие для действия и страницы. */
 
-export type WalletKind =
-  | 'CREDIT_REFUND'
-  | 'DEBIT_CHECKOUT'
-  | 'CREDIT_BONUS'
-  | 'CREDIT_REFERRAL'
-  | 'CREDIT_GIFT'
-  | 'CREDIT_MANUAL'
-  | 'DEBIT_MANUAL';
+/** Пределы пополнения, драмы. */
+export const walletTopUpLimits = { min: 500, max: 500_000 } as const;
 
-export function walletValidKind(kind: string): kind is WalletKind {
-  return (
-    [
-      'CREDIT_REFUND',
-      'DEBIT_CHECKOUT',
-      'CREDIT_BONUS',
-      'CREDIT_REFERRAL',
-      'CREDIT_GIFT',
-      'CREDIT_MANUAL',
-      'DEBIT_MANUAL',
-    ] as const
-  ).includes(kind as WalletKind);
-}
+/** Шаг кнопок пополнения — круглые суммы, а не любое число из поля. */
+export const walletTopUpPresets = [5_000, 10_000, 25_000] as const;
