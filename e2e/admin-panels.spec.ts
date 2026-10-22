@@ -27,7 +27,9 @@ test('админка: общий скролл и правая sticky-колон�
 
   if (testInfo.project.name === 'desktop') {
     await expect(sidebar).toBeVisible();
-    await expect(sidebar).toHaveCSS('overflow-y', 'visible');
+    // Сайдбар — sticky-панель с собственным скроллом, чтобы нижние пункты были в окне.
+    await expect(sidebar).toHaveCSS('overflow-y', 'auto');
+    await expect(sidebar).toHaveCSS('position', 'sticky');
     await expect(content).toHaveCSS('position', 'sticky');
     await expect(content).toHaveCSS('align-self', 'start');
     // Скролл-поведение: правая колонка sticky, левая уезжает.

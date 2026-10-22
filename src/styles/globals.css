@@ -529,6 +529,16 @@
       top: calc(var(--layout-nav-height) + var(--space-2));
       align-self: start;
     }
+
+    /* Навигация всегда помещается в окно: длинный список прокручивается внутри панели. */
+    .admin-sidebar-panel {
+      position: sticky;
+      top: calc(var(--layout-nav-height) + var(--space-2));
+      align-self: start;
+      max-height: calc(100dvh - var(--layout-nav-height) - var(--space-4));
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
   }
 
   .section-y {
