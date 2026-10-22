@@ -40,8 +40,14 @@ test('Lite останавливает JS-декорации, снимает до
     window.dispatchEvent(new CustomEvent('lite-mode-change'));
   });
   await expect(page.locator('[data-slot="footer-fx"]')).toHaveCount(1);
-  await page.evaluate(() => window.scrollTo(0, 300));
-  await expect.poll(() => page.locator('[data-slot="scroll-seal"]').evaluate((node) => node.style.transform)).toContain('rotate(');
+  /*
+   * Печать спит, пока секция дальше экрана от окна, — это её штатное поведение
+   * (закреплено тестом ниже). Поэтому сначала подводим её в кадр: проверка
+   * здесь про «Lite снят — вращение вернулось», а не про то, где сейчас окно.
+   */
+  const seal = page.locator('[data-slot="scroll-seal"]');
+  await seal.evaluate((node) => node.scrollIntoView({ block: 'center', behavior: 'instant' }));
+  await expect.poll(() => seal.evaluate((node) => node.style.transform)).toContain('rotate(');
 });
 
 test('видеокарточки загружают только активный ролик и останавливаются вне экрана', async ({ page }) => {

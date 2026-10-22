@@ -26,6 +26,7 @@
 import { type Capability } from './capabilities';
 import { lineItemTypes } from './pricing';
 import { adminResources, routes, type AdminResource } from './routes';
+import type { FeatureKey } from './features';
 import {
   danceStyleLabelKey,
   danceStyles,
@@ -1382,6 +1383,8 @@ export interface AdminNavItem {
    * выплат, который ответит отказом, — плохой интерфейс.
    */
   capability?: Capability;
+  /** Требуемая фича пресета. Если не включена — пункт скрывается. */
+  feature?: FeatureKey;
 }
 
 export interface AdminNavGroupSpec {
@@ -1418,6 +1421,31 @@ export const adminNavGroupLabelKey: Record<AdminNavGroup, MessageKey> = {
 
 
 /**
+ * Какой модуль пресета должен быть включён, чтобы пункт каталога имел смысл.
+ *
+ * Только те разделы, чья страница отвечает 404 при выключенном модуле. Медиа,
+ * баннеры, блог и подвал принадлежат CMS (`cms` включён во всех пакетах), и
+ * привязывать их к магазину значило бы прятать управление контентом у того,
+ * кто его оплатил.
+ */
+function catalogNavFeature(id: AdminResource): FeatureKey | undefined {
+  switch (id) {
+    case 'products':
+    case 'categories':
+    case 'variants':
+      return 'shop';
+    case 'events':
+    case 'competition-categories':
+      return 'events';
+    case 'courses':
+    case 'lessons':
+      return 'courses';
+    default:
+      return undefined;
+  }
+}
+
+/**
  * Пункты сайдбара. Собираются из реестра плюс экраны со своей логикой —
  * заказы, брони, выплаты, модерация, люди, права, аудит, отчёты.
  *
@@ -1442,6 +1470,8 @@ export const adminNavigation: readonly AdminNavGroupSpec[] = [
         labelKey: spec.navLabelKey,
         href: routes.adminResource(spec.id),
         capability: spec.view,
+        /* Группа контента живёт в CMS — она есть и в MVP, даже когда магазин выключен. */
+        feature: catalogNavFeature(spec.id),
       })),
   },
   {
@@ -1464,6 +1494,7 @@ export const adminNavigation: readonly AdminNavGroupSpec[] = [
           labelKey: spec.navLabelKey,
           href: routes.adminResource(spec.id),
           capability: spec.view,
+          feature: 'shop' as FeatureKey,
         })),
       { labelKey: 'admin.nav.reports', href: routes.adminReports(), capability: 'reports.revenue' },
     ],

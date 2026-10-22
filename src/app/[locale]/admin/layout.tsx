@@ -34,6 +34,7 @@ import { resolveCapabilities } from '@/lib/auth/capabilities';
 import { getCaller } from '@/lib/auth/guards';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { getSidebarPendingBadges } from '@/server/admin/sidebar-badges';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 
 interface LayoutProps {
   children: ReactNode;
@@ -88,7 +89,10 @@ export default async function AdminLayout({ children, params }: LayoutProps) {
     );
   }
 
-  const [capabilities] = await Promise.all([resolveCapabilities(caller.role, caller.email)]);
+  const [capabilities, entitlements] = await Promise.all([
+    resolveCapabilities(caller.role, caller.email),
+    getEffectiveEntitlementsSafe(),
+  ]);
   const badges = await getSidebarPendingBadges(capabilities);
 
   const groups: readonly SidebarGroup[] = adminNavigation
@@ -96,6 +100,7 @@ export default async function AdminLayout({ children, params }: LayoutProps) {
       labelKey: group.labelKey,
       items: group.items
         .filter((item) => item.capability === undefined || capabilities.has(item.capability))
+        .filter((item) => item.feature === undefined || entitlements[item.feature] === true)
         .map((item) => ({
           labelKey: item.labelKey,
           href: item.href,

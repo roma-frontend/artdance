@@ -31,7 +31,7 @@ export async function ClassPassGrid({
         const total = passTotal(offer);
         const badgeLabel = offer.badge ? (offer.badge === 'pricing.classPasses.popular' ? t('classPasses.popular' as never) : t('classPasses.bestValue' as never)) : null;
         return (
-          <li key={offer.id} className="flex flex-col rounded-xl border border-border-default bg-surface-card p-8 shadow-sm">
+          <li key={offer.id} data-slot="class-pass" className="flex flex-col rounded-xl border border-border-default bg-surface-card p-8 shadow-sm">
             {badgeLabel && (
               <Badge variant={offer.id === 'cp-10' ? 'accent' : 'metal'} className="mb-3 self-start">
                 {badgeLabel}

@@ -55,9 +55,11 @@ test.describe('лендинг отдаётся готовым HTML', () => {
   test('en: заголовки секций на своих местах', async ({ page }) => {
     await page.goto('/en', { waitUntil: 'domcontentloaded' });
 
-    for (const title of [en.home.discover.title, en.pricing.title]) {
-      await expect(page.locator('h2').filter({ hasText: title })).toBeVisible();
-    }
+    /* Только безусловные секции: блок тарифов на главной виден по пресету. */
+    await expect(page.locator('h2').filter({ hasText: en.home.discover.title })).toBeVisible();
+
+    await page.goto('/en/pricing', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('h1').filter({ hasText: en.pricing.title })).toBeVisible();
   });
 
   test('en: активный баннер из CMS появляется после первого экрана и закрывается', async ({

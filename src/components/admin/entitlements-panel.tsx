@@ -56,6 +56,7 @@ export function EntitlementsPanel({ preset, rows, timeline }: PanelProps) {
         })
         .filter(Boolean) as Array<{ key: string; before: boolean; after: boolean }>
     : [];
+  const subscriptionsWillBeEnabled = confirmPreset ? presetDefaults[confirmPreset].subscriptions : false;
 
   return (
     <div className="flex flex-col gap-6">
@@ -69,7 +70,7 @@ export function EntitlementsPanel({ preset, rows, timeline }: PanelProps) {
             </div>
             {preset ? <Badge variant="accent" size="md">{tp(`preset.${preset}` as never)}</Badge> : <Badge variant="neutral" size="md">env</Badge>}
           </div>
-          {!preset && <CardDescription className="mt-2 text-caption">Пресет ещё не выбран — страницы ведут себя как env (e2e без 404). Выбери MVP/FULL/PREMIUM.</CardDescription>}
+          {!preset && <CardDescription className="mt-2 text-caption">{t('entitlementsPresetUnset')}</CardDescription>}
         </CardHeader>
       </Card>
 
@@ -114,6 +115,13 @@ export function EntitlementsPanel({ preset, rows, timeline }: PanelProps) {
             <DialogTitle>{confirmPreset ? presetLabel(confirmPreset, tp) : ''}</DialogTitle>
             <DialogDescription>{t('entitlementsDiffHint')}</DialogDescription>
           </DialogHeader>
+          {subscriptionsWillBeEnabled && (
+            <div className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2">
+              <p className="text-body-sm font-semibold text-content-primary">
+                {t('entitlementsSubscriptionsWarning')}
+              </p>
+            </div>
+          )}
           {diffRows.length === 0 ? (
             <p className="text-body-sm text-content-secondary">{t('entitlementsDiffEmpty')}</p>
           ) : (

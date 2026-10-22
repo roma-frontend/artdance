@@ -187,7 +187,13 @@ test('Печать финального CTA вращается от прокру
     .toBeLessThan(0.5);
   const before = await angle();
   await page.evaluate(() => window.scrollBy({ top: 160, behavior: 'instant' }));
-  await expect.poll(() => angle()).toBeGreaterThan(before);
+  /*
+   * Проверяем «угол следует за прокруткой», а не «угол вырос»: ленивая секция
+   * ниже может дорасти и увеличить высоту документа уже после прокрутки, и
+   * тогда прогресс — а с ним и угол — честно уменьшится. Точное соответствие
+   * scrollY проверяется следующим утверждением.
+   */
+  await expect.poll(() => angle()).not.toBe(before);
   await page.evaluate(() => window.scrollBy({ top: -160, behavior: 'instant' }));
   await expect.poll(async () => Math.abs((await angle()) - (await expectedAngle()))).toBeLessThan(0.1);
   const idle = await angle();

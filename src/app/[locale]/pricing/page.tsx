@@ -83,6 +83,7 @@ export default async function PricingPage({ params }: PageProps) {
   const paymentMethods = availablePaymentMethodsWithGlobal();
 
   const t = await getTranslations('pricing');
+  const tRoot = await getTranslations();
   const tNav = await getTranslations('nav');
   const format = await getFormatter();
 
@@ -101,9 +102,11 @@ export default async function PricingPage({ params }: PageProps) {
       <ContentSection>
         {/* Coming soon banner — only when subscriptions disabled (MVP/FULL). Not a blocker, a badge. */}
         {!subscriptionsEnabled && (
-          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/30">
-            <p className="text-body-sm font-semibold text-amber-900 dark:text-amber-200">
-              <Badge variant="warning" size="sm" className="mr-2 align-middle">Coming soon</Badge>
+          <div className="mb-6 rounded-xl border border-warning/30 bg-warning-soft px-4 py-3">
+            <p className="text-body-sm font-semibold text-content-primary">
+              <Badge variant="warning" size="sm" className="mr-2 align-middle">
+                {tRoot('common.states.comingSoon')}
+              </Badge>
               {t('comingSoon.body')}
             </p>
           </div>

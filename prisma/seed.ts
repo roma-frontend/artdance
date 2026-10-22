@@ -897,16 +897,21 @@ async function seedPromoCodes(): Promise<void> {
 }
 
 /*
- * Данные, которых e2e ждёт в CI, а локальный сид не создаёт: пресет с включённым
- * `packages` (по умолчанию mvp их выключает) и одна запись в корзине, чтобы
- * бейдж «Trash» в сайдбаре появлялся. Запускается только при CI=true, поэтому
+ * Данные, которых e2e ждёт в CI, а локальный сид не создаёт: пресет с
+ * включёнными `subscriptions` и `packages` и одна запись в корзине, чтобы бейдж
+ * «Trash» в сайдбаре появлялся. Запускается только при CI=true, поэтому
  * локальная база и продакшен не меняются.
+ *
+ * Пресет — `premium`, а не `full`: `full` выключает подписки и пакеты, а
+ * проверки `/pricing` считают карточки тарифов и пакетов на месте. Пресет
+ * перекрывает env-флаги (в workflow `SUBSCRIPTIONS=true`), поэтому `full`
+ * молча отнимал раздел, на котором эти проверки и построены.
  */
 async function seedCiFixtures(): Promise<void> {
   await prisma.operatorSetting.upsert({
     where: { key: 'entitlement.preset' },
-    create: { key: 'entitlement.preset', value: 'full', updatedBy: 'ci-seed' },
-    update: { value: 'full', updatedBy: 'ci-seed' },
+    create: { key: 'entitlement.preset', value: 'premium', updatedBy: 'ci-seed' },
+    update: { value: 'premium', updatedBy: 'ci-seed' },
   });
   await upsertLive(
     prisma.promoCode,
@@ -914,7 +919,7 @@ async function seedCiFixtures(): Promise<void> {
     { value: 1, deletedAt: new Date() },
     { type: 'PERCENT', perUserLimit: 1, isActive: false },
   );
-  console.log('  CI: пресет full, одна запись в корзине');
+  console.log('  CI: пресет premium, одна запись в корзине');
 }
 
 /* ────────────────────── География и подвал ────────────────────── */

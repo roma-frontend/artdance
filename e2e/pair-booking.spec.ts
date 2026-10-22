@@ -6,14 +6,25 @@ import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
 
 for (const locale of ['en', 'ru', 'hy']) {
-  test(`${locale}: unavailable packages show text, not purchase buttons`, async ({ page }) => {
+  /*
+   * Карточка пакета не бывает тупиком: она либо продаёт, либо объясняет словами,
+   * почему продать нельзя. Что именно из двух — зависит от настроенного
+   * платёжного провайдера, и e2e не должен это предполагать: в CI провайдер
+   * mock, то есть покупка доступна, а на старте без договора — нет.
+   */
+  test(`${locale}: package cards sell or explain, never dead ends`, async ({ page }) => {
     const response = await page.goto(`/${locale}/pricing`);
     expect(response?.status()).toBe(200);
-    const cards = page.getByRole('main').locator('li').filter({ has: page.locator('p.text-caption.mt-6') });
+
+    const cards = page.getByRole('main').locator('[data-slot="class-pass"]');
+    /* Пакеты — модуль пресета; при выключенном раздел показывает «скоро». */
+    test.skip((await cards.count()) === 0, 'пакеты выключены текущим пресетом');
     await expect(cards).toHaveCount(3);
-    await expect(cards.getByRole('button')).toHaveCount(0);
-    await expect(cards.locator('form')).toHaveCount(0);
+
     for (const card of await cards.all()) {
+      const controls = await card.locator('button, form, a').count();
+      const explanation = await card.locator('p.text-caption.mt-6').count();
+      expect(controls + explanation, `${locale}: у карточки нет ни покупки, ни объяснения`).toBeGreaterThan(0);
       expect(await card.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
     }
   });
