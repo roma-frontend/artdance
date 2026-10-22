@@ -1,6 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getServerEnv } from '@/config/env';
+import { purgeExpiredCarts } from '@/server/cart/service';
 import { purgeExpiredHolds } from '@/server/hold/service';
 
 export const runtime = 'nodejs';
@@ -27,8 +28,10 @@ export async function POST(request: Request) {
   if (!expected) return noStore({ error: 'CRON_DISABLED' }, 503);
   const provided = providedSecret(request);
   if (!provided || !secretMatches(provided, expected)) return noStore({ error: 'UNAUTHORIZED' }, 401);
-  const report = await purgeExpiredHolds(new Date());
-  return noStore({ status: 'ok', purged: report.purged });
+  const now = new Date();
+  const report = await purgeExpiredHolds(now);
+  const carts = await purgeExpiredCarts(now).catch(() => ({ purged: 0 }));
+  return noStore({ status: 'ok', purged: report.purged, purgedCarts: carts.purged });
 }
 
 export async function GET(request: Request) { return POST(request); }

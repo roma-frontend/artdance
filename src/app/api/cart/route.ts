@@ -22,7 +22,7 @@ const anonHeader = 'x-anonymous-id';
 
 function anonFrom(req: Request): string | null {
   const v = req.headers.get(anonHeader);
-  return v && v.length >= 8 ? v : null;
+  return v && /^[A-Za-z0-9_-]{8,64}$/.test(v) ? v : null;
 }
 
 function json(body: object, status: number) {

@@ -252,13 +252,24 @@ async function buildSnapshot(cart: ResolvedCart): Promise<CartSnapshot> {
 
 // ── Публичный API ─────────────────────────────────────────────────────
 
-/** Серверный слепок. Создаёт корзину, если её нет. */
+/**
+ * Серверный слепок. Только чтение: корзина не создаётся, если её нет. Иначе
+ * каждый GET с любым `x-anonymous-id` плодил бы строку Cart, которую никто
+ * не наполнит. Пустой слепок строится без записи в базу.
+ */
 export async function getCartSnapshot(params: {
   userId?: string | null;
   anonymousId?: string | null;
 }): Promise<CartSnapshot> {
-  const cart = await getOrCreateCart(params);
-  return buildSnapshot(cart);
+  if (!params.userId && !params.anonymousId) throw domainErrors.unauthorized();
+  const where = params.userId ? { userId: params.userId } : { anonymousId: params.anonymousId! };
+  const cart = (await db.cart.findUnique({
+    where,
+    select: { id: true, userId: true, anonymousId: true, promoCodeId: true },
+  })) as unknown as ResolvedCart | null;
+  return buildSnapshot(
+    cart ?? { id: '', userId: params.userId ?? null, anonymousId: params.anonymousId ?? null, promoCodeId: null },
+  );
 }
 
 /** Добавить позицию. Цена берётся из БД, количество — с clamp. */

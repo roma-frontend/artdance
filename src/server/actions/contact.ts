@@ -53,17 +53,32 @@ export const sendContactMessage = publicAction
   .action(async ({ parsedInput, ctx }): Promise<ContactOutcome> => {
     await assertCaptcha(parsedInput.captchaToken, ctx.identifier);
 
-    /* Keep a first-class support record; email remains the delivery channel. */
-    await db.supportTicket.create({
-      data: {
-        name: parsedInput.name,
+    /*
+     * Повторная отправка того же сообщения (двойной клик, повтор после сетевой
+     * ошибки) не должна плодить тикеты: одинаковое письмо с того же адреса за
+     * последние 10 минут уже записано.
+     */
+    const duplicate = await db.supportTicket.findFirst({
+      where: {
         email: parsedInput.email,
-        topic: parsedInput.topic,
         message: parsedInput.message,
-        locale: parsedInput.locale,
-        slaDueAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        createdAt: { gte: new Date(Date.now() - 10 * 60 * 1000) },
       } as never,
+      select: { id: true },
     });
+    /* Keep a first-class support record; email remains the delivery channel. */
+    if (!duplicate) {
+      await db.supportTicket.create({
+        data: {
+          name: parsedInput.name,
+          email: parsedInput.email,
+          topic: parsedInput.topic,
+          message: parsedInput.message,
+          locale: parsedInput.locale,
+          slaDueAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        } as never,
+      });
+    }
 
     const result = await sendToSupport(parsedInput);
     return { delivered: result.delivered };

@@ -28,6 +28,10 @@
   ],
   "crons": [
     {
+      "path": "/api/cron/purge-holds",
+      "schedule": "37 3 * * *"
+    },
+    {
       "path": "/api/cron/purge-trash",
       "schedule": "17 3 * * *"
     },

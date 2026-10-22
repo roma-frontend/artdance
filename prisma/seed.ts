@@ -896,6 +896,27 @@ async function seedPromoCodes(): Promise<void> {
   console.log(`  промокод ${code} (-${percentOff}%)`);
 }
 
+/*
+ * Данные, которых e2e ждёт в CI, а локальный сид не создаёт: пресет с включённым
+ * `packages` (по умолчанию mvp их выключает) и одна запись в корзине, чтобы
+ * бейдж «Trash» в сайдбаре появлялся. Запускается только при CI=true, поэтому
+ * локальная база и продакшен не меняются.
+ */
+async function seedCiFixtures(): Promise<void> {
+  await prisma.operatorSetting.upsert({
+    where: { key: 'entitlement.preset' },
+    create: { key: 'entitlement.preset', value: 'full', updatedBy: 'ci-seed' },
+    update: { value: 'full', updatedBy: 'ci-seed' },
+  });
+  await upsertLive(
+    prisma.promoCode,
+    { code: 'CI-TRASHED' },
+    { value: 1, deletedAt: new Date() },
+    { type: 'PERCENT', perUserLimit: 1, isActive: false },
+  );
+  console.log('  CI: пресет full, одна запись в корзине');
+}
+
 /* ────────────────────── География и подвал ────────────────────── */
 
 /**
@@ -981,6 +1002,7 @@ async function main(): Promise<void> {
   await seedHomeContent();
   await seedBanners();
   await seedPromoCodes();
+  if (process.env.CI === 'true') await seedCiFixtures();
   await seedCities();
   await seedFooterLinks();
 
