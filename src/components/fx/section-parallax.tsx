@@ -22,10 +22,10 @@
 
 'use client';
 
-import { useScroll } from 'framer-motion';
 import { useEffect, useRef, type ReactNode } from 'react';
 
 import { motion } from '@/design/motion';
+import { registerScrollEffect } from '@/lib/animations/scroll-engine';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { cn } from '@/lib/utils';
@@ -49,7 +49,6 @@ interface SectionParallaxProps {
 
 export function SectionParallax({ children, className, scene }: SectionParallaxProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll();
   const reducedMotion = usePrefersReducedMotion();
   const lite = useIsLiteMode();
   const wideEnough = useMediaQuery(`(min-width: ${motion.sectionParallax.minViewportWidth}px)`);
@@ -104,60 +103,59 @@ export function SectionParallax({ children, className, scene }: SectionParallaxP
     const headings = pick('heading');
     const all = [...backgrounds, ...contents, ...headings];
 
-    let frame = 0;
+    /**
+     * Значения, посчитанные в фазе чтения и применённые в фазе записи.
+     *
+     * Раскладка между фазами не меняется (в записи участвуют только
+     * `transform` и `scale`), поэтому посчитанное остаётся верным. Разделение
+     * обязательно: запись в первой же итерации пометила бы раскладку грязной,
+     * и следующий эффект в очереди прочитал бы её заново — ровно тот
+     * принудительный пересчёт, ради устранения которого написан движок.
+     */
+    let bgTransform = '';
+    let contentTransform = '';
+    let headingTransform = '';
 
-    const read = () => {
-      frame = 0;
-      if (root.hasAttribute('data-stack-ready')) {
-        for (const element of all) element.style.transform = '';
-        return;
-      }
-      const rect = root.getBoundingClientRect();
-      const viewport = window.innerHeight;
+    const unregister = registerScrollEffect({
+      element: root,
+      read: () => {
+        if (root.hasAttribute('data-stack-ready')) {
+          /* Секцию сменила стопка карточек — слои обязаны встать на место. */
+          bgTransform = contentTransform = headingTransform = '';
+          return;
+        }
 
-      /* Секция вне экрана — считать нечего. */
-      if (rect.bottom < 0 || rect.top > viewport) return;
+        const rect = root.getBoundingClientRect();
+        const viewport = window.innerHeight;
 
-      /**
-       * −0.5 — секция только входит снизу, 0 — по центру прохода, +0.5 — уходит
-       * вверх. Знак хода отрицательный: слои движутся навстречу прокрутке.
-       */
-      const phase = (viewport - rect.top) / (viewport + rect.height) - 0.5;
-      const bgTransform = `translate3d(0, ${(phase * -backgroundTravelPx).toFixed(2)}px, 0) scale(${backgroundZoom})`;
-      const contentTransform = `translate3d(0, ${(phase * -contentTravelPx).toFixed(2)}px, 0)`;
-      const headingTransform = `translate3d(0, ${(phase * -headingTravelPx).toFixed(2)}px, 0) scale(${(1 + phase * headingScaleRange).toFixed(4)})`;
-
-      for (const element of backgrounds) {
-        if (element.style.transform !== bgTransform) element.style.transform = bgTransform;
-      }
-
-      for (const element of contents) {
-        if (element.style.transform !== contentTransform) element.style.transform = contentTransform;
-      }
-
-      for (const element of headings) {
-        if (element.style.transform !== headingTransform) element.style.transform = headingTransform;
-      }
-    };
-
-    const schedule = () => {
-      if (frame !== 0) return;
-      frame = window.requestAnimationFrame(read);
-    };
-
-    read();
-    const unsubscribe = scrollY.on('change', schedule);
-    window.addEventListener('resize', schedule, { passive: true });
+        /**
+         * −0.5 — секция только входит снизу, 0 — по центру прохода, +0.5 — уходит
+         * вверх. Знак хода отрицательный: слои движутся навстречу прокрутке.
+         */
+        const phase = Math.max(-0.5, Math.min(0.5, (viewport - rect.top) / (viewport + rect.height) - 0.5));
+        bgTransform = `translate3d(0, ${(phase * -backgroundTravelPx).toFixed(2)}px, 0) scale(${backgroundZoom})`;
+        contentTransform = `translate3d(0, ${(phase * -contentTravelPx).toFixed(2)}px, 0)`;
+        headingTransform = `translate3d(0, ${(phase * -headingTravelPx).toFixed(2)}px, 0) scale(${(1 + phase * headingScaleRange).toFixed(4)})`;
+      },
+      write: () => {
+        for (const element of backgrounds) {
+          if (element.style.transform !== bgTransform) element.style.transform = bgTransform;
+        }
+        for (const element of contents) {
+          if (element.style.transform !== contentTransform) element.style.transform = contentTransform;
+        }
+        for (const element of headings) {
+          if (element.style.transform !== headingTransform) element.style.transform = headingTransform;
+        }
+      },
+    });
 
     return () => {
-      unsubscribe();
-      window.removeEventListener('resize', schedule);
-      if (frame !== 0) window.cancelAnimationFrame(frame);
-
+      unregister();
       /* Возврат в исходное: следующий монтаж начинает с чистого состояния. */
       for (const element of all) element.style.transform = '';
     };
-  }, [reducedMotion, lite, scrollY, wideEnough]);
+  }, [reducedMotion, lite, wideEnough]);
 
   return (
     <div

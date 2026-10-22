@@ -103,9 +103,10 @@ export default async function HomePage({ params }: PageProps) {
       {/* ── DISCOVER: Театральные кулисы (интерактивный аккордеон стилей) ── */}
       <section className="section-y relative">
         <div className="page-container relative">
-          <Reveal as="div" className="mb-8 flex flex-col items-center justify-center text-center">
+          <Reveal variant="none" as="div" className="mb-8 flex flex-col items-center justify-center text-center">
             <div className="relative inline-flex items-center justify-center">
               <SectionHeading
+            revealMask
                 align="center"
                 eyebrow={t('discover.eyebrow')}
                 title={t('discover.title')}
@@ -126,8 +127,9 @@ export default async function HomePage({ params }: PageProps) {
       {/* ── POPULAR: горизонтальная лента занятий ── */}
       <section className="section-y bg-surface-raised">
         <div className="page-container">
-          <Reveal variant="left" className="mb-8">
+          <Reveal variant="none" className="mb-8">
             <SectionHeading
+            revealMask
               eyebrow={t('popular.eyebrow')}
               title={t('popular.title')}
               subtitle={t('popular.subtitle')}
@@ -135,7 +137,7 @@ export default async function HomePage({ params }: PageProps) {
             />
           </Reveal>
 
-          <Reveal variant="right">
+          <Reveal variant="none">
             <ClassCarousel label={t('popular.title')}>
               {content.popularClasses.map((item) => (
                 /*
@@ -191,8 +193,9 @@ export default async function HomePage({ params }: PageProps) {
         <InstructorsSpotlight />
         <ScrollSeal scope="section" className="top-8 left-8 hidden text-content-tertiary lg:block" />
         <div className="page-container relative z-10">
-          <Reveal className="mb-12">
+          <Reveal variant="none" className="mb-12">
             <SectionHeading
+            revealMask
               align="center"
               eyebrow={t('instructors.eyebrow')}
               title={t('instructors.title')}
@@ -201,11 +204,9 @@ export default async function HomePage({ params }: PageProps) {
             />
           </Reveal>
 
-          <Reveal
+          <Reveal variant="none"
             as="ul"
-            variant="stagger"
-            className="grid gap-5 md:grid-cols-2 lg:grid-cols-3"
-          >
+            className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {content.instructors.slice(0, 4).map((item, index) => (
               <li key={item.slug}>
                 <CardTilt index={index}>
@@ -226,8 +227,9 @@ export default async function HomePage({ params }: PageProps) {
       {/* ── STUDIOS ── */}
       <section className="section-y bg-surface-raised">
         <div className="page-container">
-          <Reveal className="mb-12">
+          <Reveal variant="none" className="mb-12">
             <SectionHeading
+            revealMask
               align="center"
               eyebrow={t('studios.eyebrow')}
               title={t('studios.title')}
@@ -236,7 +238,7 @@ export default async function HomePage({ params }: PageProps) {
             />
           </Reveal>
 
-          <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <Reveal variant="none" as="ul" className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
             {content.venues.map((item, index) => (
               <li key={item.slug}>
                 <CardTilt index={index}>
@@ -258,8 +260,9 @@ export default async function HomePage({ params }: PageProps) {
       {entitlements.shop && (
         <section className="section-y">
           <div className="page-container">
-            <Reveal className="mb-12">
+            <Reveal variant="none" className="mb-12">
               <SectionHeading
+            revealMask
                 eyebrow={t('shop.eyebrow')}
                 title={t('shop.title')}
                 subtitle={t('shop.subtitle')}
@@ -267,7 +270,7 @@ export default async function HomePage({ params }: PageProps) {
               />
             </Reveal>
 
-            <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <Reveal variant="none" as="ul" className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {content.products.slice(0, 4).map((item, index) => (
                 <li key={item.slug}>
                   <CardTilt index={index}>
@@ -290,8 +293,9 @@ export default async function HomePage({ params }: PageProps) {
       {eventsEnabled && (
         <section className="section-y bg-surface-raised">
           <div className="page-container">
-            <Reveal className="mb-12">
+            <Reveal variant="none" className="mb-12">
               <SectionHeading
+            revealMask
                 eyebrow={t('events.eyebrow')}
                 title={t('events.title')}
                 subtitle={t('events.subtitle')}
@@ -300,7 +304,7 @@ export default async function HomePage({ params }: PageProps) {
             </Reveal>
 
             {content.events[0] && <EventSpotlight item={content.events[0]} locale={locale as Locale} />}
-            <Reveal as="ul" variant="stagger" className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <Reveal variant="none" as="ul" className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
               {content.events.slice(1).map((item, index) => (
                 <li key={item.slug}>
                   <CardTilt index={index}>
@@ -322,8 +326,9 @@ export default async function HomePage({ params }: PageProps) {
       {/* ── TESTIMONIALS ── */}
       <section className="section-y">
         <div className="page-container">
-          <Reveal className="mb-12">
+          <Reveal variant="none" className="mb-12">
             <SectionHeading
+            revealMask
               align="center"
               eyebrow={t('testimonials.eyebrow')}
               title={t('testimonials.title')}
@@ -352,8 +357,9 @@ export default async function HomePage({ params }: PageProps) {
       {entitlements.subscriptions && (
         <section className="section-y bg-surface-raised">
           <div className="page-container">
-            <Reveal as="div" className="mb-12">
+            <Reveal variant="none" as="div" className="mb-12">
               <SectionHeading
+            revealMask
                 align="center"
                 eyebrow={tPricing('eyebrow')}
                 title={tPricing('title')}
@@ -362,7 +368,7 @@ export default async function HomePage({ params }: PageProps) {
               />
             </Reveal>
 
-            <Reveal as="ul" variant="stagger" className="grid gap-6 lg:grid-cols-3">
+            <Reveal variant="none" as="ul" className="grid gap-6 lg:grid-cols-3">
               {orderedSubscriptionPlans.map((plan) => (
                 <li
                   key={plan.id}

@@ -80,6 +80,8 @@ export default defineConfig({
 
   use: {
     baseURL: BASE_URL,
+    // Optional local installed browser; CI still uses Playwright's pinned Chromium.
+    channel: process.env.PLAYWRIGHT_CHANNEL,
     // Visual-effect tests exercise full mode regardless of CI's CPU count.
     // Lite/auto tests override localStorage and verify the weak-device path.
     storageState: { cookies: [], origins: [{ origin: BASE_URL, localStorage: [{ name: 'ARTDANCE_LITE_MODE', value: 'false' }] }] },

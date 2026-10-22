@@ -30,8 +30,17 @@ import { useEffect, useRef, type ElementType, type ReactNode } from 'react';
 import { motion } from '@/design/motion';
 import { cn } from '@/lib/utils';
 
-/** `stagger` — не направление, а режим: двигаются дети, а не сам контейнер. */
-export type RevealVariant = 'up' | 'left' | 'right' | 'scale' | 'stagger';
+/**
+ * `stagger` — не направление, а режим: двигаются дети, а не сам контейнер.
+ *
+ * `none` — появления нет вовсе: элемент отрисовывается как обычный, без
+ * атрибутов, за которыми стоит CSS, и без подписки на наблюдатель. Нужен там,
+ * где появление уже несёт другое движение: на главной заголовок раскрывается
+ * маской от прокрутки (`data-reveal-mask`), и второй жест на той же секции —
+ * это уже не язык, а шум. Обёртку при этом снимать нельзя: она держит и тег
+ * (`as="ul"`), и классы сетки — без неё дети остаются без раскладки.
+ */
+export type RevealVariant = 'up' | 'left' | 'right' | 'scale' | 'stagger' | 'none';
 
 const REVEALED = 'data-revealed';
 
@@ -83,10 +92,11 @@ export function Reveal({
   className,
 }: RevealProps) {
   const ref = useRef<HTMLElement>(null);
+  const still = variant === 'none';
 
   useEffect(() => {
     const node = ref.current;
-    if (!node) return;
+    if (!node || still) return;
 
     /*
      * При просьбе убрать движение CSS ничего не скрывает, поэтому наблюдать
@@ -102,10 +112,14 @@ export function Reveal({
     const observer = getObserver();
     observer.observe(node);
     return () => observer.unobserve(node);
-  }, []);
+  }, [still]);
 
   const attributes =
-    variant === 'stagger' ? { 'data-stagger': '' } : { 'data-reveal': variant };
+    variant === 'none'
+      ? {}
+      : variant === 'stagger'
+        ? { 'data-stagger': '' }
+        : { 'data-reveal': variant };
 
   const element = (
     <Component ref={ref} id={id} className={cn(className)} {...attributes}>

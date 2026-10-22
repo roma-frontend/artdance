@@ -117,6 +117,8 @@ test('Смена reduced motion останавливает эффекты и о�
 });
 
 test.describe('Статические состояния', () => {
+  test.use({ javaScriptEnabled: false });
+
   test('Без JavaScript текст и карточки доступны', async ({ page }) => {
     await page.route('**/*', (route) => {
       if (route.request().resourceType() === 'media') return route.abort();
@@ -163,6 +165,7 @@ test('Печать финального CTA вращается от прокру
   await page.goto(HOME);
   const seal = page.locator('[data-slot="scroll-seal"]');
   await expect(seal).toBeAttached();
+  test.skip((page.viewportSize()?.width ?? 0) < 1024, 'Скрытая на узком экране печать не должна вычислять угол');
 
   const angle = () =>
     seal.evaluate((node) => {
@@ -171,25 +174,9 @@ test('Печать финального CTA вращается от прокру
       return match ? Number.parseFloat(match[1]!) : 0;
     });
 
-  /*
-   * Каждый угол ждётся через expect.poll: transform пишет rAF после события
-   * скролла, и чтение сразу после scrollTo ловит прошлое значение.
-   */
-  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-  await expect.poll(() => angle()).toBeCloseTo(0, 1);
-
-  await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight / 2, behavior: 'instant' }));
-  await expect.poll(() => angle()).not.toBeCloseTo(0, 1);
-
-  await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
-  await expect.poll(() => angle()).toBeCloseTo(45, 1);
-
-  /*
-   * Угол — функция положения прокрутки: назад страница крутит печать обратно.
-   * Сравниваем с формулой на текущей высоте, а не с прошлым замером: ленивый
-   * контент меняет высоту страницы между проходами.
-   */
-  await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight / 2, behavior: 'instant' }));
+  // Далёкая от окна печать теперь спит; проверять её угол в середине страницы
+  // означало бы требовать бесполезной работы. При появлении угол догоняет scrollY.
+  await seal.evaluate((node) => node.scrollIntoView({ block: 'center', behavior: 'instant' }));
   const expectedAngle = () =>
     page.evaluate(() => {
       const travel = document.documentElement.scrollHeight - window.innerHeight;
@@ -198,7 +185,14 @@ test('Печать финального CTA вращается от прокру
   await expect
     .poll(async () => Math.abs((await angle()) - (await expectedAngle())))
     .toBeLessThan(0.5);
-  expect(await angle()).toBeGreaterThan(1);
+  const before = await angle();
+  await page.evaluate(() => window.scrollBy({ top: 160, behavior: 'instant' }));
+  await expect.poll(() => angle()).toBeGreaterThan(before);
+  await page.evaluate(() => window.scrollBy({ top: -160, behavior: 'instant' }));
+  await expect.poll(async () => Math.abs((await angle()) - (await expectedAngle()))).toBeLessThan(0.1);
+  const idle = await angle();
+  await page.waitForTimeout(300);
+  expect(await angle()).toBeCloseTo(idle, 2);
 });
 
 /*

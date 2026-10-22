@@ -18,16 +18,27 @@ export function stackCover(currentTop: number, currentHeight: number, nextTop: n
  * Пишет `--stack-cover` каждому элементу по положению следующего. Последний
  * элемент не накрыт никем и всегда стоит в полную величину.
  */
-export function paintStackCover(items: readonly HTMLElement[], stepPx = 0): void {
-  // Read all geometry before writing styles: no read/write layout thrashing.
+export function readStackCover(items: readonly HTMLElement[], stepPx = 0): string[] {
   const geometry = items.map((item) => ({ top: item.getBoundingClientRect().top, height: item.offsetHeight }));
-  items.forEach((item, index) => {
-    const current = geometry[index]!;
+  return geometry.map((current, index) => {
     const next = geometry[index + 1];
     const cover = next ? stackCover(current.top, current.height, next.top, stepPx) : 0;
-    const value = cover.toFixed(3);
+    return cover.toFixed(3);
+  });
+}
+
+/** Только запись: измерения уже выполнены в общей фазе чтения страницы. */
+export function writeStackCover(items: readonly HTMLElement[], values: readonly string[]): void {
+  items.forEach((item, index) => {
+    const value = values[index];
+    if (value === undefined) return;
     if (item.style.getPropertyValue('--stack-cover') !== value) {
       item.style.setProperty('--stack-cover', value);
     }
   });
+}
+
+/** Самостоятельный вызов вне общего scroll-движка. */
+export function paintStackCover(items: readonly HTMLElement[], stepPx = 0): void {
+  writeStackCover(items, readStackCover(items, stepPx));
 }

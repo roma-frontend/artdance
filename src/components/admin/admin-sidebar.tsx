@@ -149,17 +149,29 @@ export function AdminSidebar({ groups, onNavigate, variant = 'desktop' }: AdminS
                       )}
                     >
                       <span className="min-w-0 truncate relative">{tRoot(item.labelKey)}</span>
-                      {item.badge !== undefined && item.badge > 0 ? (
-                        <span
-                          className={cn(
-                            'inline-flex min-w-6 shrink-0 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums leading-none relative',
-                            active ? 'bg-white text-accent' : 'bg-accent-soft text-content-accent border border-accent/10',
-                          )}
-                        >
-                          {item.badge > 99 ? '99+' : item.badge}
-                        </span>
-                      ) : null}
-                      <LinkPending />
+                      {/*
+                        Спиннер и счётчик — одна правая группа, и спиннер идёт ПЕРВЫМ.
+                        Раньше это были две независимые детали строки: пока перехода
+                        нет — две, и `justify-between` держал счётчик у края, но стоило
+                        появиться третьей (спиннеру), как строка делилась на три части и
+                        счётчик уезжал в середину. Теперь детей всегда двое, а счётчик —
+                        последний в группе, поэтому его правый край прижат к краю строки
+                        и не двигается ни на пиксель: счётчики в соседних пунктах
+                        выстроены в колонку, и ломать её появлением спиннера нельзя.
+                      */}
+                      <span className="relative flex shrink-0 items-center gap-2">
+                        <LinkPending className="ml-0" />
+                        {item.badge !== undefined && item.badge > 0 ? (
+                          <span
+                            className={cn(
+                              'inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums leading-none',
+                              active ? 'bg-white text-accent' : 'bg-accent-soft text-content-accent border border-accent/10',
+                            )}
+                          >
+                            {item.badge > 99 ? '99+' : item.badge}
+                          </span>
+                        ) : null}
+                      </span>
                     </Link>
                   </li>
                 );

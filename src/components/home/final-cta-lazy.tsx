@@ -21,7 +21,7 @@ export function FinalCtaLazy({
   return (
     <section className="cinema-surface section-y relative text-center">
       <ScrollSeal />
-      <Reveal variant="scale" className="page-container">
+      <Reveal variant="none" className="page-container">
         <FinalCtaVideoText text="MOVE DIFFERENT" />
         <h2 className="text-heading-1 text-content-on-cinema"><TextReveal>{title}</TextReveal></h2>
         <p className="text-body-lg mt-3 text-content-on-cinema-muted">{subtitle}</p>

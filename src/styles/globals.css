@@ -349,14 +349,29 @@
     }
   }
 
-  /* animation-timeline: прогресс чтения без JS (docs/10 §1) */
-  @supports (animation-timeline: scroll()) {
-    .scroll-progress-native {
+  /*
+   * animation-timeline: прогресс чтения без JS (docs/10 §1).
+   *
+   * Полоса чтения — это доля прокрутки документа, и её умеет считать сам
+   * браузер. `animation-timeline: scroll(root block)` привязывает анимацию к
+   * прогрессу прокрутки: полоса едет на композиторе и не занимает главный
+   * поток ничем. До 21.10.2026 правило лежало здесь, но класс ни на чём не
+   * висел — прогресс считал скрипт на каждом событии прокрутки.
+   *
+   * Анимируется `transform`, а не отдельное свойство `scale`: во-первых, так
+   * обе дорожки (нативная и запасная, скриптовая) пишут ОДНО свойство и не
+   * расходятся; во-вторых, `transform` тоже композитный. Начальное состояние
+   * `scaleX(0)` задано разметкой — там, где анимация работает, она его
+   * перекрывает (анимации приоритетнее инлайнового стиля).
+   */
+  @supports (animation-timeline: scroll(root block)) {
+    .scroll-progress-native:not([data-scroll-driver='script']) {
       animation: grow-x linear forwards;
-      animation-timeline: scroll(block);
+      animation-duration: auto;
+      animation-timeline: scroll(root block);
       transform-origin: left;
     }
-    @keyframes grow-x { from { scale: 0 1; } to { scale: 1 1; } }
+    @keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
   }
 }
 
@@ -1552,139 +1567,76 @@
 }
 
 /*
- * STYLE RAIL — горизонтальная лента направлений, сдвигаемая вертикальным
- * скроллом (pinned section + horizontal rail).
+ * МАСКА ЗАГОЛОВКА — единственный жест появления на секциях главной.
  *
- * Механика: `data-rail="on"` ставит клиентский StyleRail только на широком
- * экране без reduced-motion. Секция получает высоту-запас (1 + перепуск ленты)
- * и sticky-внутренность; лента сдвигается на `--rail-progress`, который пишет
- * компонент. Вне эффекта — обычная сетка: без запаса высоты sticky не
- * включается, трансформация нулевая, разметка одна и та же.
+ * Почему один. До 21.10.2026 на главной стояли четырнадцать одинаковых
+ * `Reveal`: каждый заголовок и каждая сетка въезжали снизу с гашением, все с
+ * одной длительностью и одним смещением. Одинаковый fade-and-slide на каждой
+ * секции читается не как язык, а как отсутствие решения — движение есть, а
+ * сказать им нечего, потому что оно не отличается от того, что было на
+ * предыдущем экране.
  *
- * С 25.09.2026 лента — 3D-барабан: вместо сдвига строки прокрутка вращает
- * цилиндр, и при progress = 1 напротив зрителя стоит последняя плитка.
+ * Здесь движение одно на всю страницу и оно — продолжение фирменного мотива:
+ * заголовок раскрывается снизу вверх, как занавес на первом экране и на
+ * секции-заявлении. Остальное тело секции стоит на месте: карточки, тексты и
+ * фотографии видны сразу, и взгляд ведёт заголовок, а не десяток блоков,
+ * дёрнувшихся одновременно.
+ *
+ * Считает это браузер. `animation-timeline: view()` привязывает анимацию к
+   * прохождению элемента через окно без JS-обработчика прокрутки. Движется
+   * только transform текста внутри неподвижной обрезки, не сам clip-path.
+   * Работает без JS, в отличие
+ * от `Reveal`, которому нужен наблюдатель.
+ *
+ * Границы диапазона: `entry 10%` — раскрытие начинается, когда заголовок вошёл
+ * в окно на десятую часть себя (раньше он был бы ещё за кромкой); `cover 35%` —
+ * полностью открыт к моменту, когда заголовок прошёл треть пути по экрану.
+ * Дальше он открыт, сколько бы страницу ни крутили.
+ *
+ * Без поддержки `view()` правила не применяются вовсе: заголовок просто виден.
+ * Это обязательное свойство — `clip-path` в статическом CSS без анимации
+ * оставил бы заголовок обрезанным навсегда, то есть потерял бы контент.
  */
-[data-slot='style-rail'][data-rail='on'] {
-  /*
-   * Поворот барабана, 0…1 (первая плитка → последняя), и запас высоты в
-   * пикселях. Оба пишутся компонентом мимо React; дефолты объявлены здесь по
-   * той же конвенции, что и `--hero-parallax-*`.
-   */
-  --rail-progress: 0;
-  --rail-overflow: 0px;
-  /* Ширина плитки и промежуток между соседями по дуге. */
-  --rail-tile: clamp(19rem, 23vw, 25rem);
-  --rail-gap: clamp(1.75rem, 2.4vw, 2.75rem);
-  /*
-   * Шаг барабана — 30° на плитку. Радиус выведен из хорды: соседние центры
-   * расходятся на 2R·sin(15°) = ширина + промежуток, поэтому плитки на дуге
-   * никогда не слипаются и не пересекаются (1/(2·sin 15°) ≈ 1.932).
-   */
-  --rail-step: 30deg;
-  --rail-radius: calc((var(--rail-tile) + var(--rail-gap)) * 1.932);
-  height: calc(100svh + var(--rail-overflow));
+@supports (view-timeline-name: --heading-reveal) and (animation-range: entry 10% cover 35%) {
+  @media (prefers-reduced-motion: no-preference) {
+    [data-reveal-mask] {
+      view-timeline: --heading-reveal block;
+      overflow: clip;
+      /* Не обрезаем диакритику/армянские глифы на неподвижной границе строки. */
+      padding-block: 0.08em;
+      margin-block: -0.08em;
+    }
+
+    [data-reveal-mask-content] {
+      display: block;
+      animation: reveal-mask linear both;
+      animation-duration: auto;
+      animation-timeline: --heading-reveal;
+      animation-range: entry 10% cover 35%;
+    }
+
+    @keyframes reveal-mask {
+      from {
+        transform: translate3d(0, 110%, 0);
+      }
+      to {
+        transform: translate3d(0, 0, 0);
+      }
+    }
+  }
 }
 
-[data-slot='style-rail'][data-rail='on'] > * {
-  position: sticky;
-  top: 0;
-  display: flex;
-  min-height: 100svh;
-  align-items: center;
-  overflow: hidden;
-  padding-block: var(--space-6);
+/* Lite и печать оставляют заголовки открытыми независимо от положения страницы. */
+[data-lite='true'] [data-reveal-mask-content] {
+  animation: none;
+  transform: none;
 }
 
-[data-slot='style-rail'][data-rail='on'] [data-rail-seal] {
-  transform: rotate(calc(var(--rail-progress, 0) * 360deg));
-  will-change: transform;
-}
-
-[data-slot='style-rail'][data-rail='on'] [data-rail-track] {
-  /* Трек растянут на окно даже внутри page-container с ограниченной шириной. */
-  width: 100vw;
-  margin-inline: calc(50% - 50vw);
-}
-
-/*
- * 3D-БАРАБАН. Все плитки стоят в одной ячейке сетки по центру окна, а место
- * на цилиндре каждой задаёт её расстояние до фронта:
- *
- *   d = номер − поворот·(n − 1)      (0 — напротив зрителя, ±1 — соседи…)
- *
- * Плитка уходит на радиус вглубь, поворачивается на d·шаг и возвращается на
- * радиус вперёд — так она ложится на выпуклую дугу. Точка схода общая у
- * списка (`perspective` + `preserve-3d`), поэтому глубину сортирует браузер,
- * без ручных z-index.
- *
- * Появление-stagger здесь заменено барабаном — он и есть вход секции, поэтому
- * `transform`/`opacity` переписаны целиком, без перехода: сглаживает JS.
- */
-[data-slot='style-rail'][data-rail='on'] [data-rail-track] ul {
-  display: grid;
-  grid-template-columns: var(--rail-tile);
-  justify-content: center;
-}
-
-[data-slot='style-rail'][data-rail='on'] [data-rail-track] li {
-  --tile-index: 0;
-  --tile-count: 1;
-  --tile-d: calc(var(--tile-index) - var(--rail-progress) * (var(--tile-count) - 1));
-  --tile-far: max(var(--tile-d), calc(var(--tile-d) * -1));
-  position: relative;
-  grid-area: 1 / 1;
-  /*
-   * Слой по расстоянию до фронта: ближняя плитка всегда сверху. Именно z-index,
-   * а не `preserve-3d` у списка: в общем 3D-контексте Chrome отдаёт курсор по
-   * порядку в DOM, и левую треть фронтальной плитки перехватывала соседняя —
-   * наведение работало только справа. Все плитки стоят в одной ячейке, у них
-   * общая точка трансформации, поэтому `perspective()` в самом transform даёт
-   * ту же общую точку схода.
-   */
-  z-index: calc(10 - var(--tile-far) * 2);
-  opacity: clamp(0, calc(2.9 - var(--tile-far)), 1);
-  transform: perspective(1800px) translateZ(calc(var(--rail-radius) * -1))
-    rotateY(calc(var(--tile-d) * var(--rail-step))) translateZ(var(--rail-radius));
-  backface-visibility: hidden;
-  filter: brightness(calc(1 - min(var(--tile-far), 2) * 0.28)) saturate(calc(1 - min(var(--tile-far), 2) * 0.2));
-  transition: none;
-  will-change: transform, opacity, filter;
-}
-
-[data-slot='style-rail'][data-rail='on'] [data-rail-track] a {
-  min-height: clamp(25rem, 54svh, 33rem);
-}
-
-/*
- * Фото внутри плитки смещается навстречу повороту — кадр за «окном» барабана
- * живёт своей глубиной. Запас масштаба прячет кромки при сдвиге; наведение
- * добавляет свой зум поверх запаса.
- */
-[data-slot='style-rail'][data-rail='on'] [data-rail-track] .style-tile-media {
-  scale: 1.22;
-  translate: calc(max(-1.5, min(1.5, var(--tile-d))) * -7%) 0;
-}
-
-[data-slot='style-rail'][data-rail='on'] [data-rail-track] .group:hover .style-tile-media {
-  scale: 1.3;
-}
-
-/*
- * Плитка на фронте получает свечение брендового цвета: оно гаснет, как только
- * барабан уводит плитку с фронта, — фокус переходит вместе с поворотом.
- * Только тень, без кольца: рамку даёт собственная граница плитки
- * (`hover:border-accent`), и второе кольцо рядом читалось как двойной контур.
- */
-[data-slot='style-rail'][data-rail='on'] [data-rail-track] li::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-lg);
-  pointer-events: none;
-  box-shadow:
-    0 30px 80px -20px var(--accent-glow),
-    0 0 60px -10px var(--accent-glow);
-  opacity: clamp(0, calc(1 - var(--tile-far) * 2), 1);
+@media print {
+  [data-reveal-mask-content] {
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 @keyframes ken-burns {
@@ -2866,17 +2818,20 @@ html:has(body[data-fullscreen-locked]) {
  * глубины. Карточки двигаются `translate`/`rotate`, а не `transform`: его уже
  * занимает stagger-появление.
  */
+/* Нейтральные значения; рабочие параметры наследуются с корня из motion.ts. */
+[data-aperture] {
+  --aperture-inset-y: 0%;
+  --aperture-inset-x: 0%;
+  --aperture-radius: 0px;
+  --aperture-zoom: 0;
+  --aperture-rise: 0px;
+  --aperture-tilt: 0deg;
+}
+
 [data-aperture='on'] > * {
   --aperture-open: 1;
   --aperture-flare: 0;
   --aperture-closed: calc(1 - var(--aperture-open));
-  --aperture-inset-y: 6.5%;
-  --aperture-inset-x: 7.5%;
-  --aperture-radius: 40px;
-  --aperture-zoom: 0.16;
-  --aperture-blur: 10px;
-  --aperture-rise: 36px;
-  --aperture-tilt: 4.5deg;
   position: relative;
 }
 
@@ -2996,9 +2951,9 @@ html:has(body[data-fullscreen-locked]) {
   display: none;
 }
 
-/* Акцентное слово разгорается вместе с кадром. */
+/* Постоянный мягкий акцент: не перерисовываем размытую тень при каждом скролле. */
 [data-aperture='on'] > [data-scene='rhythm'] .editorial-accent {
-  text-shadow: 0 0 calc(var(--space-6) + var(--aperture-open) * 32px) var(--accent-glow);
+  text-shadow: 0 0 var(--space-6) var(--accent-glow);
 }
 
 /* ── arena: прожектор ── */
@@ -3479,6 +3434,23 @@ html:has(body[data-fullscreen-locked]) {
   --curtain-shift-x: 0px;
   --curtain-shift-y: 0px;
 }
+
+/* Вертикальные кулисы: скрытые детали не должны вытеснять название за обрезку. */
+@media (width < 768px) {
+  .dance-style-panel[data-active='false'] > a {
+    align-items: center;
+    padding-block: var(--space-2);
+  }
+
+  .dance-style-panel[data-active='false'] [data-style-title] {
+    font-size: var(--text-lg);
+  }
+
+  .dance-style-panel[data-active='false'] [data-style-details] {
+    display: none;
+  }
+}
+
 .dance-style-media {
   position: absolute;
   left: 50%;

@@ -210,18 +210,6 @@ export const cursorRing = {
 } as const;
 
 /**
- * Проявление текста от прокрутки (`ScrollWords`): слово проходит путь от
- * приглушённого и размытого к полному, пока абзац идёт через экран.
- */
-export const scrollWords = {
-  dimmedOpacity: 0.14,
-  blurPx: 6,
-  risePx: 14,
-  /** Окно одного слова в долях прохода: больше 1/n — слова перекрываются, волна мягче. */
-  overlap: 3,
-} as const;
-
-/**
  * Стопка «наезжающих» карточек и секций: нижняя карточка при накрытии уходит
  * вглубь — уменьшается и темнеет, как лист под следующим.
  */
@@ -244,30 +232,20 @@ export const stackCards = {
  * кадра (дисциплины) раскрывается разворотом: карточки выходят из глубины.
  * Прокрутку не держит — ничего не прилипает.
  */
-/**
- * Лента направлений на главной (`StyleRail`), 25.09.2026: 3D-барабан.
- * Радиус и угол шага живут в globals.css рядом с геометрией; здесь — только
- * то, что нужно JS для расчёта прокрутки.
- */
-export const styleRail = {
-  /** Доля высоты окна прокрутки на поворот барабана к следующей плитке. */
-  stepViewports: 0.55,
-} as const;
-
 export const cinemaAperture = {
   /** Доля высоты окна, за которую экран раскрывается полностью. */
   openSpan: 0.8,
   /** Поля закрытого экрана, % ширины/высоты панели. */
-  insetXPercent: 14,
-  insetYPercent: 18,
+  insetXPercent: 7.5,
+  insetYPercent: 6.5,
   radiusPx: 40,
   /** Запас кадра закрытого экрана: раскрываясь, он отъезжает к 1. */
-  backgroundZoom: 0.45,
+  backgroundZoom: 0.16,
   /** Размытие текста закрытого экрана — «фокус» ещё не наведён. */
   blurPx: 14,
   /** Разворот карточек: наклон створки, град., и подъём из глубины, px. */
-  stageTiltDeg: 32,
-  stageRisePx: 120,
+  stageTiltDeg: 4.5,
+  stageRisePx: 36,
   /** Уже — экран без запаса полей выглядит обрезанным, а не кадрированным. */
   minViewportWidth: 1024,
 } as const;
@@ -518,9 +496,7 @@ export const motion = {
   pointerGlow,
   cardTilt,
   cursorRing,
-  scrollWords,
   stackCards,
-  styleRail,
   cinemaAperture,
   scrollRotation,
   scrollProgress,

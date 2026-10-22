@@ -98,3 +98,52 @@ test('support command center: доступ только allowlisted operator и 
   expect(queueBox?.width).toBeGreaterThan(300);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
+
+/*
+ * Счётчик у «Trash» уезжал в середину строки, как только появлялся индикатор
+ * перехода: строка была flex-контейнером с `justify-between`, и детей у неё
+ * становилось трое вместо двух — подпись, счётчик, спиннер, — а `justify-between`
+ * раскидывает их по всей ширине.
+ *
+ * Проверка держит именно инвариант раскладки, а не координату: правый край
+ * счётчика отстоит от правого края строки ровно на её внутренний отступ
+ * (`px-3` = 12px) — и до перехода, и во время него. Так счётчики соседних
+ * пунктов остаются в одной колонке. Задержка навигации нужна, чтобы поймать
+ * индикатор: он входит по CSS-задержке 220ms и без задержки маршрута уже
+ * исчез бы вместе с переходом.
+ */
+test('админка: индикатор перехода не сдвигает счётчик в сайдбаре', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'в мобильной раскладке сайдбар скрыт в шторке');
+
+  await page.context().setExtraHTTPHeaders({ 'x-forwarded-for': `10.83.${testInfo.parallelIndex}.1` });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/en/admin');
+  await expect(page.locator('[data-slot="theme-toggle"][data-theme-choice]')).toHaveCount(1);
+  await page.getByLabel(en.auth.signIn.emailLabel).fill(admin.email);
+  await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
+  await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+  await expect(page.locator('.admin-shell')).toBeVisible({ timeout: 30_000 });
+
+  const trash = page.locator('.admin-sidebar-panel a[href$="/admin/trash"]');
+  await expect(trash).toBeVisible();
+  const badge = trash.locator('span[class*="tabular-nums"]');
+  await expect(badge).toHaveCount(1);
+
+  const inset = () =>
+    trash.evaluate(node => {
+      const badgeNode = node.querySelector('span[class*="tabular-nums"]');
+      if (!badgeNode) return Number.NaN;
+      return Math.round(node.getBoundingClientRect().right - badgeNode.getBoundingClientRect().right);
+    });
+
+  expect(await inset()).toBe(12);
+
+  await page.route('**/admin/trash**', async route => {
+    await new Promise(resolve => setTimeout(resolve, 3_000));
+    await route.continue();
+  });
+  await trash.click();
+  await expect(trash.locator('.pending-indicator')).toBeVisible({ timeout: 5_000 });
+
+  expect(await inset()).toBe(12);
+});

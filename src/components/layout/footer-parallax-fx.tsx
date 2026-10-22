@@ -9,11 +9,11 @@
  * Плюс лёгкое ведение за курсором — подвал «дышит» вместе с hero.
  */
 
-import { useScroll } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 
 import { motion } from '@/design/motion';
 import { heroDepthFrame } from '@/lib/animations/parallax';
+import { registerScrollEffect } from '@/lib/animations/scroll-engine';
 import { useFinePointer, useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { useIsLiteMode } from '@/lib/perf/lite-mode';
@@ -24,7 +24,6 @@ export function FooterParallaxFX() {
   const reducedMotion = usePrefersReducedMotion();
   const lite = useIsLiteMode();
   const wide = useMediaQuery('(min-width: 768px)');
-  const { scrollY } = useScroll();
 
   useEffect(() => {
     const anchor = anchorRef.current;
@@ -36,7 +35,6 @@ export function FooterParallaxFX() {
     const factor = wide ? 1 : motion.heroDepth.narrowFactor;
     const pointerEnabled = finePointer && wide;
 
-    let frame = 0;
     let raf = 0;
     let targetX = 0;
     let targetY = 0;
@@ -88,63 +86,57 @@ export function FooterParallaxFX() {
     let lastWordTranslate = '';
     let lastForegroundTransform = '';
 
-    const paintScroll = () => {
-      frame = 0;
-      // Скролл на футере — почти без хода: слово уже в потоке внизу, толчок вниз выкидывает его за overflow
-      const rect = root.getBoundingClientRect();
-      const vh = window.innerHeight;
-      // Прогресс только пока футер входит: 0→1 за вход, дальше 1
-      const raw = (vh - rect.top) / (rect.height * 0.85 + vh * 0.2);
-      const progress = Math.min(1, Math.max(0, raw));
-      // Мягкий ход — 1/3 от hero, иначе на высоком футере слово уезжает за нижнюю границу
-      const depth = heroDepthFrame(progress, Math.min(rect.height, vh * 0.9), factor);
-      // Двигаются ТОЛЬКО декоративные слои — интерактивный контент всегда на месте (клик попадает с первого раза)
-      const wordShift = `0 ${(depth.word * 0.14).toFixed(2)}px`;
-      const fgShift = `translate3d(0, ${(depth.foreground * 0.18).toFixed(2)}px, 0)`;
-      if (word && wordShift !== lastWordTranslate) {
-        lastWordTranslate = wordShift;
-        word.style.translate = wordShift;
-      }
-      if (foreground && fgShift !== lastForegroundTransform) {
-        lastForegroundTransform = fgShift;
-        foreground.style.transform = fgShift;
-      }
-    };
-
-    const onScroll = () => {
-      cachedFooterRect = null;
-      if (frame === 0) frame = window.requestAnimationFrame(paintScroll);
-    };
-
-    const onResize = () => {
-      cachedFooterRect = null;
-      if (frame === 0) frame = window.requestAnimationFrame(paintScroll);
-    };
+    /** Значения, посчитанные в фазе чтения и применённые в фазе записи. */
+    let nextWordShift = '';
+    let nextFgShift = '';
 
     if (pointerEnabled) {
       root.addEventListener('pointermove', onPointerMove, { passive: true });
       root.addEventListener('pointerleave', onPointerLeave, { passive: true });
     }
-    const unsubscribe = scrollY.on('change', onScroll);
 
-    window.addEventListener('resize', onResize, { passive: true });
-    paintScroll();
+    const unregister = registerScrollEffect({
+      element: root,
+      read: () => {
+        // Скролл на футере — почти без хода: слово уже в потоке внизу, толчок вниз выкидывает его за overflow
+        const rect = root.getBoundingClientRect();
+        cachedFooterRect = rect;
+        cachedFooterTime = performance.now();
+        const vh = window.innerHeight;
+        // Прогресс только пока футер входит: 0→1 за вход, дальше 1
+        const raw = (vh - rect.top) / (rect.height * 0.85 + vh * 0.2);
+        const progress = Math.min(1, Math.max(0, raw));
+        // Мягкий ход — 1/3 от hero, иначе на высоком футере слово уезжает за нижнюю границу
+        const depth = heroDepthFrame(progress, Math.min(rect.height, vh * 0.9), factor);
+        // Двигаются ТОЛЬКО декоративные слои — интерактивный контент всегда на месте (клик попадает с первого раза)
+        nextWordShift = `0 ${(depth.word * 0.14).toFixed(2)}px`;
+        nextFgShift = `translate3d(0, ${(depth.foreground * 0.18).toFixed(2)}px, 0)`;
+      },
+      write: () => {
+        if (word && nextWordShift !== lastWordTranslate) {
+          lastWordTranslate = nextWordShift;
+          word.style.translate = nextWordShift;
+        }
+        if (foreground && nextFgShift !== lastForegroundTransform) {
+          lastForegroundTransform = nextFgShift;
+          foreground.style.transform = nextFgShift;
+        }
+      },
+    });
 
     return () => {
+      unregister();
       if (pointerEnabled) {
         root.removeEventListener('pointermove', onPointerMove);
         root.removeEventListener('pointerleave', onPointerLeave);
       }
-      unsubscribe();
-      window.removeEventListener('resize', onResize);
-      if (frame !== 0) window.cancelAnimationFrame(frame);
       if (raf !== 0) window.cancelAnimationFrame(raf);
       if (word) word.style.translate = '';
       if (foreground) foreground.style.transform = '';
       root.style.removeProperty('--footer-parallax-x');
       root.style.removeProperty('--footer-parallax-y');
     };
-  }, [finePointer, reducedMotion, lite, scrollY, wide]);
+  }, [finePointer, reducedMotion, lite, wide]);
 
   if (reducedMotion || lite) return null;
   return <div ref={anchorRef} aria-hidden className="contents" data-slot="footer-fx" />;

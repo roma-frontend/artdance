@@ -58,8 +58,9 @@ export function CompetitionSection({
           style={{ background: "var(--scrim-editorial-radial)" }}
         />
 
-        <Reveal variant="scale" className="page-container relative">
+        <Reveal variant="none" className="page-container relative">
           <SectionHeading
+            revealMask
             parallax
             align="center"
             eyebrow={t("eyebrow")}

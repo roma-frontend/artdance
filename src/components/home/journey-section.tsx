@@ -46,8 +46,9 @@ export function JourneySection({ images, includeCompetition = true, locale }: Jo
       <div className="page-container relative">
         <JourneyTrack totalSteps={visibleSteps.length} />
 
-        <Reveal className="mb-12">
+        <Reveal variant="none" className="mb-12">
           <SectionHeading
+            revealMask
             eyebrow={t('eyebrow')}
             title={t('title')}
             subtitle={t('subtitle')}

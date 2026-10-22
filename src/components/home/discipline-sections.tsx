@@ -50,8 +50,9 @@ export function DisciplineSections({ locale }: DisciplineSectionsProps) {
   return (
     <section className="section-y" aria-label={t('disciplineSectionLabel' as never) as string}>
       <div className="page-container">
-        <Reveal className="mb-12">
+        <Reveal variant="none" className="mb-12">
           <SectionHeading
+            revealMask
             align="center"
             eyebrow={tHome("competitions.eyebrow")}
             title={tHome("competitions.title")}
@@ -60,11 +61,9 @@ export function DisciplineSections({ locale }: DisciplineSectionsProps) {
           />
         </Reveal>
 
-        <Reveal
+        <Reveal variant="none"
           as="div"
-          variant="stagger"
-          className="grid gap-5 lg:grid-cols-2"
-        >
+          className="grid gap-5 lg:grid-cols-2">
           {groups.map((group) => (
             <div
               key={group.title}

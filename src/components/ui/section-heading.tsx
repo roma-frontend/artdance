@@ -33,6 +33,18 @@ interface SectionHeadingProps {
   onCinema?: boolean;
   className?: string;
   parallax?: boolean;
+  /**
+   * Раскрытие заголовка маской снизу вверх при входе в окно.
+   *
+   * Включается только там, где заголовок НЕ обёрнут в `Reveal`: иначе два
+   * движения складываются — блок въезжает снизу и одновременно раскрывается
+   * маской, и это читается как дефект отрисовки, а не как приём.
+   *
+   * На главной так и сделано: обёртки `Reveal` сняты, маска включена — одно
+   * движение на секцию. На остальных страницах обёртки остались, и флаг там
+   * не передаётся.
+   */
+  revealMask?: boolean;
 }
 
 export function SectionHeading({
@@ -44,6 +56,7 @@ export function SectionHeading({
   onCinema = false,
   className,
   parallax = false,
+  revealMask = false,
 }: SectionHeadingProps) {
   const Title = `h${level}` as 'h2' | 'h3' | 'h4';
 
@@ -68,8 +81,22 @@ export function SectionHeading({
         </p>
       )}
 
-      <Title data-parallax={parallax ? 'heading' : undefined} className={cn('text-heading-2', onCinema && 'text-content-on-cinema')}>
-        {typeof title === 'string' ? <TextReveal>{title}</TextReveal> : title}
+      {/*
+        `data-reveal-mask` — раскрытие заголовка снизу вверх при входе в окно.
+        Единственное движение появления на секциях главной: тело секции стоит на
+        месте, взгляд ведёт заголовок. Считает браузер (`animation-timeline:
+        view()`), без JS-обработчика прокрутки и с поддержкой работы без
+        JavaScript; правила — в `globals.css`, рядом с объяснением, почему
+        четырнадцать одинаковых `Reveal` были заменены одним жестом.
+      */}
+      <Title
+        data-parallax={parallax ? 'heading' : undefined}
+        data-reveal-mask={revealMask ? '' : undefined}
+        className={cn('text-heading-2', onCinema && 'text-content-on-cinema')}
+      >
+        {revealMask ? (
+          <span data-reveal-mask-content="">{title}</span>
+        ) : typeof title === 'string' ? <TextReveal>{title}</TextReveal> : title}
       </Title>
 
       {subtitle !== undefined && (

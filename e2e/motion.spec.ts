@@ -24,64 +24,78 @@ import { settleAndHover } from './support/settle';
 
 const HOME = '/en';
 
-/** Заголовок секции «Discover» и его собственная reveal-обёртка. */
+/** Заголовок секции «Discover» — на нём стоит маска раскрытия. */
 const revealTarget = (page: Page): Locator =>
   page.getByRole('heading', { name: en.home.discover.title });
 
-const firstRevealContainer = (page: Page): Locator =>
-  page.locator('[data-reveal="up"]', { has: revealTarget(page) });
-const firstStagger = (page: Page): Locator => page.locator('[data-stagger]').first();
+/** Заголовок с маской: `data-reveal-mask` есть только на главной. */
+const maskedHeading = (page: Page): Locator => page.locator('[data-reveal-mask]').first();
 
-test.describe('Reveal — появление при прокрутке', () => {
-  test('секция ниже первого экрана скрыта до прокрутки и появляется после', async ({ page }) => {
+/** Текст вышел из-под неподвижной обрезки: проверяем реальное смещение строки. */
+const maskIsOpen = (heading: Locator) => heading.evaluate((node) => {
+  const content = node.querySelector('[data-reveal-mask-content]');
+  if (!content) return false;
+  return Math.abs(new DOMMatrixReadOnly(getComputedStyle(content).transform).m42) < 0.5;
+});
+
+/*
+ * Маска заголовка — единственный жест появления на главной (21.10.2026).
+ *
+ * Проверяется не «анимация играет», а два свойства, которые легко потерять:
+ *   • раскрытие действительно привязано к прокрутке, а не проигрывается сразу;
+ *   • при просьбе убрать движение и без поддержки view timeline заголовок
+ *     виден целиком: скрытое состояние существует только внутри keyframes.
+ */
+test.describe('Маска заголовка — раскрытие от прокрутки', () => {
+  test('заголовок раскрывается по мере входа в окно', async ({ page }) => {
     await page.goto(HOME);
 
-    const container = firstRevealContainer(page);
-    /* Скрытое состояние ставится CSS, а не разметкой: атрибута готовности ещё нет. */
-    await expect(container).not.toHaveAttribute('data-revealed', '');
-    await expect(container).toHaveCSS('opacity', '0');
+    const heading = revealTarget(page);
+    await expect(heading).toBeAttached();
 
-    await revealTarget(page).scrollIntoViewIfNeeded();
+    /* Маска объявлена на заголовке, а не на обёртке вокруг него. */
+    await expect(page.locator('h2[data-reveal-mask]').first()).toBeAttached();
+    await expect(heading.locator('[data-reveal-word]')).toHaveCount(0);
 
-    await expect(container).toHaveAttribute('data-revealed', '');
-    await expect(container).toHaveCSS('opacity', '1');
-    await expect(revealTarget(page)).toBeVisible();
-  });
-
-  test('появление однократное: обратная прокрутка не скрывает блок', async ({ page }) => {
-    await page.goto(HOME);
-    await revealTarget(page).scrollIntoViewIfNeeded();
+    // Явно ставим заголовок у нижнего края: его положение не зависит от hero.
+    await heading.evaluate((node) => window.scrollBy({
+      top: node.getBoundingClientRect().top - innerHeight * 0.98,
+      behavior: 'instant',
+    }));
+    await expect.poll(() => maskIsOpen(heading)).toBe(false);
+    const closed = await heading.locator('[data-reveal-mask-content]').evaluate((node) => getComputedStyle(node).transform);
+    await heading.evaluate((node) => node.scrollIntoView({ block: 'center', behavior: 'instant' }));
     await expect
-      .poll(async () => (await firstRevealContainer(page).getAttribute('data-revealed')) ?? null, { timeout: 10_000 })
-      .not.toBeNull();
+      .poll(() => heading.locator('[data-reveal-mask-content]').evaluate((node) => getComputedStyle(node).transform), { timeout: 10_000 })
+      .not.toBe(closed);
 
-    await page.evaluate(() => window.scrollTo({ top: 0 }));
-    await expect(firstRevealContainer(page)).toHaveAttribute('data-revealed', '');
+    /* Полностью открыт: текст дошёл до нулевого смещения внутри обрезки. */
+    await expect.poll(() => maskIsOpen(heading)).toBe(true);
   });
 
-  test('дети stagger получают возрастающие задержки', async ({ page }) => {
+  test('при просьбе убрать движение заголовок открыт сразу', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(HOME);
 
-    const container = firstStagger(page);
-    await container.scrollIntoViewIfNeeded();
-    await expect(container).toHaveAttribute('data-revealed', '');
+    const heading = revealTarget(page);
+    await heading.scrollIntoViewIfNeeded();
+    expect(await maskIsOpen(heading)).toBe(true);
+    await expect(heading).toBeVisible();
+  });
 
-    const delays = await container
-      .locator('> *')
-      .evaluateAll((nodes) =>
-        nodes.map((node) => Number.parseFloat(getComputedStyle(node).transitionDelay)),
-      );
-
-    expect(delays.length).toBeGreaterThan(1);
-    const expectedStep = motion.stagger.stepMs / 1000;
-    for (let index = 1; index < Math.min(delays.length, motion.stagger.maxChildren); index += 1) {
-      expect(delays[index]! - delays[index - 1]!).toBeCloseTo(expectedStep, 3);
+  test('каждый заголовок открывается после быстрого перехода к секции', async ({ page }) => {
+    await page.goto(HOME);
+    const headings = page.locator('[data-reveal-mask]');
+    expect(await headings.count()).toBeGreaterThan(5);
+    for (const heading of await headings.all()) {
+      await heading.evaluate((node) => node.scrollIntoView({ block: 'center', behavior: 'instant' }));
+      await expect.poll(() => maskIsOpen(heading)).toBe(true);
     }
-    expect(delays[0]).toBeCloseTo(motion.stagger.baseDelayMs / 1000, 3);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 });
 
-test.describe('Reveal — контент не зависит от эффекта', () => {
+test.describe('Появление — контент не зависит от эффекта', () => {
   test.describe('без JavaScript', () => {
     test.use({ javaScriptEnabled: false });
 
@@ -95,12 +109,15 @@ test.describe('Reveal — контент не зависит от эффекта
         return route.continue();
       });
       await page.goto(HOME, { waitUntil: 'domcontentloaded' });
+      const heading = maskedHeading(page);
+      await heading.evaluate((node) => node.scrollIntoView({ block: 'center', behavior: 'instant' }));
 
-      // 7 падений на CI — opacity 1 не успевает после `domcontentloaded` под
-      // параллельной нагрузкой (до 2× timeout). Ждём через poll с тройным таймаутом.
-      await expect
-        .poll(async () => page.locator('[data-reveal="up"]').first().evaluate((n) => getComputedStyle(n).opacity), { timeout: 15_000 })
-        .toBe('1');
+      /*
+       * Маска заголовка считается браузером (`animation-timeline: view()`), а не
+       * скриптом, поэтому без JavaScript она работает так же. Проверяем главное:
+       * заголовок виден и не обрезан навсегда: сдвиг строки дошёл до нуля.
+       */
+      await expect.poll(() => maskIsOpen(heading)).toBe(true);
       /* Поиск по тегу: без JS движок ARIA-ролей в странице не работает. */
       await expect
         .poll(async () => page.locator('h2').filter({ hasText: en.home.discover.title }).count(), { timeout: 10_000 })
@@ -112,10 +129,14 @@ test.describe('Reveal — контент не зависит от эффекта
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(HOME);
 
-    /* Ни прокрутки, ни атрибута готовности — и всё равно всё видно. */
-    await expect(firstRevealContainer(page)).not.toHaveAttribute('data-revealed', '');
-    await expect(firstRevealContainer(page)).toHaveCSS('opacity', '1');
-    await expect(firstStagger(page).locator('> *').first()).toHaveCSS('opacity', '1');
+    /*
+     * Правила маски обёрнуты в `prefers-reduced-motion: no-preference`, поэтому
+     * при просьбе убрать движение смещение не применяется вовсе: заголовок
+     * виден целиком с первого кадра, без ожидания прокрутки.
+     */
+    const heading = maskedHeading(page);
+    await expect(heading).toBeAttached();
+    expect(await maskIsOpen(heading)).toBe(true);
   });
 
   test('при просьбе убрать движение свечения нет в DOM', async ({ page }) => {
@@ -295,6 +316,66 @@ test.describe('ScrollProgress', () => {
     await expect(bar).toHaveAttribute('aria-hidden', 'true');
     await expect(bar).toHaveCSS('pointer-events', 'none');
   });
+
+  test('fallback без ScrollTimeline обновляется при скролле и resize', async ({ page }) => {
+    await page.addInitScript(() => {
+      const supports = CSS.supports.bind(CSS);
+      CSS.supports = (property: string, value?: string) =>
+        property.includes('animation-timeline') ? false : value === undefined ? supports(property) : supports(property, value);
+    });
+    await page.goto(HOME);
+    await expect(page.locator('[data-slot="scroll-progress"]')).toHaveAttribute('data-scroll-driver', 'script');
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight / 2, behavior: 'instant' }));
+    const difference = () => page.locator('[data-slot="scroll-progress"]').evaluate((node) => {
+      const expected = window.scrollY / (document.documentElement.scrollHeight - innerHeight);
+      return Math.abs(new DOMMatrixReadOnly(getComputedStyle(node).transform).a - expected);
+    });
+    await expect.poll(difference).toBeLessThan(0.01);
+    await expect.poll(() => scaleX(page)).toBeGreaterThan(0.4);
+    await page.setViewportSize({ width: page.viewportSize()!.width, height: 600 });
+    await expect.poll(difference).toBeLessThan(0.01);
+  });
+});
+
+test.describe('Бюджет motion главной', () => {
+  test('lite открывает заголовки и отключает декоративные сцены', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('ARTDANCE_LITE_MODE', 'true'));
+    await page.goto(HOME);
+    await expect(page.locator('html')).toHaveAttribute('data-lite', 'true');
+    await expect.poll(() => maskIsOpen(maskedHeading(page))).toBe(true);
+    await expect(page.locator('[data-aperture]')).toHaveAttribute('data-aperture', 'off');
+    await expect(page.locator('[data-slot="journey-track"]')).toHaveCount(0);
+    await expect(page.locator('[data-hero-background]')).toHaveCSS('transform', 'none');
+    await expect(page.locator('[data-reveal-mask] [data-reveal-word]')).toHaveCount(0);
+  });
+
+  test('далёкие кино-секции не измеряются на каждом событии скролла', async ({ page }) => {
+    await page.goto(HOME);
+    await expect(page.locator('[data-slot="scroll-progress"]')).toHaveAttribute('data-scroll-driver', /native|script/);
+    await page.evaluate(() => document.fonts.ready);
+    // Дать завершиться первичным ResizeObserver и гидратации перед замером.
+    await page.waitForTimeout(1000);
+    const result = await page.evaluate(async () => {
+      const panels = [...document.querySelectorAll<HTMLElement>('[data-aperture] > *')]
+        .filter((node) => node.getBoundingClientRect().top > innerHeight * 2);
+      let reads = 0;
+      const originals = panels.map((node) => node.getBoundingClientRect);
+      panels.forEach((node, index) => {
+        node.getBoundingClientRect = () => { reads++; return originals[index]!.call(node); };
+      });
+      try {
+        for (let frame = 0; frame < 12; frame++) {
+          window.dispatchEvent(new Event('scroll'));
+          await new Promise(requestAnimationFrame);
+        }
+        return { panels: panels.length, reads };
+      } finally {
+        panels.forEach((node, index) => { node.getBoundingClientRect = originals[index]!; });
+      }
+    });
+    expect(result.panels).toBeGreaterThan(0);
+    expect(result.reads).toBe(0);
+  });
 });
 
 test.describe('PointerGlow', () => {
@@ -405,6 +486,24 @@ test.describe('Counter — показатели hero', () => {
  * фокус — переключать панель одним и тем же способом.
  */
 test.describe('StyleAccordion', () => {
+  test('на телефоне видны названия всех свёрнутых направлений', async ({ page }) => {
+    test.skip((page.viewportSize()?.width ?? 0) >= 768, 'Проверка вертикальных кулис');
+    await page.goto(HOME);
+    const panels = page.locator('[data-slot="style-accordion"] [data-style-panel]');
+    const labelsFit = () => panels.evaluateAll((nodes) => nodes.every((panel) => {
+      if (panel.getAttribute('data-active') === 'true') return true;
+      const title = panel.querySelector('[data-style-title]')!;
+      const bounds = panel.getBoundingClientRect();
+      const label = title.getBoundingClientRect();
+      return label.height > 0 && label.top >= bounds.top && label.bottom <= bounds.bottom;
+    }));
+    await expect.poll(labelsFit).toBe(true);
+    await panels.first().locator('a').tap();
+    await expect(panels.first()).toHaveAttribute('data-active', 'true');
+    await expect(page).toHaveURL(/\/en$/);
+    await expect.poll(labelsFit).toBe(true);
+  });
+
   test('активная панель показывает счётчик и переключается фокусом', async ({ page }) => {
     await page.goto(HOME);
 

@@ -16,7 +16,7 @@ export function StatsBar({ stats }: StatsBarProps) {
   return (
     <section className="border-y border-border-default/60 bg-surface-card/60 backdrop-blur-md">
       <div className="page-container py-8 md:py-10">
-        <Reveal variant="scale">
+        <Reveal variant="none">
           <dl className="grid grid-cols-2 gap-6 sm:grid-cols-4 lg:gap-12">
             {stats.map((stat) => (
               <div key={stat.id} className="flex flex-col items-center text-center">

@@ -27,11 +27,11 @@
 
 'use client';
 
-import { useScroll } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 
 import { motion } from '@/design/motion';
 import { heroDepthFrame } from '@/lib/animations/parallax';
+import { registerScrollEffect, requestScrollFrame } from '@/lib/animations/scroll-engine';
 import { useFinePointer, useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { useIsLiteMode } from '@/lib/perf/lite-mode';
@@ -42,7 +42,6 @@ export function HeroParallaxFX() {
   const reducedMotion = usePrefersReducedMotion();
   const lite = useIsLiteMode();
   const wide = useMediaQuery('(min-width: 768px)');
-  const { scrollY } = useScroll();
 
   useEffect(() => {
     const anchor = anchorRef.current;
@@ -58,7 +57,6 @@ export function HeroParallaxFX() {
     const pointerEnabled = finePointer && wide;
     const stageMotion = motion.heroDepth.stage;
 
-    let frame = 0;
     let raf = 0;
 
     /* --- Параллакс за курсором -------------------------------------------- */
@@ -137,53 +135,57 @@ export function HeroParallaxFX() {
       return val;
     };
 
-    const paintScroll = () => {
-      frame = 0;
-      const rect = root.getBoundingClientRect();
-      // Когда hero полностью ушёл далеко за верх экрана, замораживаем на финальном кадре (1), не переписывая DOM на каждом пикселе скролла ниже
-      const rawProgress = -rect.top / (rect.height || 1);
-      const progress = Math.min(1, Math.max(0, rawProgress));
-      const depth = heroDepthFrame(progress, rect.height, factor);
-      const focused = root.matches(':focus-within');
-      lastBack = setStyle(background, 'transform', `translate3d(0, ${depth.background.toFixed(2)}px, 0) scale(${depth.zoom.toFixed(4)})`, lastBack);
-      lastWord = setStyle(word, 'translate', `0 ${depth.word.toFixed(2)}px`, lastWord);
-      if (content) {
-        lastContentTranslate = setStyle(content, 'translate', `0 ${focused ? 0 : Number(depth.content.toFixed(2))}px`, lastContentTranslate);
-        lastContentOpacity = setStyle(content, 'opacity', focused ? '' : depth.contentOpacity.toFixed(3), lastContentOpacity);
-      }
-      lastFront = setStyle(foreground, 'transform', `translate3d(0, ${depth.foreground.toFixed(2)}px, 0)`, lastFront);
-    };
-
-    const onScroll = () => {
-      cachedRect = null;
-      if (frame === 0) frame = window.requestAnimationFrame(paintScroll);
-    };
-
-    const onResize = () => {
-      cachedRect = null;
-      if (frame === 0) frame = window.requestAnimationFrame(paintScroll);
-    };
+    /** Значения, посчитанные в фазе чтения и применённые в фазе записи. */
+    let nextBack = '';
+    let nextWord = '';
+    let nextContentTranslate = '';
+    let nextContentOpacity = '';
+    let nextFront = '';
 
     if (pointerEnabled) {
       root.addEventListener('pointermove', onPointerMove, { passive: true });
       root.addEventListener('pointerleave', onPointerLeave, { passive: true });
     }
-    const unsubscribe = scrollY.on('change', onScroll);
-    root.addEventListener('focusin', onScroll);
-    root.addEventListener('focusout', onScroll);
-    window.addEventListener('resize', onResize, { passive: true });
-    paintScroll();
+    /* Фокус меняет кадр так же, как прокрутка: текст обязан встать на место. */
+    root.addEventListener('focusin', requestScrollFrame);
+    root.addEventListener('focusout', requestScrollFrame);
+
+    const unregister = registerScrollEffect({
+      element: root,
+      read: () => {
+        const rect = root.getBoundingClientRect();
+        cachedRect = rect;
+        cachedRectTime = performance.now();
+        // Когда hero полностью ушёл далеко за верх экрана, замораживаем на финальном кадре (1), не переписывая DOM на каждом пикселе скролла ниже
+        const rawProgress = -rect.top / (rect.height || 1);
+        const progress = Math.min(1, Math.max(0, rawProgress));
+        const depth = heroDepthFrame(progress, rect.height, factor);
+        const focused = root.matches(':focus-within');
+        nextBack = `translate3d(0, ${depth.background.toFixed(2)}px, 0) scale(${depth.zoom.toFixed(4)})`;
+        nextWord = `0 ${depth.word.toFixed(2)}px`;
+        nextContentTranslate = `0 ${focused ? 0 : Number(depth.content.toFixed(2))}px`;
+        nextContentOpacity = focused ? '' : depth.contentOpacity.toFixed(3);
+        nextFront = `translate3d(0, ${depth.foreground.toFixed(2)}px, 0)`;
+      },
+      write: () => {
+        lastBack = setStyle(background, 'transform', nextBack, lastBack);
+        lastWord = setStyle(word, 'translate', nextWord, lastWord);
+        if (content) {
+          lastContentTranslate = setStyle(content, 'translate', nextContentTranslate, lastContentTranslate);
+          lastContentOpacity = setStyle(content, 'opacity', nextContentOpacity, lastContentOpacity);
+        }
+        lastFront = setStyle(foreground, 'transform', nextFront, lastFront);
+      },
+    });
 
     return () => {
+      unregister();
       if (pointerEnabled) {
         root.removeEventListener('pointermove', onPointerMove);
         root.removeEventListener('pointerleave', onPointerLeave);
       }
-      unsubscribe();
-      root.removeEventListener('focusin', onScroll);
-      root.removeEventListener('focusout', onScroll);
-      window.removeEventListener('resize', onResize);
-      if (frame !== 0) window.cancelAnimationFrame(frame);
+      root.removeEventListener('focusin', requestScrollFrame);
+      root.removeEventListener('focusout', requestScrollFrame);
       if (raf !== 0) window.cancelAnimationFrame(raf);
       if (background) background.style.transform = '';
       if (word) word.style.translate = '';
@@ -198,7 +200,7 @@ export function HeroParallaxFX() {
       root.style.removeProperty('--hero-stage-rotate-y');
       root.style.removeProperty('--hero-stage-depth');
     };
-  }, [finePointer, reducedMotion, lite, scrollY, wide]);
+  }, [finePointer, reducedMotion, lite, wide]);
 
   if (reducedMotion || lite) return null;
 

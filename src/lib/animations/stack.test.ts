@@ -1,8 +1,26 @@
 import { describe, expect, it } from 'vitest';
 
-import { paintStackCover, stackCover } from './stack';
+import { paintStackCover, readStackCover, stackCover, writeStackCover } from './stack';
 
 describe('Накрытие карточки стопки', () => {
+  it('отделяет измерение от записи для общего кадра страницы', () => {
+    const operations: string[] = [];
+    const items = [100, 300].map((top) => ({
+      getBoundingClientRect: () => { operations.push('read'); return { top }; },
+      get offsetHeight() { operations.push('read'); return 400; },
+      style: {
+        getPropertyValue: () => '',
+        setProperty: () => { operations.push('write'); },
+      },
+    })) as unknown as HTMLElement[];
+    const values = readStackCover(items);
+    expect(values).toEqual(['0.500', '0.000']);
+    expect(operations).toEqual(['read', 'read', 'read', 'read']);
+    operations.length = 0;
+    writeStackCover(items, values);
+    expect(operations).toEqual(['write', 'write']);
+  });
+
   it('читает всю геометрию до записи и не перезаписывает неизменившееся накрытие', () => {
     const operations: string[] = [];
     const values = [new Map<string, string>(), new Map<string, string>()];

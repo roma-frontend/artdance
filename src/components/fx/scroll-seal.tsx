@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from 'react';
 
 import { motion } from '@/design/motion';
 import { animationConfig } from '@/lib/animations/parallax';
+import { registerScrollEffect, requestScrollFrame } from '@/lib/animations/scroll-engine';
 import { cn } from '@/lib/utils';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { useIsLiteMode } from '@/lib/perf/lite-mode';
@@ -47,42 +48,40 @@ export function ScrollSeal({ text = 'ARTDANCE · YEREVAN · ', scope = 'page', c
     if (!node || reduced || lite) return;
 
     const section = scope === 'section' ? node.parentElement : null;
-    let frame = 0;
     let lastTransform = '';
-    const paint = () => {
-      frame = 0;
-      let degrees: number;
-      if (section) {
-        // 0 — секция показалась снизу, 1 — ушла за верх окна.
-        const rect = section.getBoundingClientRect();
-        const pass = (window.innerHeight - rect.top) / (window.innerHeight + rect.height);
-        degrees = Math.min(1, Math.max(0, pass)) * motion.scrollRotation.degreesPerPass;
-      } else {
-        const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = documentHeight > 0 ? window.scrollY / documentHeight : 0;
-        degrees = progress * animationConfig.sealRotation.maxDegrees;
-      }
-      const nextTransform = `rotate(${Number(degrees.toFixed(3))}deg)`;
-      if (nextTransform !== lastTransform) {
-        lastTransform = nextTransform;
-        node.style.transform = nextTransform;
-      }
-    };
-    const schedule = () => {
-      if (frame === 0) frame = window.requestAnimationFrame(paint);
-    };
+    /** Угол, посчитанный в фазе чтения и применённый в фазе записи. */
+    let nextTransform = '';
 
-    paint();
-    window.addEventListener('scroll', schedule, { passive: true });
-    window.addEventListener('resize', schedule, { passive: true });
+    const unregister = registerScrollEffect({
+      element: node,
+      read: () => {
+        let degrees: number;
+        if (section) {
+          // 0 — секция показалась снизу, 1 — ушла за верх окна.
+          const rect = section.getBoundingClientRect();
+          const pass = (window.innerHeight - rect.top) / (window.innerHeight + rect.height);
+          degrees = Math.min(1, Math.max(0, pass)) * motion.scrollRotation.degreesPerPass;
+        } else {
+          const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
+          const progress = documentHeight > 0 ? window.scrollY / documentHeight : 0;
+          degrees = progress * animationConfig.sealRotation.maxDegrees;
+        }
+        nextTransform = `rotate(${Number(degrees.toFixed(3))}deg)`;
+      },
+      write: () => {
+        if (nextTransform !== lastTransform) {
+          lastTransform = nextTransform;
+          node.style.transform = nextTransform;
+        }
+      },
+    });
+
     // Ленивые секции меняют высоту страницы без скролла — угол обязан пересчитаться.
-    const observer = new ResizeObserver(schedule);
+    const observer = new ResizeObserver(requestScrollFrame);
     observer.observe(document.body);
     return () => {
       observer.disconnect();
-      window.removeEventListener('scroll', schedule);
-      window.removeEventListener('resize', schedule);
-      if (frame !== 0) window.cancelAnimationFrame(frame);
+      unregister();
       node.style.transform = '';
     };
   }, [scope, reduced, lite]);

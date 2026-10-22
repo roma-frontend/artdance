@@ -66,8 +66,9 @@ export function NewsletterSection({ locale, source, className }: NewsletterSecti
   return (
     <section className={cn('section-y bg-surface-raised', className)}>
       <div className="page-container">
-        <Reveal className="mx-auto max-w-(--layout-content-max-width) text-center">
+        <Reveal variant="none" className="mx-auto max-w-(--layout-content-max-width) text-center">
           <SectionHeading
+            revealMask
             align="center"
             eyebrow={t('eyebrow')}
             title={t('title')}

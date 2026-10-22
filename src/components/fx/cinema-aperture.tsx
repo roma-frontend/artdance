@@ -13,11 +13,11 @@
  * секции стоят как есть. Фокус внутри панели раскрывает её целиком (CSS).
  */
 
-import { useScroll } from 'framer-motion';
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 
 import { motion } from '@/design/motion';
 import { apertureExit, apertureFlare, apertureOpen } from '@/lib/animations/aperture';
+import { registerScrollEffect } from '@/lib/animations/scroll-engine';
 import { useMediaQuery } from '@/lib/hooks/use-media-query';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { useIsLiteMode } from '@/lib/perf/lite-mode';
@@ -29,44 +29,45 @@ export function CinemaAperture({ children }: { children: ReactNode }) {
   const wide = useMediaQuery(`(min-width: ${config.minViewportWidth}px)`);
   const reduced = usePrefersReducedMotion();
   const lite = useIsLiteMode();
-  const { scrollY } = useScroll();
 
   useEffect(() => {
     const root = ref.current;
     if (!root || !wide || reduced || lite) return;
     const panels = Array.from(root.children) as HTMLElement[];
 
-    let frame = 0;
     const setProp = (el: HTMLElement, name: string, value: string) => {
       if (el.style.getPropertyValue(name) !== value) {
         el.style.setProperty(name, value);
       }
     };
-    const paint = () => {
-      frame = 0;
-      const viewport = window.innerHeight;
-      const rects = panels.map((panel) => panel.getBoundingClientRect());
-      for (const [index, panel] of panels.entries()) {
-        const rect = rects[index]!;
-        const open = apertureOpen(rect.top, viewport, config.openSpan);
-        setProp(panel, '--aperture-open', open.toFixed(3));
-        setProp(panel, '--aperture-flare', apertureFlare(open).toFixed(3));
-        setProp(panel, '--aperture-exit', apertureExit(rect.bottom, viewport).toFixed(3));
-      }
-    };
-    const schedule = () => {
-      if (frame === 0) frame = window.requestAnimationFrame(paint);
-    };
 
     root.setAttribute('data-aperture', 'on');
-    paint();
-    const unsubscribe = scrollY.on('change', schedule);
-    window.addEventListener('resize', schedule, { passive: true });
+
+    // Видимость каждой сцены независима: длинный общий root не будит все панели.
+    const unsubscribers = panels.map((panel) => {
+      let open = '1';
+      let flare = '0';
+      let exit = '0';
+      return registerScrollEffect({
+        element: panel,
+        read: () => {
+          const viewport = window.innerHeight;
+          const rect = panel.getBoundingClientRect();
+          const value = apertureOpen(rect.top, viewport, config.openSpan);
+          open = value.toFixed(3);
+          flare = apertureFlare(value).toFixed(3);
+          exit = apertureExit(rect.bottom, viewport).toFixed(3);
+        },
+        write: () => {
+          setProp(panel, '--aperture-open', open);
+          setProp(panel, '--aperture-flare', flare);
+          setProp(panel, '--aperture-exit', exit);
+        },
+      });
+    });
 
     return () => {
-      unsubscribe();
-      window.removeEventListener('resize', schedule);
-      if (frame !== 0) window.cancelAnimationFrame(frame);
+      for (const unsubscribe of unsubscribers) unsubscribe();
       root.setAttribute('data-aperture', 'off');
       for (const panel of panels) {
         panel.style.removeProperty('--aperture-open');
@@ -74,7 +75,7 @@ export function CinemaAperture({ children }: { children: ReactNode }) {
         panel.style.removeProperty('--aperture-exit');
       }
     };
-  }, [wide, reduced, lite, scrollY]);
+  }, [wide, reduced, lite]);
 
   return (
     <div

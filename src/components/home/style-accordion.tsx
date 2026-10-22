@@ -275,12 +275,13 @@ export function StyleAccordion({ tiles, locale, className }: StyleAccordionProps
 
                 {/* Контентная плашка */}
                 <div className="relative z-10 flex w-full flex-col justify-end">
-                  <span className="font-display font-bold tracking-tight text-content-on-cinema uppercase text-2xl lg:text-3xl whitespace-nowrap overflow-hidden text-ellipsis">
+                  <span data-style-title="" className="font-display font-bold tracking-tight text-content-on-cinema uppercase text-2xl lg:text-3xl whitespace-nowrap overflow-hidden text-ellipsis">
                     {t(danceStyleLabelKey(tile.style as never))}
                   </span>
 
                   {/* Дополнительная информация, плавно раскрывающаяся у активной кулисы */}
                   <div
+                    data-style-details=""
                     className={cn(
                       'overflow-hidden flex flex-col mt-2 transition-[opacity,translate] duration-500 ease-out',
                       isActive ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2',

@@ -15,11 +15,11 @@
 
 'use client';
 
-import { useScroll } from 'framer-motion';
 import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 
 import { motion } from '@/design/motion';
-import { paintStackCover } from '@/lib/animations/stack';
+import { readStackCover, writeStackCover } from '@/lib/animations/stack';
+import { registerScrollEffect } from '@/lib/animations/scroll-engine';
 import { usePrefersReducedMotion } from '@/lib/hooks/use-motion-preferences';
 import { cn } from '@/lib/utils';
 import { useIsLiteMode } from '@/lib/perf/lite-mode';
@@ -35,7 +35,6 @@ export function StackCards({ children, className, ...rest }: StackCardsProps) {
   const ref = useRef<HTMLOListElement>(null);
   const reduced = usePrefersReducedMotion();
   const lite = useIsLiteMode();
-  const { scrollY } = useScroll();
 
   useEffect(() => {
     const root = ref.current;
@@ -43,25 +42,19 @@ export function StackCards({ children, className, ...rest }: StackCardsProps) {
     const items = Array.from(root.children) as HTMLElement[];
     items.forEach((item, index) => item.style.setProperty('--stack-index', String(index)));
 
-    let frame = 0;
-    const paint = () => {
-      frame = 0;
-      paintStackCover(items, motion.stackCards.stepPx);
-    };
-    const schedule = () => {
-      if (frame === 0) frame = window.requestAnimationFrame(paint);
-    };
+    // Разделяем фазы всей страницы, а не только карточек внутри этой стопки.
+    let covers: string[] = [];
+    const unregister = registerScrollEffect({
+      element: root,
+      read: () => { covers = readStackCover(items, motion.stackCards.stepPx); },
+      write: () => writeStackCover(items, covers),
+    });
 
-    paint();
-    const unsubscribe = scrollY.on('change', schedule);
-    window.addEventListener('resize', schedule, { passive: true });
     return () => {
-      unsubscribe();
-      window.removeEventListener('resize', schedule);
-      if (frame !== 0) window.cancelAnimationFrame(frame);
+      unregister();
       items.forEach((item) => item.style.removeProperty('--stack-cover'));
     };
-  }, [reduced, lite, scrollY]);
+  }, [reduced, lite]);
 
   return (
     <ol
