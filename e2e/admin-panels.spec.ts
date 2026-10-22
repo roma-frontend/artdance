@@ -46,8 +46,12 @@ test('админка: общий скролл и правая sticky-колон�
       await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 8_000 }).toBeGreaterThan(80);
       // Lenis может «доехать» ещё 200-300ms после scrollTo — ждём стабилизацию
       await page.waitForTimeout(600);
-      // Левая колонка уехала вверх.
-      await expect.poll(async () => (await sidebar.boundingBox())!.y, { timeout: 8_000 }).toBeLessThan(initialSidebarY - 40);
+      // Левая колонка sticky: остаётся в окне, а не уезжает вверх вместе со страницей.
+      await expect.poll(async () => {
+        const box = (await sidebar.boundingBox())!;
+        return box.y >= 0 && box.y + box.height <= page.viewportSize()!.height + 1;
+      }, { timeout: 8_000 }).toBe(true);
+      expect(initialSidebarY).toBeGreaterThanOrEqual(0);
       // Правая остается видимой и не скроллит внутри себя.
       await expect(content).toBeVisible();
       expect(await content.evaluate(node => node.scrollTop)).toBe(0);
