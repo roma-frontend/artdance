@@ -10,6 +10,8 @@ coverage/
 .env
 .env.*
 !.env.example
+!.env.e2e.example
+.env.e2e.local
 
 # Генерируемый клиент Prisma
 src/generated/

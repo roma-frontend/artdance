@@ -218,7 +218,7 @@ export default async function HomePage({ params }: PageProps) {
       </section>
 
       {/* ── STUDIOS ── */}
-      <section className="section-y bg-surface-raised">
+      <section className="section-y section-lazy bg-surface-raised">
         <div className="page-container">
           <Reveal variant="none" className="mb-12">
             <SectionHeading
@@ -251,7 +251,7 @@ export default async function HomePage({ params }: PageProps) {
 
       {/* ── SHOP: раздел появляется только при включённом entitlements ── */}
       {entitlements.shop && (
-        <section className="section-y">
+        <section className="section-y section-lazy">
           <div className="page-container">
             <Reveal variant="none" className="mb-12">
               <SectionHeading
@@ -317,7 +317,7 @@ export default async function HomePage({ params }: PageProps) {
       )}
 
       {/* ── TESTIMONIALS ── */}
-      <section className="section-y">
+      <section className="section-y section-lazy">
         <div className="page-container">
           <Reveal variant="none" className="mb-12">
             <SectionHeading
@@ -348,7 +348,7 @@ export default async function HomePage({ params }: PageProps) {
 
       {/* ── PRICING: суммы и квоты приходят из config/pricing, не из разметки ── */}
       {entitlements.subscriptions && (
-        <section className="section-y bg-surface-raised">
+        <section className="section-y section-lazy bg-surface-raised">
           <div className="page-container">
             <Reveal variant="none" as="div" className="mb-12">
               <SectionHeading

@@ -152,14 +152,14 @@ export function OrbitCursor() {
         ref={ringRef}
         data-hovered={isHovered ? '' : undefined}
         data-has-label={activeLabel ? '' : undefined}
-        className="pointer-events-none fixed top-0 left-0 size-9 rounded-full border border-accent/40 bg-accent/5 backdrop-blur-hairline opacity-0 transition-[width,height,background-color,border-color,opacity] duration-300 ease-brand data-[hovered]:size-14 data-[hovered]:border-accent data-[hovered]:bg-accent/15 data-[has-label]:size-20 data-[has-label]:border-accent/80 data-[has-label]:bg-accent/20"
+        className="pointer-events-none fixed top-0 left-0 size-9 rounded-full border border-accent/40 bg-accent/5 opacity-0 transition-[width,height,background-color,border-color,opacity] duration-300 ease-brand data-[hovered]:size-14 data-[hovered]:border-accent data-[hovered]:bg-accent/15 data-[has-label]:size-20 data-[has-label]:border-accent/80 data-[has-label]:bg-accent/20"
       />
 
       {/* Floating text label under the ring */}
       {activeLabel && (
         <span
           ref={labelRef}
-          className="pointer-events-none fixed top-0 left-0 text-caption font-semibold tracking-wider uppercase text-content-on-cinema bg-surface-cinema/90 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-border-on-cinema/40 shadow-lg"
+          className="pointer-events-none fixed top-0 left-0 text-caption font-semibold tracking-wider uppercase text-content-on-cinema bg-surface-cinema/95 px-2.5 py-0.5 rounded-full border border-border-on-cinema/40 shadow-lg"
         >
           {activeLabel}
         </span>

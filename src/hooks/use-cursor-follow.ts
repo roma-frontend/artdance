@@ -38,8 +38,9 @@ export function useCursorFollow(ref: RefObject<HTMLElement | null>, selector?: s
       previous = 0;
       point = null;
       cachedRect = null;
-      x.set(0);
-      y.set(0);
+      // Скролл зовёт reset у каждой карточки; framer уведомляет подписчиков даже без изменения значения.
+      if (x.get() !== 0) x.set(0);
+      if (y.get() !== 0) y.set(0);
       if (target && selector) target.style.transform = original;
       target?.removeAttribute('data-tilting');
       target = null;

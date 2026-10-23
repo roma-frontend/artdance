@@ -471,7 +471,7 @@
     border-width: 1px;
     border-radius: var(--radius-lg);
     background-color: color-mix(in srgb, var(--surface-card) 92%, transparent);
-    backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(8px);
     box-shadow: var(--shadow-lg), inset 0 1px 0 color-mix(in srgb, var(--content-primary) 5%, transparent);
   }
 
@@ -1540,7 +1540,7 @@
 @media (width < theme(--breakpoint-lg)) {
   .site-header .site-header-surface {
     background-color: color-mix(in srgb, var(--surface-cinema) 82%, transparent);
-    backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(8px);
     border-bottom-width: 1px;
     border-bottom-color: color-mix(in srgb, var(--border-on-cinema) 42%, transparent);
   }
@@ -2609,6 +2609,60 @@ html:has(body[data-fullscreen-locked]) {
   transform: none !important;
 }
 
+/*
+ * Мобильный первый экран (< 768px): кадр открыт сверху, а заголовок и кнопки
+ * лежат в нижней шторке, как в мобильных приложениях. Desktop не меняется.
+ */
+@media (width < 768px) {
+  .hero-viewport [data-hero-background] {
+    inset: 0 0 auto 0;
+    height: 62svh;
+    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  }
+
+  .hero-viewport .hero-content {
+    justify-content: flex-end;
+    padding: var(--space-6) var(--space-5);
+    border-top: 1px solid var(--metal-soft);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    background: color-mix(in srgb, var(--surface-cinema) 92%, transparent);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+  }
+
+  .hero-content > p:first-child {
+    display: none;
+  }
+
+  .hero-content .text-display-hero {
+    font-size: clamp(2.25rem, 9.5vw, 3rem);
+    line-height: 1.02;
+    hyphens: manual;
+    margin-bottom: var(--space-3);
+  }
+
+  /* Подзаголовок обрезается до двух строк: полный текст остаётся в разметке. */
+  .hero-content h1 + p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin-bottom: var(--space-5);
+  }
+
+  .hero-content > div:last-child {
+    flex-direction: column;
+    width: 100%;
+    gap: var(--space-3);
+  }
+
+  .hero-content > div:last-child > * {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .hero-content > :has([data-text-reveal]) {
   animation: none;
 }
@@ -2728,8 +2782,7 @@ html:has(body[data-fullscreen-locked]) {
     background: linear-gradient(135deg, rgba(11,10,9,0.78) 0%, rgba(11,10,9,0.62) 100%);
     border: 1px solid rgba(255,255,255,0.18);
     box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.35);
-    -webkit-backdrop-filter: blur(12px) saturate(1.2);
-    backdrop-filter: blur(12px) saturate(1.2);
+    /* Без backdrop-filter: подпись на hover не пересчитывает фон под собой на каждом кадре скролла. */
     transition:
       opacity var(--duration-normal) var(--ease-brand),
       translate var(--duration-normal) var(--ease-brand);
@@ -3039,13 +3092,22 @@ html:has(body[data-fullscreen-locked]) {
   [data-stack-cards] > li {
     transform-origin: 50% 0;
     scale: calc(1 - var(--stack-cover, 0) * var(--stack-scale-depth, 0.06));
-    filter: brightness(calc(1 - var(--stack-cover, 0) * var(--stack-dim-depth, 0.35)));
   }
 
   [data-stack-cards] > li {
     position: sticky;
     top: calc(var(--layout-nav-height) + var(--space-6) + var(--stack-index, 0) * var(--stack-step, 0px));
   }
+}
+
+/*
+ * LAZY SECTIONS: секции ниже первого экрана пропускают раскладку и отрисовку,
+ * пока не приблизятся к окну. `contain-intrinsic-size: auto` держит высоту
+ * последнего замера, поэтому полоса прокрутки не прыгает.
+ */
+.section-lazy {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
 }
 
 /*
@@ -3443,6 +3505,13 @@ html:has(body[data-fullscreen-locked]) {
   --curtain-y: 35%;
   --curtain-shift-x: 0px;
   --curtain-shift-y: 0px;
+  /*
+   * iOS Safari не обрезает по скруглению `overflow: hidden` дочерние слои с
+   * видео и композитными трансформами: углы кулис остаются прямыми. `clip-path`
+   * обрезает их тем же радиусом, что и рамка (`rounded-2xl` = `--radius-lg`).
+   */
+  isolation: isolate;
+  clip-path: inset(0 round var(--radius-lg));
 }
 
 /* Вертикальные кулисы: скрытые детали не должны вытеснять название за обрезку. */

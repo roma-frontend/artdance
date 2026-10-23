@@ -14,7 +14,7 @@ export function StatsBar({ stats }: StatsBarProps) {
   const t = useTranslations('home.hero');
 
   return (
-    <section className="border-y border-border-default/60 bg-surface-card/60 backdrop-blur-md">
+    <section className="border-y border-border-default/60 bg-surface-card/80">
       <div className="page-container py-8 md:py-10">
         <Reveal variant="none">
           <dl className="grid grid-cols-2 gap-6 sm:grid-cols-4 lg:gap-12">
