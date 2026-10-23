@@ -43,6 +43,7 @@ import { breadcrumbSchema, eventSchema, type Crumb } from '@/lib/seo/jsonld';
 import { Link } from '@/i18n/routing';
 import { getCatalogSlugs, getEventDetail } from '@/server/content/catalog';
 import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 
 interface PageProps {
   params: Promise<{ locale: string; slug: string }>;
@@ -54,6 +55,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
+  /* Выключенный модуль: ни заголовка, ни описания события в выдаче. */
+  if (!(await getEffectiveEntitlementsSafe()).events) return {};
   const item = await getEventDetail(slug);
   if (!item) return {};
 

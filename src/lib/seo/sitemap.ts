@@ -24,6 +24,7 @@ import type { MetadataRoute } from 'next';
 
 import { absoluteUrl, isEnabled, legalDocuments, routes, seo } from '@/config';
 import { localeMeta, locales } from '@/i18n/config';
+import type { FeatureKey } from '@/config/features';
 
 /** Путь с префиксом локали. Единственное место, где префикс склеивается. */
 function localized(locale: string, path: string): string {
@@ -316,35 +317,32 @@ export function buildSitemap(slugs: EntitySlugs, lastModified: Date = new Date()
 }
 
 /**
- * Sitemap с учётом entitlements (рантайм). Падает грациозно: если БД недоступна
- * на сборке — отдаёт `buildSitemap` (env-фallback), поэтому тесты не требуют БД.
+ * Sitemap с учётом entitlements (рантайм). Модуль, который не удалось прочитать,
+ * считается выключенным: при сбое БД карта короче, но адреса закрытого раздела
+ * в выдачу поисковика не попадают.
  */
 export async function buildSitemapWithEntitlements(slugs: EntitySlugs, lastModified: Date = new Date()): Promise<MetadataRoute.Sitemap> {
+  let effective: Partial<Record<FeatureKey, boolean>> = {};
   try {
     const { getEffectiveEntitlements } = await import('@/server/entitlements/service');
-    const effective = await getEffectiveEntitlements();
-    // Фильтруем запись если её feature выключен entitlements (приватное через sitemap не уходит).
-    const filtered = buildSitemap(slugs, lastModified).filter((entry) => {
-      try {
-        const u = new URL(entry.url);
-        const path = u.pathname.replace(/^\/(hy|ru|en)(?=\/|$)/, '') || '/';
-        if (path === '/shop' || path.startsWith('/shop/') || path.startsWith('/gift-cards')) return !!effective.shop;
-        if (
-          path === '/events' ||
-          path.startsWith('/events/') ||
-          path === '/competitions' ||
-          path.startsWith('/competitions/') ||
-          path === '/social-events' ||
-          path.startsWith('/social-events/')
-        ) return !!effective.events;
-        if (path === '/courses' || path.startsWith('/courses/')) return !!effective.courses || !!effective.videoCourses;
-        return true;
-      } catch {
-        return true;
-      }
-    });
-    return filtered;
+    effective = await getEffectiveEntitlements();
   } catch {
-    return buildSitemap(slugs, lastModified);
+    effective = {};
   }
+  return buildSitemap(slugs, lastModified).filter((entry) => isSitemapUrlEnabled(entry.url, effective));
+}
+
+/** Адрес карты разрешён, только если модуль, которому он принадлежит, включён. */
+function isSitemapUrlEnabled(url: string, effective: Partial<Record<FeatureKey, boolean>>): boolean {
+  let path: string;
+  try {
+    path = new URL(url).pathname.replace(/^\/(hy|ru|en)(?=\/|$)/, '') || '/';
+  } catch {
+    return false;
+  }
+  const under = (base: string) => path === base || path.startsWith(`${base}/`);
+  if (under('/shop') || under('/gift-cards')) return effective.shop === true;
+  if (under('/events') || under('/competitions') || under('/social-events')) return effective.events === true;
+  if (under('/courses')) return effective.courses === true || effective.videoCourses === true;
+  return true;
 }

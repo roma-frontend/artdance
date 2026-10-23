@@ -33,15 +33,18 @@ interface JourneySectionProps {
   /** Кадр на каждый шаг, по порядку; недостающие шаги остаются без кадра. */
   images: readonly MediaRef[];
   locale: Locale;
+  /** Шаг «на паркет» ведёт к соревнованиям: без модуля событий его не показываем. */
+  eventsEnabled?: boolean;
 }
 
-export function JourneySection({ images, locale }: JourneySectionProps) {
+export function JourneySection({ images, locale, eventsEnabled = false }: JourneySectionProps) {
   const t = useTranslations('home.journey');
+  const visibleSteps = steps.filter((step) => step.key !== 'stage' || eventsEnabled);
 
   return (
     <section className="section-y relative">
       <div className="page-container relative">
-        <JourneyTrack totalSteps={steps.length} />
+        <JourneyTrack totalSteps={visibleSteps.length} />
 
         <Reveal variant="none" className="mb-12">
           <SectionHeading
@@ -54,7 +57,7 @@ export function JourneySection({ images, locale }: JourneySectionProps) {
         </Reveal>
 
         <StackCards aria-label={t('title')}>
-          {steps.map((step, index) => {
+          {visibleSteps.map((step, index) => {
             const image = images[index];
             return (
               <li key={step.key} data-journey-step="">

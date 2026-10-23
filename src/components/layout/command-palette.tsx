@@ -27,6 +27,7 @@ import {
 import { isAdminPath, routes } from '@/config/routes';
 import { adminNavigation } from '@/config/admin';
 import { danceStyles } from '@/domain/enums';
+import { useEntitlementsSnapshot } from '@/lib/entitlements/use-entitlements';
 
 interface AdminCommandsProps {
   go: (href: string) => void;
@@ -62,6 +63,7 @@ function AdminCommands({ go }: AdminCommandsProps) {
 }
 
 export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean }) {
+  const entitlements = useEntitlementsSnapshot();
   const [open, setOpen] = useState(initialOpen);
   const router = useRouter();
   const pathname = usePathname();
@@ -127,15 +129,19 @@ export function CommandPalette({ initialOpen = false }: { initialOpen?: boolean 
           <CommandItem value="studios venues" onSelect={() => go(routes.studios())}>
             {String(t('admin.nav.venues'))}
           </CommandItem>
-          <CommandItem value="events" onSelect={() => go(routes.events())}>
-            {String(t('admin.nav.events'))}
-          </CommandItem>
+          {entitlements?.events === true && (
+            <CommandItem value="events" onSelect={() => go(routes.events())}>
+              {String(t('admin.nav.events'))}
+            </CommandItem>
+          )}
           <CommandItem value="shop products" onSelect={() => go(routes.shop())}>
             {String(t('admin.nav.products'))}
           </CommandItem>
-          <CommandItem value="pricing plans" onSelect={() => go(routes.pricing())}>
-            Pricing
-          </CommandItem>
+          {entitlements?.subscriptions === true && (
+            <CommandItem value="pricing plans" onSelect={() => go(routes.pricing())}>
+              Pricing
+            </CommandItem>
+          )}
           <CommandItem value="contact" onSelect={() => go(routes.contact())}>
             Contact
           </CommandItem>

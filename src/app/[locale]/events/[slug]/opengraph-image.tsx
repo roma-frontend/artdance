@@ -21,6 +21,7 @@ import {
   renderOgCard,
 } from '@/lib/seo/og-image';
 import { getCatalogSlugs, getEventDetail } from '@/server/content/catalog';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 
 export const alt = ogImageAlt;
 export const size = ogImageSize;
@@ -38,6 +39,7 @@ interface ImageProps {
 export default async function Image({ params }: ImageProps) {
   const { locale, slug } = await params;
   setRequestLocale(locale as Locale);
+  await assertEntitlementOrNotFound('events');
 
   const item = await getEventDetail(slug);
   if (!item) notFound();

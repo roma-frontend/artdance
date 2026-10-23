@@ -39,11 +39,11 @@ function journeyMediaRef(name: string): MediaRef | undefined {
   };
 }
 
-export function JourneyLazy({ locale }: { locale: Locale }) {
-  // Всегда 4 шага — не зависит от entitlements.events
+export function JourneyLazy({ locale, eventsEnabled }: { locale: Locale; eventsEnabled: boolean }) {
+  // Шаги фиксированы; шаг «на паркет» скрывается вместе с модулем событий
   const images = JOURNEY_STEPS.map((name) => journeyMediaRef(name)).filter(
     (v): v is MediaRef => v !== undefined,
   );
 
-  return <JourneySection images={images} locale={locale} />;
+  return <JourneySection images={images} locale={locale} eventsEnabled={eventsEnabled} />;
 }

@@ -23,6 +23,7 @@ import { Link } from '@/i18n/routing';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { routes, site } from '@/config';
 import { getInstructorBookingContent, getUsableClassPasses } from '@/server/content/booking';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 
@@ -86,7 +87,8 @@ export default async function InstructorBookingPage({ params, searchParams }: Pa
     );
   }
 
-  const classPasses = await getUsableClassPasses(new Date());
+  const packagesEnabled = (await getEffectiveEntitlementsSafe()).packages;
+  const classPasses = packagesEnabled ? await getUsableClassPasses(new Date()) : [];
 
   return (
     <main id={site.mainContentId}>

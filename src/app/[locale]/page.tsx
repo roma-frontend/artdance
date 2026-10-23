@@ -179,7 +179,7 @@ export default async function HomePage({ params }: PageProps) {
       </CinemaAperture>
 
       {/* ── JOURNEY: 4 шага — всегда, не зависит от entitlements.events */}
-      <JourneyLazy locale={locale as Locale} />
+      <JourneyLazy locale={locale as Locale} eventsEnabled={eventsEnabled} />
 
       {/* ── INSTRUCTORS: печать крутится от прохода секции, не всей страницы ── */}
       <section className="section-y relative instructors-section overflow-hidden">

@@ -1,9 +1,8 @@
-@import 'tailwindcss';
-@import './tokens.css';
+@import "tailwindcss";
+@import "./tokens.css";
 
 /* next-themes writes `data-theme`, not the `.dark` class Tailwind expects. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-
 
 :root {
   /* JS уточняет высоту панели после layout; токен закрывает первый paint. */
@@ -184,9 +183,9 @@
   summary,
   label,
   select,
-  [role='button'],
-  [role='tab'],
-  [role='switch'] {
+  [role="button"],
+  [role="tab"],
+  [role="switch"] {
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
@@ -292,8 +291,10 @@
       «InvalidStateError: ViewTransition opt-in disabled» на каждом router.push.
       Если понадобится нативный MPA-переход — выносить @view-transition
       на верхний уровень, без вложенности в @supports. */
-    @supports (view-transition-name: none) {
-     ::view-transition-group(root) { animation-duration: 260ms; }
+  @supports (view-transition-name: none) {
+    ::view-transition-group(root) {
+      animation-duration: 260ms;
+    }
   }
 
   /* Печать пропуска: только чек по центру, ровно 1 страница, цвета из токенов. */
@@ -365,13 +366,20 @@
    * перекрывает (анимации приоритетнее инлайнового стиля).
    */
   @supports (animation-timeline: scroll(root block)) {
-    .scroll-progress-native:not([data-scroll-driver='script']) {
+    .scroll-progress-native:not([data-scroll-driver="script"]) {
       animation: grow-x linear forwards;
       animation-duration: auto;
       animation-timeline: scroll(root block);
       transform-origin: left;
     }
-    @keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+    @keyframes grow-x {
+      from {
+        transform: scaleX(0);
+      }
+      to {
+        transform: scaleX(1);
+      }
+    }
   }
 }
 
@@ -395,7 +403,8 @@
   .button-motion,
   .favorite-motion {
     scale: 1;
-    transition: background-color var(--duration-normal) var(--ease-standard),
+    transition:
+      background-color var(--duration-normal) var(--ease-standard),
       color var(--duration-normal) var(--ease-standard),
       border-color var(--duration-normal) var(--ease-standard),
       box-shadow var(--duration-normal) var(--ease-standard),
@@ -403,7 +412,7 @@
       scale var(--duration-normal) var(--ease-brand);
   }
 
-  .button-motion:active:not(:disabled):not([aria-disabled='true']),
+  .button-motion:active:not(:disabled):not([aria-disabled="true"]),
   .favorite-motion:active {
     scale: 0.97;
     transition-duration: var(--duration-instant);
@@ -415,8 +424,10 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    .button-motion:hover:not(:disabled):not([aria-disabled='true']) :is(.lucide-arrow-right, .lucide-chevron-right),
-    .button-motion:focus-visible :is(.lucide-arrow-right, .lucide-chevron-right) {
+    .button-motion:hover:not(:disabled):not([aria-disabled="true"])
+      :is(.lucide-arrow-right, .lucide-chevron-right),
+    .button-motion:focus-visible
+      :is(.lucide-arrow-right, .lucide-chevron-right) {
       translate: var(--space-1) 0;
     }
   }
@@ -430,7 +441,7 @@
       translate: none;
     }
 
-    .button-motion:active:not(:disabled):not([aria-disabled='true']),
+    .button-motion:active:not(:disabled):not([aria-disabled="true"]),
     .favorite-motion:active {
       scale: 1;
     }
@@ -439,7 +450,9 @@
   /* Full-width cinema header → floating island, without clipping its menus. */
   .site-header {
     padding: 0;
-    transition: transform 520ms cubic-bezier(0.22, 1, 0.36, 1), padding 520ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition:
+      transform 520ms cubic-bezier(0.22, 1, 0.36, 1),
+      padding 520ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .site-header-surface {
@@ -452,41 +465,47 @@
     border-top-width: 0;
     border-inline-width: 0;
     border-radius: 0;
-    transition: max-width 520ms cubic-bezier(0.22, 1, 0.36, 1), height 520ms cubic-bezier(0.22, 1, 0.36, 1),
-      border-radius 520ms cubic-bezier(0.22, 1, 0.36, 1), background-color 360ms var(--ease-standard),
-      border-color 360ms var(--ease-standard), box-shadow 360ms var(--ease-standard);
+    transition:
+      max-width 520ms cubic-bezier(0.22, 1, 0.36, 1),
+      height 520ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-radius 520ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 360ms var(--ease-standard),
+      border-color 360ms var(--ease-standard),
+      box-shadow 360ms var(--ease-standard);
   }
 
   .site-header-content {
     transition: padding 520ms var(--ease-brand);
   }
 
-  .site-header[data-mode='island'] {
+  .site-header[data-mode="island"] {
     padding: var(--space-4) var(--space-6);
   }
 
-  .site-header[data-mode='island'] .site-header-surface {
+  .site-header[data-mode="island"] .site-header-surface {
     max-width: 1140px;
     height: var(--layout-nav-height-scrolled);
     border-width: 1px;
     border-radius: var(--radius-lg);
     background-color: color-mix(in srgb, var(--surface-card) 92%, transparent);
     backdrop-filter: blur(8px);
-    box-shadow: var(--shadow-lg), inset 0 1px 0 color-mix(in srgb, var(--content-primary) 5%, transparent);
+    box-shadow:
+      var(--shadow-lg),
+      inset 0 1px 0 color-mix(in srgb, var(--content-primary) 5%, transparent);
   }
 
-  .site-header[data-mode='island'] .site-header-content {
+  .site-header[data-mode="island"] .site-header-content {
     padding-inline: var(--space-4);
     gap: var(--space-3);
   }
 
-  .site-header[data-mode='island'] nav {
+  .site-header[data-mode="island"] nav {
     border-color: transparent;
     background: transparent;
     backdrop-filter: none;
   }
 
-  .site-header[data-mode='island'] nav a {
+  .site-header[data-mode="island"] nav a {
     padding-inline: var(--space-2);
   }
 
@@ -506,7 +525,7 @@
     margin-inline: 0;
   }
 
-  .site-header[data-mode='island'] .site-header-secondary-action {
+  .site-header[data-mode="island"] .site-header-secondary-action {
     display: none;
   }
 
@@ -575,7 +594,7 @@
   }
 
   .nav-link::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: calc(var(--space-1) * -1);
     left: 0;
@@ -601,7 +620,7 @@
   }
 
   .eyebrow-rule::before {
-    content: '';
+    content: "";
     width: var(--space-6);
     height: var(--border-width-thin);
     flex: none;
@@ -641,7 +660,7 @@
     color: var(--content-tertiary);
   }
 
-  .form-input:hover:not(:disabled, [aria-invalid='true']) {
+  .form-input:hover:not(:disabled, [aria-invalid="true"]) {
     border-color: var(--border-strong);
   }
 
@@ -653,7 +672,7 @@
    * Ошибка обозначена рамкой И текстом рядом (его рисует `FormField`): цвет не
    * может быть единственным носителем смысла — WCAG 1.4.1.
    */
-  .form-input[aria-invalid='true'] {
+  .form-input[aria-invalid="true"] {
     border-color: var(--danger);
   }
 
@@ -701,7 +720,8 @@
     min-height: 100dvh;
     flex-direction: column;
     padding-bottom: calc(
-      var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-4)
+      var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) +
+        var(--space-4)
     );
   }
 
@@ -711,8 +731,6 @@
     }
   }
 
-
-
   /*
    * Полосы разгона и приколотой секции больше нет: занавес, раскрываемый
    * прокруткой, удалён 21.09.2026 (решение заказчика — спортивный образ;
@@ -720,7 +738,6 @@
    * обычная секция высотой в одно окно — всю его геометрию держит
    * `.hero-viewport` выше.
    */
-
 
   /*
    * Затемнение под текстом первого экрана.
@@ -811,6 +828,40 @@
     }
   }
 
+  /* ── Scrollbar ─────────────────────────────────────────────────────────────
+   Track stays invisible, the thumb is a straight-edged hairline that only
+   reaches full contrast on hover. Arrow buttons are hidden. */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-button {
+    display: none;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar);
+    border-radius: 0;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-3);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  * {
+    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-width: thin;
+  }
+
   /*
    * Лента с горизонтальной прокруткой без видимой полосы.
    *
@@ -865,7 +916,8 @@
   .marquee-track {
     display: flex;
     width: max-content;
-    animation: marquee-scroll var(--duration-marquee) var(--ease-linear) infinite;
+    animation: marquee-scroll var(--duration-marquee) var(--ease-linear)
+      infinite;
   }
 
   .marquee:hover .marquee-track,
@@ -903,7 +955,8 @@
   .editorial-video {
     -webkit-mask-image: var(--mask-cinema-edges);
     mask-image: var(--mask-cinema-edges);
-    animation: ken-burns var(--duration-ken-burns) var(--ease-standard) infinite alternate;
+    animation: ken-burns var(--duration-ken-burns) var(--ease-standard) infinite
+      alternate;
   }
 
   /*
@@ -1012,7 +1065,7 @@
    * мешал читать сам текст.
    */
   .quote-watermark::before {
-    content: '\201C';
+    content: "\201C";
     position: absolute;
     top: calc(var(--space-4) * -1);
     right: var(--space-4);
@@ -1161,7 +1214,11 @@
     }
     .card-surface:hover,
     .card-surface:focus-within {
-      border-color: color-mix(in srgb, var(--accent) 38%, var(--border-default));
+      border-color: color-mix(
+        in srgb,
+        var(--accent) 38%,
+        var(--border-default)
+      );
       box-shadow: var(--shadow-md);
     }
   }
@@ -1353,13 +1410,17 @@
    */
   .has-mobile-dock {
     padding-bottom: calc(
-      var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-6)
+      var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) +
+        var(--space-6)
     );
   }
 
   /* Плавающая кнопка темы поднимается над доком, а не прячется под ним. */
   .above-mobile-dock {
-    bottom: calc(var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-6));
+    bottom: calc(
+      var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) +
+        var(--space-6)
+    );
   }
 
   /*
@@ -1372,7 +1433,8 @@
    */
   .above-mobile-dock-flush {
     bottom: calc(
-      var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-3) + var(--space-2)
+      var(--layout-bottom-nav-height) + env(safe-area-inset-bottom, 0px) +
+        var(--space-3) + var(--space-2)
     );
   }
 
@@ -1406,23 +1468,23 @@
      * доком: тест «footer не накрыт» проходил по border-box футера, хотя именно
      * буквы уже попадали под полупрозрачную панель.
      */
-     .footer-cinema {
-       padding-bottom: var(--space-8);
-     }
+    .footer-cinema {
+      padding-bottom: var(--space-8);
+    }
 
-     /*
+    /*
       * На detail-страницах фиксированная CTA тоже вынута из потока. Резервируем
       * её внутри cinema-фона, а не у body: футер остаётся тёмным до самого
       * края, декоративное ARTDANCE поднимается над карточкой, и под панелью не
       * появляется светлая полоса канвы.
       */
-     body:has([data-slot='sticky-action-bar']) .footer-cinema {
-       padding-bottom: calc(
-         var(--space-8) + var(--sticky-action-bar-height) + var(--space-3)
-       );
-     }
+    body:has([data-slot="sticky-action-bar"]) .footer-cinema {
+      padding-bottom: calc(
+        var(--space-8) + var(--sticky-action-bar-height) + var(--space-3)
+      );
+    }
 
-     body:has([data-slot='sticky-action-bar']) .announcement-banner {
+    body:has([data-slot="sticky-action-bar"]) .announcement-banner {
       display: none;
     }
   }
@@ -1497,11 +1559,11 @@
    *
    * Возврат после уходa курсора — один шаг, его можно вести медленно и мягко.
    */
-  [data-slot='card-tilt'] {
+  [data-slot="card-tilt"] {
     transition: transform var(--duration-slow) var(--ease-brand);
   }
 
-  [data-slot='card-tilt'][data-tilting] {
+  [data-slot="card-tilt"][data-tilting] {
     transition: transform var(--duration-instant) var(--ease-standard);
   }
 
@@ -1523,7 +1585,7 @@
       rotate: none;
     }
 
-    [data-slot='card-tilt'] {
+    [data-slot="card-tilt"] {
       transition: none;
     }
   }
@@ -1539,14 +1601,26 @@
  */
 @media (width < theme(--breakpoint-lg)) {
   .site-header .site-header-surface {
-    background-color: color-mix(in srgb, var(--surface-cinema) 82%, transparent);
+    background-color: color-mix(
+      in srgb,
+      var(--surface-cinema) 82%,
+      transparent
+    );
     backdrop-filter: blur(8px);
     border-bottom-width: 1px;
-    border-bottom-color: color-mix(in srgb, var(--border-on-cinema) 42%, transparent);
+    border-bottom-color: color-mix(
+      in srgb,
+      var(--border-on-cinema) 42%,
+      transparent
+    );
   }
 
-  .site-header[data-state='scrolled'] .site-header-surface {
-    background-color: color-mix(in srgb, var(--surface-canvas) 88%, transparent);
+  .site-header[data-state="scrolled"] .site-header-surface {
+    background-color: color-mix(
+      in srgb,
+      var(--surface-canvas) 88%,
+      transparent
+    );
     border-bottom-color: var(--border-default);
   }
 }
@@ -1607,7 +1681,8 @@
  * Это обязательное свойство — `clip-path` в статическом CSS без анимации
  * оставил бы заголовок обрезанным навсегда, то есть потерял бы контент.
  */
-@supports (view-timeline-name: --heading-reveal) and (animation-range: entry 10% cover 35%) {
+@supports (view-timeline-name: --heading-reveal) and
+  (animation-range: entry 10% cover 35%) {
   @media (prefers-reduced-motion: no-preference) {
     [data-reveal-mask] {
       view-timeline: --heading-reveal block;
@@ -1637,7 +1712,7 @@
 }
 
 /* Lite и печать оставляют заголовки открытыми независимо от положения страницы. */
-[data-lite='true'] [data-reveal-mask-content] {
+[data-lite="true"] [data-reveal-mask-content] {
   animation: none;
   transform: none;
 }
@@ -1678,32 +1753,32 @@
  * любым `@layer`, включая `utilities`, поэтому `z-50` внутри вендорного
  * компонента больше ни на что не влияет и патчить обновляемые файлы не нужно.
  */
-[data-slot='sheet-overlay'],
-[data-slot='sheet-content'],
-[data-slot='drawer-overlay'],
-[data-slot='drawer-content'] {
+[data-slot="sheet-overlay"],
+[data-slot="sheet-content"],
+[data-slot="drawer-overlay"],
+[data-slot="drawer-content"] {
   z-index: var(--z-drawer);
 }
 
-[data-slot='dialog-overlay'],
-[data-slot='dialog-content'],
-[data-slot='alert-dialog-overlay'],
-[data-slot='alert-dialog-content'] {
+[data-slot="dialog-overlay"],
+[data-slot="dialog-content"],
+[data-slot="alert-dialog-overlay"],
+[data-slot="alert-dialog-content"] {
   z-index: var(--z-modal);
 }
 
-[data-slot='dropdown-menu-content'],
-[data-slot='dropdown-menu-sub-content'],
-[data-slot='select-content'] {
+[data-slot="dropdown-menu-content"],
+[data-slot="dropdown-menu-sub-content"],
+[data-slot="select-content"] {
   z-index: var(--z-dropdown);
 }
 
-[data-slot='popover-content'],
-[data-slot='hover-card-content'] {
+[data-slot="popover-content"],
+[data-slot="hover-card-content"] {
   z-index: var(--z-popover);
 }
 
-[data-slot='tooltip-content'] {
+[data-slot="tooltip-content"] {
   z-index: var(--z-tooltip);
 }
 
@@ -1790,11 +1865,11 @@
   }
 }
 
-[data-slot='sheet-overlay'][data-state='open'] {
+[data-slot="sheet-overlay"][data-state="open"] {
   animation: sheet-overlay-in var(--duration-normal) var(--ease-standard);
 }
 
-[data-slot='sheet-overlay'][data-state='closed'] {
+[data-slot="sheet-overlay"][data-state="closed"] {
   animation: sheet-overlay-out var(--duration-normal) var(--ease-standard);
 }
 
@@ -1803,19 +1878,19 @@
  * читается как «пришла», а уходящая за те же 500ms — как «подвисла». Уход
  * короче, потому что пользователь его уже не рассматривает.
  */
-[data-slot='sheet-content'][data-side='bottom'][data-state='open'] {
+[data-slot="sheet-content"][data-side="bottom"][data-state="open"] {
   animation: sheet-in-bottom var(--duration-slow) var(--ease-brand);
 }
 
-[data-slot='sheet-content'][data-side='bottom'][data-state='closed'] {
+[data-slot="sheet-content"][data-side="bottom"][data-state="closed"] {
   animation: sheet-out-bottom var(--duration-normal) var(--ease-brand);
 }
 
-[data-slot='sheet-content'][data-side='right'][data-state='open'] {
+[data-slot="sheet-content"][data-side="right"][data-state="open"] {
   animation: sheet-in-right var(--duration-slow) var(--ease-brand);
 }
 
-[data-slot='sheet-content'][data-side='right'][data-state='closed'] {
+[data-slot="sheet-content"][data-side="right"][data-state="closed"] {
   animation: sheet-out-right var(--duration-normal) var(--ease-brand);
 }
 
@@ -1825,11 +1900,11 @@
    * Полностью снимать анимацию нельзя — Radix ждёт её окончания, чтобы
    * размонтировать содержимое, и без неё закрытие происходит рывком.
    */
-  [data-slot='sheet-content'][data-state='open'] {
+  [data-slot="sheet-content"][data-state="open"] {
     animation: sheet-overlay-in var(--duration-normal) var(--ease-standard);
   }
 
-  [data-slot='sheet-content'][data-state='closed'] {
+  [data-slot="sheet-content"][data-state="closed"] {
     animation: sheet-overlay-out var(--duration-normal) var(--ease-standard);
   }
 }
@@ -1874,35 +1949,35 @@
   }
 }
 
-[data-slot='dialog-overlay'][data-state='open'],
-[data-slot='alert-dialog-overlay'][data-state='open'] {
+[data-slot="dialog-overlay"][data-state="open"],
+[data-slot="alert-dialog-overlay"][data-state="open"] {
   animation: dialog-overlay-in var(--duration-normal) var(--ease-standard);
 }
 
-[data-slot='dialog-overlay'][data-state='closed'],
-[data-slot='alert-dialog-overlay'][data-state='closed'] {
+[data-slot="dialog-overlay"][data-state="closed"],
+[data-slot="alert-dialog-overlay"][data-state="closed"] {
   animation: dialog-overlay-out var(--duration-fast) var(--ease-standard);
 }
 
-[data-slot='dialog-content'][data-state='open'],
-[data-slot='alert-dialog-content'][data-state='open'] {
+[data-slot="dialog-content"][data-state="open"],
+[data-slot="alert-dialog-content"][data-state="open"] {
   animation: dialog-in var(--duration-normal) var(--ease-standard);
 }
 
-[data-slot='dialog-content'][data-state='closed'],
-[data-slot='alert-dialog-content'][data-state='closed'] {
+[data-slot="dialog-content"][data-state="closed"],
+[data-slot="alert-dialog-content"][data-state="closed"] {
   animation: dialog-out var(--duration-fast) var(--ease-standard);
 }
 
 @media (prefers-reduced-motion: reduce) {
   /* Масштаб — движение, прозрачность — нет. Уходит только первое. */
-  [data-slot='dialog-content'][data-state='open'],
-  [data-slot='alert-dialog-content'][data-state='open'] {
+  [data-slot="dialog-content"][data-state="open"],
+  [data-slot="alert-dialog-content"][data-state="open"] {
     animation: dialog-overlay-in var(--duration-normal) var(--ease-standard);
   }
 
-  [data-slot='dialog-content'][data-state='closed'],
-  [data-slot='alert-dialog-content'][data-state='closed'] {
+  [data-slot="dialog-content"][data-state="closed"],
+  [data-slot="alert-dialog-content"][data-state="closed"] {
     animation: dialog-overlay-out var(--duration-fast) var(--ease-standard);
   }
 }
@@ -2027,7 +2102,7 @@ html:has(body[data-fullscreen-locked]) {
  * обязано иметь обычную цель), поэтому декоративный дубль скрыт. Патчить
  * вендорный файл нельзя: его перезаписывает `shadcn add --overwrite`.
  */
-[data-slot='drawer-content'] > div:not([data-slot]):first-child {
+[data-slot="drawer-content"] > div:not([data-slot]):first-child {
   display: none;
 }
 
@@ -2083,8 +2158,7 @@ html:has(body[data-fullscreen-locked]) {
 
 @media (hover: hover) and (pointer: fine) and (width >= 768px) and (prefers-reduced-motion: no-preference) {
   .hero-depth-camera {
-    transform:
-      translate3d(0, 0, var(--hero-stage-depth, 0px))
+    transform: translate3d(0, 0, var(--hero-stage-depth, 0px))
       rotateX(var(--hero-stage-rotate-x, 0deg))
       rotateY(var(--hero-stage-rotate-y, 0deg));
     will-change: transform;
@@ -2098,7 +2172,7 @@ html:has(body[data-fullscreen-locked]) {
   }
 }
 
-[data-lite='true'] .hero-depth-camera {
+[data-lite="true"] .hero-depth-camera {
   transform: none !important;
   will-change: auto;
 }
@@ -2114,10 +2188,10 @@ html:has(body[data-fullscreen-locked]) {
    * пересчёт раскладки и держит 60 fps на слабых машинах.
    */
   transform: translate3d(
-      calc(var(--hero-parallax-x) * -36px),
-      calc(var(--hero-parallax-y) * -36px),
-      0
-    );
+    calc(var(--hero-parallax-x) * -36px),
+    calc(var(--hero-parallax-y) * -36px),
+    0
+  );
   will-change: transform;
 }
 
@@ -2126,7 +2200,11 @@ html:has(body[data-fullscreen-locked]) {
  * (пишет JS вместе с `opacity`). Свойства независимы и складываются.
  */
 .hero-viewport .hero-content {
-  transform: translate3d(calc(var(--hero-parallax-x) * 20px), calc(var(--hero-parallax-y) * 14px), 0);
+  transform: translate3d(
+    calc(var(--hero-parallax-x) * 20px),
+    calc(var(--hero-parallax-y) * 14px),
+    0
+  );
   will-change: transform, translate, opacity;
 }
 
@@ -2167,7 +2245,7 @@ html:has(body[data-fullscreen-locked]) {
   }
 }
 
-[data-lite='true'] .hero-search-depth {
+[data-lite="true"] .hero-search-depth {
   transform: none !important;
   will-change: auto;
 }
@@ -2194,12 +2272,17 @@ html:has(body[data-fullscreen-locked]) {
   line-height: 0.9;
   letter-spacing: -0.02em;
   color: transparent;
-  -webkit-text-stroke: 1.5px color-mix(in srgb, var(--color-content-on-cinema) 85%, transparent);
+  -webkit-text-stroke: 1.5px
+    color-mix(in srgb, var(--color-content-on-cinema) 85%, transparent);
   text-shadow:
     0 0 30px rgba(255, 255, 255, 0.15),
     0 0 60px var(--accent-glow);
   opacity: 0.28;
-  transform: translate3d(calc(var(--hero-parallax-x) * -60px), calc(var(--hero-parallax-y) * -40px), 0);
+  transform: translate3d(
+    calc(var(--hero-parallax-x) * -60px),
+    calc(var(--hero-parallax-y) * -40px),
+    0
+  );
   will-change: transform, translate;
 }
 
@@ -2225,7 +2308,7 @@ html:has(body[data-fullscreen-locked]) {
   animation-delay: calc(var(--hero-enter-index, 0) * var(--hero-enter-stagger));
 }
 
-  @keyframes hero-enter {
+@keyframes hero-enter {
   from {
     opacity: 0;
     transform: translateY(28px);
@@ -2237,9 +2320,11 @@ html:has(body[data-fullscreen-locked]) {
   }
 }
 
-  @keyframes shimmer {
-    100% { transform: translateX(100%); }
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
+}
 
 /* --- 3. Золотой блик на акцентном слове ----------------------------------- */
 
@@ -2341,7 +2426,8 @@ html:has(body[data-fullscreen-locked]) {
 
 /* Кино-грейдинг: тёплый amber в светах, глубже тени, мягче хайлайты */
 .hero-mythic .hero-video-main {
-  filter: contrast(1.08) saturate(1.14) brightness(0.96) sepia(0.08) hue-rotate(-4deg);
+  filter: contrast(1.08) saturate(1.14) brightness(0.96) sepia(0.08)
+    hue-rotate(-4deg);
 }
 
 /* Медленный Ken Burns — дыхание кадра как у кино-камеры на штативе */
@@ -2352,8 +2438,12 @@ html:has(body[data-fullscreen-locked]) {
 }
 
 @keyframes hero-mythic-burn {
-  from { scale: 1.08; }
-  to   { scale: 1.18; }
+  from {
+    scale: 1.08;
+  }
+  to {
+    scale: 1.18;
+  }
 }
 
 /* God rays — объёмные косые лучи как в храме сквозь пыль */
@@ -2363,10 +2453,27 @@ html:has(body[data-fullscreen-locked]) {
   z-index: 2;
   pointer-events: none;
   background:
-    linear-gradient(112deg, transparent 38%, rgba(255, 233, 165, 0.09) 46%, rgba(255, 220, 120, 0.14) 50%, rgba(212, 175, 55, 0.07) 54%, transparent 62%),
-    linear-gradient(108deg, transparent 52%, rgba(255, 226, 152, 0.06) 60%, rgba(255, 244, 200, 0.08) 64%, transparent 70%);
-  background-size: 180% 180%, 220% 220%;
-  background-position: 30% 20%, 70% 80%;
+    linear-gradient(
+      112deg,
+      transparent 38%,
+      rgba(255, 233, 165, 0.09) 46%,
+      rgba(255, 220, 120, 0.14) 50%,
+      rgba(212, 175, 55, 0.07) 54%,
+      transparent 62%
+    ),
+    linear-gradient(
+      108deg,
+      transparent 52%,
+      rgba(255, 226, 152, 0.06) 60%,
+      rgba(255, 244, 200, 0.08) 64%,
+      transparent 70%
+    );
+  background-size:
+    180% 180%,
+    220% 220%;
+  background-position:
+    30% 20%,
+    70% 80%;
   mix-blend-mode: screen;
   opacity: 0.95;
 }
@@ -2378,9 +2485,18 @@ html:has(body[data-fullscreen-locked]) {
 }
 
 @keyframes hero-mythic-rays {
-  0%   { opacity: 0.88; transform: translate3d(0, 0, 0); }
-  50%  { opacity: 1;    transform: translate3d(6px, -4px, 0); }
-  100% { opacity: 0.92; transform: translate3d(-4px, 3px, 0); }
+  0% {
+    opacity: 0.88;
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 1;
+    transform: translate3d(6px, -4px, 0);
+  }
+  100% {
+    opacity: 0.92;
+    transform: translate3d(-4px, 3px, 0);
+  }
 }
 
 /* Храмовая виньетка — темнит углы, собирает взгляд в центр где танцор */
@@ -2390,8 +2506,17 @@ html:has(body[data-fullscreen-locked]) {
   z-index: 2;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 78% 68% at 50% 42%, transparent 38%, rgba(11, 10, 9, 0.22) 68%, rgba(11, 10, 9, 0.58) 100%),
-    radial-gradient(ellipse 55% 45% at 78% 22%, rgba(212, 175, 55, 0.08) 0%, transparent 55%);
+    radial-gradient(
+      ellipse 78% 68% at 50% 42%,
+      transparent 38%,
+      rgba(11, 10, 9, 0.22) 68%,
+      rgba(11, 10, 9, 0.58) 100%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 78% 22%,
+      rgba(212, 175, 55, 0.08) 0%,
+      transparent 55%
+    );
 }
 
 /* Плёночное зерно — SVG turbulence как у 35mm, едва заметно, но даёт фактуру.
@@ -2552,7 +2677,7 @@ html:has(body[data-fullscreen-locked]) {
     margin-bottom: var(--space-4);
   }
 
-  .hero-content [class*='text-heading-3'] {
+  .hero-content [class*="text-heading-3"] {
     font-size: var(--text-xl);
   }
 
@@ -2570,7 +2695,7 @@ html:has(body[data-fullscreen-locked]) {
    * Компрессия вертикали без жертвы размером текста: бейдж и подзаголовок
    * поджимаются к соседям, статы — к границе. Заголовок остаётся не ниже 5xl.
    */
-  .hero-content [class*='text-eyebrow'] {
+  .hero-content [class*="text-eyebrow"] {
     margin-bottom: var(--space-4);
   }
 
@@ -2585,7 +2710,7 @@ html:has(body[data-fullscreen-locked]) {
   }
 
   /* Цифры статов компактнее, но по-прежнему крупнее подписей. */
-  .hero-content dd[class*='text-heading'] {
+  .hero-content dd[class*="text-heading"] {
     font-size: var(--text-xl);
   }
 }
@@ -2600,7 +2725,7 @@ html:has(body[data-fullscreen-locked]) {
   }
 }
 
-[data-slot='card-tilt'][data-animation-card] {
+[data-slot="card-tilt"][data-animation-card] {
   transition: none;
 }
 
@@ -2724,14 +2849,22 @@ html:has(body[data-fullscreen-locked]) {
 
 @supports (mask-composite: exclude) {
   .liquid-glass::before {
-    content: '';
+    content: "";
     position: absolute;
     inset: 0;
     padding: var(--border-width-hairline);
     border-radius: inherit;
     pointer-events: none;
-    background: linear-gradient(135deg, var(--content-on-cinema), var(--border-on-cinema) 45%, transparent 65%, var(--content-on-cinema-muted));
-    mask: linear-gradient(var(--content-on-cinema) 0 0) content-box, linear-gradient(var(--content-on-cinema) 0 0);
+    background: linear-gradient(
+      135deg,
+      var(--content-on-cinema),
+      var(--border-on-cinema) 45%,
+      transparent 65%,
+      var(--content-on-cinema-muted)
+    );
+    mask:
+      linear-gradient(var(--content-on-cinema) 0 0) content-box,
+      linear-gradient(var(--content-on-cinema) 0 0);
     mask-composite: exclude;
   }
 }
@@ -2744,7 +2877,7 @@ html:has(body[data-fullscreen-locked]) {
  * Правила вне слоёв, после `.liquid-glass`: иначе её `position: relative`
  * перебил бы утилиту `absolute` из слоя utilities.
  */
-[data-slot='card-tilt'] {
+[data-slot="card-tilt"] {
   --card-cursor-x: 50%;
   --card-cursor-y: 50%;
 }
@@ -2774,13 +2907,19 @@ html:has(body[data-fullscreen-locked]) {
     translate: 0 var(--space-3);
   }
 
-.card-swap-caption {
+  .card-swap-caption {
     opacity: 0;
     translate: 0 var(--space-2);
     /* Храмовый скрим: блок читается и на светлом балетном кадре, и на тёмном */
-    background: linear-gradient(135deg, rgba(11,10,9,0.78) 0%, rgba(11,10,9,0.62) 100%);
-    border: 1px solid rgba(255,255,255,0.18);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.35);
+    background: linear-gradient(
+      135deg,
+      rgba(11, 10, 9, 0.78) 0%,
+      rgba(11, 10, 9, 0.62) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.45),
+      0 2px 8px rgba(0, 0, 0, 0.35);
     /* Без backdrop-filter: подпись на hover не пересчитывает фон под собой на каждом кадре скролла. */
     transition:
       opacity var(--duration-normal) var(--ease-brand),
@@ -2790,11 +2929,15 @@ html:has(body[data-fullscreen-locked]) {
 
   /* Подложка-градиент под подпись — на медиа-контейнере, не на card-swap (он display:none до hover) */
   .card-surface [data-portal-media]::after {
-    content: '';
+    content: "";
     position: absolute;
     inset: auto 0 0 0;
     height: 64px;
-    background: linear-gradient(to top, rgba(11,10,9,0.58) 0%, transparent 100%);
+    background: linear-gradient(
+      to top,
+      rgba(11, 10, 9, 0.58) 0%,
+      transparent 100%
+    );
     pointer-events: none;
     opacity: 0;
     transition: opacity var(--duration-normal) var(--ease-brand);
@@ -2890,7 +3033,7 @@ html:has(body[data-fullscreen-locked]) {
   --aperture-tilt: 0deg;
 }
 
-[data-aperture='on'] > * {
+[data-aperture="on"] > * {
   --aperture-open: 1;
   --aperture-flare: 0;
   --aperture-closed: calc(1 - var(--aperture-open));
@@ -2898,35 +3041,35 @@ html:has(body[data-fullscreen-locked]) {
 }
 
 /* Фокус внутри панели — экран открыт целиком: ссылку не прячет маска. */
-[data-aperture='on'] > :focus-within {
+[data-aperture="on"] > :focus-within {
   --aperture-open: 1 !important;
   --aperture-flare: 0 !important;
 }
 
-[data-aperture='on'] > [data-curtain],
-[data-aperture='on'] > [data-curtain][data-revealed] {
+[data-aperture="on"] > [data-curtain],
+[data-aperture="on"] > [data-curtain][data-revealed] {
   overflow: clip;
   clip-path: inset(
     calc(var(--aperture-closed) * var(--aperture-inset-y))
-    calc(var(--aperture-closed) * var(--aperture-inset-x))
-    round calc(var(--aperture-closed) * var(--aperture-radius))
+      calc(var(--aperture-closed) * var(--aperture-inset-x)) round
+      calc(var(--aperture-closed) * var(--aperture-radius))
   );
   transition: none;
 }
 
-[data-aperture='on'] > [data-curtain] [data-parallax='background'] {
+[data-aperture="on"] > [data-curtain] [data-parallax="background"] {
   scale: calc(1 + var(--aperture-closed) * var(--aperture-zoom));
 }
 
-[data-aperture='on'] > [data-curtain] .page-container,
-[data-aperture='on'] > section h2 {
+[data-aperture="on"] > [data-curtain] .page-container,
+[data-aperture="on"] > section h2 {
   filter: none;
   translate: 0 calc(var(--aperture-closed) * 24px);
 }
 
 /* Анаморфный кино-блик на середине раскрытия экрана */
-[data-aperture='on'] > [data-curtain]::before {
-  content: '';
+[data-aperture="on"] > [data-curtain]::before {
+  content: "";
   position: absolute;
   inset-inline: 10%;
   top: 0;
@@ -2945,24 +3088,26 @@ html:has(body[data-fullscreen-locked]) {
   transform: scaleX(calc(0.4 + var(--aperture-open) * 0.6));
 }
 
-[data-aperture='on'] > [data-curtain]::after {
+[data-aperture="on"] > [data-curtain]::after {
   display: none;
 }
 
 /* Разворот книгой: карточки раскрываются от общего корешка по центру сетки. */
-[data-aperture='on'] :has(> [data-aperture-card]) {
+[data-aperture="on"] :has(> [data-aperture-card]) {
   perspective: 1600px;
 }
 
-[data-aperture='on'] [data-aperture-card] {
+[data-aperture="on"] [data-aperture-card] {
   --aperture-side: -1;
   transform-origin: calc(50% - var(--aperture-side) * 50%) 50%;
-  translate: 0 calc(var(--aperture-closed) * var(--aperture-rise)) calc(var(--aperture-closed) * -160px);
-  rotate: y calc(var(--aperture-side) * var(--aperture-closed) * var(--aperture-tilt));
+  translate: 0 calc(var(--aperture-closed) * var(--aperture-rise))
+    calc(var(--aperture-closed) * -160px);
+  rotate: y
+    calc(var(--aperture-side) * var(--aperture-closed) * var(--aperture-tilt));
   opacity: calc(1 - var(--aperture-closed) * 0.45);
 }
 
-[data-aperture='on'] [data-aperture-card]:nth-child(even) {
+[data-aperture="on"] [data-aperture-card]:nth-child(even) {
   --aperture-side: 1;
 }
 
@@ -2989,44 +3134,44 @@ html:has(body[data-fullscreen-locked]) {
   display: none;
 }
 
-[data-aperture='on'] > :focus-within {
+[data-aperture="on"] > :focus-within {
   --aperture-exit: 0 !important;
 }
 
-[data-aperture='on'] > [data-scene] {
+[data-aperture="on"] > [data-scene] {
   --aperture-exit: 0;
 }
 
-[data-aperture='on'] > [data-scene]::after,
-[data-aperture='on'] > [data-scene]::before {
+[data-aperture="on"] > [data-scene]::after,
+[data-aperture="on"] > [data-scene]::before {
   content: none;
 }
 
 /* ── rhythm: шторки-такты ── */
 
-[data-aperture='on'] > [data-scene='rhythm'],
-[data-aperture='on'] > [data-scene='rhythm'][data-revealed] {
+[data-aperture="on"] > [data-scene="rhythm"],
+[data-aperture="on"] > [data-scene="rhythm"][data-revealed] {
   clip-path: none;
 }
 
-[data-aperture='on'] > [data-scene='rhythm'] .scene-rhythm-slats {
+[data-aperture="on"] > [data-scene="rhythm"] .scene-rhythm-slats {
   display: none;
 }
 
 /* Постоянный мягкий акцент: не перерисовываем размытую тень при каждом скролле. */
-[data-aperture='on'] > [data-scene='rhythm'] .editorial-accent {
+[data-aperture="on"] > [data-scene="rhythm"] .editorial-accent {
   text-shadow: 0 0 var(--space-6) var(--accent-glow);
 }
 
 /* ── arena: прожектор ── */
 
-[data-aperture='on'] > [data-scene='arena'],
-[data-aperture='on'] > [data-scene='arena'][data-revealed] {
+[data-aperture="on"] > [data-scene="arena"],
+[data-aperture="on"] > [data-scene="arena"][data-revealed] {
   clip-path: none;
 }
 
-[data-aperture='on'] > [data-scene='arena'] .scene-arena-beam,
-[data-aperture='on'] > [data-scene='arena'] .scene-arena-floor {
+[data-aperture="on"] > [data-scene="arena"] .scene-arena-beam,
+[data-aperture="on"] > [data-scene="arena"] .scene-arena-floor {
   display: none;
 }
 
@@ -3095,7 +3240,10 @@ html:has(body[data-fullscreen-locked]) {
 
   [data-stack-cards] > li {
     position: sticky;
-    top: calc(var(--layout-nav-height) + var(--space-6) + var(--stack-index, 0) * var(--stack-step, 0px));
+    top: calc(
+      var(--layout-nav-height) + var(--space-6) + var(--stack-index, 0) *
+        var(--stack-step, 0px)
+    );
   }
 }
 
@@ -3141,11 +3289,15 @@ html:has(body[data-fullscreen-locked]) {
 
 .portal-vignette {
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 38%, rgba(11, 10, 9, 0.82) 100%);
+  background: radial-gradient(
+    ellipse at center,
+    transparent 38%,
+    rgba(11, 10, 9, 0.82) 100%
+  );
 }
 
 /* Сцена в пролёте — лёгкий bloom как у кинообъектива на ярком кадре */
-[data-slot='portal-transition'] [data-portal-scene-blur] {
+[data-slot="portal-transition"] [data-portal-scene-blur] {
   backdrop-filter: blur(12px);
 }
 
@@ -3183,7 +3335,7 @@ html:has(body[data-fullscreen-locked]) {
     text-shadow var(--duration-normal) var(--ease-brand);
 }
 
-[data-journey-step][data-step-active='true'] .journey-step-number {
+[data-journey-step][data-step-active="true"] .journey-step-number {
   color: var(--accent);
   opacity: 1;
   text-shadow:
@@ -3191,7 +3343,7 @@ html:has(body[data-fullscreen-locked]) {
     0 0 50px var(--accent);
 }
 
-[data-journey-step][data-step-active='true'] article {
+[data-journey-step][data-step-active="true"] article {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border-default));
 }
 
@@ -3206,7 +3358,7 @@ html:has(body[data-fullscreen-locked]) {
 }
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .instructors-section[data-spotlight-active='true'] .card-surface {
+  .instructors-section[data-spotlight-active="true"] .card-surface {
     filter: grayscale(0.85) brightness(0.9);
     transition:
       translate var(--duration-slow) var(--ease-brand),
@@ -3218,8 +3370,9 @@ html:has(body[data-fullscreen-locked]) {
       filter var(--duration-normal) var(--ease-brand);
   }
 
-  .instructors-section[data-spotlight-active='true'] .card-surface:hover,
-  .instructors-section[data-spotlight-active='true'] .card-surface:focus-within {
+  .instructors-section[data-spotlight-active="true"] .card-surface:hover,
+  .instructors-section[data-spotlight-active="true"]
+    .card-surface:focus-within {
     filter: grayscale(0) brightness(1.05);
   }
 
@@ -3228,7 +3381,8 @@ html:has(body[data-fullscreen-locked]) {
     transition: opacity var(--duration-normal) var(--ease-brand);
   }
 
-  .instructors-section[data-spotlight-active='true'] .instructors-spotlight-layer {
+  .instructors-section[data-spotlight-active="true"]
+    .instructors-spotlight-layer {
     opacity: 1;
   }
 
@@ -3246,7 +3400,11 @@ html:has(body[data-fullscreen-locked]) {
       transparent 75%
     );
     mix-blend-mode: screen;
-    transform: translate3d(calc(var(--spotlight-x) - 36rem), calc(var(--spotlight-y) - 28rem), 0);
+    transform: translate3d(
+      calc(var(--spotlight-x) - 36rem),
+      calc(var(--spotlight-y) - 28rem),
+      0
+    );
     will-change: transform;
   }
 
@@ -3263,7 +3421,11 @@ html:has(body[data-fullscreen-locked]) {
       transparent 60%
     );
     mix-blend-mode: soft-light;
-    transform: translate3d(calc(var(--spotlight-x) - 18rem), calc(var(--spotlight-y) - 18rem), 0);
+    transform: translate3d(
+      calc(var(--spotlight-x) - 18rem),
+      calc(var(--spotlight-y) - 18rem),
+      0
+    );
     will-change: transform;
   }
 }
@@ -3324,7 +3486,8 @@ html:has(body[data-fullscreen-locked]) {
   line-height: 0.9;
   letter-spacing: -0.02em;
   color: transparent;
-  -webkit-text-stroke: 1.1px color-mix(in srgb, var(--color-content-on-cinema) 75%, transparent);
+  -webkit-text-stroke: 1.1px
+    color-mix(in srgb, var(--color-content-on-cinema) 75%, transparent);
   text-shadow:
     0 0 22px rgba(255, 255, 255, 0.1),
     0 0 42px var(--accent-glow);
@@ -3365,7 +3528,13 @@ html:has(body[data-fullscreen-locked]) {
 }
 
 .footer-hairline {
-  background: linear-gradient(90deg, transparent, var(--metal) 20%, var(--metal) 80%, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--metal) 20%,
+    var(--metal) 80%,
+    transparent
+  );
   opacity: 0.55;
 }
 
@@ -3377,7 +3546,11 @@ html:has(body[data-fullscreen-locked]) {
 
 .footer-vignette {
   pointer-events: none;
-  background: radial-gradient(ellipse 90% 85% at 50% 55%, transparent 45%, rgba(0, 0, 0, 0.45) 100%);
+  background: radial-gradient(
+    ellipse 90% 85% at 50% 55%,
+    transparent 45%,
+    rgba(0, 0, 0, 0.45) 100%
+  );
 }
 
 .footer-credits {
@@ -3413,19 +3586,32 @@ html:has(body[data-fullscreen-locked]) {
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
-  background: radial-gradient(ellipse at 50% 45%, var(--accent-soft), transparent 65%);
+  background: radial-gradient(
+    ellipse at 50% 45%,
+    var(--accent-soft),
+    transparent 65%
+  );
 }
 .reviews-stage-light::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 5% 20%;
-  background: conic-gradient(from 190deg at 50% 0%, transparent 35%, var(--accent-soft) 48%, transparent 62%);
+  background: conic-gradient(
+    from 190deg at 50% 0%,
+    transparent 35%,
+    var(--accent-soft) 48%,
+    transparent 62%
+  );
   transform-origin: 50% 0;
   animation: review-stage-sweep 16s ease-in-out infinite alternate;
 }
 @keyframes review-stage-sweep {
-  from { transform: rotate(-12deg) scale(1.1); }
-  to { transform: rotate(12deg) scale(1.2); }
+  from {
+    transform: rotate(-12deg) scale(1.1);
+  }
+  to {
+    transform: rotate(12deg) scale(1.2);
+  }
 }
 .reviews-rail {
   position: relative;
@@ -3441,10 +3627,20 @@ html:has(body[data-fullscreen-locked]) {
   touch-action: pan-x pan-y;
   outline-offset: -4px;
 }
-.reviews-rail:focus-visible { outline: 2px solid var(--border-focus); }
-.reviews-rail[data-animating='true'] { scroll-snap-type: none; }
-.reviews-rail[data-dragging='true'] { scroll-snap-type: none; cursor: grabbing; user-select: none; }
-.reviews-rail img { pointer-events: none; }
+.reviews-rail:focus-visible {
+  outline: 2px solid var(--border-focus);
+}
+.reviews-rail[data-animating="true"] {
+  scroll-snap-type: none;
+}
+.reviews-rail[data-dragging="true"] {
+  scroll-snap-type: none;
+  cursor: grabbing;
+  user-select: none;
+}
+.reviews-rail img {
+  pointer-events: none;
+}
 .review-slide {
   flex: 0 0 min(38rem, calc(100cqw - var(--space-12)));
   min-width: 0;
@@ -3453,45 +3649,108 @@ html:has(body[data-fullscreen-locked]) {
 }
 .review-card-depth {
   height: 100%;
-  transform: scale(calc(1 - var(--review-depth) * 0.1)) rotateY(var(--review-turn));
+  transform: scale(calc(1 - var(--review-depth) * 0.1))
+    rotateY(var(--review-turn));
   opacity: calc(1 - var(--review-depth) * 0.35);
 }
 .review-quote-card {
   padding: clamp(var(--space-6), 4vw, var(--space-10));
   border-radius: var(--space-6);
   box-shadow: 0 24px 60px -36px var(--accent-glow);
-  transition: transform var(--duration-slow) var(--ease-brand), border-color var(--duration-normal) var(--ease-brand);
+  transition:
+    transform var(--duration-slow) var(--ease-brand),
+    border-color var(--duration-normal) var(--ease-brand);
 }
 .review-quote-card::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   opacity: 0;
-  background: radial-gradient(circle at var(--review-light-x) var(--review-light-y), var(--accent-soft), transparent 65%);
+  background: radial-gradient(
+    circle at var(--review-light-x) var(--review-light-y),
+    var(--accent-soft),
+    transparent 65%
+  );
   transition: opacity var(--duration-slow) var(--ease-brand);
 }
-.review-quote-card blockquote { flex: 1; font-size: clamp(1.125rem, 2.2vw, 1.75rem); line-height: 1.6; overflow-wrap: anywhere; }
-.review-quote-card figcaption { padding-top: var(--space-6); border-top: 1px solid var(--border-default); }
+.review-quote-card blockquote {
+  flex: 1;
+  font-size: clamp(1.125rem, 2.2vw, 1.75rem);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.review-quote-card figcaption {
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--border-default);
+}
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .review-slide[data-selected='true']:hover .review-quote-card {
-    transform: rotateX(var(--review-tilt-x)) rotateY(var(--review-tilt-y)) translateY(-4px);
+  .review-slide[data-selected="true"]:hover .review-quote-card {
+    transform: rotateX(var(--review-tilt-x)) rotateY(var(--review-tilt-y))
+      translateY(-4px);
     border-color: var(--accent);
   }
-  .review-slide[data-selected='true']:hover .review-quote-card::after { opacity: 1; }
+  .review-slide[data-selected="true"]:hover .review-quote-card::after {
+    opacity: 1;
+  }
 }
-.reviews-controls { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: var(--space-2); padding-inline: var(--space-2); }
-.reviews-dots { display: flex; justify-content: center; flex-wrap: wrap; max-width: 45%; }
-.review-dot { display: grid; place-items: center; min-width: 24px; height: 44px; border-radius: var(--space-2); }
-.review-dot span { width: 6px; height: 6px; border-radius: 99px; background: var(--content-secondary); transition: width var(--duration-slow) var(--ease-brand), background var(--duration-normal) var(--ease-brand); }
-.review-dot[aria-current='true'] { min-width: 36px; }
-.review-dot[aria-current='true'] span { width: 24px; background: var(--accent); }
-.review-dot:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
-.reviews-caption { margin-top: var(--space-3); text-align: center; }
+.reviews-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-inline: var(--space-2);
+}
+.reviews-dots {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  max-width: 45%;
+}
+.review-dot {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 44px;
+  border-radius: var(--space-2);
+}
+.review-dot span {
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--content-secondary);
+  transition:
+    width var(--duration-slow) var(--ease-brand),
+    background var(--duration-normal) var(--ease-brand);
+}
+.review-dot[aria-current="true"] {
+  min-width: 36px;
+}
+.review-dot[aria-current="true"] span {
+  width: 24px;
+  background: var(--accent);
+}
+.review-dot:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+.reviews-caption {
+  margin-top: var(--space-3);
+  text-align: center;
+}
 @media (prefers-reduced-motion: reduce) {
-  .reviews-stage-light::before { animation: none; }
-  .review-card-depth { transform: none; opacity: 1; }
-  .review-quote-card, .review-dot span { transition: none; }
+  .reviews-stage-light::before {
+    animation: none;
+  }
+  .review-card-depth {
+    transform: none;
+    opacity: 1;
+  }
+  .review-quote-card,
+  .review-dot span {
+    transition: none;
+  }
 }
 
 /* Fixed raster surfaces: opening a curtain clips, rather than resizing media. */
@@ -3515,16 +3774,16 @@ html:has(body[data-fullscreen-locked]) {
 
 /* Вертикальные кулисы: скрытые детали не должны вытеснять название за обрезку. */
 @media (width < 768px) {
-  .dance-style-panel[data-active='false'] > a {
+  .dance-style-panel[data-active="false"] > a {
     align-items: center;
     padding-block: var(--space-2);
   }
 
-  .dance-style-panel[data-active='false'] [data-style-title] {
+  .dance-style-panel[data-active="false"] [data-style-title] {
     font-size: var(--text-lg);
   }
 
-  .dance-style-panel[data-active='false'] [data-style-details] {
+  .dance-style-panel[data-active="false"] [data-style-details] {
     display: none;
   }
 }
@@ -3575,22 +3834,52 @@ html:has(body[data-fullscreen-locked]) {
     inset 0 0 36px color-mix(in srgb, var(--accent-glow) 22%, transparent);
   transition: opacity 600ms cubic-bezier(0.32, 0.72, 0, 1);
 }
-.dance-style-panel[data-active='true'] .dance-style-spotlight,
-.dance-style-panel[data-active='true'] .dance-style-rim {
+.dance-style-panel[data-active="true"] .dance-style-spotlight,
+.dance-style-panel[data-active="true"] .dance-style-rim {
   opacity: 1;
 }
-.dance-style-panel [data-tile-video] { opacity: 0; transition: opacity 250ms var(--ease-standard); }
-.dance-style-panel [data-tile-video][data-playing] { opacity: 1; }
-[data-lite='true'] .dance-style-media { transform: none !important; transition: none; }
-[data-lite='true'] .dance-style-spotlight,
-[data-lite='true'] .dance-style-rim { display: none !important; }
+.dance-style-panel [data-tile-video] {
+  opacity: 0;
+  transition: opacity 250ms var(--ease-standard);
+}
+.dance-style-panel [data-tile-video][data-playing] {
+  opacity: 1;
+}
+[data-lite="true"] .dance-style-media {
+  transform: none !important;
+  transition: none;
+}
+[data-lite="true"] .dance-style-spotlight,
+[data-lite="true"] .dance-style-rim {
+  display: none !important;
+}
 
 /* Dance experience: the interface stays stable; the photographic gesture changes by style. */
-.dance-finder { background-image: radial-gradient(ellipse at 100% 0%, var(--metal-soft), transparent 55%); }
-.dance-intent { transition: border-color var(--duration-normal) var(--ease-brand), background var(--duration-normal) var(--ease-brand); }
-.dance-intent:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
-.dance-intent:has(input:focus-visible), .first-lesson-tip summary:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 3px; }
-.first-lesson-tip { overflow: clip; interpolate-size: allow-keywords; }
+.dance-finder {
+  background-image: radial-gradient(
+    ellipse at 100% 0%,
+    var(--metal-soft),
+    transparent 55%
+  );
+}
+.dance-intent {
+  transition:
+    border-color var(--duration-normal) var(--ease-brand),
+    background var(--duration-normal) var(--ease-brand);
+}
+.dance-intent:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.dance-intent:has(input:focus-visible),
+.first-lesson-tip summary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
+}
+.first-lesson-tip {
+  overflow: clip;
+  interpolate-size: allow-keywords;
+}
 /* Chrome 131+ — details рендерит содержимое в ::details-content; без этого
    псевдо-элемент держит content-visibility:hidden и ломает анимируемый grid.
    Исп. отдельный easing для естественного close/open. */
@@ -3605,13 +3894,15 @@ html:has(body[data-fullscreen-locked]) {
     content-visibility 380ms var(--ease-exit) allow-discrete;
   interpolate-size: allow-keywords;
 }
-.first-lesson-tip[data-open='true']::details-content,
+.first-lesson-tip[data-open="true"]::details-content,
 .first-lesson-tip[open]::details-content {
   block-size: auto;
   transition-timing-function: var(--ease-brand), var(--ease-brand);
   transition-duration: var(--duration-slow), var(--duration-slow);
 }
-.first-lesson-tip > .first-lesson-body { display: grid !important; }
+.first-lesson-tip > .first-lesson-body {
+  display: grid !important;
+}
 .first-lesson-body {
   display: grid;
   grid-template-rows: 0fr;
@@ -3624,8 +3915,13 @@ html:has(body[data-fullscreen-locked]) {
     opacity 220ms var(--ease-standard);
   transition-behavior: allow-discrete;
 }
-.first-lesson-body-inner { overflow: hidden; min-height: 0; transform: translateY(-4px); transition: transform 380ms var(--ease-exit); }
-.first-lesson-tip[data-open='true'] > .first-lesson-body,
+.first-lesson-body-inner {
+  overflow: hidden;
+  min-height: 0;
+  transform: translateY(-4px);
+  transition: transform 380ms var(--ease-exit);
+}
+.first-lesson-tip[data-open="true"] > .first-lesson-body,
 .first-lesson-tip[open] > .first-lesson-body {
   grid-template-rows: 1fr;
   opacity: 1;
@@ -3634,83 +3930,175 @@ html:has(body[data-fullscreen-locked]) {
     grid-template-rows var(--duration-slow) var(--ease-brand),
     opacity var(--duration-normal) var(--ease-brand);
 }
-.first-lesson-tip[data-open='true'] .first-lesson-body-inner,
-.first-lesson-tip[open] .first-lesson-body-inner { transform: translateY(0); transition-timing-function: var(--ease-brand); transition-duration: var(--duration-slow); }
-@supports not selector(::details-content) {
-  .first-lesson-tip::details-content { transition: none; }
+.first-lesson-tip[data-open="true"] .first-lesson-body-inner,
+.first-lesson-tip[open] .first-lesson-body-inner {
+  transform: translateY(0);
+  transition-timing-function: var(--ease-brand);
+  transition-duration: var(--duration-slow);
 }
-.dance-finder-select { width: 100%; min-height: calc(var(--space-10) + var(--space-1)); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--surface-card); color: var(--content-primary); padding-inline: var(--space-3); }
-.dance-finder-select:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
-.event-spotlight-image { width: 100%; height: 100%; object-fit: cover; transition: transform var(--duration-slow) var(--ease-brand); }
-.event-poster-light { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(120deg, transparent 30%, var(--metal-soft), transparent 70%); opacity: 0; transition: opacity var(--duration-slow) var(--ease-brand); }
+@supports not selector(::details-content) {
+  .first-lesson-tip::details-content {
+    transition: none;
+  }
+}
+.dance-finder-select {
+  width: 100%;
+  min-height: calc(var(--space-10) + var(--space-1));
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--content-primary);
+  padding-inline: var(--space-3);
+}
+.dance-finder-select:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+.event-spotlight-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--duration-slow) var(--ease-brand);
+}
+.event-poster-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    var(--metal-soft),
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-brand);
+}
 
 @media (prefers-reduced-motion: no-preference) {
-  .dance-style-panel[data-dance-mood='embrace'] { transition-duration: 1000ms; }
-  .dance-style-panel[data-dance-mood='flow'] { transition-duration: 1200ms; }
-  .dance-style-panel[data-dance-mood='pulse'] { transition-duration: 500ms; }
-  .dance-style-panel[data-dance-mood='stage'] { transition-duration: 800ms; }
-  .dance-style-panel[data-active='true'][data-dance-mood='flow'] .dance-style-image { transform: translate3d(var(--curtain-shift-x, 0px), calc(-1% + var(--curtain-shift-y, 0px)), 0) scale(1.06); }
-  .dance-style-panel[data-active='true'][data-dance-mood='embrace'] .dance-style-image { transform: translate3d(calc(1% + var(--curtain-shift-x, 0px)), var(--curtain-shift-y, 0px), 0) scale(1.07); }
-  .dance-style-panel[data-active='true'][data-dance-mood='pulse'] .dance-style-image { transform: translate3d(var(--curtain-shift-x, 0px), var(--curtain-shift-y, 0px), 0) scale(1.04) rotate(-0.5deg); }
-  .dance-style-panel[data-active='true'][data-dance-mood='stage'] .dance-style-image { transform: translate3d(var(--curtain-shift-x, 0px), var(--curtain-shift-y, 0px), 0) scale(1.05); }
-  .event-spotlight:hover .event-spotlight-image, .event-spotlight:focus-within .event-spotlight-image { transform: scale(1.03); }
-  .event-spotlight:hover .event-poster-light, .event-spotlight:focus-within .event-poster-light { opacity: 1; }
+  .dance-style-panel[data-dance-mood="embrace"] {
+    transition-duration: 1000ms;
+  }
+  .dance-style-panel[data-dance-mood="flow"] {
+    transition-duration: 1200ms;
+  }
+  .dance-style-panel[data-dance-mood="pulse"] {
+    transition-duration: 500ms;
+  }
+  .dance-style-panel[data-dance-mood="stage"] {
+    transition-duration: 800ms;
+  }
+  .dance-style-panel[data-active="true"][data-dance-mood="flow"]
+    .dance-style-image {
+    transform: translate3d(
+        var(--curtain-shift-x, 0px),
+        calc(-1% + var(--curtain-shift-y, 0px)),
+        0
+      )
+      scale(1.06);
+  }
+  .dance-style-panel[data-active="true"][data-dance-mood="embrace"]
+    .dance-style-image {
+    transform: translate3d(
+        calc(1% + var(--curtain-shift-x, 0px)),
+        var(--curtain-shift-y, 0px),
+        0
+      )
+      scale(1.07);
+  }
+  .dance-style-panel[data-active="true"][data-dance-mood="pulse"]
+    .dance-style-image {
+    transform: translate3d(
+        var(--curtain-shift-x, 0px),
+        var(--curtain-shift-y, 0px),
+        0
+      )
+      scale(1.04) rotate(-0.5deg);
+  }
+  .dance-style-panel[data-active="true"][data-dance-mood="stage"]
+    .dance-style-image {
+    transform: translate3d(
+        var(--curtain-shift-x, 0px),
+        var(--curtain-shift-y, 0px),
+        0
+      )
+      scale(1.05);
+  }
+  .event-spotlight:hover .event-spotlight-image,
+  .event-spotlight:focus-within .event-spotlight-image {
+    transform: scale(1.03);
+  }
+  .event-spotlight:hover .event-poster-light,
+  .event-spotlight:focus-within .event-poster-light {
+    opacity: 1;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .dance-intent, .dance-style-panel, .dance-style-panel *, .event-spotlight-image, .event-poster-light, .first-lesson-body, .first-lesson-tip::details-content { transition: none !important; }
-  .dance-style-image, .event-spotlight-image { transform: none !important; scale: none !important; }
+  .dance-intent,
+  .dance-style-panel,
+  .dance-style-panel *,
+  .event-spotlight-image,
+  .event-poster-light,
+  .first-lesson-body,
+  .first-lesson-tip::details-content {
+    transition: none !important;
+  }
+  .dance-style-image,
+  .event-spotlight-image {
+    transform: none !important;
+    scale: none !important;
+  }
 }
 
 /* ── Лёгкий режим: отключаем дорогие эффекты без ожидания JS ── */
-[data-lite='true'] .hero-mythic-dust,
-[data-lite='true'] .hero-mythic-rays,
-[data-lite='true'] .hero-mythic-vignette,
-[data-lite='true'] .hero-mythic-grain,
-[data-lite='true'] .hero-light-sweep,
-[data-lite='true'] .footer-light-sweep,
-[data-lite='true'] .instructors-spotlight-layer,
-[data-lite='true'] .card-cursor-light,
-[data-lite='true'] .reviews-stage-light,
-[data-lite='true'] .portal-sweep,
-[data-lite='true'] .portal-vignette {
+[data-lite="true"] .hero-mythic-dust,
+[data-lite="true"] .hero-mythic-rays,
+[data-lite="true"] .hero-mythic-vignette,
+[data-lite="true"] .hero-mythic-grain,
+[data-lite="true"] .hero-light-sweep,
+[data-lite="true"] .footer-light-sweep,
+[data-lite="true"] .instructors-spotlight-layer,
+[data-lite="true"] .card-cursor-light,
+[data-lite="true"] .reviews-stage-light,
+[data-lite="true"] .portal-sweep,
+[data-lite="true"] .portal-vignette {
   display: none !important;
 }
 
-[data-lite='true'] .editorial-video,
-[data-lite='true'] .hero-video-wrap {
+[data-lite="true"] .editorial-video,
+[data-lite="true"] .hero-video-wrap {
   display: none !important;
 }
 
-[data-lite='true'] [data-reveal],
-[data-lite='true'] [data-stagger] > * {
+[data-lite="true"] [data-reveal],
+[data-lite="true"] [data-stagger] > * {
   opacity: 1 !important;
   transform: none !important;
   transition: none !important;
 }
 
-[data-lite='true'] .final-cta-video-container {
+[data-lite="true"] .final-cta-video-container {
   transform: none !important;
   opacity: 1 !important;
 }
 
-[data-lite='true'] .reviews-stage-light::before,
-[data-lite='true'] .hero-shine,
-[data-lite='true'] .editorial-light-wave,
-[data-lite='true'] .editorial-backdrop {
+[data-lite="true"] .reviews-stage-light::before,
+[data-lite="true"] .hero-shine,
+[data-lite="true"] .editorial-light-wave,
+[data-lite="true"] .editorial-backdrop {
   animation: none !important;
 }
 
-[data-lite='true'] .editorial-backdrop {
+[data-lite="true"] .editorial-backdrop {
   filter: none;
 }
 
-[data-lite='true'] [data-stack-cards] > li {
+[data-lite="true"] [data-stack-cards] > li {
   position: static;
   scale: none;
   filter: none;
 }
 
-[data-lite='true'] .site-header[data-mode='island'] .site-header-surface {
+[data-lite="true"] .site-header[data-mode="island"] .site-header-surface {
   background-color: var(--surface-card);
   backdrop-filter: none;
 }

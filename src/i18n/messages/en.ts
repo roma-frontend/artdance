@@ -373,7 +373,7 @@ const en = {
     newsletter: {
       eyebrow: 'Stay in the rhythm',
       title: 'Get dance updates',
-      subtitle: 'New classes, events and workshops — once a week, nothing else.',
+      subtitle: 'New classes and news — once a week, nothing else.',
       emailLabel: 'Email',
       emailPlaceholder: 'your@email.com',
       cta: 'Subscribe',
@@ -1092,7 +1092,8 @@ const en = {
     },
     payAsYouGo: {
       title: 'Not ready to commit?',
-      body: 'Every class can be booked one at a time, at the price shown in the catalogue. A plan only pays off from about four classes a month.',
+      body: 'Every class can be booked one at a time, at the price shown in the catalogue.',
+      planNote: 'A plan only pays off from about four classes a month.',
       cta: 'Browse classes',
     },
     comingSoon: {
@@ -1774,8 +1775,8 @@ const en = {
         'Bachata, salsa, kizomba and Argentine tango socials — weekly nights, guest DJs and warm-up classes.',
     },
     pricing: {
-      title: 'Membership plans',
-      description: 'Monthly plans for group classes, private sessions and studio discounts.',
+      title: 'Prices',
+      description: 'Prices for group classes, private lessons and studio rentals in Yerevan.',
     },
     about: {
       title: 'About ArtDance',
@@ -1790,7 +1791,7 @@ const en = {
     federations: {
       title: 'DanceSport federations: WDSF and WDC',
       description:
-        'The two world governing bodies of DanceSport, both present in Armenia. Our competition calendar follows WDSF.',
+        'The two world governing bodies of DanceSport, both present in Armenia. The competition calendar in Armenia follows WDSF.',
     },
     partners: {
       title: 'Partners of ArtDance',
@@ -2102,7 +2103,7 @@ const en = {
     newsletterConfirm: {
       subject: 'Confirm your subscription',
       heading: 'One click and you are in',
-      body: 'Confirm this address to start getting new classes, events and workshops once a week.',
+      body: 'Confirm this address to start getting new classes and news once a week.',
       cta: 'Confirm subscription',
       footnote: 'If you did not request this, ignore the email — nothing will be sent.',
     },
@@ -2137,7 +2138,7 @@ const en = {
     viewSchedule: 'Schedule',
     federations: {
       WDSF:
-        'The world governing body for DanceSport. ArtDance follows the WDSF calendar and competition rules; the Armenian federation is a WDSF member.',
+        'The world governing body for DanceSport. Its calendar and competition rules guide Armenian DanceSport; the Armenian federation is a WDSF member.',
       WDC: 'The professional world council. Its Armenian branch hosts its own competition circuit alongside the WDSF one.',
     },
   },
@@ -2172,7 +2173,7 @@ const en = {
     },
     story: {
       title: 'Where we are now',
-      body: 'The platform opened in {year} with dance classes, instructor profiles, studio rentals and a shop. Online courses, corporate programmes and city-wide events are next — in that order, and only when each of them works properly.',
+      body: 'The platform opened in {year} with dance classes, instructor profiles, studio rentals and a shop. More services will open one by one, and only when each of them works properly.',
     },
     cta: {
       title: 'Come dance with us',
@@ -2216,8 +2217,8 @@ const en = {
     eyebrow: 'Federations',
     title: 'Two world bodies, one dance floor.',
     subtitle:
-      'DanceSport is governed by two international federations. Both are present in Armenia — we follow the WDSF calendar.',
-    preferredBadge: 'Our calendar',
+      'DanceSport is governed by two international federations. Both are present in Armenia — the Armenian scene follows the WDSF calendar.',
+    preferredBadge: 'WDSF calendar',
     visitSite: 'Official website',
     nationalTitle: 'In Armenia',
     nationalBody:
@@ -2233,15 +2234,15 @@ const en = {
     tiersTitle: 'How partnership works',
     tierStudio: {
       title: 'Studios and schools',
-      body: 'Your venue and classes on the platform, joint season events, cross-promotion of socials.',
+      body: 'Your venue and classes on the platform, joint promotion of your classes.',
     },
     tierFederation: {
       title: 'Federations and clubs',
-      body: 'Calendar and registration support for competitions, athlete profiles, results coverage.',
+      body: 'Athlete profiles and federation news on the platform.',
     },
     tierBrand: {
       title: 'Brands',
-      body: 'Co-branded events, community projects, content collaborations.',
+      body: 'Co-branded projects, community initiatives, content collaborations.',
     },
   },
 
@@ -2249,12 +2250,12 @@ const en = {
     eyebrow: 'Donations & sponsors',
     title: 'Back the season.',
     subtitle:
-      'Sponsorship keeps competitions affordable and helps young athletes reach international floors.',
+      'Sponsorship keeps the community running and helps young athletes reach international floors.',
     supportCta: 'Support the community',
     packagesTitle: 'Sponsorship packages',
     packageEvent: {
-      title: 'Event sponsor',
-      body: 'Named support of one competition: branding on the floor, banners and announcements.',
+      title: 'Project sponsor',
+      body: 'Named support of one project: branding in the studio, banners and announcements.',
     },
     packageTeam: {
       title: 'Team sponsor',
@@ -2281,7 +2282,7 @@ const en = {
     },
     formatFeatured: {
       title: 'Featured placement',
-      body: 'Highlighted cards in chosen sections — classes, events or shop.',
+      body: 'Highlighted cards in chosen sections — classes or shop.',
     },
     formatNewsletter: {
       title: 'Newsletter',
@@ -2647,7 +2648,7 @@ const en = {
     eyebrow: 'Gift cards',
     title: 'Give someone the thing they keep meaning to start.',
     subtitle:
-      'A gift card works for anything on the platform: group classes, private lessons, studio time, workshops and the shop.',
+      'A gift card works for anything on the platform: group classes, private lessons, studio time and the shop.',
     amountsTitle: 'Choose an amount',
     amountsNote: 'Any amount from {min} to {max}, in steps of {step}.',
     validityNote: 'Valid for {months} months from purchase.',

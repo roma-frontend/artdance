@@ -42,6 +42,19 @@ const groupTitles = new Map(footerNavGroups.map((group) => [group.id, group.titl
  * подвала. Группа вне конфигурации игнорируется: у неё нет `titleKey`, и
  * выдумывать заголовок — это писать строку в коде, откуда она ушла.
  */
+/**
+ * Модуль пункта подвала по пути. Оператор добавляет ссылки вручную и часто не
+ * ставит `feature`: без вывода выключенный раздел всплывёт ссылкой вроде
+ * `/events?type=SOCIAL`.
+ */
+function inferFeatureFromHref(href: string): string | null {
+  const path = (href.replace(/^\/(hy|ru|en)(?=\/|$)/, '').split(/[?#]/)[0] ?? '');
+  if (/^\/(events|competitions|social-events)(\/|$)/.test(path)) return 'events';
+  if (/^\/(shop|gift-cards|cart)(\/|$)/.test(path)) return 'shop';
+  if (/^\/courses(\/|$)/.test(path)) return 'courses';
+  return null;
+}
+
 export function buildFooterGroups(rows: readonly FooterLinkRow[]): readonly NavGroup[] {
   if (rows.length === 0) return footerNavGroups;
 
@@ -57,7 +70,7 @@ export function buildFooterGroups(rows: readonly FooterLinkRow[]): readonly NavG
     const configuredItem = footerNavGroups
       .find((candidate) => candidate.id === row.group)
       ?.items.find((item) => item.href === row.href);
-    const feature = row.feature ?? configuredItem?.feature ?? null;
+    const feature = row.feature ?? configuredItem?.feature ?? inferFeatureFromHref(row.href);
 
     group.items.push({
       id: row.id,

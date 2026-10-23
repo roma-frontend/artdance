@@ -36,8 +36,8 @@ export function BookingScreen({ content }: BookingScreenProps) {
   const router = useRouter();
   const tBooking = useTranslations('booking');
   const entitlements = useEntitlementsSnapshot();
-  const packagesEnabled = entitlements.packages !== false;
-  const recurringEnabled = entitlements.recurring !== false;
+  const packagesEnabled = entitlements?.packages === true;
+  const recurringEnabled = entitlements?.recurring === true;
   const initialDay = content.days.find((day) => day.dateKey === content.initialDateKey);
   const [date, setDate] = useState<Date | undefined>(() => (initialDay ? new Date(initialDay.dateIso) : undefined));
   const [startTime, setStartTime] = useState<string | undefined>(content.preselectedSlot ?? undefined);

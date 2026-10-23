@@ -46,6 +46,7 @@ import { buildMetadata } from '@/lib/seo/metadata';
 import { breadcrumbSchema, localBusinessSchema, type Crumb } from '@/lib/seo/jsonld';
 import { Link } from '@/i18n/routing';
 import { getCatalogSlugs, getVenueDetail } from '@/server/content/catalog';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 
 /** Якорь на раздел занятий: он и есть доступное действие страницы. */
 const CLASSES_ANCHOR = 'classes';
@@ -77,6 +78,7 @@ export default async function StudioDetailPage({ params }: PageProps) {
 
   const item = await getVenueDetail(slug);
   if (!item) notFound();
+  const { events: eventsEnabled } = await getEffectiveEntitlementsSafe();
 
   const t = await getTranslations('studio');
   const tRoot = await getTranslations();
@@ -188,7 +190,7 @@ export default async function StudioDetailPage({ params }: PageProps) {
 
             {/* Афиша зала показывается только если она есть: пустой блок «События
                 здесь» читается как незагрузившийся. */}
-            {item.events.length > 0 && (
+            {eventsEnabled && item.events.length > 0 && (
               <section className="mb-12">
                 <h2 className="text-heading-3 mb-6">{t('eventsTitle')}</h2>
                 <ul className="grid gap-5 xs:grid-cols-2">

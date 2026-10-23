@@ -26,6 +26,7 @@ import {
   getVenueFacets,
 } from "@/server/content/catalog";
 import { assertEntitlementOrNotFound } from "@/server/entitlements/guard";
+import { getEffectiveEntitlementsSafe } from "@/server/entitlements/service";
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -36,6 +37,7 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { locale } = await params;
+  if (!(await getEffectiveEntitlementsSafe()).events) return { robots: { index: false, follow: false } };
   const t = await getTranslations({
     locale: locale as Locale,
     namespace: "seo.competitions",

@@ -47,6 +47,7 @@ import { betterAuth } from 'better-auth';
 import { APIError, createAuthMiddleware, isAPIError } from 'better-auth/api';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
+import { bearer } from 'better-auth/plugins';
 
 import { security, type RateLimitKey } from '@/config/business';
 import { clientEnv, getServerEnv } from '@/config/env';
@@ -340,7 +341,7 @@ export const auth = betterAuth({
    * Плагин обязан быть последним в списке: он перехватывает ответ после всех
    * остальных хуков.
    */
-  plugins: [nextCookies()],
+  plugins: [bearer(), nextCookies()],
 });
 
 export type Auth = typeof auth;

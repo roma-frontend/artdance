@@ -21,6 +21,7 @@ import { isLocale } from '@/i18n/config';
 import type { PaymentMethod, PaymentStatus } from '@/domain/enums';
 import { db } from '@/lib/db';
 import { getPaymentProvider, providerForMethod, type PaymentProviderId } from '@/lib/payments';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 import { applyWalletToPayment } from '@/server/wallet/service';
 
 export interface CreateOrderPaymentInput {
@@ -116,8 +117,16 @@ export async function createOrderPayment(input: CreateOrderPaymentInput): Promis
   if (order.status !== 'CREATED') throw domainErrors.validationFailed('status');
 
   let walletApplied = order.walletApplied;
-  /* Баланс принадлежит аккаунту: у гостя кошелька нет, и списывать нечего. */
-  if (input.useWallet && input.userId && walletApplied === 0) {
+  /*
+   * Баланс принадлежит аккаунту: у гостя кошелька нет, и списывать нечего.
+   * Выключенный модуль кошелька не списывает баланс, даже если клиент прислал `useWallet`.
+   */
+  if (
+    input.useWallet &&
+    input.userId &&
+    walletApplied === 0 &&
+    (await getEffectiveEntitlementsSafe()).wallet
+  ) {
     const applied = await applyWalletToPayment({
       userId: input.userId,
       amount: order.total,

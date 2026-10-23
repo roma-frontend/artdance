@@ -9,6 +9,7 @@ import type { MessageKey } from '@/i18n/types';
 import { db } from '@/lib/db';
 import { requireCaller } from '@/lib/auth/guards';
 import { cacheTags } from '@/config/cache';
+import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 
 export interface CompetitionRegistrationState {
   status: 'idle' | 'success' | 'error';
@@ -27,6 +28,8 @@ export async function submitCompetitionRegistration(
   formData: FormData,
 ): Promise<CompetitionRegistrationState> {
   try {
+    /* Выключенный модуль событий не принимает регистрации, даже из прямого вызова действия. */
+    await assertEntitlementOrThrow('events');
     const caller = await requireCaller();
     const parsed = registrationSchema.safeParse({
       eventSlug: formData.get('eventSlug'),

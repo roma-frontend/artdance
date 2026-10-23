@@ -45,7 +45,9 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
-  const course = await getCourseDetail(slug, locale as Locale);
+  /* Выключенный модуль курсов: заголовок и описание курса не попадают в выдачу. */
+  const courseEnabled = (await getEffectiveEntitlementsSafe()).courses;
+  const course = courseEnabled ? await getCourseDetail(slug, locale as Locale) : null;
   if (!course) return buildMetadata({ locale: locale as Locale, path: routes.course(slug), title: slug, noIndex: true });
 
   return buildMetadata({

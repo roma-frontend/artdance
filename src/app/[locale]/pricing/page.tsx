@@ -9,10 +9,9 @@
  *
  * Вариант Б: `Starter / Pro / Elite` — это планы ДЛЯ КЛИЕНТОВ платформы
  * (танцоров), а не `entitlement preset` заказчика (`MVP/FULL/PREMIUM` в
- * `src/server/entitlements/catalog.ts`). Они видны ВСЕГДА, даже в MVP, как
- * превью/витрина. Когда `entitlement subscriptions=false` — карточки `disabled`,
- * с бейджем `Coming soon` и подсказкой, что пока оплата поштучная. Подписка —
- * не товар третьего магазина, а конверсия внутрь платформы, её прятать нельзя.
+ * `src/server/entitlements/catalog.ts`). Когда `entitlement subscriptions=false`
+ * карточки и таблица сравнения не рисуются. Страница `/pricing` открыта всегда и
+ * показывает оплату поштучно; плановые строки видны только при включённом модуле.
  */
 
 import type { Metadata } from 'next';
@@ -72,8 +71,8 @@ export default async function PricingPage({ params }: PageProps) {
    * Один снимок на страницу: две разные проверки (подписки и пакеты) не должны
    * читать БД по разу на каждую.
    *
-   * `/pricing` НЕ закрывается 404 при выключенных подписках — это витрина:
-   * раздел показывает карточки с бейджем «Coming soon», а не исчезает.
+   * Страница открыта всегда. Каждый платный раздел рисуется только при своём
+   * модуле: выключенные тарифы не показываются ни карточками, ни «скоро»-заглушкой.
    */
   const entitlements = await getEffectiveEntitlementsSafe();
   const subscriptionsEnabled = entitlements.subscriptions;
@@ -83,7 +82,6 @@ export default async function PricingPage({ params }: PageProps) {
   const paymentMethods = availablePaymentMethodsWithGlobal();
 
   const t = await getTranslations('pricing');
-  const tRoot = await getTranslations();
   const tNav = await getTranslations('nav');
   const format = await getFormatter();
 
@@ -92,52 +90,44 @@ export default async function PricingPage({ params }: PageProps) {
   return (
     <main id={site.mainContentId}>
       <PageHero
-        title={t('title')}
-        subtitle={t('subtitle')}
-        eyebrow={t('eyebrow')}
+        title={subscriptionsEnabled ? t('title') : tNav('pricing')}
+        subtitle={subscriptionsEnabled ? t('subtitle') : undefined}
+        eyebrow={subscriptionsEnabled ? t('eyebrow') : undefined}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />
 
-      <ContentSection>
-        {/* Coming soon banner — only when subscriptions disabled (MVP/FULL). Not a blocker, a badge. */}
-        {!subscriptionsEnabled && (
-          <div className="mb-6 rounded-xl border border-warning/30 bg-warning-soft px-4 py-3">
-            <p className="text-body-sm font-semibold text-content-primary">
-              <Badge variant="warning" size="sm" className="mr-2 align-middle">
-                {tRoot('common.states.comingSoon')}
-              </Badge>
-              {t('comingSoon.body')}
+      {subscriptionsEnabled && (
+        <>
+          <ContentSection>
+            <ul className="grid gap-6 lg:grid-cols-3">
+              {orderedSubscriptionPlans.map((plan) => (
+                <li key={plan.id} className="flex">
+                  <PlanCard
+                    plan={plan}
+                    comingSoonLabel={t('comingSoon.title' as never) as unknown as string}
+                    signedIn={Boolean(caller)}
+                  />
+                </li>
+              ))}
+            </ul>
+
+            <p className="text-caption mt-6 text-content-tertiary">
+              {t('vatNote', { rate: format.number(tax.vatRate, 'percent') })} {t('cancelAnytime')}
             </p>
-          </div>
-        )}
-        <ul className="grid gap-6 lg:grid-cols-3">
-          {orderedSubscriptionPlans.map((plan) => (
-            <li key={plan.id} className="flex">
-              <PlanCard
-                plan={plan}
-                disabled={!subscriptionsEnabled}
-                comingSoonLabel={t('comingSoon.title' as never) as unknown as string}
-                signedIn={Boolean(caller)}
-              />
-            </li>
-          ))}
-        </ul>
+          </ContentSection>
 
-        <p className="text-caption mt-6 text-content-tertiary">
-          {t('vatNote', { rate: format.number(tax.vatRate, 'percent') })} {t('cancelAnytime')}
-        </p>
-      </ContentSection>
+          <ContentSection
+            tone="raised"
+            title={t('comparisonTitle')}
+            subtitle={t('comparisonSubtitle')}
+          >
+            <PlanComparisonTable plans={orderedSubscriptionPlans} />
+          </ContentSection>
+        </>
+      )}
 
-      <ContentSection
-        tone="raised"
-        title={t('comparisonTitle')}
-        subtitle={t('comparisonSubtitle')}
-      >
-        <PlanComparisonTable plans={orderedSubscriptionPlans} />
-      </ContentSection>
-
-      {entitlements.packages ? (
+      {entitlements.packages && (
         <ContentSection title={t('classPasses.title' as never)} subtitle={t('classPasses.subtitle' as never)}>
           {/*
             Вход и платежи читаются здесь, а не в клиентской кнопке: сессия —
@@ -151,18 +141,14 @@ export default async function PricingPage({ params }: PageProps) {
             paymentsEnabled={paymentMethods.length > 0}
           />
         </ContentSection>
-      ) : (
-        <ContentSection title={t('classPasses.title' as never)} subtitle={t('classPasses.subtitle' as never)}>
-          <div className="rounded-xl border border-dashed border-border-default bg-surface-raised px-6 py-8 text-center">
-            <p className="text-body-sm text-content-secondary">{t('comingSoon.title')}</p>
-            <p className="text-caption mt-1 text-content-tertiary">{t('comingSoon.body')}</p>
-          </div>
-        </ContentSection>
       )}
 
       <ContentSection spacing="tight" prose>
         <h2 className="text-heading-3">{t('payAsYouGo.title')}</h2>
         <p className="text-body mt-3 text-content-secondary">{t('payAsYouGo.body')}</p>
+        {subscriptionsEnabled && (
+          <p className="text-body mt-3 text-content-secondary">{t('payAsYouGo.planNote')}</p>
+        )}
         <Button asChild variant="outline" className="mt-6">
           <Link href={routes.classes()}>{t('payAsYouGo.cta')}</Link>
         </Button>

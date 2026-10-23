@@ -174,8 +174,8 @@ export const headerIconItems = enabled(iconActions);
  * сборки, а тумблер тарифа меняется в рантайме. Линованная константа не может
  * вернуть раздел, скрытый на сборке, сколько бы раз клиент ни перечитал
  * `/api/entitlements`. Эти списки рендерятся только после применения снимка
- * (`lib/entitlements/use-entitlements`), поэтому выключенный модуль в них
- * не попадёт.
+ * (`lib/entitlements/use-entitlements`): до его прихода модульные пункты скрыты,
+ * поэтому выключенный модуль в них не попадёт ни в SSR-разметку, ни в первый кадр.
  */
 export const primaryNavUngated: readonly NavItem[] = primaryNav;
 export const headerIconItemsUngated: readonly NavIconItem[] = iconActions;
