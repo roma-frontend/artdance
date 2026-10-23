@@ -857,7 +857,8 @@
     background: transparent;
   }
 
-  * {
+  /* html исключён: его scrollbar-width задан в @layer base и не должен перебиваться. */
+  *:not(html) {
     scrollbar-color: var(--border-strong) transparent;
     scrollbar-width: thin;
   }
