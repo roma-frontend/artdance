@@ -82,6 +82,32 @@ function localeOf(pathname: string): string {
  * клиент без `Origin` (server-to-server, curl) не носит cookies, поэтому не
  * может воспользоваться чужой сессией. Токены и их хранение не нужны.
  */
+/**
+ * Dev-only: веб-версия мобильного приложения (Expo Web) на localhost:8081 ходит
+ * на API кросс-origin. В production этот путь выключен.
+ */
+const DEV_WEB_ORIGIN = 'http://localhost:8081';
+
+function isDevWebOrigin(request: NextRequest): boolean {
+  return process.env.NODE_ENV !== 'production' && request.headers.get('origin') === DEV_WEB_ORIGIN;
+}
+
+function devWebOriginResponse(request: NextRequest): NextResponse | null {
+  if (!isDevWebOrigin(request)) return null;
+  const headers = {
+    'Access-Control-Allow-Origin': DEV_WEB_ORIGIN,
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Expose-Headers': 'set-auth-token',
+    Vary: 'Origin',
+  };
+  if (request.method === 'OPTIONS') return new NextResponse(null, { status: 204, headers });
+  const response = NextResponse.next();
+  for (const [key, value] of Object.entries(headers)) response.headers.set(key, value);
+  return response;
+}
+
 function rejectsCrossOrigin(request: NextRequest): boolean {
   if (!MUTATING.has(request.method)) return false;
 
@@ -90,6 +116,7 @@ function rejectsCrossOrigin(request: NextRequest): boolean {
 
   const origin = request.headers.get('origin');
   if (!origin) return false;
+  if (isDevWebOrigin(request)) return false;
 
   try {
     return new URL(origin).host.toLowerCase() !== request.headers.get('host')?.toLowerCase();
@@ -119,6 +146,8 @@ export default async function proxy(request: NextRequest) {
    * применяются в самих операциях по ключам из `rateLimits`.
    */
   if (pathWithoutLocaleEarly.startsWith('/api/')) {
+    const devCors = devWebOriginResponse(request);
+    if (devCors) return devCors;
     const flood = await checkApiFloodLimit(clientIdentifier(request.headers));
     if (!flood.allowed) {
       return applySecurityHeaders(
@@ -152,10 +181,11 @@ export default async function proxy(request: NextRequest) {
       );
     }
     try {
+      const range = request.headers.get('range');
       const upstream = await fetch(`${upstreamBase.replace(/\/$/, '')}/${key}`, {
         method: request.method,
         headers: {
-          range: request.headers.get('range') ?? '',
+          ...(range ? { range } : {}),
           'accept-ranges': 'bytes',
         },
         signal: AbortSignal.timeout(15_000),
@@ -163,10 +193,13 @@ export default async function proxy(request: NextRequest) {
       const headers = new Headers(upstream.headers);
       headers.set('Cache-Control', cacheControl.media);
       headers.set('Access-Control-Allow-Origin', '*');
-      return applySecurityHeaders(
+      const mediaResponse = applySecurityHeaders(
         new NextResponse(upstream.body, { status: upstream.status, headers }),
         pathname,
       );
+      // Медиа открыто для других origin (CORS *), поэтому CORP same-origin здесь блокирует картинки.
+      mediaResponse.headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
+      return mediaResponse;
     } catch {
       return applySecurityHeaders(
         NextResponse.json({ error: 'MEDIA_UPSTREAM_UNAVAILABLE' }, { status: 502 }),
