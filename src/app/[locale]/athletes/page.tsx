@@ -88,7 +88,7 @@ export default async function AthletesPage({ params }: PageProps) {
                 key={athlete.slug}
                 className="flex flex-col gap-5 rounded-xl border border-border-default bg-surface-card p-6 sm:flex-row"
               >
-                <div className="w-full max-w-40 shrink-0 sm:w-40">
+                <div className="w-full md:max-w-40 shrink-0 sm:w-40">
                   <Media
                     {...resolveMedia(
                       athlete.image as MediaRef,
@@ -96,7 +96,7 @@ export default async function AthletesPage({ params }: PageProps) {
                     )}
                     preset="instructorCard"
                     fallback="instructor"
-                    imageClassName="aspect-3/4 object-cover"
+                    imageClassName="aspect-3/4 object-cover rounded-lg"
                   />
                 </div>
 
