@@ -7,7 +7,7 @@ export const operatorToolLabels: Record<OperatorTool, MessageKey> = {
   database: 'admin.nav.users', sessions: 'admin.nav.users',
   operations: 'admin.nav.integrations', access: 'admin.nav.settings', terminal: 'admin.nav.auditLog',
 };
-export const operatorJobs = ['booking', 'holds', 'trash', 'digest'] as const;
+export const operatorJobs = ['booking', 'holds', 'trash', 'digest', 'sla'] as const;
 export type OperatorJob = (typeof operatorJobs)[number];
 
 /** Supplemental records without existing workflow-specific admin forms. */

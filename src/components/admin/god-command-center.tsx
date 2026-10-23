@@ -32,7 +32,7 @@ import { Link } from '@/i18n/routing';
 import { routes } from '@/config/routes';
 import { cn } from '@/lib/utils';
 import { stopImpersonation } from '@/server/actions/admin/operator';
-import { OperatorTerminal } from '@/components/admin/operator-actions';
+import { JobButton, OperatorTerminal } from '@/components/admin/operator-actions';
 import { GodQueue } from '@/components/admin/god-queue';
 import { GodTabs, GodTabPanel, type GodTabId, QUICK_TOOLS } from '@/components/admin/god-tabs';
 import type { GodSnapshot } from '@/server/admin/god';
@@ -263,7 +263,7 @@ export function GodCommandCenter({ snapshot, caller, locale }: Props) {
                   <s.icon className="h-3 w-3" /> {s.label} {s.ok ? '●' : '○'}
                 </span>
               ))}
-              <span className="ml-auto inline-flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><span className="hidden sm:inline">{tg('healthDb')}</span> {tg('healthPostgres')} · {snapshot.pulse.services.cron ? tg('healthCronReady') : 'cron —'} · {tg('healthLocked', { count: pulse.lockedLogins } as never)} · {tg('healthSla')} · <a href="/api/cron/support-sla" className="underline">support-sla</a></span>
+              <span className="ml-auto inline-flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><span className="hidden sm:inline">{tg('healthDb')}</span> {tg('healthPostgres')} · {snapshot.pulse.services.cron ? tg('healthCronReady') : 'cron —'} · {tg('healthLocked', { count: pulse.lockedLogins } as never)} · {tg('healthSla')} · <JobButton job="sla" /></span>
             </CardContent>
           </Card>
           {/* Quick preview so overview is not empty */}

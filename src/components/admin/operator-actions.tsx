@@ -18,7 +18,7 @@ export function SessionRevokeButton({ id }: { id: string }) {
   return <Button size="sm" variant="outline" pending={action.status === 'executing'} onClick={() => action.execute({ sessionId: id })}>{t('revokeSession')}</Button>;
 }
 
-export function JobButton({ job }: { job: 'booking' | 'holds' | 'trash' | 'digest' }) {
+export function JobButton({ job }: { job: 'booking' | 'holds' | 'trash' | 'digest' | 'sla' }) {
   const t = useTranslations('admin.support');
   const action = useAction(runOperatorJob);
   const label = t(`job${job.charAt(0).toUpperCase()}${job.slice(1)}` as 'jobBooking');

@@ -12,6 +12,7 @@ import { exportModel, validateTranslation } from '@/server/admin/operator';
 import { purgeExpiredTrash } from '@/server/admin/trash';
 import { purgeExpiredHolds } from '@/server/hold/service';
 import { runBookingCron, runDailyDigest } from '@/server/cron/tasks';
+import { runSlaCron } from '@/server/support/sla';
 import { sendEmail } from '@/lib/email/send';
 import { authedAction } from '@/server/safe-action';
 import { invalidateEntitlementsCache } from '@/server/entitlements/service';
@@ -93,7 +94,9 @@ export const runOperatorJob = authedAction
           ? await purgeExpiredHolds(new Date())
           : parsedInput.job === 'trash'
             ? await purgeExpiredTrash(new Date())
-            : await runDailyDigest(new Date());
+            : parsedInput.job === 'sla'
+              ? await runSlaCron(new Date())
+              : await runDailyDigest(new Date());
       if (run) await db.jobRun.update({ where: { id: run.id }, data: { finishedAt: new Date(), succeeded: true } });
       await recordAudit({ actor: caller, action: 'admin.operator.job', entityType: 'JobRun', entityId: run?.id ?? parsedInput.job, after: { job: parsedInput.job, result }, ipAddress: ctx.identifier });
       return { ok: true, result };

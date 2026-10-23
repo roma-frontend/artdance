@@ -2931,6 +2931,7 @@ const en = {
       jobHolds: 'Expired holds',
       jobTrash: 'Trash cleanup',
       jobDigest: 'Daily digest',
+      jobSla: 'Support SLA check',
       jobStarted: 'Job completed',
       terminalTitle: 'Safe operator console',
       terminalHint: 'Whitelisted diagnostics only. Commands are audited.',

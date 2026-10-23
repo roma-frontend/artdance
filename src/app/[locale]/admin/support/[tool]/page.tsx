@@ -99,7 +99,7 @@ export default async function OperatorToolPage({ params, searchParams }: PagePro
     );
   }
 
-  if (tool === 'operations') return <><AdminPageHeader title={t('operationsTitle')} subtitle={t('operationsHint')} actions={back} /><div className="grid gap-3 sm:grid-cols-2"><JobButton job="booking" /><JobButton job="holds" /><JobButton job="trash" /><JobButton job="digest" /></div></>;
+  if (tool === 'operations') return <><AdminPageHeader title={t('operationsTitle')} subtitle={t('operationsHint')} actions={back} /><div className="grid gap-3 sm:grid-cols-2"><JobButton job="booking" /><JobButton job="holds" /><JobButton job="trash" /><JobButton job="digest" /><JobButton job="sla" /></div></>;
   if (tool === 'terminal') return <><AdminPageHeader title={t('terminalTitle')} subtitle={t('terminalHint')} actions={back} /><OperatorTerminal /></>;
   if (tool === 'access') return <><AdminPageHeader title={t('accessTitle')} subtitle={t('accessHint')} actions={back} /><div className="flex flex-wrap gap-3"><Button asChild variant="accent"><Link href={routes.adminSettings()}>{t('openAccessSettings')}</Link></Button><Button asChild variant="outline"><Link href={routes.adminUsers()}>{t('impersonate')}</Link></Button></div></>;
 
