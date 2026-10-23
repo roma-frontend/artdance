@@ -2610,25 +2610,24 @@ html:has(body[data-fullscreen-locked]) {
 }
 
 /*
- * Мобильный первый экран (< 768px): кадр открыт сверху, а заголовок и кнопки
- * лежат в нижней шторке, как в мобильных приложениях. Desktop не меняется.
+ * Мобильный первый экран (< 768px): кадр на весь экран, текст лежит внизу поверх
+ * плавного затемнения. Без пустой полосы над текстом и без отдельной шторки.
+ * Desktop не меняется.
  */
 @media (width < 768px) {
   .hero-viewport [data-hero-background] {
-    inset: 0 0 auto 0;
-    height: 62svh;
-    -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
-    mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+    inset: 0;
   }
 
   .hero-viewport .hero-content {
     justify-content: flex-end;
     padding: var(--space-6) var(--space-5);
-    border-top: 1px solid var(--metal-soft);
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    background: color-mix(in srgb, var(--surface-cinema) 92%, transparent);
-    -webkit-backdrop-filter: blur(18px);
-    backdrop-filter: blur(18px);
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--surface-cinema) 96%, transparent) 0%,
+      color-mix(in srgb, var(--surface-cinema) 74%, transparent) 42%,
+      transparent 100%
+    );
   }
 
   .hero-content > p:first-child {
@@ -3538,6 +3537,9 @@ html:has(body[data-fullscreen-locked]) {
   height: var(--style-media-height, 100%);
   margin-left: calc(var(--style-media-width, 100%) / -2);
   margin-top: calc(var(--style-media-height, 100%) / -2);
+  /* Медиа скругляется тем же токеном, что и рамка кулисы: углы кадра совпадают на любом движке. */
+  border-radius: var(--radius-lg);
+  overflow: hidden;
   transform: translateZ(0);
   backface-visibility: hidden;
   transition: transform 700ms cubic-bezier(0.32, 0.72, 0, 1);
