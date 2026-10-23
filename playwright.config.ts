@@ -24,17 +24,18 @@ import { config as loadEnv } from 'dotenv';
  * окружение при импорте — и падает раньше, чем начнётся первый тест. В CI файла
  * нет, значения приходят из окружения workflow, и отсутствие файла не ошибка.
  */
+loadEnv({ path: '.env.e2e.local' });
 loadEnv({ path: '.env.local' });
 
 /*
  * e2e создаёт реальные записи (пользователи, обращения, брони), поэтому пишет
- * только в локальную базу. Облачная база из .env.local сюда не попадает: прогон
- * против неё раньше засорял рабочие таблицы тикетами и корзинами.
+ * только в локальную базу. dotenv не перезаписывает уже заданные переменные,
+ * поэтому DATABASE_URL из .env.e2e.local побеждает облачный из .env.local.
  */
 const dbUrl = process.env.DATABASE_URL ?? '';
 if (!dbUrl || !['localhost', '127.0.0.1', '[::1]'].includes(new URL(dbUrl).hostname)) {
   throw new Error(
-    'e2e пишет тестовые данные: нужна локальная база (DATABASE_URL на localhost), а не рабочая.',
+    'e2e пишет тестовые данные: нужна локальная база. Укажите DATABASE_URL на localhost в .env.e2e.local (образец: .env.e2e.example).',
   );
 }
 

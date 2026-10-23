@@ -1,10 +1,27 @@
 import { expect, test } from '@playwright/test';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { randomUUID } from 'node:crypto';
 
+import { PrismaClient } from '../src/generated/prisma/client';
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
 
 const admin = demoAccounts.find(account => account.role === 'ADMIN')!;
 const supportOperator = demoAccounts.find(account => account.email === 'support@demo.artdance.am')!;
+
+function localDb() {
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
+}
+
+let trashedPromoId: string | undefined;
+
+test.afterEach(async () => {
+  if (!trashedPromoId) return;
+  const db = localDb();
+  await db.promoCode.delete({ where: { id: trashedPromoId } });
+  await db.$disconnect();
+  trashedPromoId = undefined;
+});
 
 test('админка: общий скролл и правая sticky-колонка как у инструктора', async ({ page }, testInfo) => {
   await page.context().setExtraHTTPHeaders({ 'x-forwarded-for': `10.81.${testInfo.parallelIndex}.1` });
@@ -120,6 +137,14 @@ test('support command center: доступ только allowlisted operator и 
  */
 test('админка: индикатор перехода не сдвигает счётчик в сайдбаре', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'в мобильной раскладке сайдбар скрыт в шторке');
+
+  // Бейдж есть только у непустой корзины, а seed её не наполняет — создаём удалённую запись.
+  const db = localDb();
+  const trashed = await db.promoCode.create({
+    data: { code: `TRASH-E2E-${randomUUID()}`, type: 'PERCENT', value: 5, deletedAt: new Date() },
+  });
+  await db.$disconnect();
+  trashedPromoId = trashed.id;
 
   await page.context().setExtraHTTPHeaders({ 'x-forwarded-for': `10.83.${testInfo.parallelIndex}.1` });
   await page.emulateMedia({ reducedMotion: 'reduce' });
