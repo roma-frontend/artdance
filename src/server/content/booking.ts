@@ -72,6 +72,8 @@ export interface AlternativeSlot {
   /** Машинное время суток `HH:mm` — для подписи интервала. */
   startTime: string;
   endTime: string;
+  /** Момент конца, ISO — нужен удержанию, чтобы занять ровно этот интервал. */
+  endIso: string;
 }
 
 export interface BookingContent {
@@ -384,6 +386,7 @@ export async function getAlternativeSlots(
     startIso: slot.start.toISOString(),
     startTime: slotClock(slot.start),
     endTime: slotClock(slot.end),
+    endIso: slot.end.toISOString(),
   }));
 }
 

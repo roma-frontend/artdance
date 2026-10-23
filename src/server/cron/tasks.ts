@@ -5,11 +5,13 @@ import { getServerEnv } from '@/config/env';
 import { db } from '@/lib/db';
 import { purgeExpiredCarts } from '@/server/cart/service';
 import { purgeExpiredHolds } from '@/server/hold/service';
+import { expireUnpaidBookings } from '@/server/booking/service';
 import { notifyBookingReminder, notifyWaitlistReady } from '@/server/booking/notify';
 
 export interface CronReport {
   purgedHolds: number;
   purgedCarts: number;
+  expiredUnpaid: number;
   autoCompleted: number;
   remindersSent: number;
   waitlistExpired: number;
@@ -18,6 +20,7 @@ export interface CronReport {
 export async function runBookingCron(now: Date): Promise<CronReport> {
   const [purged, purgedCartsRes] = await Promise.all([purgeExpiredHolds(now), purgeExpiredCarts(now).catch(() => ({ purged: 0 }))]);
   const purgedCarts = purgedCartsRes.purged;
+  const { expired: expiredUnpaid } = await expireUnpaidBookings(now);
 
   // Автозавершение: CONFIRMED брони, где endsAt + autoCompleteAfterHours <= now.
   // Делаем одним запросом по cutoff, а не выборкой + фильтром в памяти.
@@ -92,7 +95,7 @@ export async function runBookingCron(now: Date): Promise<CronReport> {
     }
   }
 
-  return { purgedHolds: purged.purged, purgedCarts, autoCompleted, remindersSent, waitlistExpired };
+  return { purgedHolds: purged.purged, purgedCarts, expiredUnpaid, autoCompleted, remindersSent, waitlistExpired };
 }
 
 export interface DigestReport {

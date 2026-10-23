@@ -86,6 +86,126 @@ function returnUrlFor(orderNumber: string, locale: string): string {
   return absoluteUrl(`/${resolved}${routes.checkoutResult(orderNumber)}`);
 }
 
+export interface CreateBookingPaymentInput {
+  bookingId: string;
+  /** Бронь оплачивает только её владелец-аккаунт. */
+  userId: string;
+  method: PaymentMethod;
+  locale: string;
+}
+
+export interface BookingPaymentResult {
+  bookingId: string;
+  paymentId: string;
+  amount: number;
+  provider: PaymentProviderId;
+  providerTransactionId: string | null;
+  redirectUrl: string | null;
+  qrPayload: string | null;
+  status: PaymentStatus;
+}
+
+/**
+ * Создаёт (или возвращает уже созданный) платёж за бронь, ожидающую оплаты.
+ *
+ * Бронь с ценой создаётся в `PENDING`; вебхук переводит её в `CONFIRMED`, когда
+ * провайдер подтвердит оплату. Здесь бронь не меняется: redirect не доказательство.
+ */
+export async function createBookingPayment(input: CreateBookingPaymentInput): Promise<BookingPaymentResult> {
+  const booking = await db.booking.findUnique({
+    where: { id: input.bookingId },
+    select: {
+      id: true,
+      reference: true,
+      customerId: true,
+      status: true,
+      totalPrice: true,
+      subject: true,
+      customer: { select: { email: true, phone: true, name: true } },
+    },
+  });
+  if (!booking) throw domainErrors.notFound();
+  if (booking.customerId !== input.userId) throw domainErrors.forbidden();
+  if (booking.status !== 'PENDING') throw domainErrors.validationFailed('status');
+
+  const amount = booking.totalPrice;
+  if (amount <= 0) throw domainErrors.validationFailed('totalPrice');
+
+  const provider = providerForMethod(input.method);
+  const idempotencyKey = `booking:${booking.id}:${amount}`;
+
+  const existing = await db.payment.findUnique({
+    where: { idempotencyKey },
+    select: { id: true, status: true, providerTransactionId: true, providerPayload: true },
+  });
+
+  /* Уже созданная попытка возвращается, а не создаёт вторую оплату. */
+  if (existing?.providerTransactionId) {
+    const payload = (existing.providerPayload ?? {}) as { redirectUrl?: string; qrPayload?: string };
+    return {
+      bookingId: booking.id,
+      paymentId: existing.id,
+      amount,
+      provider: provider.id,
+      providerTransactionId: existing.providerTransactionId,
+      redirectUrl: payload.redirectUrl ?? null,
+      qrPayload: payload.qrPayload ?? null,
+      status: existing.status as PaymentStatus,
+    };
+  }
+
+  const payment = await db.payment.create({
+    data: {
+      bookingId: booking.id,
+      provider: provider.id,
+      method: input.method,
+      status: 'PENDING',
+      amount,
+      paidAmount: 0,
+      currencyCode: 'AMD',
+      idempotencyKey,
+    },
+    select: { id: true },
+  });
+
+  const intent = await provider.createPayment({
+    paymentId: payment.id,
+    orderNumber: booking.reference,
+    amount,
+    currencyCode: 'AMD',
+    description: `Booking ${booking.reference}`.slice(0, 250),
+    method: input.method,
+    locale: input.locale,
+    customer: { email: booking.customer.email, phone: booking.customer.phone ?? undefined, name: booking.customer.name },
+    returnUrl: absoluteUrl(`/${isLocale(input.locale) ? input.locale : 'hy'}${routes.accountBookings()}`),
+    metadata: { bookingId: booking.id },
+  });
+
+  await db.payment.update({
+    where: { id: payment.id },
+    data: {
+      provider: intent.provider,
+      providerTransactionId: intent.providerTransactionId,
+      providerPayload: {
+        redirectUrl: intent.redirectUrl,
+        qrPayload: intent.qrPayload ?? null,
+        expiresAt: intent.expiresAt ? intent.expiresAt.toISOString() : null,
+      } as never,
+    },
+  });
+
+  return {
+    bookingId: booking.id,
+    paymentId: payment.id,
+    amount,
+    provider: intent.provider,
+    providerTransactionId: intent.providerTransactionId,
+    redirectUrl: intent.redirectUrl,
+    qrPayload: intent.qrPayload ?? null,
+    status: intent.status,
+  };
+}
+
 /**
  * Создаёт (или возвращает уже созданный) платёж по заказу.
  *

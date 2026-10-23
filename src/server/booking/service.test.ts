@@ -27,7 +27,7 @@ vi.mock('@/server/booking/notify', () => ({
 vi.mock('@/server/wallet/service', () => ({ creditWallet: vi.fn() }));
 
 import { booking } from '@/config/business';
-import { cancelBooking, createBookingFromHold, rescheduleBooking } from './service';
+import { cancelBooking, createBookingFromHold, expireUnpaidBookings, rescheduleBooking } from './service';
 
 const now = new Date('2026-10-01T08:00:00Z');
 const startsAt = new Date('2026-10-03T14:00:00Z');
@@ -57,6 +57,42 @@ beforeEach(() => {
   mocks.db.booking.update.mockResolvedValue({ id: 'booking-1', startsAt, endsAt });
   mocks.notifyBookingConfirmed.mockResolvedValue(undefined);
   mocks.notifyBookingCancelled.mockResolvedValue(undefined);
+});
+
+describe('автоотмена неоплаченных броней', () => {
+  it('переводит PENDING без оплаты старше окна в EXPIRED и возвращает место и урок абонемента', async () => {
+    mocks.db.booking.findMany.mockResolvedValue([{ id: 'booking-9', updatedAt: now, sessionId: 'session-1', participants: 2 }]);
+    mocks.db.booking.updateMany.mockResolvedValue({ count: 1 });
+    mocks.db.classPassRedemption.findUnique.mockResolvedValue({ id: 'redemption-1', passId: 'pass-1' });
+    mocks.db.classPass.update.mockResolvedValue({});
+    mocks.db.classPassRedemption.delete.mockResolvedValue({});
+
+    const result = await expireUnpaidBookings(now);
+
+    expect(result).toEqual({ expired: 1 });
+    const cutoff = new Date(now.getTime() - booking.unpaidExpiryMinutes * 60_000);
+    expect(mocks.db.booking.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ status: 'PENDING', createdAt: { lte: cutoff } }),
+    }));
+    expect(mocks.db.booking.updateMany).toHaveBeenCalledWith({
+      where: { id: 'booking-9', status: 'PENDING', updatedAt: now },
+      data: { status: 'EXPIRED', cancellationReason: 'PAYMENT_TIMEOUT' },
+    });
+    expect(mocks.db.classSession.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: { bookedCount: { decrement: 2 } },
+    }));
+    expect(mocks.db.classPass.update).toHaveBeenCalledWith({ where: { id: 'pass-1' }, data: { lessonsRemaining: { increment: 1 } } });
+  });
+
+  it('не трогает бронь, которую уже успели изменить (compare-and-set)', async () => {
+    mocks.db.booking.findMany.mockResolvedValue([{ id: 'booking-9', updatedAt: now, sessionId: null, participants: 1 }]);
+    mocks.db.booking.updateMany.mockResolvedValue({ count: 0 });
+
+    const result = await expireUnpaidBookings(now);
+
+    expect(result).toEqual({ expired: 0 });
+    expect(mocks.db.classSession.updateMany).not.toHaveBeenCalled();
+  });
 });
 
 describe('бронирование: цена только из БД', () => {
@@ -94,6 +130,8 @@ describe('бронирование: цена только из БД', () => {
     const calledTotal = (mocks.db.booking.create.mock.calls[0]?.[0] as { data: { totalPrice: number } })?.data.totalPrice;
     expect(typeof calledTotal).toBe('number');
     expect(calledTotal).toBeGreaterThanOrEqual(price);
+    // Бронь с ценой ждёт оплаты: создаётся PENDING, подтверждает вебхук.
+    expect(mocks.db.booking.create.mock.calls[0]?.[0]).toMatchObject({ data: expect.objectContaining({ status: calledTotal > 0 ? 'PENDING' : 'CONFIRMED' }) });
     expect(mocks.db.slotHold.deleteMany).toHaveBeenCalledWith({ where: { id: hold.id, expiresAt: { gt: now } } });
   });
 });

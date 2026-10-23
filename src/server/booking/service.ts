@@ -121,18 +121,18 @@ export async function createBookingFromHold(input: CreateBookingInput) {
          discountAmount = dynamicPrice;
          payableTotal = travelFee;
        }
-       const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject, lessonType, status: 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants, partnerName: lessonType === 'PAIR' ? partnerName : null, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount, totalPrice: payableTotal, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules }, select: { id: true, reference: true } });
+       const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject, lessonType, status: payableTotal > 0 ? 'PENDING' : 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants, partnerName: lessonType === 'PAIR' ? partnerName : null, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount, totalPrice: payableTotal, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules }, select: { id: true, reference: true } });
        if (classPassId) {
          const redeemed = await tx.classPass.updateMany({ where: { id: classPassId, purchaserId: customerId, lessonsRemaining: { gt: 0 }, expiresAt: { gt: now } }, data: { lessonsRemaining: { decrement: 1 } } });
          if (redeemed.count !== 1) throw domainErrors.validationFailed('classPass');
          await tx.classPassRedemption.create({ data: { passId: classPassId, bookingId: created.id } });
        }
       const ref = refFromId(created.id);
-      const updated = await tx.booking.update({ where: { id: created.id }, data: { reference: ref }, select: { id: true, reference: true, totalPrice: true, startsAt: true, endsAt: true } });
+      const updated = await tx.booking.update({ where: { id: created.id }, data: { reference: ref }, select: { id: true, reference: true, status: true, totalPrice: true, startsAt: true, endsAt: true } });
       return updated;
     });
     createdId = result.id;
-    void notifyBookingConfirmed(result.id).catch(() => {});
+    if (result.status === 'CONFIRMED') void notifyBookingConfirmed(result.id).catch(() => {});
     return result;
   } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; } finally { void createdId; }
 }
@@ -183,6 +183,44 @@ export async function cancelBooking(input: CancelBookingInput) {
   }
   return { booking: txResult.booking, fee: txResult.fee, refund: txResult.refund, outcome: txResult.outcome, credited: Boolean(input.creditInsteadOfRefund && txResult.refund > 0) };
 }
+/**
+ * Автоотмена неоплаченных броней: PENDING старше `unpaidExpiryMinutes` без
+ * успешного платежа переходит в EXPIRED, место и урок абонемента возвращаются.
+ */
+export async function expireUnpaidBookings(now: Date): Promise<{ expired: number }> {
+  const cutoff = new Date(now.getTime() - booking.unpaidExpiryMinutes * 60_000);
+  const stale = await db.booking.findMany({
+    where: {
+      status: 'PENDING',
+      createdAt: { lte: cutoff },
+      payments: { none: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } } },
+    },
+    select: { id: true, updatedAt: true, sessionId: true, participants: true },
+  });
+  let expired = 0;
+  for (const b of stale) {
+    const claimed = await db.$transaction(async (tx) => {
+      // Compare-and-set: если бронь уже оплатили или изменили, не трогаем её.
+      const result = await tx.booking.updateMany({
+        where: { id: b.id, status: 'PENDING', updatedAt: b.updatedAt },
+        data: { status: 'EXPIRED', cancellationReason: 'PAYMENT_TIMEOUT' },
+      });
+      if (result.count !== 1) return false;
+      if (b.sessionId) {
+        await tx.classSession.updateMany({ where: { id: b.sessionId, bookedCount: { gte: b.participants } }, data: { bookedCount: { decrement: b.participants } } });
+      }
+      const redemption = await tx.classPassRedemption.findUnique({ where: { bookingId: b.id }, select: { id: true, passId: true } });
+      if (redemption) {
+        await tx.classPass.update({ where: { id: redemption.passId }, data: { lessonsRemaining: { increment: 1 } } });
+        await tx.classPassRedemption.delete({ where: { id: redemption.id } });
+      }
+      return true;
+    });
+    if (claimed) expired += 1;
+  }
+  return { expired };
+}
+
 export interface RescheduleBookingInput { bookingId: string; userId: string; now: Date; newStartsAt: Date; newEndsAt: Date; newPrice?: number | null; }
 export async function rescheduleBooking(input: RescheduleBookingInput) {
   const b = await db.booking.findUnique({ where: { id: input.bookingId } });
