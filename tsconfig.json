@@ -60,6 +60,7 @@
      * Типы ролика проверяются там, где он собирается: `npx tsc --noEmit`
      * из каталога `motion/` (см. motion/README.md).
      */
-    "motion"
+    "motion",
+    "mobile"
   ]
 }

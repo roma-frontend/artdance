@@ -26,6 +26,11 @@ const config = [
       'next-env.d.ts',
       // postinstall-патчи: require обязателен, в src не используется
       'scripts/patch-noble.cjs',
+      /*
+       * Мобильное приложение (Expo / React Native) — отдельный проект со своим
+       * tsconfig и стеком правил. Веб-линтер его не должен проверять.
+       */
+      'mobile/**',
     ],
   },
 
