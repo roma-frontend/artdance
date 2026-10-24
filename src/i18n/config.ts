@@ -91,9 +91,9 @@ export const formats = {
     },
   },
   number: {
-    /** Цена в драмах: без дробной части, символ ֏ после числа. */
-    price: { style: 'currency', currency: 'AMD', maximumFractionDigits: 0 },
-    priceCompact: { style: 'currency', currency: 'AMD', notation: 'compact', maximumFractionDigits: 0 },
+    /** Цена в драмах: без дробной части. narrowSymbol даёт ֏ в любой локали, а не AMD. */
+    price: { style: 'currency', currency: 'AMD', currencyDisplay: 'narrowSymbol', maximumFractionDigits: 0 },
+    priceCompact: { style: 'currency', currency: 'AMD', currencyDisplay: 'narrowSymbol', notation: 'compact', maximumFractionDigits: 0 },
     plain: { maximumFractionDigits: 0 },
     rating: { minimumFractionDigits: 1, maximumFractionDigits: 1 },
     /**
