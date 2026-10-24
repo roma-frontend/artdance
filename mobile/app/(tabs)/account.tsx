@@ -39,6 +39,7 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/pricing',
   '/become-instructor',
   '/list-your-studio',
+  '/blog',
 ]);
 
 export default function AccountScreen() {
@@ -88,6 +89,7 @@ export default function AccountScreen() {
     { icon: 'pricetags', label: c.nav.pricing, path: '/pricing', tint: '#C9A96A' },
     { icon: 'school', label: c.footer.becomeInstructor, path: '/become-instructor', tint: '#3FB984' },
     { icon: 'business', label: c.footer.listStudio, path: '/list-your-studio', tint: '#C9A96A' },
+    { icon: 'newspaper', label: c.blog.title, path: '/blog', tint: '#5AA9E6' },
   ];
 
   const avatarStyle = useAnimatedStyle(() => ({

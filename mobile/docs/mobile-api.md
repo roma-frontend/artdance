@@ -31,6 +31,8 @@ Bearer-токен проверен на живом стенде: вход дем
 | `/api/content/list-your-studio` | GET | публичный, `?locale=`, без кэша |
 | `/api/content/legal` | GET | публичный, `?locale=`, без кэша |
 | `/api/content/legal/[slug]` | GET | публичный, `?locale=`, без кэша; `NOT_FOUND` для неизвестного слага |
+| `/api/content/blog` | GET | публичный, `?locale=&category=&q=`, без кэша; только опубликованные статьи |
+| `/api/content/blog/[slug]` | GET | публичный, `?locale=`, без кэша; `NOT_FOUND` для неизвестного или неопубликованного слага |
 | `/api/content/contact` | GET | публичный, `?locale=`, без кэша |
 | `/api/contact` | POST | публичный, лимит `contactForm`, капча; `{ delivered }`, `VALIDATION_FAILED` с `field`, `CAPTCHA_FAILED` (422) |
 | `/api/search` | GET | публичный, лимит частоты |
