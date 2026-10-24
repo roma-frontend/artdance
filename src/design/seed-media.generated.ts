@@ -65,6 +65,51 @@ export const seedMedia = {
     blurDataUrl:
       'data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAADwAQCdASoMAAcAAwBSJZACdADdZP6rooAA/vgqBPbPmT1Ptju1Zc++9ALI+0nSbh6dxR4WH0fyW7+P2RFtFko3ZVDZ8TZuDW1AJQAA',
   },
+  'event-bachata-night-workshop': {
+    file: 'event-bachata-night-workshop.1ab525a3.webp',
+    width: 1024,
+    height: 768,
+    bytes: 23904,
+    fingerprint: '1ab525a3',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAAAQAgCdASoMAAkAAwBSJaACdAEfUote7fkAAP75XZ7iblO00UghvHSaRg6gHXl+Nk/BRnXT6vla4QUQAAA=',
+  },
+  'event-contemporary-masterclass': {
+    file: 'event-contemporary-masterclass.90c4d7ce.webp',
+    width: 1024,
+    height: 768,
+    bytes: 27794,
+    fingerprint: '90c4d7ce',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAADQAQCdASoMAAkAAwBSJYwCdAEDcp80AAD+741IyEhInRyM+/qmm6BfGlSfhTqrC3L1pfQ+neYuh531yomERjgA',
+  },
+  'event-friday-bachata-social': {
+    file: 'event-friday-bachata-social.e7722269.webp',
+    width: 1024,
+    height: 768,
+    bytes: 73476,
+    fingerprint: 'e7722269',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRl4AAABXRUJQVlA4IFIAAADwAQCdASoMAAkAAwBSJbACdADhfppejAAA/uxaCMPl0ZWNBitn7NvRbMOX8eRNaxQbpl/4uAR7NTs3SziNV78O3se9TJ4+KHnO3Ef9uG+MAAAA',
+  },
+  'event-yerevan-dancesport-cup': {
+    file: 'event-yerevan-dancesport-cup.3249dbc7.webp',
+    width: 1024,
+    height: 768,
+    bytes: 77232,
+    fingerprint: '3249dbc7',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRlAAAABXRUJQVlA4IEQAAADwAQCdASoMAAkAAwBSJQBWACB/7JjfgwAA/vfcy+M7UTQg5MIrRxPJdpYpm1NMpShvdFeykvJ2X7MyhwA6znJbDAAAAA==',
+  },
+  'event-yerevan-street-battle': {
+    file: 'event-yerevan-street-battle.514919ea.webp',
+    width: 1024,
+    height: 768,
+    bytes: 50080,
+    fingerprint: '514919ea',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAADwAQCdASoMAAkAAwBSJZQC7AD0SovO5gAA/vhwIVu31j+nPcQzNGt2ii5zePjW3sTS8WNI8xkkpwsxVHAjPYTojmJF2rri8AAAAA==',
+  },
   'hero-dancer': {
     file: 'hero-dancer.0a566d95.webp',
     width: 2752,
@@ -277,4 +322,4 @@ export const seedMedia = {
 export type SeedMediaName = keyof typeof seedMedia;
 
 /** Суммарный вес папки сид-медиа, байт. Сверяется с `mediaProcessing.budgetBytes.seedTotal`. */
-export const seedMediaTotalBytes = 1450498;
+export const seedMediaTotalBytes = 1702984;

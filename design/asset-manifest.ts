@@ -137,7 +137,6 @@ export const designAssets: readonly DesignAsset[] = [
     subject: 'Кинематографичный кадр для editorial-секции «Every body has a rhythm»',
     usedFor: [
       { entity: 'page', id: 'home.editorial', placeholder: true },
-      { entity: 'event', id: 'bachata-night-workshop', placeholder: true },
     ],
     needsOptimization: true,
   },
@@ -176,6 +175,52 @@ export const designAssets: readonly DesignAsset[] = [
     derivedFromVideo: true,
   },
 
+  /*
+   * События: собственные фото из папки заказчика (Downloads/assets), положены в
+   * public/media/seed под нормализованными именами. Исходника в папке прототипа нет,
+   * поэтому `design:import` их не копирует — файлы уже лежат в seed-папке.
+   */
+  {
+    name: 'event-bachata-night-workshop',
+    source: 'event-bachata-night-workshop.png',
+    preset: 'eventSpotlight',
+    subject: 'Пара танцует бачату в тёмной студии, красный свет и дым',
+    usedFor: [{ entity: 'event', id: 'bachata-night-workshop' }],
+    needsOptimization: true,
+  },
+  {
+    name: 'event-yerevan-street-battle',
+    source: 'event-yerevan-street-battle.png',
+    preset: 'eventSpotlight',
+    subject: 'Брейкданс на ночной городской площади, зрители на заднем плане',
+    usedFor: [{ entity: 'event', id: 'yerevan-street-battle' }],
+    needsOptimization: true,
+  },
+  {
+    name: 'event-contemporary-masterclass',
+    source: 'event-contemporary-masterclass.png',
+    preset: 'eventSpotlight',
+    subject: 'Танцовщица в луче света на пустой сцене, развевающаяся ткань',
+    usedFor: [{ entity: 'event', id: 'contemporary-masterclass' }],
+    needsOptimization: true,
+  },
+  {
+    name: 'event-yerevan-dancesport-cup',
+    source: 'event-yerevan-dancesport-cup.png',
+    preset: 'eventSpotlight',
+    subject: 'Пара спортивного бального танца на турнирной сцене под прожекторами',
+    usedFor: [{ entity: 'event', id: 'yerevan-dancesport-cup' }],
+    needsOptimization: true,
+  },
+  {
+    name: 'event-friday-bachata-social',
+    source: 'event-friday-bachata-social.png',
+    preset: 'eventSpotlight',
+    subject: 'Пары танцуют бачату на социальной вечеринке, тёплый свет зала',
+    usedFor: [{ entity: 'event', id: 'friday-bachata-social' }],
+    needsOptimization: true,
+  },
+
   /* Направления танца */
   {
     name: 'style-hip-hop',
@@ -186,7 +231,6 @@ export const designAssets: readonly DesignAsset[] = [
       { entity: 'danceStyle', id: 'HIP_HOP' },
       { entity: 'class', id: 'street-flow' },
       { entity: 'instructor', id: 'david-sargsyan', placeholder: true },
-      { entity: 'event', id: 'yerevan-street-battle', placeholder: true },
     ],
   },
   {
@@ -217,7 +261,6 @@ export const designAssets: readonly DesignAsset[] = [
     usedFor: [
       { entity: 'danceStyle', id: 'CONTEMPORARY' },
       { entity: 'class', id: 'contemporary-flow' },
-      { entity: 'event', id: 'contemporary-masterclass', placeholder: true },
     ],
   },
   {
@@ -240,7 +283,6 @@ export const designAssets: readonly DesignAsset[] = [
     subject: 'Спортивные бальные: пара в стандартной программе',
     usedFor: [
       { entity: 'danceStyle', id: 'BALLROOM' },
-      { entity: 'event', id: 'yerevan-dancesport-cup', placeholder: true },
     ],
   },
   {

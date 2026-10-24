@@ -635,7 +635,7 @@ export const demoEvents: readonly DemoEvent[] = [
     price: 8_000,
     capacity: 30,
     spotsLeft: 15,
-    asset: 'editorial-rhythm',
+    asset: 'event-bachata-night-workshop',
   },
   {
     slug: 'yerevan-street-battle',
@@ -650,7 +650,7 @@ export const demoEvents: readonly DemoEvent[] = [
     price: 0,
     capacity: 200,
     spotsLeft: 200,
-    asset: 'style-hip-hop',
+    asset: 'event-yerevan-street-battle',
   },
   {
     slug: 'contemporary-masterclass',
@@ -664,7 +664,7 @@ export const demoEvents: readonly DemoEvent[] = [
     price: 12_000,
     capacity: 24,
     spotsLeft: 8,
-    asset: 'style-contemporary',
+    asset: 'event-contemporary-masterclass',
   },
   /*
    * Соревнование и социальный вечер — демо-контент DanceSport-разделов
@@ -686,7 +686,7 @@ export const demoEvents: readonly DemoEvent[] = [
     price: 5_000,
     capacity: 800,
     spotsLeft: 350,
-    asset: 'style-ballroom',
+    asset: 'event-yerevan-dancesport-cup',
   },
   {
     slug: 'friday-bachata-social',
@@ -702,7 +702,7 @@ export const demoEvents: readonly DemoEvent[] = [
     price: 2_000,
     capacity: 60,
     spotsLeft: 22,
-    asset: 'style-salsa',
+    asset: 'event-friday-bachata-social',
   },
 ];
 
@@ -805,6 +805,31 @@ export const demoMediaAlt: Record<string, { hy: string; ru: string; en: string }
     hy: 'Սպորտային պարի զույգը մրցման պարկետին՝ լուսարձակների ներքո',
     ru: 'Пара спортивного бального танца на паркете турнира в свете прожекторов',
     en: 'A DanceSport couple on a competition floor under spotlights',
+  },
+  'event-bachata-night-workshop': {
+    hy: 'Զույգ պարում է բաչատա մուգ ստուդիայում՝ կարմիր լուսավորության ներքո',
+    ru: 'Пара танцует бачату в тёмной студии в красном свете',
+    en: 'A couple dancing bachata in a dark studio under red light',
+  },
+  'event-yerevan-street-battle': {
+    hy: 'Բրեյքդանսի պարող գիշերային քաղաքային հրապարակում՝ հանդիսատեսի ֆոնին',
+    ru: 'Брейкдансер на ночной городской площади, зрители на заднем плане',
+    en: 'A breakdancer on a night city square with spectators behind',
+  },
+  'event-contemporary-masterclass': {
+    hy: 'Պարուհին լույսի ճառագայթում դատարկ բեմում, ծածանվող գործվածքով',
+    ru: 'Танцовщица в луче света на пустой сцене, развевающаяся ткань',
+    en: 'A dancer in a shaft of light on an empty stage, fabric flowing',
+  },
+  'event-yerevan-dancesport-cup': {
+    hy: 'Սպորտային բալային պարի զույգը մրցույթի բեմում՝ լուսարձակների ներքո',
+    ru: 'Пара спортивного бального танца на турнирной сцене под прожекторами',
+    en: 'A DanceSport couple on a competition stage under spotlights',
+  },
+  'event-friday-bachata-social': {
+    hy: 'Զույգեր պարում են բաչատա սոցիալական երեկոյին տաք լուսավորության ներքո',
+    ru: 'Пары танцуют бачату на социальной вечеринке в тёплом свете зала',
+    en: 'Couples dancing bachata at a social night in warm light',
   },
   'style-hip-hop': {
     hy: 'Հիփ-հոփ պարող փողոցային ոճով',

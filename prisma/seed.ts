@@ -222,6 +222,12 @@ async function attachMedia(
   const { translations, ...data } = mediaData(assetName);
   const storageKey = `${data.storageKey}#${ownerTag}`;
 
+  // Прошлый сид-кадр владельца с другим файлом или ключом остался бы первым по sortOrder.
+  await prisma.mediaAsset.updateMany({
+    where: { ...owner, deletedAt: null, storageKey: { endsWith: `#${ownerTag}`, not: storageKey } },
+    data: { deletedAt: now },
+  });
+
   const asset = await prisma.mediaAsset.upsert({
     where: { storageKey },
     /*
