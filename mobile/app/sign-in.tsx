@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 import { AuthLayout } from '@/components/auth/auth-layout';
@@ -77,6 +77,9 @@ export default function SignInScreen() {
         returnKeyType="go"
         onSubmitEditing={submit}
       />
+      <Pressable onPress={() => router.push('/forgot-password')} accessibilityRole="link" hitSlop={8}>
+        <Text style={styles.link}>{t.forgotLink}</Text>
+      </Pressable>
       {error ? (
         <Animated.Text entering={FadeInDown.duration(250)} style={styles.error}>
           {error}
@@ -92,4 +95,5 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   error: { color: colors.danger, fontSize: 13, fontWeight: '600' },
   action: { marginTop: 4 },
+  link: { alignSelf: 'flex-end', color: colors.accentBright, fontSize: 13, fontWeight: '600' },
 });

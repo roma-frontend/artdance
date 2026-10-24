@@ -79,6 +79,16 @@ export async function signUp(name: string, email: string, password: string): Pro
   return ((await response.json()) as { user: User }).user;
 }
 
+/** Запрос ссылки для сброса. Ответ одинаковый для любого адреса, поэтому наличие аккаунта не раскрывается. */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const response = await fetch(`${API_URL}/api/account/password/forgot`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!response.ok) throw await readError(response);
+}
+
 /** Текущий пользователь или null, если сессии нет или она истекла. */
 export async function getCurrentUser(): Promise<User | null> {
   const token = await getSessionToken();

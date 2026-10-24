@@ -46,7 +46,7 @@ export default function RootLayout() {
         .then((u) => {
           if (!alive) return;
           setUser(u);
-          const inAuth = segmentsRef.current[0] === 'sign-in' || segmentsRef.current[0] === 'sign-up';
+          const inAuth = ['sign-in', 'sign-up', 'forgot-password'].includes(segmentsRef.current[0] ?? '');
           if (!u && !inAuth) router.replace('/sign-in');
           if (u && inAuth) router.replace('/');
         });

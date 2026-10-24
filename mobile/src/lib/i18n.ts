@@ -17,6 +17,11 @@ const dictionary: Dictionary = {
     genericError: 'Չհաջողվեց. փորձեք կրկին',
     locked: 'Հաշիվը ժամանակավորապես արգելափակված է',
     invalidCredentials: 'Էլ. փոստը կամ գաղտնաբառը սխալ է',
+    forgotLink: 'Մոռացե՞լ եք գաղտնաբառը։',
+    forgotTitle: 'Գաղտնաբառի վերականգնում',
+    forgotSubmit: 'Ուղարկել հղումը',
+    forgotSent: 'Եթե այս հասցեով հաշիվ կա, հղումն արդեն ճանապարհին է։ Բացեք այն բրաուզերում՝ նոր գաղտնաբառ սահմանելու համար։',
+    backToSignIn: 'Վերադառնալ մուտք',
     catalogEmpty: 'Դատարկ է',
     catalogNotFound: 'Չգտնվեց',
     catalogError: 'Չհաջողվեց բեռնել. փորձեք կրկին',
@@ -71,6 +76,11 @@ const dictionary: Dictionary = {
     genericError: 'Не удалось. Попробуйте ещё раз',
     locked: 'Аккаунт временно заблокирован',
     invalidCredentials: 'Неверный email или пароль',
+    forgotLink: 'Забыли пароль?',
+    forgotTitle: 'Сброс пароля',
+    forgotSubmit: 'Отправить ссылку',
+    forgotSent: 'Если аккаунт с этим адресом есть, ссылка уже в пути. Откройте её в браузере, чтобы задать новый пароль.',
+    backToSignIn: 'Вернуться ко входу',
     catalogEmpty: 'Пока пусто',
     catalogNotFound: 'Не найдено',
     catalogError: 'Не удалось загрузить. Попробуйте ещё раз',
@@ -125,6 +135,11 @@ const dictionary: Dictionary = {
     genericError: 'Something went wrong. Try again',
     locked: 'Account is temporarily locked',
     invalidCredentials: 'Email or password is incorrect',
+    forgotLink: 'Forgot password?',
+    forgotTitle: 'Reset password',
+    forgotSubmit: 'Send reset link',
+    forgotSent: 'If an account exists for this email, the link is on its way. Open it in a browser to set a new password.',
+    backToSignIn: 'Back to sign in',
     catalogEmpty: 'Nothing here yet',
     catalogNotFound: 'Not found',
     catalogError: 'Could not load. Try again',
@@ -181,6 +196,11 @@ export type MessageKey =
   | 'genericError'
   | 'locked'
   | 'invalidCredentials'
+  | 'forgotLink'
+  | 'forgotTitle'
+  | 'forgotSubmit'
+  | 'forgotSent'
+  | 'backToSignIn'
   | 'catalogEmpty'
   | 'catalogNotFound'
   | 'catalogError'
