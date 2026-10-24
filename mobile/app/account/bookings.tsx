@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
-import { listMyBookings, type ClientBooking } from '@/lib/bookings';
+import { bookingStatusLabel, listMyBookings, type ClientBooking } from '@/lib/bookings';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { useAppActive } from '@/lib/use-app-active';
@@ -73,7 +73,11 @@ export default function MyBookingsScreen() {
           )
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <PressableScale
+            onPress={() => router.push({ pathname: '/booking/[id]/pass', params: { id: item.id } })}
+            accessibilityRole="button"
+            style={styles.card}
+          >
             <Text style={type.h3} numberOfLines={1}>
               {item.classTitle ?? item.reference}
             </Text>
@@ -82,19 +86,18 @@ export default function MyBookingsScreen() {
               {dateLabel(item.startsAt, locale, { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
             </Text>
             <View style={styles.footer}>
-              <Text style={styles.status}>{statusLabel(item.status, c)}</Text>
+              <Text style={styles.status}>{bookingStatusLabel(item.status, c)}</Text>
               <Text style={type.label}>{price(item.totalPrice, locale)}</Text>
             </View>
-          </View>
+            <View style={styles.openRow}>
+              <Ionicons name="qr-code-outline" size={14} color={colors.metal} />
+              <Text style={styles.openText}>{c.footer.passTitle}</Text>
+            </View>
+          </PressableScale>
         )}
       />
     </View>
   );
-}
-
-function statusLabel(status: string, c: ReturnType<typeof catalogFor>): string {
-  const labels = c.status.booking as Record<string, string>;
-  return labels[status.toLowerCase().replace(/_([a-z])/g, (_, ch: string) => ch.toUpperCase())] ?? status;
 }
 
 const styles = StyleSheet.create({
@@ -105,4 +108,6 @@ const styles = StyleSheet.create({
   card: { padding: space.lg, borderRadius: radius.md, backgroundColor: 'rgba(245,241,234,0.06)', gap: 4 },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: space.sm },
   status: { fontSize: 12, fontWeight: '700', color: colors.metal },
+  openRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space.sm },
+  openText: { fontSize: 12, fontWeight: '700', color: colors.metal },
 });

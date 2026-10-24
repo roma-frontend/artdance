@@ -100,6 +100,7 @@ export default function RootLayout() {
         <Stack.Screen name="account/wallet" options={{ animation: 'default' }} />
         <Stack.Screen name="account/referrals" options={{ animation: 'default' }} />
         <Stack.Screen name="account/data" options={{ animation: 'default' }} />
+        <Stack.Screen name="booking/[id]/pass" options={{ animation: 'default' }} />
         <Stack.Screen name="cart" options={{ animation: 'default' }} />
         <Stack.Screen name="faq" options={{ animation: 'default' }} />
         <Stack.Screen name="help" options={{ animation: 'default' }} />
