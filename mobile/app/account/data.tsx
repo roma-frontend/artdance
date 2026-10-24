@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Share, StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { AccountDataError, exportMyData } from '@/lib/account-data';
 import { webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { shareTextFile } from '@/lib/share-file';
 import { colors, radius, space, type } from '@/theme';
 
 export default function MyDataScreen() {
@@ -27,7 +28,7 @@ export default function MyDataScreen() {
     setFailed(null);
     try {
       const json = await exportMyData();
-      await Share.share({ title: 'artdance-export.json', message: json });
+      await shareTextFile('artdance-export.json', json, 'application/json');
     } catch (error) {
       setFailed(error instanceof AccountDataError ? (error.serverMessage ?? t.catalogError) : t.catalogError);
     } finally {
