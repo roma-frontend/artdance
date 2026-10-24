@@ -125,6 +125,10 @@ const serverSchema = z.object({
   GOOGLE_CLIENT_ID: optionalString,
   GOOGLE_CLIENT_SECRET: optionalString,
 
+  /* ИИ-ассистент: ключ Gemini и модель. Без ключа ассистент отвечает 503, а не падает. */
+  GOOGLE_GENERATIVE_AI_API_KEY: optionalString,
+  GEMINI_MODEL: optionalString,
+
   /* Платежи — локальный/глобальный провайдеры: AM-эквайринг для AMD + Stripe для мира */
   PAYMENT_PROVIDER: z.enum(['paynet', 'arca-epg', 'ameria-vpos', 'idram', 'stripe', 'mock']).default('mock'),
   PAYMENT_GLOBAL_PROVIDER: z.enum(['stripe', 'mock']).default('mock'),

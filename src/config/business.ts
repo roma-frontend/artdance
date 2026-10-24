@@ -360,6 +360,8 @@ export const rateLimits = {
   otpRequest: { requests: 5, windowSeconds: 900 },
   otpVerify: { requests: 10, windowSeconds: 900 },
   bookingHold: { requests: 20, windowSeconds: 600 },
+  /** ИИ-ассистент: каждый ответ — платный вызов модели, поэтому лимит строже каталога. */
+  assistantChat: { requests: 30, windowSeconds: 600 },
   /**
    * Доступность слотов. Лимит щедрее, чем у удержания: смотреть свободное время
    * — обычное поведение (перебрать месяц, вернуться назад), а занимать слот —

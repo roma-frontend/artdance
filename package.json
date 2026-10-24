@@ -76,6 +76,7 @@
     "Проверено после перекрытия: prisma validate, prisma generate, build, verify."
   ],
   "dependencies": {
+    "@ai-sdk/google": "^3.0.138",
     "@date-fns/tz": "1.5.0",
     "@higgsfield/client": "^0.2.6",
     "@hookform/resolvers": "5.9.1",
@@ -83,6 +84,7 @@
     "@prisma/client": "7.10.0",
     "@sentry/nextjs": "^10.73.0",
     "@tanstack/react-query": "5.102.8",
+    "ai": "^6.0.315",
     "better-auth": "1.7.2",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
