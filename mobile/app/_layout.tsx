@@ -87,6 +87,7 @@ export default function RootLayout() {
         <Stack.Screen name="account/referrals" options={{ animation: 'default' }} />
         <Stack.Screen name="cart" options={{ animation: 'default' }} />
         <Stack.Screen name="faq" options={{ animation: 'default' }} />
+        <Stack.Screen name="help" options={{ animation: 'default' }} />
         <Stack.Screen name="book/[instructor]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
       </Stack>
     </>

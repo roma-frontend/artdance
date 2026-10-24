@@ -31,6 +31,7 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/account/referrals',
   '/cart',
   '/faq',
+  '/help',
 ]);
 
 export default function AccountScreen() {

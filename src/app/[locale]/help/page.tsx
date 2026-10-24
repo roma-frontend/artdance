@@ -35,6 +35,7 @@ import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import type { Crumb } from '@/lib/seo/jsonld';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { buildHelpContent, type HelpTopicId } from '@/server/content/help';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -52,75 +53,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 }
 
+const TOPIC_ICONS = {
+  booking: CalendarCheckIcon,
+  payments: CreditCardIcon,
+  account: UserCogIcon,
+  providers: BookOpenIcon,
+  rules: ScaleIcon,
+  shop: TruckIcon,
+} satisfies Record<HelpTopicId, unknown>;
+
 export default async function HelpPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 
-  const t = await getTranslations('help');
+  const content = await buildHelpContent(locale as Locale);
   const tFooter = await getTranslations('footer');
 
-  /** Якорь группы вопросов на странице FAQ. Идентификаторы задаёт сама страница. */
-  const faqGroup = (group: string): string => `${routes.faq()}#${group}`;
-
-  const topics: ValueItem[] = [
-    {
-      id: 'booking',
-      icon: CalendarCheckIcon,
-      title: t('topics.booking.title'),
-      body: t('topics.booking.body'),
-      href: faqGroup('booking'),
-      linkLabel: t('topics.booking.cta'),
-    },
-    {
-      id: 'payments',
-      icon: CreditCardIcon,
-      title: t('topics.payments.title'),
-      body: t('topics.payments.body'),
-      href: faqGroup('payments'),
-      linkLabel: t('topics.payments.cta'),
-    },
-    {
-      id: 'account',
-      icon: UserCogIcon,
-      title: t('topics.account.title'),
-      body: t('topics.account.body'),
-      href: routes.privacy(),
-      linkLabel: t('topics.account.cta'),
-    },
-    {
-      id: 'providers',
-      icon: BookOpenIcon,
-      title: t('topics.providers.title'),
-      body: t('topics.providers.body'),
-      href: routes.becomeInstructor(),
-      linkLabel: t('topics.providers.cta'),
-    },
-    {
-      id: 'rules',
-      icon: ScaleIcon,
-      title: t('topics.rules.title'),
-      body: t('topics.rules.body'),
-      href: routes.terms(),
-      linkLabel: t('topics.rules.cta'),
-    },
-    {
-      id: 'shop',
-      icon: TruckIcon,
-      title: t('topics.shop.title'),
-      body: t('topics.shop.body'),
-      href: faqGroup('shop'),
-      linkLabel: t('topics.shop.cta'),
-    },
-  ];
+  const topics: ValueItem[] = content.topics.map((topic) => ({
+    id: topic.id,
+    icon: TOPIC_ICONS[topic.id],
+    title: topic.title,
+    body: topic.body,
+    href: topic.anchor ? `${topic.path}#${topic.anchor}` : topic.path,
+    linkLabel: topic.cta,
+  }));
 
   const trail: Crumb[] = [{ name: tFooter('help'), path: routes.help() }];
 
   return (
     <main id={site.mainContentId}>
       <PageHero
-        title={t('title')}
-        subtitle={t('subtitle')}
-        eyebrow={t('eyebrow')}
+        title={content.title}
+        subtitle={content.subtitle}
+        eyebrow={content.eyebrow}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />
@@ -130,10 +95,10 @@ export default async function HelpPage({ params }: PageProps) {
       </ContentSection>
 
       <ContentSection tone="raised" spacing="tight" prose>
-        <h2 className="text-heading-3">{t('stillStuck.title')}</h2>
-        <p className="text-body mt-3 text-content-secondary">{t('stillStuck.body')}</p>
+        <h2 className="text-heading-3">{content.stillStuck.title}</h2>
+        <p className="text-body mt-3 text-content-secondary">{content.stillStuck.body}</p>
         <Button asChild className="mt-6">
-          <Link href={routes.contact()}>{t('stillStuck.cta')}</Link>
+          <Link href={content.stillStuck.path}>{content.stillStuck.cta}</Link>
         </Button>
       </ContentSection>
 
