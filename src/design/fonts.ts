@@ -1,39 +1,15 @@
 /**
- * Шрифты. Self-hosted через `next/font` — нет запроса к fonts.googleapis.com,
- * нет FOUT и нет внешней зависимости в CSP.
+ * Шрифты. Self-hosted, без `next/font/google`: сборка не ходит в сеть и не
+ * зависит от доступности Google Fonts на CI.
  *
- * Пара взята из утверждённого прототипа: Playfair Display (editorial display)
- * + DM Sans (UI). Noto Sans Armenian подключён отдельно, потому что ни одна
- * из основных гарнитур не покрывает армянский алфавит полностью.
+ * - Playfair Display и DM Sans: woff2-файлы в `src/design/fonts/`, подключение
+ *   через `fonts.css` (`@font-face` + CSS-переменные `--font-playfair`,
+ *   `--font-dm-sans`). CSS импортируется в `src/app/[locale]/layout.tsx`.
+ * - Noto Sans Armenian: `next/font/local`, потому что ни одна из основных
+ *   гарнитур не покрывает армянский алфавит.
  */
 
-import { DM_Sans, Playfair_Display } from 'next/font/google';
 import localFont from 'next/font/local';
-
-export const displayFont = Playfair_Display({
-  subsets: ['latin', 'cyrillic'],
-  // Variable font сохраняет 400/700 без статических Google kit URL,
-  // которые Turbopack может неверно разобрать как несколько query-параметров.
-  weight: 'variable',
-  // italic нужен только для акцент-слова в hero — один начертания достаточно.
-  style: ['normal', 'italic'],
-  display: 'swap',
-  variable: '--font-playfair',
-  preload: true,
-  adjustFontFallback: true,
-  fallback: ['Times New Roman', 'Georgia', 'serif'],
-});
-
-export const sansFont = DM_Sans({
-  subsets: ['latin'],
-  // На первом экране геро-тексты это 400/600 — 500/700 ниже фолда.
-  weight: ['400', '600'],
-  display: 'swap',
-  variable: '--font-dm-sans',
-  preload: true,
-  adjustFontFallback: true,
-  fallback: ['system-ui', 'Segoe UI', 'sans-serif'],
-});
 
 /**
  * Noto Sans Armenian — локально, не через `next/font/google`.
@@ -44,7 +20,7 @@ export const sansFont = DM_Sans({
  * в сеть за этим шрифтом и не зависит от того, что вернёт fonts.googleapis.com.
  *
  * Взят только армянский сабсет (U+0530-058F и соседи), variable 100-900 —
- * латиница и кириллица приходят из DM Sans, дублировать их незачем.
+ * латиница приходит из DM Sans, кириллица из Playfair Display, дублировать их незачем.
  */
 export const armenianFont = localFont({
   src: './fonts/noto-sans-armenian.woff2',
@@ -54,5 +30,5 @@ export const armenianFont = localFont({
   preload: false,
 });
 
-/** Классы для `<html>`: подключают CSS-переменные шрифтов. */
-export const fontVariables = [displayFont.variable, sansFont.variable, armenianFont.variable].join(' ');
+/** Классы для `<html>`: подключают CSS-переменную армянского шрифта. */
+export const fontVariables = armenianFont.variable;

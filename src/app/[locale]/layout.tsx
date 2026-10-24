@@ -26,6 +26,7 @@ import { localeAlternates } from '@/lib/seo/sitemap';
 import { routing } from '@/i18n/routing';
 
 import '@/styles/globals.css';
+import '@/design/fonts/fonts.css';
 
 /** Статическая генерация всех локалей — SSG вместо SSR на каждый запрос. */
 export function generateStaticParams() {
