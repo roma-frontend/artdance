@@ -29,6 +29,7 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/account/subscription',
   '/account/wallet',
   '/account/referrals',
+  '/account/data',
   '/cart',
   '/faq',
   '/help',

@@ -60,3 +60,14 @@ export function getMyWallet(): Promise<ClientWallet> {
 export function getMyReferrals(): Promise<ClientReferrals> {
   return getJson<ClientReferrals>('/api/account/referrals');
 }
+
+/** JSON-дамп персональных данных (GDPR) в виде текста, как его отдал сервер. */
+export async function exportMyData(): Promise<string> {
+  const token = await getSessionToken();
+  if (!token) throw new AccountDataError('UNAUTHORIZED', 401);
+  const response = await fetch(`${API_URL}/api/account/export`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new AccountDataError(`HTTP ${response.status}`, response.status);
+  return response.text();
+}
