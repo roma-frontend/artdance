@@ -3,7 +3,7 @@
 /**
  * GIFT CARDS — проверка и списание подарочной карты (A-21).
  *
- * `redeemGiftCard` — проверка кода (read-only, показывает баланс/срок).
+ * `redeemGiftCard` — проверка кода (read-only, показывает баланс/срок); логика в `@/server/gift-card/redeem`.
  * `applyGiftCard` — применение на конкретную сумму: списывает с `balance`,
  * ставит `redeemedAt` когда баланс 0, идемпотентна по сумме в рамках 1с окна.
  */
@@ -12,28 +12,12 @@ import { z } from 'zod';
 
 import { db } from '@/lib/db';
 import { publicAction } from '@/server/safe-action';
-
-const redeemSchema = z.object({ code: z.string().trim().min(4).max(24) });
+import { checkGiftCardCode, redeemCodeSchema } from '@/server/gift-card/redeem';
 
 export const redeemGiftCard = publicAction
   .metadata({ rateLimit: 'contactForm' })
-  .inputSchema(redeemSchema)
-  .action(async ({ parsedInput }) => {
-    const code = parsedInput.code.trim().toUpperCase();
-    const card = await db.giftCard.findUnique({
-      where: { code },
-      select: { id: true, balance: true, initialAmount: true, expiresAt: true, redeemedAt: true },
-    });
-    if (!card) return { ok: false as const, messageKey: 'giftCards.redeem.notFound' };
-    if (card.expiresAt && new Date(card.expiresAt) < new Date()) return { ok: false as const, messageKey: 'giftCards.redeem.expired' };
-    if (card.balance <= 0) return { ok: false as const, messageKey: 'giftCards.redeem.alreadyRedeemed' };
-    return {
-      ok: true as const,
-      balance: card.balance,
-      initialAmount: card.initialAmount,
-      expiresAt: card.expiresAt ? card.expiresAt.toISOString() : null,
-    };
-  });
+  .inputSchema(redeemCodeSchema)
+  .action(async ({ parsedInput }) => checkGiftCardCode(parsedInput.code));
 
 const applySchema = z.object({ code: z.string().trim().min(4).max(24), amount: z.number().int().positive() });
 

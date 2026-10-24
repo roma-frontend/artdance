@@ -21,8 +21,8 @@
  * вопросы, которые ему неинтересны, только ради того, чтобы он попал в базу.
  */
 
-import { dancerOnboardingSchema, emptyToNull } from '@/domain/dancer-profile';
-import { db } from '@/lib/db';
+import { dancerOnboardingSchema } from '@/domain/dancer-profile';
+import { saveDancerProfile } from '@/server/dancer-profile/service';
 import { authedAction } from '@/server/safe-action';
 
 /**
@@ -37,26 +37,5 @@ export const saveDancerProfileAction = authedAction
   .inputSchema(dancerOnboardingSchema)
   .action(async ({ parsedInput, ctx }) => {
     const { caller } = ctx;
-
-    const profile = await db.dancerProfile.upsert({
-      where: { userId: caller.id },
-      create: {
-        userId: caller.id,
-        level: parsedInput.level,
-        styles: parsedInput.styles,
-        goal: emptyToNull(parsedInput.goal),
-        note: emptyToNull(parsedInput.note),
-        onboardingCompleted: parsedInput.completed,
-      },
-      update: {
-        level: parsedInput.level,
-        styles: parsedInput.styles,
-        goal: emptyToNull(parsedInput.goal),
-        note: emptyToNull(parsedInput.note),
-        onboardingCompleted: parsedInput.completed,
-      },
-      select: { id: true },
-    });
-
-    return { id: profile.id };
+    return saveDancerProfile(caller.id, parsedInput);
   });

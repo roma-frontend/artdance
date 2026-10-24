@@ -46,6 +46,8 @@ cloudflare-env.d.ts
 # `public/media` — рабочая папка для design:import и media:optimize; после
 # media:r2:sync её можно удалить. Проверки сверяются с манифестом, не с диском.
 /public/media/
+# Локальный приватный каталог (dev без R2): персональные документы, никогда не в git и не в public/
+/.private-uploads/
 # brand logos живут в R2 (`brand/logo*.png`), а не в `public/` — см. src/components/brand/brand-mark.tsx
 
 # Договорные приложения — локальные документы для подписи, не попадают в git

@@ -33,7 +33,7 @@ interface PageProps {
 
 /** Разрешённые переходы. Тот же список, что проверяет действие на сервере. */
 const transitions: Record<string, readonly OrderStatus[]> = {
-  CREATED: ['PAID', 'CANCELLED'],
+  CREATED: ['CANCELLED'],
   PAID: ['PACKING', 'CANCELLED', 'RETURNED'],
   PACKING: ['SHIPPED', 'CANCELLED'],
   SHIPPED: ['DELIVERED', 'RETURNED'],
@@ -59,6 +59,11 @@ export default async function AdminOrderPage({ params }: PageProps) {
   const paid = order.payments
     .filter((payment) => payment.status === 'PAID' || payment.status === 'PARTIALLY_REFUNDED')
     .reduce((sum, payment) => sum + payment.paidAmount, 0);
+
+  /* Заказ в сборке без оплаченного платежа — наложенный платёж: деньги ещё у курьера. */
+  const cashPending =
+    ['PACKING', 'SHIPPED', 'DELIVERED'].includes(order.status) &&
+    !order.payments.some((payment) => payment.status === 'PAID');
 
   return (
     <>
@@ -122,7 +127,7 @@ export default async function AdminOrderPage({ params }: PageProps) {
               {t('statusSection')}
             </h2>
             {can('orders.fulfil') ? (
-              <OrderStatusActions id={order.id} transitions={transitions[order.status] ?? []} />
+              <OrderStatusActions id={order.id} transitions={transitions[order.status] ?? []} cashPending={cashPending} />
             ) : null}
           </section>
 

@@ -59,6 +59,7 @@ import {
 } from '@/domain/auth';
 import { auth } from '@/lib/auth/auth';
 import { lockoutState } from '@/lib/auth/lockout';
+import { auditPasswordReset, userIdForResetToken } from '@/lib/auth/password-reset-audit';
 import { assertCaptcha, publicAction } from '@/server/safe-action';
 
 /**
@@ -226,7 +227,8 @@ export const forgotPasswordAction = publicAction
 export const resetPasswordAction = publicAction
   .metadata({ rateLimit: 'passwordReset', audit: 'auth.resetPassword' })
   .inputSchema(resetPasswordSchema)
-  .action(async ({ parsedInput }) => {
+  .action(async ({ parsedInput, ctx }) => {
+    const userId = await userIdForResetToken(parsedInput.token);
     try {
       await auth.api.resetPassword({
         body: { newPassword: parsedInput.password, token: parsedInput.token },
@@ -237,6 +239,11 @@ export const resetPasswordAction = publicAction
       throw error;
     }
 
+    await auditPasswordReset({
+      userId,
+      ipAddress: ctx.identifier,
+      userAgent: ctx.requestHeaders.get('user-agent') ?? undefined,
+    });
     return { updated: true };
   });
 

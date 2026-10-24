@@ -15,6 +15,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const LIMIT = 50;
+const RESCHEDULABLE_STATUSES: ReadonlySet<string> = new Set(['PENDING', 'CONFIRMED']);
 
 export async function GET() {
   const caller = await getCaller();
@@ -37,7 +38,10 @@ export async function GET() {
       endsAt: true,
       totalPrice: true,
       currencyCode: true,
-      instructor: { select: { user: { select: { name: true } } } },
+      sessionId: true,
+      rescheduleCount: true,
+      maxReschedules: true,
+      instructor: { select: { slug: true, user: { select: { name: true } } } },
       session: { select: { danceClass: { select: { title: true } } } },
     },
   });
@@ -52,6 +56,9 @@ export async function GET() {
     currencyCode: b.currencyCode,
     classTitle: b.session?.danceClass?.title ?? null,
     instructorName: b.instructor?.user?.name ?? null,
+    instructorSlug: b.instructor?.slug ?? null,
+    canReschedule:
+      !b.sessionId && !!b.instructor && RESCHEDULABLE_STATUSES.has(b.status) && b.rescheduleCount < b.maxReschedules,
   }));
 
   return NextResponse.json({ bookings }, { headers: { 'Cache-Control': cacheControl.none } });

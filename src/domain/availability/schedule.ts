@@ -19,6 +19,7 @@
 import { z } from 'zod';
 
 import { tryParseClock } from '@/lib/time/clock';
+import { fromZonedParts } from '@/lib/time/schedule';
 
 /** Дней недели в регулярном расписании: 0 = воскресенье … 6 = суббота. */
 export const SCHEDULE_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const;
@@ -84,9 +85,11 @@ export function windowsOverlap(aStart: string, aEnd: string, bStart: string, bEn
   return aFrom < bTo && bFrom < aTo;
 }
 
-/** `YYYY-MM-DD` + `HH:mm` → `Date` в UTC: расписание живёт в календарном времени. */
+/** `YYYY-MM-DD` + `HH:mm` в поясе бизнеса → момент времени. */
 export function scheduleInstant(date: string, clock: string): Date | null {
-  const parsed = new Date(`${date}T${clock}:00.000Z`);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed;
+  const [year, month, day] = date.split('-').map(Number);
+  const minutesOfDay = tryParseClock(clock);
+  if (!year || !month || !day || minutesOfDay === null) return null;
+  const parsed = fromZonedParts({ year, month, day, minutesOfDay });
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }

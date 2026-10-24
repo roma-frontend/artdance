@@ -25,6 +25,7 @@ import { db } from '@/lib/db';
 import { authedAction } from '@/server/safe-action';
 import {
   scheduleExceptionSchema,
+  scheduleInstant,
   scheduleRuleSchema,
   windowsOverlap,
 } from '@/domain/availability/schedule';
@@ -128,9 +129,9 @@ export const saveAvailabilityException = authedAction
     try {
       const { instructorId } = await requireInstructorProfile();
 
-      const startsAt = new Date(`${parsedInput.date}T${parsedInput.startTime}:00.000Z`);
-      const endsAt = new Date(`${parsedInput.date}T${parsedInput.endTime}:00.000Z`);
-      if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+      const startsAt = scheduleInstant(parsedInput.date, parsedInput.startTime);
+      const endsAt = scheduleInstant(parsedInput.date, parsedInput.endTime);
+      if (!startsAt || !endsAt) {
         return { status: 'error', field: 'date', messageKey: 'studio.availability.error' as MessageKey };
       }
 

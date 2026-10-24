@@ -21,6 +21,7 @@ export const dynamic = 'force-dynamic';
 const schema = z.object({
   method: z.enum(paymentMethods as unknown as [string, ...string[]]),
   locale: z.string().min(2).max(8).optional(),
+  fromApp: z.boolean().optional(),
 });
 
 function json(body: object, status: number, extra: Record<string, string> = {}) {
@@ -56,6 +57,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       userId: caller.id,
       method: parsed.data.method as (typeof paymentMethods)[number],
       locale: parsed.data.locale ?? caller.locale ?? 'hy',
+      fromApp: parsed.data.fromApp === true,
     });
     return json(result, 200);
   } catch (error) {

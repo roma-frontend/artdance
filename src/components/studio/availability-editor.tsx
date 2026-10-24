@@ -16,6 +16,8 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import type { MessageKey } from '@/i18n/types';
+import { formatClock } from '@/lib/time/clock';
+import { zonedParts } from '@/lib/time/schedule';
 import {
   deleteAvailabilityEntry,
   saveAvailabilityException,
@@ -33,6 +35,13 @@ interface Props {
 }
 
 const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
+
+/** Дата и время момента в поясе бизнеса, как их ввёл инструктор. */
+function businessWall(iso: string) {
+  const parts = zonedParts(new Date(iso));
+  const date = `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+  return { date, time: formatClock(parts.minutesOfDay) };
+}
 
 /** Ключи i18n дней недели, укороченный вид: 0 = вс. */
 const weekdayMessageKeys: Record<number, string> = {
@@ -187,7 +196,7 @@ export function AvailabilityEditor({ rules, exceptions }: Props) {
           {sortedExceptions.length === 0 && <li className="text-body-sm text-content-tertiary">{t('studio.availability.exceptionsEmpty')}</li>}
           {sortedExceptions.map((exception) => (
             <li key={exception.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border-default bg-surface-card p-4">
-              <span className="font-mono text-body-sm">{exception.startsAt.slice(0, 10)} · {exception.startsAt.slice(11, 16)}–{exception.endsAt.slice(11, 16)}</span>
+              <span className="font-mono text-body-sm">{businessWall(exception.startsAt).date} · {businessWall(exception.startsAt).time}–{businessWall(exception.endsAt).time}</span>
               <span className={exception.isAvailable ? 'text-caption font-semibold text-content-success' : 'text-caption font-semibold text-content-danger'}>
                 {exception.isAvailable ? t('studio.availability.extraWindow') : t('studio.availability.blocked')}
               </span>

@@ -58,9 +58,17 @@ describe('POST /api/booking/[id]/pay', () => {
 
     const response = await POST(request({ method: 'IDRAM', locale: 'hy' }), context);
 
-    expect(mocks.createBookingPayment).toHaveBeenCalledWith({ bookingId: 'booking-1', userId: 'customer-1', method: 'IDRAM', locale: 'hy' });
+    expect(mocks.createBookingPayment).toHaveBeenCalledWith({ bookingId: 'booking-1', userId: 'customer-1', method: 'IDRAM', locale: 'hy', fromApp: false });
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ paymentId: 'payment-1', redirectUrl: 'https://pay.example/x' });
+  });
+
+  it('forwards fromApp=true so the return URL points back into the app', async () => {
+    mocks.createBookingPayment.mockResolvedValue({ bookingId: 'booking-1', paymentId: 'payment-1', amount: 17_000, redirectUrl: 'https://pay.example/x' });
+
+    await POST(request({ method: 'IDRAM', locale: 'hy', fromApp: true }), context);
+
+    expect(mocks.createBookingPayment).toHaveBeenCalledWith(expect.objectContaining({ fromApp: true }));
   });
 
   it('maps a domain error from the service to its HTTP status', async () => {

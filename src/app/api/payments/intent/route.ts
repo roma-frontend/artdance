@@ -29,6 +29,7 @@ const schema = z.object({
   method: z.enum(paymentMethods as unknown as [string, ...string[]]),
   locale: z.string().min(2).max(8).optional(),
   useWallet: z.boolean().optional(),
+  fromApp: z.boolean().optional(),
   /**
    * Идентификатор гостя — тот же, что у его корзины.
    *
@@ -80,6 +81,7 @@ export async function POST(request: Request) {
       locale: parsed.data.locale ?? caller?.locale ?? 'hy',
       /* Кошелёк гостю недоступен: баланс принадлежит аккаунту. */
       useWallet: parsed.data.useWallet === true,
+      fromApp: parsed.data.fromApp === true,
     });
     return json(result, 200);
   } catch (error) {

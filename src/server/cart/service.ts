@@ -15,7 +15,7 @@ import 'server-only';
 
 import { commerce, promotions } from '@/config/business';
 import { domainErrors } from '@/domain/errors';
-import { cartTotals, clampQuantity, type CartLine, type CartTotals } from '@/domain/cart';
+import { cartTotals, clampQuantity, type CartLine, type CartTotals, type DeliveryZone } from '@/domain/cart';
 import { cartExpiresAt } from '@/domain/cart-abandonment';
 import { db } from '@/lib/db';
 
@@ -94,7 +94,7 @@ async function getOrCreateCart(params: {
   }
 }
 
-async function buildSnapshot(cart: ResolvedCart): Promise<CartSnapshot> {
+async function buildSnapshot(cart: ResolvedCart, deliveryZone: DeliveryZone | null = null): Promise<CartSnapshot> {
   const items = (await db.cartItem.findMany({
     where: { cartId: cart.id },
     include: {
@@ -209,7 +209,7 @@ async function buildSnapshot(cart: ResolvedCart): Promise<CartSnapshot> {
   const totals = cartTotals({
     lines,
     promo: promo ? (promo as unknown as { code: string; percentOff?: number }) : null,
-    deliveryZone: null,
+    deliveryZone,
   });
 
   // B-12 кросс-сейл: товары той же категории, что у товаров корзины (≤3, best effort)
@@ -260,6 +260,8 @@ async function buildSnapshot(cart: ResolvedCart): Promise<CartSnapshot> {
 export async function getCartSnapshot(params: {
   userId?: string | null;
   anonymousId?: string | null;
+  /** Зона доставки для превью итога. Без неё доставка не считается. */
+  deliveryZone?: DeliveryZone | null;
 }): Promise<CartSnapshot> {
   if (!params.userId && !params.anonymousId) throw domainErrors.unauthorized();
   const where = params.userId ? { userId: params.userId } : { anonymousId: params.anonymousId! };
@@ -269,6 +271,7 @@ export async function getCartSnapshot(params: {
   })) as unknown as ResolvedCart | null;
   return buildSnapshot(
     cart ?? { id: '', userId: params.userId ?? null, anonymousId: params.anonymousId ?? null, promoCodeId: null },
+    params.deliveryZone ?? null,
   );
 }
 

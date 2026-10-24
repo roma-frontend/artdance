@@ -87,6 +87,66 @@ export async function deleteMediaObject(key: string): Promise<void> {
   });
 }
 
+/* ─────────────────── Приватные объекты (персональные документы) ─────────────────── */
+
+/**
+ * Запись приватного объекта: заявки исполнителей, паспорта, дипломы. У объекта
+ * нет публичного адреса и нет CDN-кеша. Читать его может только серверный код,
+ * который сам проверил право доступа. В публичный бакет такие файлы не попадают:
+ * если приватный бакет не задан, запись падает, а не уходит в публичный.
+ */
+export async function putPrivateObject(key: string, data: Buffer, contentType: string): Promise<{ key: string; bytes: number }> {
+  if (storageDriver() === 'r2') {
+    await r2Put(requirePrivateBucket(), key, data, contentType, {});
+  } else {
+    await putToPrivateDisk(key, data);
+  }
+
+  return { key, bytes: data.byteLength };
+}
+
+/** Удаление приватного объекта. Нужно для отката, если заявка не записалась. */
+export async function deletePrivateObject(key: string): Promise<void> {
+  if (storageDriver() === 'r2') {
+    await r2Delete(requirePrivateBucket(), key);
+    return;
+  }
+
+  await unlink(privateLocalPathFor(key)).catch(() => {
+    /* Идемпотентно: отсутствие файла — нормальный исход. */
+  });
+}
+
+function requirePrivateBucket(): string {
+  const bucket = getServerEnv().R2_PRIVATE_BUCKET;
+  if (!bucket) {
+    throw new Error('[media] Приватный бакет не настроен: задайте R2_PRIVATE_BUCKET. Документы не сохраняются в публичный бакет.');
+  }
+  return bucket;
+}
+
+/** Каталог приватного локального хранилища вне `public/`: оттуда ничего не отдаётся напрямую. */
+function privateLocalPathFor(key: string): string {
+  const root = join(process.cwd(), '.private-uploads');
+  const target = normalize(join(root, key));
+
+  if (!target.startsWith(root + sep)) {
+    throw new Error('[media] Ключ приватного объекта выходит за пределы каталога хранилища.');
+  }
+
+  return target;
+}
+
+async function putToPrivateDisk(key: string, data: Buffer): Promise<void> {
+  if (isProduction) {
+    throw new Error('[media] Локальное приватное хранилище недоступно в production. Задайте R2 и R2_PRIVATE_BUCKET.');
+  }
+
+  const target = privateLocalPathFor(key);
+  await mkdir(dirname(target), { recursive: true });
+  await writeFile(target, data);
+}
+
 /* ─────────────────────────── Локальный диск ─────────────────────────── */
 
 /**
@@ -219,12 +279,11 @@ function buildAuthorization(input: {
   return { authorization, signedHeaders, canonicalHeaders };
 }
 
-async function putToR2(key: string, data: Buffer, contentType: string): Promise<StoredObject> {
+async function r2Put(bucket: string, key: string, data: Buffer, contentType: string, headers: Record<string, string>): Promise<void> {
   const env = getServerEnv();
   const accountId = env.R2_ACCOUNT_ID;
   const accessKeyId = env.R2_ACCESS_KEY_ID;
   const secretAccessKey = env.R2_SECRET_ACCESS_KEY;
-  const bucket = r2Bucket();
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucket) {
     throw new Error(
@@ -235,14 +294,6 @@ async function putToR2(key: string, data: Buffer, contentType: string): Promise<
   const payloadHash = sha256Hex(data);
   const { amzDate, dateStamp } = amzDates(new Date());
   const { url, host, canonicalUri } = r2Endpoint(accountId, bucket, key);
-  // Stored object must be cross-origin readable — document has CORP:same-origin
-  const corsHeaders = {
-    'access-control-allow-origin': '*',
-    'access-control-expose-headers': 'content-length, content-type, content-disposition',
-    'cross-origin-resource-policy': 'cross-origin',
-    'timing-allow-origin': '*',
-    'cache-control': 'public, max-age=31536000, immutable',
-  } as const;
   const { authorization } = buildAuthorization({
     method: 'PUT',
     canonicalUri,
@@ -253,7 +304,7 @@ async function putToR2(key: string, data: Buffer, contentType: string): Promise<
     accessKeyId,
     secretAccessKey,
     contentType,
-    extraHeaders: corsHeaders,
+    extraHeaders: headers,
   });
 
   const response = await fetch(url, {
@@ -264,7 +315,7 @@ async function putToR2(key: string, data: Buffer, contentType: string): Promise<
       'x-amz-date': amzDate,
       'content-type': contentType,
       'content-length': String(data.byteLength),
-      ...corsHeaders,
+      ...headers,
       authorization,
     },
     body: data as unknown as BodyInit,
@@ -275,15 +326,31 @@ async function putToR2(key: string, data: Buffer, contentType: string): Promise<
     throw new Error(`[media] R2 PUT ${response.status} ${response.statusText}${body ? `: ${body.slice(0, 2000)}` : ''}`);
   }
 
+}
+
+/** Заголовки публичного объекта: кросс-доменная отдача и долгий кеш. */
+const PUBLIC_OBJECT_HEADERS = {
+  'access-control-allow-origin': '*',
+  'access-control-expose-headers': 'content-length, content-type, content-disposition',
+  'cross-origin-resource-policy': 'cross-origin',
+  'timing-allow-origin': '*',
+  'cache-control': 'public, max-age=31536000, immutable',
+} as const;
+
+async function putToR2(key: string, data: Buffer, contentType: string): Promise<StoredObject> {
+  await r2Put(r2Bucket(), key, data, contentType, PUBLIC_OBJECT_HEADERS);
   return { key, url: r2PublicUrl(key), bytes: data.byteLength };
 }
 
 async function deleteFromR2(key: string): Promise<void> {
+  await r2Delete(r2Bucket(), key);
+}
+
+async function r2Delete(bucket: string, key: string): Promise<void> {
   const env = getServerEnv();
   const accountId = env.R2_ACCOUNT_ID;
   const accessKeyId = env.R2_ACCESS_KEY_ID;
   const secretAccessKey = env.R2_SECRET_ACCESS_KEY;
-  const bucket = r2Bucket();
 
   if (!accountId || !accessKeyId || !secretAccessKey || !bucket) {
     throw new Error(

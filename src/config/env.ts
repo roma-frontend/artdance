@@ -160,6 +160,8 @@ const serverSchema = z.object({
   // два поля + getter. То же для R2_PUBLIC_URL / R2_PUBLIC_BASE_URL / NEXT_PUBLIC_MEDIA_CDN_URL.
   R2_BUCKET: optionalString,
   R2_BUCKET_NAME: optionalString,
+  /* Приватный бакет для персональных документов (заявки исполнителей). Без публичного доступа. */
+  R2_PRIVATE_BUCKET: optionalString,
   R2_PUBLIC_BASE_URL: optionalUrl,
   R2_PUBLIC_URL: optionalUrl,
   // Fallback CDN для dev: NEXT_PUBLIC_* уже валидируется в clientSchema, но нужен и в server для brand
@@ -198,6 +200,10 @@ const serverSchema = z.object({
   CODECRAFT_API_KEY: optionalString,
   CODECRAFT_MODEL: optionalString,
   CODECRAFT_PROVIDER: optionalString,
+
+  /* Ссылки из писем открываются в приложении. Без значений файлы .well-known не отдаются (404). */
+  APPLE_APP_ID: optionalString, // "<TeamID>.am.artdance.app"
+  ANDROID_APP_SHA256_FINGERPRINTS: optionalString, // SHA-256 сертификатов через запятую
 });
 
 /* ──────────────────────────── PARSE ──────────────────────────── */

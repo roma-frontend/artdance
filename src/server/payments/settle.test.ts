@@ -79,11 +79,11 @@ describe('идемпотентность доставки', () => {
     expect(mocks.creditWallet).not.toHaveBeenCalled();
   });
 
-  it('заявка привязана к статусу PAID, а не к любому заказу', async () => {
+  it('заявка привязана к оплаченным статусам, а не к отменённым и возвращённым', async () => {
     await settlePaidOrder('order-1', NOW);
 
     expect(mocks.order.updateMany).toHaveBeenCalledWith({
-      where: { id: 'order-1', status: 'PAID', settledAt: null },
+      where: { id: 'order-1', status: { in: ['PAID', 'PACKING', 'SHIPPED', 'DELIVERED'] }, settledAt: null },
       data: { settledAt: NOW },
     });
   });

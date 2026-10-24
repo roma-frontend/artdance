@@ -49,6 +49,12 @@ function mapStripeStatus(pi: Stripe.PaymentIntent): PaymentSnapshot['status'] {
   }
 }
 
+function mapCheckoutSessionStatus(session: Stripe.Checkout.Session): PaymentSnapshot['status'] {
+  if (session.payment_status === 'paid' || session.payment_status === 'no_payment_required') return 'PAID';
+  if (session.status === 'expired') return 'CANCELLED';
+  return 'PENDING';
+}
+
 export function createStripeProvider(): PaymentProvider {
   return {
     id: 'stripe',
@@ -60,29 +66,59 @@ export function createStripeProvider(): PaymentProvider {
       const stripe = envStripe();
       if (!stripe) throw new PaymentProviderError('stripe', 'STRIPE_SECRET_KEY missing — set in .env/.env.local and Vercel env');
 
-      const pi = await stripe.paymentIntents.create({
-        amount: toMinor(order.amount, order.currencyCode),
-        currency: order.currencyCode.toLowerCase(),
-        description: order.description.slice(0, 255),
+      // Hosted Checkout: карта вводится на странице Stripe, мы получаем session.url для redirect.
+      const session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: order.currencyCode.toLowerCase(),
+              unit_amount: toMinor(order.amount, order.currencyCode),
+              product_data: { name: (order.description || order.orderNumber).slice(0, 250) },
+            },
+          },
+        ],
+        client_reference_id: order.orderNumber,
+        customer_email: order.customer.email || undefined,
         metadata: { paymentId: order.paymentId, orderNumber: order.orderNumber },
-        automatic_payment_methods: { enabled: true, allow_redirects: 'always' },
-        receipt_email: order.customer.email || undefined,
+        payment_intent_data: {
+          description: order.description.slice(0, 255),
+          metadata: { paymentId: order.paymentId, orderNumber: order.orderNumber },
+        },
+        success_url: order.returnUrl,
+        cancel_url: order.returnUrl,
       });
 
-      // redirect — Checkout/hosted берётся из next redirectUrl в order.returnUrl
-      // Для PaymentIntent с automatic PM redirectUrl — секрет клиента, возвращаем returnUrl
+      if (!session.url) throw new PaymentProviderError('stripe', 'Stripe Checkout Session returned no url');
+
       return {
         provider: 'stripe',
-        providerTransactionId: pi.id,
-        status: mapStripeStatus(pi) === 'PAID' ? 'PAID' : 'PENDING',
-        redirectUrl: order.returnUrl,
-        expiresAt: undefined,
+        // Идентификатор сессии (cs_...) — по нему getPayment и webhook находят платёж.
+        providerTransactionId: session.id,
+        status: 'PENDING',
+        redirectUrl: session.url,
+        expiresAt: session.expires_at ? new Date(session.expires_at * 1000) : undefined,
       };
     },
 
     async getPayment(providerTransactionId: string): Promise<PaymentSnapshot> {
       const stripe = envStripe();
       if (!stripe) throw new PaymentProviderError('stripe', 'STRIPE_SECRET_KEY missing');
+
+      if (providerTransactionId.startsWith('cs_')) {
+        const session = await stripe.checkout.sessions.retrieve(providerTransactionId);
+        const status = mapCheckoutSessionStatus(session);
+        return {
+          providerTransactionId: session.id,
+          status,
+          paidAmount: status === 'PAID' ? fromMinor(session.amount_total ?? 0, session.currency ?? 'amd') : money(0) as Money,
+          failureCode: undefined,
+          failureMessage: undefined,
+          raw: session,
+        };
+      }
+
       const pi = await stripe.paymentIntents.retrieve(providerTransactionId);
       const status = mapStripeStatus(pi);
       const paidAmount = status === 'PAID' ? fromMinor(pi.amount, pi.currency ?? 'usd') : money(0) as Money;
@@ -126,13 +162,15 @@ export function createStripeProvider(): PaymentProvider {
       } catch (e) {
         throw new PaymentProviderError('stripe', `Webhook sig failed: ${(e as Error).message}`);
       }
-      // Поддерживаем payment_intent.succeeded / payment_intent.payment_failed
-      const obj = event.data.object as unknown as Stripe.PaymentIntent | { id?: string; amount?: number };
-      const piId = (obj as Stripe.PaymentIntent).id ?? (obj as Record<string, unknown>).id as string ?? event.id;
-      const amountMinor = (obj as Stripe.PaymentIntent).amount ?? (obj as Record<string, number>).amount ?? 0;
-      const currency = (obj as Stripe.PaymentIntent).currency ?? 'amd';
+      // Поддерживаем checkout.session.* (Hosted Checkout, id = cs_...) и payment_intent.*.
+      // Статус из события только предварительный: webhooks.ts подтверждает его через getPayment().
+      const obj = event.data.object as unknown as { id?: string; amount?: number | null; amount_total?: number | null; currency?: string | null };
+      const piId = obj.id ?? event.id;
+      const amountMinor = obj.amount_total ?? obj.amount ?? 0;
+      const currency = obj.currency ?? 'amd';
       const status: PaymentSnapshot['status'] =
-        event.type.includes('succeeded') ? 'PAID' :
+        event.type.includes('succeeded') || event.type === 'checkout.session.completed' ? 'PAID' :
+        event.type === 'checkout.session.expired' ? 'CANCELLED' :
         event.type.includes('failed') || event.type.includes('canceled') ? 'FAILED' : 'PENDING';
       return {
         eventId: event.id,

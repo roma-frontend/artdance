@@ -33,6 +33,8 @@ export interface CreateOrderPaymentInput {
   locale: string;
   /** Списать доступный баланс кошелька до вызова провайдера. */
   useWallet?: boolean;
+  /** Вернуть клиента в приложение: в returnUrl добавляется `app=1`. */
+  fromApp?: boolean;
 }
 
 export interface OrderPaymentResult {
@@ -81,9 +83,9 @@ async function loadOrderForPayment(orderId: string, userId: string | null, anony
   return order;
 }
 
-function returnUrlFor(orderNumber: string, locale: string): string {
+function returnUrlFor(orderNumber: string, locale: string, fromApp: boolean): string {
   const resolved = isLocale(locale) ? locale : 'hy';
-  return absoluteUrl(`/${resolved}${routes.checkoutResult(orderNumber)}`);
+  return absoluteUrl(`/${resolved}${routes.checkoutResult(orderNumber)}${fromApp ? '?app=1' : ''}`);
 }
 
 export interface CreateBookingPaymentInput {
@@ -92,6 +94,8 @@ export interface CreateBookingPaymentInput {
   userId: string;
   method: PaymentMethod;
   locale: string;
+  /** Вернуть клиента в приложение: возврат на страницу результата с `app=1`. */
+  fromApp?: boolean;
 }
 
 export interface BookingPaymentResult {
@@ -177,7 +181,9 @@ export async function createBookingPayment(input: CreateBookingPaymentInput): Pr
     method: input.method,
     locale: input.locale,
     customer: { email: booking.customer.email, phone: booking.customer.phone ?? undefined, name: booking.customer.name },
-    returnUrl: absoluteUrl(`/${isLocale(input.locale) ? input.locale : 'hy'}${routes.accountBookings()}`),
+    returnUrl: input.fromApp
+      ? returnUrlFor(booking.reference, input.locale, true)
+      : absoluteUrl(`/${isLocale(input.locale) ? input.locale : 'hy'}${routes.accountBookings()}`),
     metadata: { bookingId: booking.id },
   });
 
@@ -289,6 +295,27 @@ export async function createOrderPayment(input: CreateOrderPaymentInput): Promis
     };
   }
 
+  /* Оплата при получении: денег до доставки нет, провайдер не участвует, заказ идёт в сборку без PAID. */
+  if (input.method === 'CASH_ON_DELIVERY') {
+    await db.order.updateMany({
+      where: { id: order.id, status: 'CREATED' },
+      data: { status: 'PACKING' },
+    });
+    return {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      paymentId: '',
+      amount: charge,
+      walletApplied,
+      provider: getPaymentProvider().id,
+      providerTransactionId: null,
+      redirectUrl: null,
+      qrPayload: null,
+      status: 'PENDING',
+      settledByWallet: false,
+    };
+  }
+
   const provider = providerForMethod(input.method);
   const idempotencyKey = `${order.id}:${charge}`;
 
@@ -343,7 +370,7 @@ export async function createOrderPayment(input: CreateOrderPaymentInput): Promis
     method: input.method,
     locale: input.locale,
     customer: { email: order.contactEmail, phone: order.contactPhone, name: order.contactName },
-    returnUrl: returnUrlFor(order.orderNumber, input.locale),
+    returnUrl: returnUrlFor(order.orderNumber, input.locale, input.fromApp === true),
     metadata: { orderId: order.id },
   });
 

@@ -2,9 +2,21 @@ import { describe, expect, it } from 'vitest';
 
 import {
   scheduleExceptionSchema,
+  scheduleInstant,
   scheduleRuleSchema,
   windowsOverlap,
 } from './schedule';
+
+describe('scheduleInstant', () => {
+  it('трактует введённое время как время бизнеса (UTC+4)', () => {
+    expect(scheduleInstant('2026-10-24', '10:00')?.toISOString()).toBe('2026-10-24T06:00:00.000Z');
+  });
+
+  it('возвращает null для невалидного ввода', () => {
+    expect(scheduleInstant('2026-10-24', '25:00')).toBeNull();
+    expect(scheduleInstant('bad', '10:00')).toBeNull();
+  });
+});
 
 describe('scheduleRuleSchema', () => {
   it('принимает корректное недельное окно', () => {

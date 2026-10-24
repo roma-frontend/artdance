@@ -83,19 +83,20 @@ function localeOf(pathname: string): string {
  * может воспользоваться чужой сессией. Токены и их хранение не нужны.
  */
 /**
- * Dev-only: веб-версия мобильного приложения (Expo Web) на localhost:8081 ходит
+ * Dev-only: веб-версия мобильного приложения (Expo Web) на localhost:8081/8082 ходит
  * на API кросс-origin. В production этот путь выключен.
  */
-const DEV_WEB_ORIGIN = 'http://localhost:8081';
+const DEV_WEB_ORIGINS = new Set(['http://localhost:8081', 'http://localhost:8082']);
 
 function isDevWebOrigin(request: NextRequest): boolean {
-  return process.env.NODE_ENV !== 'production' && request.headers.get('origin') === DEV_WEB_ORIGIN;
+  const origin = request.headers.get('origin');
+  return process.env.NODE_ENV !== 'production' && origin !== null && DEV_WEB_ORIGINS.has(origin);
 }
 
 function devWebOriginResponse(request: NextRequest): NextResponse | null {
   if (!isDevWebOrigin(request)) return null;
   const headers = {
-    'Access-Control-Allow-Origin': DEV_WEB_ORIGIN,
+    'Access-Control-Allow-Origin': request.headers.get('origin') ?? '',
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',

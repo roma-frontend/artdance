@@ -201,9 +201,12 @@ async function deliver(orderId: string, now: Date): Promise<string[]> {
  * Повторный вызов — no-op: он отвечает `{ settled: false }`, а не выдаёт вторую
  * порцию того же самого.
  */
+/* COD оплачивается при получении, поэтому заказ может уже стоять в сборке или доставке. */
+const SETTLEABLE_STATUSES = ['PAID', 'PACKING', 'SHIPPED', 'DELIVERED'] as const;
+
 export async function settlePaidOrder(orderId: string, now: Date = new Date()): Promise<SettleResult> {
   const claimed = await db.order.updateMany({
-    where: { id: orderId, status: 'PAID', settledAt: null },
+    where: { id: orderId, status: { in: [...SETTLEABLE_STATUSES] }, settledAt: null },
     data: { settledAt: now },
   });
   if (claimed.count !== 1) return { settled: false, effects: [] };

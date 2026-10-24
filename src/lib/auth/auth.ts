@@ -69,9 +69,12 @@ const env = getServerEnv();
  * `AUTH_TRUSTED_ORIGINS` (preview-домены Vercel). Пустой список означал бы, что
  * библиотека принимает запросы с любого origin.
  */
+const devWebOrigins = env.NODE_ENV === 'production' ? [] : ['http://localhost:8081', 'http://localhost:8082'];
+
 const trustedOrigins = [
   clientEnv.NEXT_PUBLIC_APP_URL,
   ...(env.AUTH_TRUSTED_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) ?? []),
+  ...devWebOrigins,
 ];
 
 /**

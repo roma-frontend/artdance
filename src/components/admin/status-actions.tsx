@@ -35,6 +35,7 @@ import type { Translate } from '@/i18n/translate';
 import type { MessageKey } from '@/i18n/types';
 import {
   cancelBooking,
+  markCashCollected,
   releasePayout,
   setBookingStatus,
   setOrderStatus,
@@ -46,9 +47,11 @@ interface OrderStatusActionsProps {
   id: string;
   /** Разрешённые переходы, посчитанные на сервере. */
   transitions: readonly OrderStatus[];
+  /** Наличные при получении ещё не отмечены. */
+  cashPending: boolean;
 }
 
-export function OrderStatusActions({ id, transitions }: OrderStatusActionsProps) {
+export function OrderStatusActions({ id, transitions, cashPending }: OrderStatusActionsProps) {
   const t = useTranslations('admin.orders');
   const tRoot = useTranslations() as unknown as Translate;
   const router = useRouter();
@@ -56,27 +59,45 @@ export function OrderStatusActions({ id, transitions }: OrderStatusActionsProps)
   const { execute, status, result } = useAction(setOrderStatus, {
     onSuccess: () => router.refresh(),
   });
+  const cash = useAction(markCashCollected, {
+    onSuccess: () => router.refresh(),
+  });
 
-  if (transitions.length === 0) return null;
+  if (transitions.length === 0 && !cashPending) return null;
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-label uppercase text-content-secondary">{t('nextStatus')}</p>
-      <div className="flex flex-wrap gap-2">
-        {transitions.map((next) => (
-          <Button
-            key={next}
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={status === 'executing'}
-            onClick={() => execute({ id, status: next })}
-          >
-            {tRoot(`status.order.${orderStatusKey(next)}` as MessageKey)}
-          </Button>
-        ))}
-      </div>
-      <ActionError error={result.serverError} t={tRoot} />
+      {transitions.length > 0 ? (
+        <>
+          <p className="text-label uppercase text-content-secondary">{t('nextStatus')}</p>
+          <div className="flex flex-wrap gap-2">
+            {transitions.map((next) => (
+              <Button
+                key={next}
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={status === 'executing'}
+                onClick={() => execute({ id, status: next })}
+              >
+                {tRoot(`status.order.${orderStatusKey(next)}` as MessageKey)}
+              </Button>
+            ))}
+          </div>
+        </>
+      ) : null}
+      {cashPending ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={cash.status === 'executing'}
+          onClick={() => cash.execute({ id })}
+        >
+          {t('cashCollectedCta')}
+        </Button>
+      ) : null}
+      <ActionError error={result.serverError ?? cash.result.serverError} t={tRoot} />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { cacheControl } from '@/config/cache';
+import type { DeliveryZone } from '@/domain/cart';
 import { httpStatusFor, isDomainError } from '@/domain/errors';
 import { getCaller } from '@/lib/auth/guards';
 import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
@@ -35,11 +36,26 @@ function errorFromDomain(error: unknown) {
   return json({ error: 'INTERNAL' }, 500);
 }
 
+/**
+ * Зона для превью итога: та же связка, что в `createOrder` (курьер — Ереван,
+ * пункт выдачи — бесплатно). Без параметра доставка не считается.
+ */
+function deliveryZoneFrom(request: Request): DeliveryZone | null {
+  const method = new URL(request.url).searchParams.get('delivery');
+  if (method === 'COURIER') return 'yerevan';
+  if (method === 'PICKUP_POINT') return 'pickup';
+  return null;
+}
+
 export async function GET(request: Request) {
   try {
     await assertEntitlementOrThrow('shop');
     const caller = await getCaller();
-    const snapshot = await getCartSnapshot({ userId: caller?.id ?? null, anonymousId: anonFrom(request) });
+    const snapshot = await getCartSnapshot({
+      userId: caller?.id ?? null,
+      anonymousId: anonFrom(request),
+      deliveryZone: deliveryZoneFrom(request),
+    });
     return json({ snapshot }, 200);
   } catch (e) {
     return errorFromDomain(e);

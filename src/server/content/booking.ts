@@ -62,7 +62,7 @@ export interface BookingDay {
   /** Полночь этого дня в поясе бизнеса, ISO. Нужен календарю. */
   dateIso: string;
   /** Времена дня: занятые остаются в списке недоступными. */
-  slots: ReadonlyArray<TimeSlot & { sessionId?: string; endIso?: string }>;
+  slots: ReadonlyArray<TimeSlot & { sessionId?: string; startIso?: string; endIso?: string; endTime?: string; spotsLeft?: number }>;
 }
 
 /** Ближайшее свободное время: момент для показа даты и время суток для подписи. */
@@ -264,7 +264,9 @@ export async function getInstructorBookingContent(
       const available = session.bookedCount + participants <= session.capacity && !occupied;
       day.slots = [...day.slots, {
         start: slotClock(session.startsAt), available,
-        sessionId: session.id, endIso: session.endsAt.toISOString(),
+        sessionId: session.id, startIso: session.startsAt.toISOString(),
+        endIso: session.endsAt.toISOString(), endTime: slotClock(session.endsAt),
+        spotsLeft: Math.max(0, session.capacity - session.bookedCount),
       }];
     }
     const initial = days.find(day => day.slots.some(slot => slot.available)) ?? days[0] ?? null;

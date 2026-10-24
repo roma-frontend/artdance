@@ -24,7 +24,13 @@ export async function POST(request: Request) {
   const caller = await getCaller();
   if (!caller) return json({ error: 'UNAUTHORIZED' }, 401);
   const limit = await checkRateLimit('bookingHold', clientIdentifier(request.headers));
-  if (!limit.allowed) return json({ error: 'RATE_LIMITED' }, 429, rateLimitHeaders(limit, 'bookingHold'));
+  if (!limit.allowed) {
+    return json(
+      { error: 'RATE_LIMITED', messageKey: 'errors.rateLimited.description', params: { seconds: limit.retryAfterSeconds } },
+      429,
+      rateLimitHeaders(limit, 'bookingHold'),
+    );
+  }
   let body: unknown;
   try {
     body = await request.json();
@@ -47,7 +53,7 @@ export async function POST(request: Request) {
     return json(result, 201);
   } catch (error) {
     const { isDomainError, httpStatusFor } = await import('@/domain/errors');
-    if (isDomainError(error)) return json({ error: error.code, messageKey: error.messageKey }, httpStatusFor(error.code));
+    if (isDomainError(error)) return json({ error: error.code, messageKey: error.messageKey, params: error.params, field: error.field }, httpStatusFor(error.code));
     throw error;
   }
 }

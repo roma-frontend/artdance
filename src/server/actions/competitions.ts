@@ -3,13 +3,12 @@
 import { z } from 'zod';
 import { updateTag } from 'next/cache';
 
-import { ageFitsCategory, registrationIsOpen } from '@/domain/competition';
 import { isDomainError } from '@/domain/errors';
 import type { MessageKey } from '@/i18n/types';
-import { db } from '@/lib/db';
 import { requireCaller } from '@/lib/auth/guards';
 import { cacheTags } from '@/config/cache';
 import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
+import { parseBirthDate, registerForCompetition } from '@/server/events/register';
 
 export interface CompetitionRegistrationState {
   status: 'idle' | 'success' | 'error';
@@ -39,84 +38,16 @@ export async function submitCompetitionRegistration(
     });
     if (!parsed.success) return { status: 'error', messageKey: 'events.registrationError' as MessageKey };
 
-    const birthDate = new Date(`${parsed.data.birthDate}T00:00:00.000Z`);
-    if (Number.isNaN(birthDate.getTime()) || birthDate > new Date()) {
-      return { status: 'error', messageKey: 'events.registrationError' as MessageKey };
-    }
+    const birthDate = parseBirthDate(parsed.data.birthDate);
+    if (!birthDate) return { status: 'error', messageKey: 'events.registrationError' as MessageKey };
 
-    const result = await db.$transaction(async (tx) => {
-      const event = await tx.event.findFirst({
-        where: { slug: parsed.data.eventSlug, isPublished: true, type: 'COMPETITION' },
-        select: {
-          id: true,
-          startsAt: true,
-          registrationOpenAt: true,
-          registrationCloseAt: true,
-        },
-      });
-      if (!event || !registrationIsOpen(new Date(), { openAt: event.registrationOpenAt, closeAt: event.registrationCloseAt })) {
-        throw new Error('REGISTRATION_CLOSED');
-      }
-
-      const category = await tx.competitionCategory.findFirst({
-        where: { id: parsed.data.categoryId, eventId: event.id, isActive: true },
-        select: { id: true, minAge: true, maxAge: true, maxEntries: true },
-      });
-      if (!category) throw new Error('CATEGORY_NOT_FOUND');
-      if (!ageFitsCategory(birthDate, event.startsAt, category)) throw new Error('AGE_NOT_ELIGIBLE');
-
-      const athlete = await tx.athleteProfile.upsert({
-        where: { userId: caller.id },
-        create: { userId: caller.id, birthDate },
-        update: { birthDate },
-        select: { id: true },
-      });
-      await tx.user.update({ where: { id: caller.id }, data: { role: 'ATHLETE' } });
-
-      const existing = await tx.competitionRegistration.findUnique({
-        where: {
-          eventId_categoryId_athleteProfileId: {
-            eventId: event.id,
-            categoryId: category.id,
-            athleteProfileId: athlete.id,
-          },
-        },
-        select: { status: true },
-      });
-      if (existing && existing.status !== 'CANCELLED') throw new Error('ALREADY_REGISTERED');
-
-      if (category.maxEntries !== null) {
-        const occupied = await tx.competitionRegistration.count({
-          where: { categoryId: category.id, status: { in: ['PENDING', 'APPROVED'] } },
-        });
-        if (occupied >= category.maxEntries) throw new Error('CATEGORY_FULL');
-      }
-
-      const data = {
-        eventId: event.id,
-        categoryId: category.id,
-        athleteProfileId: athlete.id,
-        partnerName: parsed.data.partnerName || null,
-        status: 'PENDING' as const,
-      };
-
-      if (existing) {
-        return tx.competitionRegistration.update({
-          where: {
-            eventId_categoryId_athleteProfileId: {
-              eventId: event.id,
-              categoryId: category.id,
-              athleteProfileId: athlete.id,
-            },
-          },
-          data,
-          select: { id: true },
-        });
-      }
-      return tx.competitionRegistration.create({ data, select: { id: true } });
+    await registerForCompetition({
+      userId: caller.id,
+      eventSlug: parsed.data.eventSlug,
+      categoryId: parsed.data.categoryId,
+      birthDate,
+      partnerName: parsed.data.partnerName || null,
     });
-
-    void result;
     updateTag(cacheTags.events());
     return { status: 'success', messageKey: 'events.registrationSuccess' as MessageKey };
   } catch (error) {

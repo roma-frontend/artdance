@@ -17,7 +17,7 @@ import { isSupportOperator } from '@/config/security';
 import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 import { buildMetadata } from '@/lib/seo/metadata';
 
-interface PageProps { params: Promise<{ locale: string; orderNumber: string }>; }
+interface PageProps { params: Promise<{ locale: string; orderNumber: string }>; searchParams: Promise<{ app?: string }>; }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, orderNumber } = await params;
@@ -25,10 +25,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   return buildMetadata({ locale: locale as Locale, path: routes.checkoutResult(orderNumber), title: t('result.successTitle'), noIndex: true });
 }
 
-export default async function CheckoutResultPage({ params }: PageProps) {
+export default async function CheckoutResultPage({ params, searchParams }: PageProps) {
   await assertEntitlementOrNotFound('shop');
   const caller = await getCaller();
   const { locale, orderNumber } = await params;
+  const fromApp = (await searchParams).app === '1';
   setRequestLocale(locale as Locale);
   const t = await getTranslations({ locale: locale as Locale, namespace: 'checkout' });
   const tCommon = await getTranslations({ locale: locale as Locale, namespace: 'common' });
@@ -86,6 +87,7 @@ export default async function CheckoutResultPage({ params }: PageProps) {
             <div className="mt-6 flex flex-wrap gap-3">
               <Button asChild variant="accent"><Link href={routes.bookingConfirm(booking.reference)}>{t('result.viewOrderCta')}</Link></Button>
               <Button asChild variant="outline"><Link href={routes.bookingPass(booking.id)}>{tCommon('labels.time' as never) as string}</Link></Button>
+              {fromApp ? <Button asChild variant="outline"><a href="artdance://account/bookings">{t('result.openInAppCta')}</a></Button> : null}
               <Button asChild variant="ghost"><Link href={routes.accountBookings()}>{tCommon('actions.continue')}</Link></Button>
             </div>
           </div>
@@ -99,6 +101,7 @@ export default async function CheckoutResultPage({ params }: PageProps) {
   const o = order!;
   const paid = o.status === 'PAID' || o.payments[0]?.status === 'PAID';
   const failed = o.payments[0]?.status === 'FAILED';
+  const cashOnDelivery = !paid && !failed && ['PACKING', 'SHIPPED', 'DELIVERED'].includes(o.status);
   const orderKnown = (orderStatuses as readonly string[]).includes(o.status);
   return (
     <>
@@ -112,8 +115,8 @@ export default async function CheckoutResultPage({ params }: PageProps) {
           <ResultReconcile paymentId={o.payments[0].id} status={o.payments[0].status} />
         ) : null}
         {orderKnown ? <StatusBadge kind="order" status={o.status as OrderStatus} /> : <Badge variant={paid ? 'success' : failed ? 'warning' : 'neutral'}>{o.status}</Badge>}{o.payments[0] ? <span className="ml-2 text-body-sm text-content-tertiary">· {o.payments[0].status}</span> : null}
-        <h1 className="text-heading-2 mt-3">{paid ? t('result.successTitle') : failed ? t('result.failedTitle') : t('result.pendingTitle')}</h1>
-        <p className="text-body mt-2 text-content-secondary">{paid ? t('result.successSubtitle', { orderNumber: o.orderNumber } as never) : failed ? t('result.failedSubtitle') : t('result.pendingSubtitle')}</p>
+        <h1 className="text-heading-2 mt-3">{paid ? t('result.successTitle') : failed ? t('result.failedTitle') : cashOnDelivery ? t('result.codTitle') : t('result.pendingTitle')}</h1>
+        <p className="text-body mt-2 text-content-secondary">{paid ? t('result.successSubtitle', { orderNumber: o.orderNumber } as never) : failed ? t('result.failedSubtitle') : cashOnDelivery ? t('result.codSubtitle') : t('result.pendingSubtitle')}</p>
         <div className="mt-6 rounded-xl border border-border-default bg-surface-card p-6">
           <p className="font-mono font-semibold">{o.orderNumber}</p>
           <Price amount={o.total} emphasis="total" className="mt-2" />
@@ -121,6 +124,7 @@ export default async function CheckoutResultPage({ params }: PageProps) {
           <div className="mt-6 flex flex-wrap gap-3">
             <Button asChild variant="accent"><Link href={routes.accountOrder(o.orderNumber)}>{t('result.viewOrderCta')}</Link></Button>
             {failed && <Button asChild variant="outline"><Link href={routes.checkoutStep('payment')}>{t('result.retryCta')}</Link></Button>}
+            {fromApp ? <Button asChild variant="outline"><a href={`artdance://account/orders/${o.orderNumber}`}>{t('result.openInAppCta')}</a></Button> : null}
             <Button asChild variant="ghost"><Link href={routes.shop()}>{tCommon('actions.continue')}</Link></Button>
           </div>
         </div>

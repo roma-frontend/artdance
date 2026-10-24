@@ -36,6 +36,7 @@ import { money } from '@/domain/money';
 import { recordAudit } from '@/lib/audit';
 import { requireCapability } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
+import { settlePaidOrder } from '@/server/payments/settle';
 import { authedAction } from '@/server/safe-action';
 
 /* ───────────────────────────── Статус заказа ───────────────────────────── */
@@ -45,7 +46,8 @@ import { authedAction } from '@/server/safe-action';
  * поставить отменённому заказу: администратор нажимает не туда так же, как все.
  */
 const orderTransitions: Record<string, readonly string[]> = {
-  CREATED: ['PAID', 'CANCELLED'],
+  /* PAID ставит только вебхук или markCashCollected: иначе оплата без платежа и расчёта. */
+  CREATED: ['CANCELLED'],
   PAID: ['PACKING', 'CANCELLED', 'RETURNED'],
   PACKING: ['SHIPPED', 'CANCELLED'],
   SHIPPED: ['DELIVERED', 'RETURNED'],
@@ -99,6 +101,59 @@ export const setOrderStatus = authedAction
     });
 
     return { status: after.status };
+  });
+
+/* Наличные получены курьером: фиксируем платёж и запускаем расчёт. Статус заказа не меняется. */
+export const markCashCollected = authedAction
+  .metadata({ rateLimit: 'adminMutation', audit: 'admin.order.cash-collected' })
+  .inputSchema(z.object({ id: z.string().trim().min(1).max(64) }))
+  .action(async ({ parsedInput, ctx }): Promise<{ settled: boolean }> => {
+    const caller = await requireCapability('orders.fulfil');
+
+    const order = await db.order.findUnique({
+      where: { id: parsedInput.id },
+      select: { id: true, status: true, total: true, walletApplied: true, paidAt: true },
+    });
+    if (!order) throw domainErrors.notFound();
+    if (!['PACKING', 'SHIPPED', 'DELIVERED'].includes(order.status)) throw domainErrors.validationFailed('status');
+
+    const now = new Date();
+    const idempotencyKey = `${order.id}:cod-collected`;
+    const existing = await db.payment.findUnique({ where: { idempotencyKey }, select: { id: true } });
+
+    if (!existing) {
+      const cash = order.total - order.walletApplied;
+      await db.$transaction([
+        db.payment.create({
+          data: {
+            orderId: order.id,
+            provider: 'cash-on-delivery',
+            method: 'CASH_ON_DELIVERY',
+            status: 'PAID',
+            amount: cash,
+            paidAmount: cash,
+            idempotencyKey,
+            paidAt: now,
+          },
+        }),
+        db.order.update({ where: { id: order.id }, data: { paidAt: order.paidAt ?? now } }),
+      ]);
+    }
+
+    /* Расчёт идемпотентен: повтор после сбоя доставит заказ, а не выдаст его второй раз. */
+    const result = await settlePaidOrder(order.id, now);
+
+    await recordAudit({
+      actor: caller,
+      action: 'admin.order.cash-collected',
+      entityType: 'Order',
+      entityId: order.id,
+      before: { status: order.status },
+      after: { settled: result.settled },
+      ipAddress: ctx.identifier,
+    });
+
+    return { settled: result.settled };
   });
 
 /* ─────────────────────────────── Возврат ─────────────────────────────── */
