@@ -161,3 +161,55 @@ export async function sendContact(input: ContactInput): Promise<ContactOutcome> 
   }
   return { delivered: body.delivered === true };
 }
+
+export type PricingPlan = {
+  id: string;
+  name: string;
+  description: string;
+  highlighted: boolean;
+  badges: string[];
+  price: string;
+  priceUnit: string;
+  yearlyNote: string;
+  yearlySave: string;
+  features: string[];
+  cta: string;
+};
+export type PricingCellState = 'yes' | 'no' | 'text';
+export type PricingComparisonCell = { text: string; state: PricingCellState };
+export type PricingComparisonRow = { id: string; label: string; cells: PricingComparisonCell[] };
+export type PricingClassPass = {
+  id: string;
+  badge: string | null;
+  lessonsLabel: string;
+  validityLabel: string;
+  perLesson: string;
+  total: string;
+  cta: string;
+};
+export type PricingContent = {
+  eyebrow: string | null;
+  title: string;
+  subtitle: string | null;
+  webPath: string;
+  plans: {
+    includedTitle: string;
+    note: string;
+    items: PricingPlan[];
+    comparison: {
+      title: string;
+      subtitle: string;
+      plans: { id: string; name: string }[];
+      rows: PricingComparisonRow[];
+    };
+  } | null;
+  classPasses: { title: string; subtitle: string; items: PricingClassPass[] } | null;
+  payAsYouGo: { title: string; body: string; planNote: string | null; cta: string; path: string };
+};
+
+/** Тарифы и пакеты занятий с сервера. Раздел без включённого модуля приходит как `null`. */
+export async function getPricing(locale: string): Promise<PricingContent> {
+  const response = await fetch(`${API_URL}/api/content/pricing?locale=${encodeURIComponent(locale)}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return (await response.json()) as PricingContent;
+}

@@ -36,6 +36,7 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/gift-cards',
   '/legal',
   '/contact',
+  '/pricing',
 ]);
 
 export default function AccountScreen() {
@@ -82,6 +83,7 @@ export default function AccountScreen() {
     { icon: 'gift', label: c.footer.giftCards, path: '/gift-cards', tint: '#C9A96A' },
     { icon: 'document-text', label: c.footer.legalTitle, path: '/legal', tint: '#8E7CC3' },
     { icon: 'mail', label: c.footer.contact, path: '/contact', tint: '#3FB984' },
+    { icon: 'pricetags', label: c.nav.pricing, path: '/pricing', tint: '#C9A96A' },
   ];
 
   const avatarStyle = useAnimatedStyle(() => ({

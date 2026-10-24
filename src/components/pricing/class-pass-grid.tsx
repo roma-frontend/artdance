@@ -4,13 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Price } from '@/components/ui/price';
 import { ClassPassPurchaseForm } from '@/components/pricing/class-pass-purchase-form';
 import type { Locale } from '@/i18n/config';
-import { classPassById, classPasses, priceGuidance } from '@/config/pricing';
+import { classPassById, classPasses, classPassPricePerLesson, priceGuidance } from '@/config/pricing';
 import { classPassOfferPrice } from '@/domain/class-pass';
-
-/** Полная цена пакета: цена за занятие со скидкой × число занятий. */
-function passTotal(offer: (typeof classPasses)[number]): number {
-  return classPassOfferPrice(priceGuidance.groupClass.typical, offer.discountRate, offer.lessons) * offer.lessons;
-}
 
 export async function ClassPassGrid({
   locale,
@@ -27,8 +22,8 @@ export async function ClassPassGrid({
   return (
     <ul className="grid gap-6 md:grid-cols-3">
       {classPasses.map((offer) => {
-        const perLesson = classPassOfferPrice(priceGuidance.groupClass.typical, offer.discountRate, offer.lessons);
-        const total = passTotal(offer);
+        const perLesson = classPassPricePerLesson(priceGuidance.groupClass.typical, offer.discountRate);
+        const total = classPassOfferPrice(priceGuidance.groupClass.typical, offer.discountRate, offer.lessons);
         const badgeLabel = offer.badge ? (offer.badge === 'pricing.classPasses.popular' ? t('classPasses.popular' as never) : t('classPasses.bestValue' as never)) : null;
         return (
           <li key={offer.id} data-slot="class-pass" className="flex flex-col rounded-xl border border-border-default bg-surface-card p-8 shadow-sm">

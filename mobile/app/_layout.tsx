@@ -106,6 +106,7 @@ export default function RootLayout() {
         <Stack.Screen name="gift-cards" options={{ animation: 'default' }} />
         <Stack.Screen name="legal" options={{ animation: 'default' }} />
         <Stack.Screen name="contact" options={{ animation: 'default' }} />
+      <Stack.Screen name="pricing" options={{ animation: 'default' }} />
         <Stack.Screen name="book/[instructor]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
       </Stack>
     </ThemeProvider>

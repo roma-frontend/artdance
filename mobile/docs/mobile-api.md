@@ -26,6 +26,7 @@ Bearer-токен проверен на живом стенде: вход дем
 | `/api/content/help` | GET | публичный, `?locale=`, без кэша |
 | `/api/content/about` | GET | публичный, `?locale=`, без кэша |
 | `/api/content/gift-cards` | GET | `?locale=`, без кэша; `FEATURE_DISABLED`, если выключен `shop` |
+| `/api/content/pricing` | GET | `?locale=`, без кэша; разделы `plans` и `classPasses` отдаются `null`, если выключены модули |
 | `/api/content/legal` | GET | публичный, `?locale=`, без кэша |
 | `/api/content/legal/[slug]` | GET | публичный, `?locale=`, без кэша; `NOT_FOUND` для неизвестного слага |
 | `/api/content/contact` | GET | публичный, `?locale=`, без кэша |
