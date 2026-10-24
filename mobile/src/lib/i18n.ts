@@ -63,6 +63,7 @@ const dictionary: Dictionary = {
     accountMember: 'ArtDance-ի անդամ',
     accountSectionMine: 'Իմը',
     accountSectionInfo: 'Տեղեկություն',
+    accountSectionLanding: 'Ծրագրեր և գործընկերներ',
   },
   ru: {
     signInTitle: 'Вход',
@@ -124,6 +125,7 @@ const dictionary: Dictionary = {
     accountMember: 'Участник ArtDance',
     accountSectionMine: 'Моё',
     accountSectionInfo: 'Информация',
+    accountSectionLanding: 'Программы и партнёры',
   },
   en: {
     signInTitle: 'Sign in',
@@ -185,6 +187,7 @@ const dictionary: Dictionary = {
     accountMember: 'ArtDance member',
     accountSectionMine: 'Mine',
     accountSectionInfo: 'Information',
+    accountSectionLanding: 'Programs & partners',
   },
 };
 
@@ -247,7 +250,8 @@ export type MessageKey =
   | 'bookSuccessTitle'
   | 'accountMember'
   | 'accountSectionMine'
-  | 'accountSectionInfo';
+  | 'accountSectionInfo'
+  | 'accountSectionLanding';
 
 export type Messages = Record<MessageKey, string>;
 

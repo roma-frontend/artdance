@@ -92,6 +92,16 @@ export default function AccountScreen() {
     { icon: 'business', label: c.footer.listStudio, path: '/list-your-studio', tint: '#C9A96A' },
     { icon: 'newspaper', label: c.blog.title, path: '/blog', tint: '#5AA9E6' },
   ];
+  const landing: Row[] = [
+    { icon: 'trophy', label: c.nav.competitions, path: '/competitions', tint: '#C9A96A' },
+    { icon: 'musical-notes', label: c.nav.socialEvents, path: '/social-events', tint: '#E0607E' },
+    { icon: 'medal', label: c.nav.athletes, path: '/athletes', tint: '#8E7CC3' },
+    { icon: 'globe', label: c.footer.federations, path: '/federations', tint: '#5AA9E6' },
+    { icon: 'people', label: c.footer.partners, path: '/partners', tint: '#3FB984' },
+    { icon: 'heart', label: c.footer.sponsors, path: '/sponsors', tint: '#E0607E' },
+    { icon: 'megaphone', label: c.footer.advertise, path: '/advertise', tint: '#C9A96A' },
+    { icon: 'briefcase', label: c.nav.corporate, path: '/corporate', tint: '#7A8BA6' },
+  ];
 
   const avatarStyle = useAnimatedStyle(() => ({
     transform: [{ scale: interpolate(scrollY.value, [-120, 0, 120], [1.15, 1, 0.85], Extrapolation.CLAMP) }],
@@ -132,6 +142,7 @@ export default function AccountScreen() {
 
         <Group title={t.accountSectionMine} rows={[bookingsRow, ...mine]} locale={locale} delay={160} router={router} />
         <Group title={t.accountSectionInfo} rows={info} locale={locale} delay={240} router={router} />
+        <Group title={t.accountSectionLanding} rows={landing} locale={locale} delay={280} router={router} />
 
         <Animated.View entering={FadeInDown.delay(320).duration(500)}>
           <PressableScale onPress={onSignOut} style={styles.signOut} pressedScale={0.97}>
