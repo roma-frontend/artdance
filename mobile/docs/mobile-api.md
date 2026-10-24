@@ -24,6 +24,7 @@ Bearer-токен проверен на живом стенде: вход дем
 | `/api/catalog/[section]`, `/api/catalog/[section]/[slug]` | GET | публичный |
 | `/api/content/faq` | GET | публичный, `?locale=`, без кэша |
 | `/api/content/help` | GET | публичный, `?locale=`, без кэша |
+| `/api/content/about` | GET | публичный, `?locale=`, без кэша |
 | `/api/search` | GET | публичный, лимит частоты |
 | `/api/booking` | POST | сессия или `anonymousId` |
 | `/api/booking/hold` | POST | сессия или `anonymousId` |

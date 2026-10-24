@@ -26,3 +26,21 @@ export async function getHelp(locale: string): Promise<HelpContent> {
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return (await response.json()) as HelpContent;
 }
+
+export type AboutValue = { id: string; title: string; body: string };
+export type AboutContent = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  mission: { title: string; body: string };
+  values: { title: string; items: AboutValue[] };
+  story: { title: string; body: string };
+  cta: { title: string; subtitle: string; primary: string; primaryPath: string; secondary: string; secondaryPath: string };
+};
+
+/** О проекте с сервера на выбранном языке. */
+export async function getAbout(locale: string): Promise<AboutContent> {
+  const response = await fetch(`${API_URL}/api/content/about?locale=${encodeURIComponent(locale)}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return (await response.json()) as AboutContent;
+}

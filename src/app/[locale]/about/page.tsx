@@ -12,7 +12,7 @@
 
 import type { Metadata } from 'next';
 import { HandshakeIcon, MapPinIcon, ShieldCheckIcon, TagIcon } from 'lucide-react';
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { ContentSection } from '@/components/content/content-section';
 import { ValueGrid, type ValueItem } from '@/components/content/value-grid';
@@ -24,6 +24,7 @@ import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import type { Crumb } from '@/lib/seo/jsonld';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { buildAboutContent, type AboutValueId } from '@/server/content/about';
 import { getContentHero } from '@/server/content/catalog';
 
 interface PageProps {
@@ -42,66 +43,64 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   });
 }
 
+const VALUE_ICONS = {
+  trust: ShieldCheckIcon,
+  craft: TagIcon,
+  local: MapPinIcon,
+  openness: HandshakeIcon,
+} satisfies Record<AboutValueId, unknown>;
+
 export default async function AboutPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 
-  const t = await getTranslations('about');
+  const content = await buildAboutContent(locale as Locale);
   const tFooter = await getTranslations('footer');
-  const format = await getFormatter();
 
-  const values: ValueItem[] = [
-    {
-      id: 'trust',
-      icon: ShieldCheckIcon,
-      title: t('values.trust.title'),
-      body: t('values.trust.body'),
-    },
-    { id: 'craft', icon: TagIcon, title: t('values.craft.title'), body: t('values.craft.body') },
-    { id: 'local', icon: MapPinIcon, title: t('values.local.title'), body: t('values.local.body') },
-    {
-      id: 'openness',
-      icon: HandshakeIcon,
-      title: t('values.openness.title'),
-      body: t('values.openness.body'),
-    },
-  ];
+  const values: ValueItem[] = content.values.items.map((value) => ({
+    id: value.id,
+    icon: VALUE_ICONS[value.id],
+    title: value.title,
+    body: value.body,
+  }));
 
   const trail: Crumb[] = [{ name: tFooter('about'), path: routes.about() }];
 
   return (
     <main id={site.mainContentId}>
       <PageHero
-        title={t('title')}
-        subtitle={t('subtitle')}
-        eyebrow={t('eyebrow')}
+        title={content.title}
+        subtitle={content.subtitle}
+        eyebrow={content.eyebrow}
         image={await getContentHero('about')}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />
 
-      <ContentSection title={t('mission.title')} prose>
-        <p className="text-body-lg text-content-secondary">{t('mission.body')}</p>
+      <ContentSection title={content.mission.title} prose>
+        <p className="text-body-lg text-content-secondary">{content.mission.body}</p>
       </ContentSection>
 
-      <ContentSection tone="raised" title={t('values.title')}>
+      <ContentSection tone="raised" title={content.values.title}>
         <ValueGrid items={values} columns={4} />
       </ContentSection>
 
-      <ContentSection title={t('story.title')} prose>
-        <p className="text-body-lg text-content-secondary">
-          {/* Год без разделителя разрядов: формат `year`, иначе в ru получится «2 026». */}
-          {t('story.body', { year: format.number(site.foundedYear, 'year') })}
-        </p>
+      <ContentSection title={content.story.title} prose>
+        <p className="text-body-lg text-content-secondary">{content.story.body}</p>
       </ContentSection>
 
-      <ContentSection tone="cinema" align="center" title={t('cta.title')} subtitle={t('cta.subtitle')}>
+      <ContentSection
+        tone="cinema"
+        align="center"
+        title={content.cta.title}
+        subtitle={content.cta.subtitle}
+      >
         <div className="flex flex-wrap justify-center gap-4">
           <Button asChild size="lg" variant="accent">
-            <Link href={routes.classes()}>{t('cta.primary')}</Link>
+            <Link href={content.cta.primaryPath}>{content.cta.primary}</Link>
           </Button>
           <Button asChild size="lg" variant="onCinema">
-            <Link href={routes.becomeInstructor()}>{t('cta.secondary')}</Link>
+            <Link href={content.cta.secondaryPath}>{content.cta.secondary}</Link>
           </Button>
         </div>
       </ContentSection>
