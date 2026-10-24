@@ -1,4 +1,8 @@
+import { catalogFor } from '@/i18n/catalog';
+import { deviceLocale } from '@/lib/i18n';
+
 import { API_URL } from './config';
+import { readServerMessage } from './server-message';
 import { getSessionToken } from './session';
 
 /** Позиция корзины, как её отдаёт `/api/cart`. Цены берутся на сервере из БД. */
@@ -43,9 +47,16 @@ export class CartError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly serverMessage: string | null = null,
   ) {
     super(message);
   }
+}
+
+/** Ошибка ответа с переведённым текстом сервера, если messageKey есть в словаре приложения. */
+async function failureFor(response: Response): Promise<CartError> {
+  const serverMessage = await readServerMessage(response, catalogFor(deviceLocale(undefined)));
+  return new CartError(`HTTP ${response.status}`, response.status, serverMessage);
 }
 
 /**
@@ -65,8 +76,9 @@ async function send(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', query: 
     },
     body: hasBody ? JSON.stringify(body) : undefined,
   });
-  const data = (await response.json().catch(() => ({}))) as { snapshot?: CartSnapshot; error?: string };
-  if (!response.ok || !data.snapshot) throw new CartError(data.error ?? `HTTP ${response.status}`, response.status);
+  if (!response.ok) throw await failureFor(response);
+  const data = (await response.json().catch(() => ({}))) as { snapshot?: CartSnapshot };
+  if (!data.snapshot) throw new CartError(`HTTP ${response.status}`, response.status);
   return data.snapshot;
 }
 
@@ -101,7 +113,8 @@ export async function resolveVariantId(sku: string): Promise<string> {
   const response = await fetch(`${API_URL}/api/cart/variant-id?sku=${encodeURIComponent(sku)}`, {
     headers: { Accept: 'application/json' },
   });
+  if (!response.ok) throw await failureFor(response);
   const body = (await response.json().catch(() => ({}))) as { id?: string };
-  if (!response.ok || !body.id) throw new CartError(`HTTP ${response.status}`, response.status);
+  if (!body.id) throw new CartError(`HTTP ${response.status}`, response.status);
   return body.id;
 }

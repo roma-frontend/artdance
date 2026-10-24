@@ -22,6 +22,7 @@ import {
   type CartSnapshot,
 } from '@/lib/cart';
 import { plural, price, webUrl } from '@/lib/format';
+import { serverMessageOf } from '@/lib/server-message';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { useAppActive } from '@/lib/use-app-active';
 import { colors, radius, space, type } from '@/theme';
@@ -62,7 +63,7 @@ export default function CartScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [cart, setCart] = useState<CartSnapshot | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [promo, setPromo] = useState('');
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -70,9 +71,9 @@ export default function CartScreen() {
   const load = useCallback(async () => {
     try {
       setCart(await getCart());
-      setFailed(false);
-    } catch {
-      setFailed(true);
+      setFailed(null);
+    } catch (error) {
+      setFailed(serverMessageOf(error) ?? m.catalogError);
     }
   }, []);
 
@@ -87,8 +88,8 @@ export default function CartScreen() {
     try {
       setCart(await action());
       return true;
-    } catch {
-      Alert.alert(m.genericError);
+    } catch (e) {
+      Alert.alert(serverMessageOf(e) ?? m.genericError);
       return false;
     } finally {
       setBusy(false);
@@ -106,7 +107,7 @@ export default function CartScreen() {
     } catch (e) {
       // Неверный/истёкший/исчерпанный код сервер отдаёт как 422 (VALIDATION_FAILED).
       if (e instanceof CartError && e.status === 422) setPromoError(c.cart.promoInvalid);
-      else Alert.alert(m.genericError);
+      else Alert.alert(serverMessageOf(e) ?? m.genericError);
     } finally {
       setBusy(false);
     }
@@ -117,7 +118,7 @@ export default function CartScreen() {
     Linking.openURL(webUrl(locale, '/checkout')).catch(() => undefined);
   }
 
-  if (cart === null && !failed) {
+  if (cart === null && failed === null) {
     return (
       <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
         <ActivityIndicator color={colors.accentBright} />
@@ -139,8 +140,8 @@ export default function CartScreen() {
         <Text style={type.h2}>{c.cart.title}</Text>
       </View>
 
-      {failed && cart === null ? (
-        <EmptyState icon="alert-circle-outline" title={m.catalogError} />
+      {failed !== null && cart === null ? (
+        <EmptyState icon="alert-circle-outline" title={failed} />
       ) : items.length === 0 ? (
         <EmptyState icon="cart-outline" title={c.cart.empty} body={c.cart.emptyHint} />
       ) : (
