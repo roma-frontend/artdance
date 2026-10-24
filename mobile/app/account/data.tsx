@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
-import { exportMyData } from '@/lib/account-data';
+import { AccountDataError, exportMyData } from '@/lib/account-data';
 import { webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors, radius, space, type } from '@/theme';
@@ -20,16 +20,16 @@ export default function MyDataScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   async function onExport() {
     setBusy(true);
-    setFailed(false);
+    setFailed(null);
     try {
       const json = await exportMyData();
       await Share.share({ title: 'artdance-export.json', message: json });
-    } catch {
-      setFailed(true);
+    } catch (error) {
+      setFailed(error instanceof AccountDataError ? (error.serverMessage ?? t.catalogError) : t.catalogError);
     } finally {
       setBusy(false);
     }
@@ -51,7 +51,7 @@ export default function MyDataScreen() {
           <Text style={type.h3}>{f.exportTitle}</Text>
           <Text style={type.bodySm}>{f.exportHint}</Text>
           <Button label={f.downloadJson} onPress={onExport} busy={busy} disabled={busy} />
-          {failed && <Text style={styles.error}>{t.catalogError}</Text>}
+          {failed !== null && <Text style={styles.error}>{failed}</Text>}
         </View>
 
         <View style={styles.card}>

@@ -1,4 +1,8 @@
+import { catalogFor } from '@/i18n/catalog';
+import { deviceLocale } from '@/lib/i18n';
+
 import { API_URL } from './config';
+import { resolveServerMessage } from './server-message';
 import { getSessionToken } from './session';
 
 export type SubscriptionUsage = { metric: string; used: number };
@@ -32,9 +36,22 @@ export class AccountDataError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly serverMessage: string | null = null,
   ) {
     super(message);
   }
+}
+
+/** Ошибка ответа; текст сервера переводится, если messageKey есть в словаре приложения. */
+async function failureFor(response: Response): Promise<AccountDataError> {
+  const body = (await response.json().catch(() => null)) as {
+    messageKey?: string;
+    params?: Record<string, string | number>;
+  } | null;
+  const serverMessage = body?.messageKey
+    ? resolveServerMessage(body.messageKey, body.params ?? {}, catalogFor(deviceLocale(undefined)))
+    : null;
+  return new AccountDataError(`HTTP ${response.status}`, response.status, serverMessage);
 }
 
 /** Общий GET с bearer-токеном. Личность определяет сервер. */
@@ -44,7 +61,7 @@ async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(`${API_URL}${path}`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new AccountDataError(`HTTP ${response.status}`, response.status);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as T;
 }
 
@@ -68,6 +85,6 @@ export async function exportMyData(): Promise<string> {
   const response = await fetch(`${API_URL}/api/account/export`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new AccountDataError(`HTTP ${response.status}`, response.status);
+  if (!response.ok) throw await failureFor(response);
   return response.text();
 }
