@@ -7,12 +7,14 @@ import Animated, { FadeInDown, useSharedValue, withSequence, withTiming } from '
 import { AuthLayout } from '@/components/auth/auth-layout';
 import { FloatingInput } from '@/components/auth/floating-input';
 import { Button } from '@/components/ui/button';
-import { signUp } from '@/lib/auth';
+import { catalogFor } from '@/i18n/catalog';
+import { AuthError, signUp } from '@/lib/auth';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors } from '@/theme';
 
 export default function SignUpScreen() {
-  const t = messagesFor(deviceLocale(undefined));
+  const locale = deviceLocale(undefined);
+  const t = messagesFor(locale);
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -28,7 +30,7 @@ export default function SignUpScreen() {
       await signUp(name.trim(), email.trim(), password);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace('/');
-    } catch {
+    } catch (error: unknown) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       shake.value = withSequence(
         withTiming(-10, { duration: 60 }),
@@ -36,7 +38,8 @@ export default function SignUpScreen() {
         withTiming(-6, { duration: 60 }),
         withTiming(0, { duration: 60 }),
       );
-      setError(t.genericError);
+      const code = error instanceof AuthError ? error.message : '';
+      setError(code.startsWith('USER_ALREADY_EXISTS') ? catalogFor(locale).auth.signUp.emailTaken : t.genericError);
     } finally {
       setBusy(false);
     }
