@@ -20,12 +20,13 @@ import { getCatalogDetail, mediaUri } from '@/lib/catalog';
 import { API_URL } from '@/lib/config';
 import { dateLabel, initials } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { resolveServerMessage, serverMessageOf } from '@/lib/server-message';
 import { getSessionToken } from '@/lib/session';
 import { colors, fill, fonts, gradients, radius, space, type } from '@/theme';
 
 type Slot = { startIso: string; startTime: string; endTime: string; endIso: string };
 type Availability = { instructorSlug: string; slots: Slot[] };
-type Failure = { error?: string };
+type Failure = { error?: string; messageKey?: string; params?: Record<string, string | number> };
 type PayMethod = 'CARD' | 'ARCA' | 'IDRAM' | 'TELCELL' | 'ARCA_QR';
 type IconName = ComponentProps<typeof Ionicons>['name'];
 type Instructor = { name?: string; headline?: string; image?: { key?: string }; ratingAverage?: number };
@@ -43,7 +44,10 @@ const payMethods: {
 ];
 
 class BookingError extends Error {
-  constructor(readonly code: string) {
+  constructor(
+    readonly code: string,
+    readonly serverMessage: string | null = null,
+  ) {
     super(code);
   }
 }
@@ -58,7 +62,12 @@ async function authed(path: string, init: RequestInit = {}): Promise<Response> {
 
 async function readJson<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => ({}))) as T & Failure;
-  if (!response.ok) throw new BookingError(body.error ?? `HTTP ${response.status}`);
+  if (!response.ok) {
+    const serverMessage = body.messageKey
+      ? resolveServerMessage(body.messageKey, body.params ?? {}, catalogFor(deviceLocale(undefined)))
+      : null;
+    throw new BookingError(body.error ?? `HTTP ${response.status}`, serverMessage);
+  }
   return body;
 }
 
@@ -150,15 +159,15 @@ export default function BookScreen() {
           } else {
             setResult({ kind: 'error', text: t.bookPayFailed });
           }
-        } catch {
-          setResult({ kind: 'error', text: t.bookPayFailed });
+        } catch (payErr: unknown) {
+          setResult({ kind: 'error', text: serverMessageOf(payErr) ?? t.bookPayFailed });
         }
       } else {
         setResult({ kind: 'success', text: t.bookDone });
       }
     } catch (err: unknown) {
       const code = err instanceof BookingError ? err.code : '';
-      setResult({ kind: 'error', text: code === 'SLOT_CONFLICT' || code === 'SLOT_UNAVAILABLE' ? t.bookSlotTaken : t.bookFailed });
+      setResult({ kind: 'error', text: code === 'SLOT_CONFLICT' || code === 'SLOT_UNAVAILABLE' ? t.bookSlotTaken : (serverMessageOf(err) ?? t.bookFailed) });
     } finally {
       setBusy(false);
     }

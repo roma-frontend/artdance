@@ -18,6 +18,7 @@ import {
 } from '@/lib/bookings';
 import { dateLabel } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
 export default function BookingPassScreen() {
@@ -30,16 +31,16 @@ export default function BookingPassScreen() {
   const insets = useSafeAreaInsets();
   const [pass, setPass] = useState<BookingPass | null>(null);
   const [booking, setBooking] = useState<ClientBooking | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       const [nextPass, bookings] = await Promise.all([getBookingPass(id), listMyBookings().catch(() => [])]);
       setPass(nextPass);
       setBooking(bookings.find((item) => item.id === id) ?? null);
-      setFailed(false);
-    } catch {
-      setFailed(true);
+      setFailed(null);
+    } catch (error) {
+      setFailed(serverMessageOf(error) ?? t.catalogError);
     }
   }, [id]);
 
@@ -60,8 +61,8 @@ export default function BookingPassScreen() {
     return (
       <View style={[styles.screen, { paddingTop: insets.top }]}>
         {header}
-        {failed ? (
-          <EmptyState icon="alert-circle-outline" title={t.catalogError} />
+        {failed !== null ? (
+          <EmptyState icon="alert-circle-outline" title={failed} />
         ) : (
           <View style={styles.center}>
             <ActivityIndicator color={colors.accentBright} />
