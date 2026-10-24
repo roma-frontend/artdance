@@ -10,6 +10,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import type { Section } from '@/lib/catalog';
 import { listMyFavorites, toggleMyFavorite, type FavoriteItem, type FavoriteKind } from '@/lib/favorites';
+import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
 export default function MyFavoritesScreen() {
@@ -19,15 +20,15 @@ export default function MyFavoritesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState<FavoriteItem[] | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setItems(await listMyFavorites());
-      setFailed(false);
-    } catch {
-      setFailed(true);
+      setFailed(null);
+    } catch (error) {
+      setFailed(serverMessageOf(error) ?? t.catalogError);
     }
   }, []);
 
@@ -41,8 +42,8 @@ export default function MyFavoritesScreen() {
       const saved = await toggleMyFavorite(item.kind, item.slug);
       if (saved) await load();
       else setItems((prev) => prev?.filter((i) => !(i.kind === item.kind && i.slug === item.slug)) ?? null);
-    } catch {
-      Alert.alert(t.catalogError);
+    } catch (error) {
+      Alert.alert(serverMessageOf(error) ?? t.catalogError);
     }
   }
 
@@ -52,7 +53,7 @@ export default function MyFavoritesScreen() {
     setRefreshing(false);
   }
 
-  if (items === null && !failed) {
+  if (items === null && failed === null) {
     return (
       <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
         <ActivityIndicator color={colors.accentBright} />
@@ -75,8 +76,8 @@ export default function MyFavoritesScreen() {
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentBright} />}
         ListEmptyComponent={
-          failed ? (
-            <EmptyState icon="alert-circle-outline" title={t.catalogError} />
+          failed !== null ? (
+            <EmptyState icon="alert-circle-outline" title={failed} />
           ) : (
             <EmptyState icon="heart-outline" title={c.favorites.empty} body={c.favorites.emptyHint} />
           )

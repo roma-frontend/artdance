@@ -10,6 +10,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { listMyOrders, type ClientOrder } from '@/lib/orders';
+import { serverMessageOf } from '@/lib/server-message';
 import { useAppActive } from '@/lib/use-app-active';
 import { colors, radius, space, type } from '@/theme';
 
@@ -20,15 +21,15 @@ export default function MyOrdersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [orders, setOrders] = useState<ClientOrder[] | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setOrders(await listMyOrders());
-      setFailed(false);
-    } catch {
-      setFailed(true);
+      setFailed(null);
+    } catch (error) {
+      setFailed(serverMessageOf(error) ?? t.catalogError);
     }
   }, []);
 
@@ -43,7 +44,7 @@ export default function MyOrdersScreen() {
     setRefreshing(false);
   }
 
-  if (orders === null && !failed) {
+  if (orders === null && failed === null) {
     return (
       <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
         <ActivityIndicator color={colors.accentBright} />
@@ -66,8 +67,8 @@ export default function MyOrdersScreen() {
         contentContainerStyle={styles.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentBright} />}
         ListEmptyComponent={
-          failed ? (
-            <EmptyState icon="alert-circle-outline" title={t.catalogError} />
+          failed !== null ? (
+            <EmptyState icon="alert-circle-outline" title={failed} />
           ) : (
             <EmptyState icon="receipt-outline" title={c.account.orders.empty} />
           )
