@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, RefreshControl, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import Animated, { Extrapolation, FadeInDown, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -61,13 +61,24 @@ export default function CatalogListScreen({ sectionProp }: { sectionProp?: strin
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [query, setQuery] = useState('');
+  const [term, setTerm] = useState('');
+
+  // Запрос уходит на сервер с задержкой; новый запрос всегда начинается с первой страницы.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setTerm(query.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [query]);
 
   useEffect(() => {
     if (!valid) return;
     let alive = true;
     setLoading(true);
     setError(null);
-    listCatalog(valid, { page: String(page), pageSize: '20' })
+    listCatalog(valid, { page: String(page), pageSize: '20', ...(term ? { q: term } : {}) })
       .then((result) => {
         if (!alive) return;
         setItems((prev) => (page === 1 ? result.items : [...prev, ...result.items]));
@@ -85,7 +96,7 @@ export default function CatalogListScreen({ sectionProp }: { sectionProp?: strin
     return () => {
       alive = false;
     };
-  }, [valid, page, reloadKey]);
+  }, [valid, page, term, reloadKey]);
 
   const reload = useCallback(() => {
     setPage(1);
@@ -126,6 +137,27 @@ export default function CatalogListScreen({ sectionProp }: { sectionProp?: strin
         ) : null}
         {items[0] ? <GestureHint text={HINTS[locale] ?? HINTS.en} /> : null}
       </Animated.View>
+      <View style={styles.searchWrap}>
+        <View style={styles.search}>
+          <Ionicons name="search" size={18} color={colors.text3} />
+          <TextInput
+            style={styles.searchInput}
+            value={query}
+            onChangeText={setQuery}
+            placeholder={t.search.placeholder}
+            placeholderTextColor={colors.text3}
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+            selectionColor={colors.accentBright}
+          />
+          {query.length > 0 ? (
+            <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel={t.common.actions.clear}>
+              <Ionicons name="close-circle" size={18} color={colors.text3} />
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
       {items[0] ? <Featured item={items[0]} section={valid} t={t} locale={locale} onPress={() => open(items[0].slug)} /> : null}
     </View>
   );
@@ -188,7 +220,11 @@ export default function CatalogListScreen({ sectionProp }: { sectionProp?: strin
           ) : error ? (
             <EmptyState icon="cloud-offline-outline" title={m.catalogError} actionLabel={t.common.actions.retry} onAction={reload} />
           ) : items.length === 0 ? (
-            <EmptyState icon="sparkles-outline" title={t.catalog.empty.title} body={m.catalogEmpty} />
+            term ? (
+              <EmptyState icon="search-outline" title={t.search.noResults.replace('{query}', term)} body={t.search.noResultsHint} />
+            ) : (
+              <EmptyState icon="sparkles-outline" title={t.catalog.empty.title} body={m.catalogEmpty} />
+            )
           ) : undefined
         }
       />
@@ -271,6 +307,19 @@ const styles = StyleSheet.create({
   gridRow: { gap: space.md, paddingHorizontal: space.xl },
   cell: { flex: 1, marginBottom: space.xl },
   loader: { marginVertical: space.lg },
+  searchWrap: { paddingHorizontal: space.xl, marginBottom: space.xl },
+  search: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    height: 48,
+    paddingHorizontal: space.lg,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.lineStrong,
+  },
+  searchInput: { flex: 1, fontSize: 15, color: colors.text, paddingVertical: 0 },
   hero: {
     height: 340,
     borderRadius: radius.xl,
