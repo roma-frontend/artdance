@@ -10,6 +10,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { getMyReferrals, type ClientReferrals, type InvitedReferral } from '@/lib/account-data';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
 export default function MyReferralsScreen() {
@@ -19,15 +20,15 @@ export default function MyReferralsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [data, setData] = useState<ClientReferrals | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setData(await getMyReferrals());
-      setFailed(false);
-    } catch {
-      setFailed(true);
+      setFailed(null);
+    } catch (error) {
+      setFailed(serverMessageOf(error) ?? t.catalogError);
     }
   }, []);
 
@@ -41,7 +42,7 @@ export default function MyReferralsScreen() {
     setRefreshing(false);
   }
 
-  if (data === null && !failed) {
+  if (data === null && failed === null) {
     return (
       <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
         <ActivityIndicator color={colors.accentBright} />
@@ -77,7 +78,7 @@ export default function MyReferralsScreen() {
           ) : undefined
         }
         ListEmptyComponent={
-          failed ? <EmptyState icon="alert-circle-outline" title={t.catalogError} /> : <EmptyState icon="people-outline" title={r.empty} />
+          failed !== null ? <EmptyState icon="alert-circle-outline" title={failed} /> : <EmptyState icon="people-outline" title={r.empty} />
         }
         renderItem={({ item }) => <InvitedRow item={item} locale={locale} paidLabel={r.paid} pendingLabel={r.pending} />}
       />

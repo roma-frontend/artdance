@@ -1,6 +1,8 @@
-import type { catalogFor } from '@/i18n/catalog';
+import { catalogFor } from '@/i18n/catalog';
+import { deviceLocale } from '@/lib/i18n';
 
 import { API_URL } from './config';
+import { readServerMessage } from './server-message';
 import { getSessionToken } from './session';
 
 export type ClientBooking = {
@@ -19,9 +21,16 @@ export class BookingsError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly serverMessage: string | null = null,
   ) {
     super(message);
   }
+}
+
+/** Ошибка ответа с переведённым текстом сервера, если messageKey есть в словаре приложения. */
+async function failureFor(response: Response): Promise<BookingsError> {
+  const serverMessage = await readServerMessage(response, catalogFor(deviceLocale(undefined)));
+  return new BookingsError(`HTTP ${response.status}`, response.status, serverMessage);
 }
 
 /** Брони текущего клиента. Личность определяет сервер по bearer-токену. */
@@ -31,7 +40,7 @@ export async function listMyBookings(): Promise<ClientBooking[]> {
   const response = await fetch(`${API_URL}/api/account/bookings`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new BookingsError(`HTTP ${response.status}`, response.status);
+  if (!response.ok) throw await failureFor(response);
   const body = (await response.json()) as { bookings: ClientBooking[] };
   return body.bookings;
 }
@@ -45,7 +54,7 @@ export async function getBookingPass(bookingId: string): Promise<BookingPass> {
   const response = await fetch(`${API_URL}/api/booking/pass/${encodeURIComponent(bookingId)}/qr`, {
     headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new BookingsError(`HTTP ${response.status}`, response.status);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as BookingPass;
 }
 

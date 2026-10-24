@@ -2,7 +2,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { deviceLocale } from '@/lib/i18n';
 
 import { API_URL } from './config';
-import { resolveServerMessage } from './server-message';
+import { readServerMessage } from './server-message';
 import { getSessionToken } from './session';
 
 export type SubscriptionUsage = { metric: string; used: number };
@@ -44,13 +44,7 @@ export class AccountDataError extends Error {
 
 /** Ошибка ответа; текст сервера переводится, если messageKey есть в словаре приложения. */
 async function failureFor(response: Response): Promise<AccountDataError> {
-  const body = (await response.json().catch(() => null)) as {
-    messageKey?: string;
-    params?: Record<string, string | number>;
-  } | null;
-  const serverMessage = body?.messageKey
-    ? resolveServerMessage(body.messageKey, body.params ?? {}, catalogFor(deviceLocale(undefined)))
-    : null;
+  const serverMessage = await readServerMessage(response, catalogFor(deviceLocale(undefined)));
   return new AccountDataError(`HTTP ${response.status}`, response.status, serverMessage);
 }
 

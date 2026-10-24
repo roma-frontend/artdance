@@ -10,6 +10,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { getMySubscription, type ClientSubscription } from '@/lib/account-data';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
 const METRIC_KEYS = ['groupClasses', 'privateSessions'] as const;
@@ -22,15 +23,15 @@ export default function MySubscriptionScreen() {
   const insets = useSafeAreaInsets();
   const [subscription, setSubscription] = useState<ClientSubscription | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setSubscription(await getMySubscription());
-      setFailed(false);
-    } catch {
-      setFailed(true);
+      setFailed(null);
+    } catch (error) {
+      setFailed(serverMessageOf(error) ?? t.catalogError);
     } finally {
       setLoaded(true);
     }
@@ -61,8 +62,8 @@ export default function MySubscriptionScreen() {
         <View style={styles.center}>
           <ActivityIndicator color={colors.accentBright} />
         </View>
-      ) : failed ? (
-        <EmptyState icon="alert-circle-outline" title={t.catalogError} />
+      ) : failed !== null ? (
+        <EmptyState icon="alert-circle-outline" title={failed} />
       ) : !subscription ? (
         <EmptyState icon="ribbon-outline" title={s.empty} body={s.emptyHint} />
       ) : (

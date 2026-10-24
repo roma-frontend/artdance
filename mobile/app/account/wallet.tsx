@@ -10,6 +10,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { getMyWallet, type ClientWallet, type WalletEntry } from '@/lib/account-data';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
 const KINDS = ['CREDIT_TOPUP', 'CREDIT_REFUND', 'CREDIT_REFERRAL', 'CREDIT_GIFT', 'DEBIT_CHECKOUT', 'DEBIT_MANUAL'] as const;
@@ -21,15 +22,15 @@ export default function MyWalletScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [wallet, setWallet] = useState<ClientWallet | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setWallet(await getMyWallet());
-      setFailed(false);
-    } catch {
-      setFailed(true);
+      setFailed(null);
+    } catch (error) {
+      setFailed(serverMessageOf(error) ?? t.catalogError);
     }
   }, []);
 
@@ -43,7 +44,7 @@ export default function MyWalletScreen() {
     setRefreshing(false);
   }
 
-  if (wallet === null && !failed) {
+  if (wallet === null && failed === null) {
     return (
       <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
         <ActivityIndicator color={colors.accentBright} />
@@ -76,7 +77,7 @@ export default function MyWalletScreen() {
             </View>
           ) : undefined
         }
-        ListEmptyComponent={failed ? <EmptyState icon="alert-circle-outline" title={t.catalogError} /> : undefined}
+        ListEmptyComponent={failed !== null ? <EmptyState icon="alert-circle-outline" title={failed} /> : undefined}
         renderItem={({ item }) => <EntryRow entry={item} locale={locale} labels={w.kinds} />}
       />
     </View>
