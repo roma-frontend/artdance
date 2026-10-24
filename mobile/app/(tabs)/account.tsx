@@ -12,9 +12,10 @@ import { BrandLogo } from '@/components/brand-logo';
 import { CollapsingHeader } from '@/components/ui/collapsing-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
+import { chooseLocale } from '@/lib/app-locale';
 import { getCurrentUser, signOut, type User } from '@/lib/auth';
 import { initials, webUrl } from '@/lib/format';
-import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { deviceLocale, messagesFor, type Locale } from '@/lib/i18n';
 import { useScrollChrome } from '@/lib/use-scroll-chrome';
 import { colors, fonts, gradients, radius, space, type } from '@/theme';
 
@@ -140,6 +141,26 @@ export default function AccountScreen() {
           </View>
         </Animated.View>
 
+        <Animated.View entering={FadeInDown.delay(120).duration(500)} style={styles.group}>
+          <Text style={[type.eyebrow, styles.groupTitle]}>{c.common.labels.language}</Text>
+          <View style={styles.langRow}>
+            {LOCALE_OPTIONS.map((option) => {
+              const active = option.code === locale;
+              return (
+                <PressableScale
+                  key={option.code}
+                  pressedScale={0.97}
+                  onPress={() => chooseLocale(option.code).catch(() => undefined)}
+                  style={[styles.langChip, active && styles.langChipActive]}
+                  accessibilityRole="button"
+                >
+                  <Text style={[type.label, active && styles.langChipActiveText]}>{option.name}</Text>
+                </PressableScale>
+              );
+            })}
+          </View>
+        </Animated.View>
+
         <Group title={t.accountSectionMine} rows={[bookingsRow, ...mine]} locale={locale} delay={160} router={router} />
         <Group title={t.accountSectionInfo} rows={info} locale={locale} delay={240} router={router} />
         <Group title={t.accountSectionLanding} rows={landing} locale={locale} delay={280} router={router} />
@@ -161,6 +182,12 @@ export default function AccountScreen() {
     </View>
   );
 }
+
+const LOCALE_OPTIONS: { code: Locale; name: string }[] = [
+  { code: 'hy', name: 'Հայերեն' },
+  { code: 'ru', name: 'Русский' },
+  { code: 'en', name: 'English' },
+];
 
 function Group({
   title,
@@ -204,6 +231,18 @@ const styles = StyleSheet.create({
   glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 380 },
   content: { paddingHorizontal: space.xl, paddingBottom: 140, gap: space.xxl },
   flex: { flex: 1 },
+  langRow: { flexDirection: 'row', gap: space.sm },
+  langChip: {
+    flex: 1,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  langChipActive: { borderColor: colors.accentBright },
+  langChipActiveText: { color: colors.accentBright },
   profile: { alignItems: 'center', gap: 6, paddingVertical: space.lg },
   ring: { width: 100, height: 100, borderRadius: 50, padding: 3, overflow: 'hidden', marginBottom: space.sm },
   avatar: {

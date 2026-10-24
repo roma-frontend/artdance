@@ -1,3 +1,5 @@
+import { currentLocale } from '@/lib/app-locale';
+
 export type Locale = 'hy' | 'ru' | 'en';
 
 type Dictionary = Record<Locale, Record<MessageKey, string>>;
@@ -255,9 +257,10 @@ export type MessageKey =
 
 export type Messages = Record<MessageKey, string>;
 
-/** Язык устройства, если он поддержан; иначе русский (как основной язык ArtDance после hy). */
+/** Без аргумента возвращает язык, выбранный в приложении; с кодом — проверяет его поддержку, иначе русский. */
 export function deviceLocale(systemLocale: string | undefined): Locale {
-  const code = (systemLocale ?? '').slice(0, 2).toLowerCase();
+  if (systemLocale === undefined) return currentLocale();
+  const code = systemLocale.slice(0, 2).toLowerCase();
   if (code === 'hy' || code === 'ru' || code === 'en') return code;
   return 'ru';
 }

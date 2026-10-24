@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 
 import { SplashLoader } from '@/components/splash-loader';
+import { loadLocale, useLocale } from '@/lib/app-locale';
 import { getCurrentUser, onSessionChange, type User } from '@/lib/auth';
 import '@/lib/reminders';
 import { colors } from '@/theme';
@@ -32,6 +33,8 @@ const navTheme = {
 export default function RootLayout() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [splashTimeUp, setSplashTimeUp] = useState(false);
+  const [localeReady, setLocaleReady] = useState(false);
+  const locale = useLocale();
   const [fontsLoaded, fontError] = useFonts({
     PlayfairDisplay_600SemiBold,
     PlayfairDisplay_700Bold,
@@ -43,6 +46,12 @@ export default function RootLayout() {
   useEffect(() => {
     const id = setTimeout(() => setSplashTimeUp(true), SPLASH_MIN_MS);
     return () => clearTimeout(id);
+  }, []);
+
+  useEffect(() => {
+    loadLocale()
+      .catch(() => undefined)
+      .finally(() => setLocaleReady(true));
   }, []);
   const group = segments[0];
   // Актуальные сегменты нужны после асинхронного запроса сессии, без лишней перерисовки.
@@ -73,7 +82,7 @@ export default function RootLayout() {
     };
   }, [group, router]);
 
-  if (user === undefined || (!fontsLoaded && !fontError) || !splashTimeUp) {
+  if (!localeReady || user === undefined || (!fontsLoaded && !fontError) || !splashTimeUp) {
     return <SplashLoader />;
   }
 
@@ -81,6 +90,7 @@ export default function RootLayout() {
     <ThemeProvider value={navTheme}>
       <StatusBar style="light" />
       <Stack
+        key={locale}
         screenOptions={{
           headerShown: false,
           animation: 'fade',
