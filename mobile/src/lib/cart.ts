@@ -82,8 +82,9 @@ async function send(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', query: 
   return data.snapshot;
 }
 
-export function getCart(): Promise<CartSnapshot> {
-  return send('GET', '');
+/** `delivery` задаёт способ доставки для превью итога (с доставкой). Без него доставка не считается. */
+export function getCart(delivery?: 'COURIER' | 'PICKUP_POINT'): Promise<CartSnapshot> {
+  return send('GET', delivery ? `?delivery=${delivery}` : '');
 }
 
 export function addToCart(variantId: string, quantity = 1): Promise<CartSnapshot> {

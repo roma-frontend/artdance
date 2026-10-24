@@ -42,3 +42,39 @@ export async function listMyOrders(): Promise<ClientOrder[]> {
   const body = (await response.json()) as { orders: ClientOrder[] };
   return body.orders;
 }
+
+export type ClientOrderDetail = {
+  orderNumber: string;
+  status: string;
+  placedAt: string;
+  currencyCode: string;
+  subtotal: number;
+  discountTotal: number;
+  deliveryFee: number;
+  total: number;
+  items: { title: string; quantity: number; lineTotal: number }[];
+  payments: { status: string; amount: number }[];
+};
+
+/** Заказ текущего клиента по номеру. Чужой заказ сервер отдаёт как 404. */
+export async function getMyOrder(orderNumber: string): Promise<ClientOrderDetail> {
+  const token = await getSessionToken();
+  if (!token) throw new OrdersError('UNAUTHORIZED', 401);
+  const response = await fetch(`${API_URL}/api/account/orders/${encodeURIComponent(orderNumber)}`, {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw await failureFor(response);
+  const body = (await response.json()) as { order: ClientOrderDetail };
+  return body.order;
+}
+
+export function orderStatusLabel(status: string, c: ReturnType<typeof catalogFor>): string {
+  const labels = c.status.order as Record<string, string>;
+  return labels[status.toLowerCase()] ?? status;
+}
+
+export function paymentStatusLabel(status: string, c: ReturnType<typeof catalogFor>): string {
+  const key = status.toLowerCase().replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
+  const labels = c.status.payment as Record<string, string>;
+  return labels[key] ?? status;
+}

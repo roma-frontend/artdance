@@ -56,7 +56,7 @@ export default function CatalogListScreen({ sectionProp }: { sectionProp?: strin
 }
 
 function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
-  const params = useLocalSearchParams<{ section: string }>();
+  const params = useLocalSearchParams<{ section: string; style?: string; styleName?: string }>();
   const section = sectionProp ?? params.section;
   const locale = deviceLocale(undefined);
   const m = messagesFor(locale);
@@ -68,6 +68,9 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
   const { scrollY, onScroll } = useScrollChrome();
   const valid = sections.find((s) => s === section);
   const pushed = !sectionProp;
+  // Фильтр по направлению приходит из хаба `/styles/[slug]`: слаг уходит на сервер, название — только в чип.
+  const styleSlug = params.style?.trim() || null;
+  const styleName = params.styleName?.trim() || null;
 
   const [items, setItems] = useState<CatalogItem[]>([]);
   const [total, setTotal] = useState<number | null>(null);
@@ -94,7 +97,12 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
     let alive = true;
     setLoading(true);
     setError(null);
-    listCatalog(valid, { page: String(page), pageSize: '20', ...(term ? { q: term } : {}) })
+    listCatalog(valid, {
+      page: String(page),
+      pageSize: '20',
+      ...(term ? { q: term } : {}),
+      ...(styleSlug ? { style: styleSlug } : {}),
+    })
       .then((result) => {
         if (!alive) return;
         setItems((prev) => (page === 1 ? result.items : [...prev, ...result.items]));
@@ -112,7 +120,7 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
     return () => {
       alive = false;
     };
-  }, [valid, page, term, reloadKey]);
+  }, [valid, page, term, styleSlug, reloadKey]);
 
   const reload = useCallback(() => {
     setPage(1);
@@ -187,13 +195,24 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
             <Text style={styles.countText}>{plural(t.common.counts[countKey], total, locale)}</Text>
           </View>
         ) : null}
+        {styleName ? (
+          <View style={styles.countPill}>
+            <Text style={styles.countText}>{styleName}</Text>
+          </View>
+        ) : null}
         {items[0] ? <GestureHint text={HINTS[locale] ?? HINTS.en} /> : null}
       </Animated.View>
       {valid === 'classes' ? (
-        <PressableScale onPress={() => router.push({ pathname: '/schedule' })} style={styles.schedulePill} accessibilityLabel={t.nav.schedule}>
-          <Ionicons name="calendar-outline" size={16} color={colors.text} />
-          <Text style={styles.scheduleText}>{t.nav.schedule}</Text>
-        </PressableScale>
+        <View style={styles.pillRow}>
+          <PressableScale onPress={() => router.push({ pathname: '/schedule' })} style={styles.schedulePill} accessibilityLabel={t.nav.schedule}>
+            <Ionicons name="calendar-outline" size={16} color={colors.text} />
+            <Text style={styles.scheduleText}>{t.nav.schedule}</Text>
+          </PressableScale>
+          <PressableScale onPress={() => router.push({ pathname: '/styles' })} style={styles.schedulePill} accessibilityLabel={t.nav.styles}>
+            <Ionicons name="color-palette-outline" size={16} color={colors.text} />
+            <Text style={styles.scheduleText}>{t.nav.styles}</Text>
+          </PressableScale>
+        </View>
       ) : null}
       <View style={styles.searchWrap}>
         <View style={styles.search}>
@@ -383,13 +402,12 @@ const styles = StyleSheet.create({
   gridRow: { gap: space.md, paddingHorizontal: space.xl },
   cell: { flex: 1, marginBottom: space.xl },
   loader: { marginVertical: space.lg },
+  pillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, paddingHorizontal: space.xl, marginBottom: space.lg },
   schedulePill: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginHorizontal: space.xl,
-    marginBottom: space.lg,
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: radius.pill,

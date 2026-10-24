@@ -66,6 +66,7 @@ export default function MyWalletScreen() {
       </Animated.View>
 
       <FlatList
+        showsVerticalScrollIndicator={false}
         data={wallet?.entries ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}

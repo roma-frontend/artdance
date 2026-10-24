@@ -67,6 +67,7 @@ const liquidGlass = isLiquidGlassAvailable();
  */
 function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 12);
   const [width, setWidth] = useState(0);
   const count = state.routes.length;
   const itemWidth = width / Math.max(count, 1);
@@ -133,7 +134,10 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
   }));
 
   return (
-    <Animated.View style={[styles.wrap, { bottom: Math.max(insets.bottom, 12) }, hide]} pointerEvents="box-none">
+    <Animated.View style={[styles.wrap, { bottom: bottomInset }, hide]} pointerEvents="box-none">
+      <View pointerEvents="none" style={[styles.scrim, { height: BAR_HEIGHT + bottomInset + 40, bottom: -bottomInset }]}>
+        <LinearGradient colors={['rgba(11,8,9,0)', 'rgba(11,8,9,0.85)']} style={fill} />
+      </View>
       <View
         ref={barRef}
         style={styles.bar}
@@ -146,7 +150,10 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
         {...panHandlers}
       >
         {liquidGlass ? (
-          <GlassView glassEffectStyle="regular" isInteractive style={StyleSheet.absoluteFill} />
+          <>
+            <GlassView glassEffectStyle="regular" isInteractive style={StyleSheet.absoluteFill} />
+            <View style={styles.glassTint} />
+          </>
         ) : (
           <>
             <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
@@ -322,6 +329,8 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   tint: { ...fill, backgroundColor: 'rgba(14,10,12,0.5)' },
+  glassTint: { ...fill, backgroundColor: 'rgba(14,10,12,0.4)' },
+  scrim: { position: 'absolute', left: -SIDE, right: -SIDE },
   blobTrack: { position: 'absolute', top: 0, bottom: 0, left: 0, padding: 6 },
   blob: {
     flex: 1,

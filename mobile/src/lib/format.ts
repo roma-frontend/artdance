@@ -13,8 +13,13 @@ const LEVEL_KEYS: Record<string, keyof Messages['levels']> = {
   BEGINNER: 'beginner', INTERMEDIATE: 'intermediate', ADVANCED: 'advanced', PROFESSIONAL: 'professional',
 };
 
+/** Ключ направления в словаре: тот же для названия и для текстов хаба `styleHub.styles`. */
+export function styleKey(style: string): keyof Messages['danceStyles'] | undefined {
+  return STYLE_KEYS[style];
+}
+
 export function styleLabel(style: string, t: Messages): string {
-  const key = STYLE_KEYS[style];
+  const key = styleKey(style);
   return key ? t.danceStyles[key] : style;
 }
 

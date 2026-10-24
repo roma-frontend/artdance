@@ -15,6 +15,11 @@ export function yerevanDate(now: number): string {
   return new Date(now + YEREVAN_MS).toISOString().slice(0, 10);
 }
 
+/** Время `HH:MM` в Ереване для момента `now`. */
+export function yerevanClock(now: number): string {
+  return new Date(now + YEREVAN_MS).toISOString().slice(11, 16);
+}
+
 /** Первая дата (YYYY-MM-DD) с заданным днём недели (0 = воскресенье) на `from` или позже. */
 export function nextDateOn(weekday: number, from: string): string {
   const base = new Date(`${from}T12:00:00Z`);

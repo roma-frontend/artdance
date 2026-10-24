@@ -553,6 +553,10 @@ const hy: Messages = {
     becomeInstructorCta: "Դասավանդել ArtDance-ում",
   },
 
+  cabinet: {
+    notForRole: 'Այս կաբինետը ձեր հաշվի համար հասանելի չէ։',
+  },
+
   studio: {
     title: "Ստուդիաներ",
     subtitle: "Փորձերի և պարապմունքների դահլիճներ Երևանում։",
@@ -657,6 +661,32 @@ const hy: Messages = {
     athleteBirthDate: "Ծննդյան ամսաթիվ",
     partnerName: "Զուգընկերոջ անունը",
     submitRegistration: "Ուղարկել հայտը",
+    alreadyRegistered: "Դուք արդեն ներկայացրել եք հայտ այս մրցույթին։",
+    categoryFull: "Այս կատեգորիայում տեղեր չեն մնացել։",
+    ageNotEligible: "Ձեր տարիքը չի համապատասխանում այս կատեգորիային։",
+    categoryLabel: "Կատեգորիա",
+    chooseCategory: "Ընտրեք կատեգորիան",
+    birthDatePlaceholder: "YYYY-MM-DD",
+    invalidBirthDate: "Մուտքագրեք ծննդյան ամսաթիվը YYYY-MM-DD ձևաչափով, առանց ապագա ամսաթվի։",
+  },
+
+  notifications: {
+    title: 'Ծանուցումներ',
+    emailTitle: 'Ծանուցումներ էլ. փոստով',
+    emailHint: 'Ընտրեք, թե որ ծանուցումներն ուղարկել ձեր էլ. փոստին։',
+    historyTitle: 'Նամակների պատմություն',
+    historyEmpty: 'Նամակներ դեռ չկան',
+    historyEmptyHint: 'Ձեր գրանցումների և սպասման ցուցակի ծանուցումները կհայտնվեն այստեղ։',
+    statusQueued: 'Հերթում',
+    statusSent: 'Ուղարկված',
+    statusFailed: 'Ուղարկումը ձախողվեց',
+    statusSuppressed: 'Չուղարկված (անջատված)',
+    types: {
+      'booking.confirmed': 'Գրանցումը հաստատված է',
+      'booking.reminder': 'Պարապմունքի հիշեցում',
+      'booking.cancelled': 'Գրանցումը չեղարկված է',
+      'waitlist.ready': 'Տեղ ազատվեց',
+    },
   },
 
   courses: {
@@ -834,7 +864,14 @@ const hy: Messages = {
     cancelFree:
       "Դուք անվճար չեղարկման ժամկետում եք՝ ամբողջ գումարը կվերադարձվի։",
     cancelLate: "Անվճար չեղարկման ժամկետն անցել է՝ կպահվի արժեքի {rate}-ը։",
+    cancelledOnLabel: "Չեղարկված է",
+    cancelledReasonLabel: "Պատճառ",
     rescheduleTitle: "Տեղափոխել ամրագրումը",
+    sessionFull: "Տեղեր չկան",
+    waitlistTitle: "Սպասման ցուցակ",
+    waitlistJoined: "Դուք սպասման ցուցակում եք, տեղ՝ {n}։ Կտեղեկացնենք, երբ տեղ ազատվի։",
+    waitlistClaim: "Զբաղեցնել տեղը",
+    pairOnWeb: "Զույգ պարապմունքները առայժմ ամրագրվում են կայքում։",
     rescheduleLimit: "Այս ամրագրման տեղափոխումների սահմանաչափը սպառված է։",
     rescheduleWindowClosed:
       "Տեղափոխումը փակվում է սկսելուց {hours} առաջ։ Չեղարկումը դեռ հասանելի է։",
@@ -892,6 +929,10 @@ const hy: Messages = {
       success: "Գաղտնաբառը թարմացվեց։ Այժմ կարող եք մտնել։",
       invalidToken: "Հղումն անվավեր է կամ ժամկետանց։",
     },
+    verifyEmail: {
+      title: "Հաստատել էլ. փոստը",
+      body: "Հաստատման հղումը ուղարկվում է ձեր էլ. փոստին։ Երբ հասցեն հաստատված է, մուտք գործեք հաշիվ։",
+    },
     otp: {
       title: "Մուտքագրեք կոդը",
       subtitle: "{length}-նշանանոց կոդն ուղարկեցինք {target}-ին։",
@@ -942,6 +983,8 @@ const hy: Messages = {
       placedOn: "Ձևակերպված է {date}",
       trackCta: "Հետևել",
       invoiceCta: "Ներբեռնել հաշիվը",
+      itemsTitle: "Պատվերի կազմը",
+      paymentTitle: "Վճարումներ",
     },
     settings: {
       title: "Կարգավորումներ",
@@ -1234,6 +1277,7 @@ const hy: Messages = {
     emptyHint: "Եղեք առաջինը, ով կպատմի, թե ինչպես անցավ։",
     onlyAfterBooking: "Կարծիք թողնել կարելի է դասին մասնակցելուց հետո։",
     windowClosed: "Այս ամրագրման կարծիքի ժամկետն անցել է։",
+    alreadyReviewed: "Այս ամրագրման համար արդեն թողել եք կարծիք։",
   },
 
   /**
@@ -1507,8 +1551,10 @@ const hy: Messages = {
     activateHint: "Մուտքագրեք նամակի կոդը՝ մնացորդը կհամալրվի",
     giftCardCode: "Քարտի կոդ",
     redeemCta: "Ակտիվացնել",
-    redeemSuccess: "Քարտը ակտիվացավ։ Մնացորդ՝ {balance} ֏",
+    redeemSuccess: "Քարտը ակտիվացավ։ Մնացորդ՝ {balance}",
     redeemNotFound: "Կոդը չի գտնվել կամ արդեն օգտագործված է",
+    redeemExpired: "Քարտի ժամկետն անցել է",
+    redeemAlreadyUsed: "Քարտն արդեն ամբողջությամբ օգտագործվել է",
     scheduleTitle: "Շաբաթվա ժամանակացույց",
     scheduleHint: "Մոտակա դասերը՝ շաբաթվա ցանցը շուտով կմիանա սեսիաներին",
     searchTitle: "Որոնում",
@@ -1679,6 +1725,45 @@ const hy: Messages = {
     outOfStock: {
       title: "Առկա չէ",
       description: "{name} ընտրված տարբերակով սպառվել է։",
+    },
+  },
+
+  instructorApply: {
+    cta: "Դիմել որպես մարզիչ",
+    title: "Մարզիչի դիմում",
+    stepOf: "Քայլ {current} {total}-ից",
+    steps: { about: "Ձեր մասին", experience: "Փորձ", documents: "Փաստաթղթեր" },
+    fields: {
+      name: "Անուն ազգանուն",
+      email: "Էլ. փոստ",
+      phone: "Հեռախոս (ըստ ցանկության)",
+      bio: "Ձեր մասին և ձեր դասերի մասին",
+      styles: "Ուղղությունները, որ դասավանդում եք",
+      stylesHint: "Ընտրեք առնվազն մեկը",
+    },
+    documents: {
+      title: "Բեռնեք փաստաթղթեր",
+      hint: "Անձնագիր կամ ID, դիպլոմ կամ վկայական։ PDF, JPEG, PNG կամ WebP, յուրաքանչյուրը մինչև 10 ՄԲ։",
+      add: "Ավելացնել փաստաթուղթ",
+      remove: "Հեռացնել",
+      count: "{count}-ը {max}-ից ավելացված",
+      empty: "Կցեք առնվազն մեկ փաստաթուղթ։",
+      privacy: "Փաստաթղթերը տեսնում են միայն մոդերատորները։ Դրանք երբեք չեն հրապարակվում։",
+      kind: { identity: "ID կամ անձնագիր", diploma: "Դիպլոմ", certificate: "Վկայական" },
+    },
+    actions: { next: "Շարունակել", back: "Հետ", submit: "Ուղարկել դիմումը" },
+    success: {
+      title: "Դիմումը ուղարկված է",
+      body: "Մենք դիմումները քննարկում ենք և պատասխանում էլ. փոստով։",
+      done: "Պատրաստ է",
+    },
+    errors: {
+      documentsRequired: "Կցեք առնվազն մեկ փաստաթուղթ։",
+      tooManyDocuments: "Ոչ ավելի, քան {max} փաստաթուղթ։",
+      fileTooLarge: "Ֆայլը {max} ՄԲ-ից մեծ է։",
+      fileType: "Միայն PDF, JPEG, PNG կամ WebP ֆայլեր։",
+      pickFailed: "Չհաջողվեց բացել ֆայլը։ Փորձեք կրկին։",
+      submitFailed: "Չհաջողվեց ուղարկել դիմումը։ Փորձեք կրկին։",
     },
   },
 

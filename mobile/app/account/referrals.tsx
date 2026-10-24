@@ -64,6 +64,7 @@ export default function MyReferralsScreen() {
       </Animated.View>
 
       <FlatList
+        showsVerticalScrollIndicator={false}
         data={data?.invited ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}

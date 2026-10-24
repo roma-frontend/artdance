@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { LandingBody } from '@/components/content/landing-body';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
@@ -58,7 +59,18 @@ export default function BecomeInstructorScreen() {
       {content === null ? (
         <EmptyState icon="alert-circle-outline" title={failed ?? t.catalogError} />
       ) : (
-        <LandingBody content={content} locale={locale} />
+        <>
+          <View style={styles.body}>
+            <LandingBody content={content} locale={locale} />
+          </View>
+          <View style={[styles.cta, { paddingBottom: insets.bottom + space.lg }]}>
+            <Button
+              label={c.instructorApply.cta}
+              icon="arrow-forward"
+              onPress={() => router.push('/become-instructor/apply')}
+            />
+          </View>
+        </>
       )}
     </View>
   );
@@ -68,4 +80,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   center: { alignItems: 'center', justifyContent: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.xl, paddingVertical: space.lg },
+  body: { flex: 1 },
+  cta: { paddingHorizontal: space.xl, paddingTop: space.md },
 });

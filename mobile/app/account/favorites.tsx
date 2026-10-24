@@ -74,6 +74,7 @@ export default function MyFavoritesScreen() {
       </Animated.View>
 
       <FlatList
+        showsVerticalScrollIndicator={false}
         data={items ?? []}
         keyExtractor={(item) => `${item.kind}:${item.slug}`}
         contentContainerStyle={styles.list}

@@ -28,6 +28,7 @@ import { Segmented } from '@/components/ui/segmented';
 import { catalogFor } from '@/i18n/catalog';
 import { chooseLocale } from '@/lib/app-locale';
 import { getCurrentUser, signOut, type User } from '@/lib/auth';
+import { loadDancerProfile } from '@/lib/dancer-profile';
 import { initials, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor, type Locale } from '@/lib/i18n';
 import { animateNextLayout, openTiming } from '@/lib/motion';
@@ -40,6 +41,9 @@ type SectionDef = { key: string; title: string; rows: Row[]; open: boolean };
 
 const liquidGlass = isLiquidGlassAvailable();
 
+/** Роли, для которых анкета танцора обязательна при первом входе (как на вебе в `/account`). */
+const DANCER_ROLES: ReadonlySet<string> = new Set(['CUSTOMER', 'ATHLETE']);
+
 /** Разделы, которые открываются экраном приложения; остальные ведут на сайт. */
 const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/account/bookings',
@@ -49,6 +53,8 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/account/wallet',
   '/account/referrals',
   '/account/data',
+  '/account/notifications',
+  '/account/dancer-profile',
   '/cart',
   '/faq',
   '/help',
@@ -60,6 +66,11 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/become-instructor',
   '/list-your-studio',
   '/blog',
+  '/cities',
+  '/accessibility',
+  '/studio',
+  '/studio/availability',
+  '/venue',
 ]);
 
 export default function AccountScreen() {
@@ -77,7 +88,16 @@ export default function AccountScreen() {
     getCurrentUser()
       .catch(() => null)
       .then((u) => {
-        if (alive) setUser(u);
+        if (!alive) return;
+        setUser(u);
+        // Как на вебе: танцору без пройденной анкеты сначала предлагаем тур.
+        if (u && DANCER_ROLES.has(u.role)) {
+          loadDancerProfile()
+            .then((profile) => {
+              if (alive && !profile?.onboardingCompleted) router.replace('/onboarding/dancer');
+            })
+            .catch(() => undefined);
+        }
       });
     return () => {
       alive = false;
@@ -119,6 +139,10 @@ export default function AccountScreen() {
     if (field === 'name' || field === 'password') router.push({ pathname: '/account/profile', params: { focus: field } });
   }
 
+  const isDancer = user !== null && DANCER_ROLES.has(user.role);
+  const isInstructor = user?.role === 'INSTRUCTOR';
+  const isVenueOwner = user?.role === 'VENUE_OWNER';
+
   const quick: Row[] = [
     { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52' },
     { icon: 'receipt', label: c.account.nav.orders, path: '/account/orders', tint: '#C9A96A' },
@@ -131,6 +155,16 @@ export default function AccountScreen() {
       title: t.accountSectionMine,
       open: true,
       rows: [
+        { icon: 'notifications', label: c.notifications.title, path: '/account/notifications', tint: '#C93B52' },
+        ...(isDancer
+          ? [{ icon: 'person-circle' as IconName, label: c.onboarding.dancer.edit.title, path: '/account/dancer-profile', tint: '#E0607E' }]
+          : []),
+        ...(isInstructor
+          ? [{ icon: 'briefcase' as IconName, label: c.footer.studioDashboardTitle, path: '/studio', tint: '#C93B52' }]
+          : []),
+        ...(isVenueOwner
+          ? [{ icon: 'storefront' as IconName, label: c.footer.venueDashboardTitle, path: '/venue', tint: '#C9A96A' }]
+          : []),
         { icon: 'ribbon', label: c.account.nav.subscription, path: '/account/subscription', tint: '#8E7CC3' },
         { icon: 'people', label: c.account.nav.referrals, path: '/account/referrals', tint: '#5AA9E6' },
         { icon: 'cart', label: c.cart.title, path: '/cart', tint: '#C9A96A' },
@@ -157,6 +191,8 @@ export default function AccountScreen() {
         { icon: 'newspaper', label: c.blog.title, path: '/blog', tint: '#5AA9E6' },
         { icon: 'pricetags', label: c.nav.pricing, path: '/pricing', tint: '#C9A96A' },
         { icon: 'gift', label: c.footer.giftCards, path: '/gift-cards', tint: '#C9A96A' },
+        { icon: 'location', label: c.footer.citiesTitle, path: '/cities', tint: '#3FB984' },
+        { icon: 'accessibility', label: c.footer.accessibility, path: '/accessibility', tint: '#5AA9E6' },
       ],
     },
     {

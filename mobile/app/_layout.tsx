@@ -69,8 +69,12 @@ export default function RootLayout() {
         .then((u) => {
           if (!alive) return;
           setUser(u);
-          const inAuth = ['sign-in', 'sign-up', 'forgot-password'].includes(segmentsRef.current[0] ?? '');
-          if (!u && !inAuth) router.replace('/sign-in');
+          const segment = segmentsRef.current[0] ?? '';
+          const inAuth = ['sign-in', 'sign-up', 'forgot-password'].includes(segment);
+          // Ссылки из письма открываются и без сессии: сброс пароля и подтверждение почты.
+          // Страница доступности публичная, поэтому тоже открыта без входа.
+          const openLink = ['reset-password', 'verify-email', 'accessibility'].includes(segment);
+          if (!u && !inAuth && !openLink) router.replace('/sign-in');
           if (u && inAuth) router.replace('/');
         });
     };
@@ -105,24 +109,46 @@ export default function RootLayout() {
         <Stack.Screen name="catalog/[section]/[slug]" options={{ animation: 'default' }} />
         <Stack.Screen name="account/bookings" options={{ animation: 'default' }} />
         <Stack.Screen name="account/orders" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/orders/[orderNumber]" options={{ animation: 'default' }} />
         <Stack.Screen name="account/favorites" options={{ animation: 'default' }} />
         <Stack.Screen name="account/subscription" options={{ animation: 'default' }} />
         <Stack.Screen name="account/wallet" options={{ animation: 'default' }} />
         <Stack.Screen name="account/referrals" options={{ animation: 'default' }} />
         <Stack.Screen name="account/data" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/notifications" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/dancer-profile" options={{ animation: 'default' }} />
+        <Stack.Screen name="onboarding/dancer" options={{ animation: 'default' }} />
         <Stack.Screen name="booking/[id]/pass" options={{ animation: 'default' }} />
+        <Stack.Screen name="booking/[id]/reschedule" options={{ animation: 'default' }} />
+        <Stack.Screen name="booking/[id]/review" options={{ animation: 'default' }} />
+        <Stack.Screen name="events/[slug]/register" options={{ animation: 'default' }} />
         <Stack.Screen name="cart" options={{ animation: 'default' }} />
+        <Stack.Screen name="search" options={{ animation: 'default' }} />
+        <Stack.Screen name="checkout" options={{ animation: 'default' }} />
         <Stack.Screen name="faq" options={{ animation: 'default' }} />
         <Stack.Screen name="help" options={{ animation: 'default' }} />
         <Stack.Screen name="about" options={{ animation: 'default' }} />
         <Stack.Screen name="gift-cards" options={{ animation: 'default' }} />
+        <Stack.Screen name="gift-cards/redeem" options={{ animation: 'default' }} />
         <Stack.Screen name="legal" options={{ animation: 'default' }} />
+        <Stack.Screen name="accessibility" options={{ animation: 'default' }} />
+        <Stack.Screen name="studio/index" options={{ animation: 'default' }} />
+        <Stack.Screen name="studio/availability" options={{ animation: 'default' }} />
+        <Stack.Screen name="venue/index" options={{ animation: 'default' }} />
         <Stack.Screen name="contact" options={{ animation: 'default' }} />
       <Stack.Screen name="pricing" options={{ animation: 'default' }} />
       <Stack.Screen name="become-instructor" options={{ animation: 'default' }} />
+      <Stack.Screen name="become-instructor/apply" options={{ animation: 'default' }} />
+      <Stack.Screen name="reset-password" options={{ animation: 'default' }} />
+      <Stack.Screen name="verify-email/[token]" options={{ animation: 'default' }} />
       <Stack.Screen name="list-your-studio" options={{ animation: 'default' }} />
       <Stack.Screen name="blog" options={{ animation: 'default' }} />
       <Stack.Screen name="schedule" options={{ animation: 'default' }} />
+      <Stack.Screen name="styles/index" options={{ animation: 'default' }} />
+      <Stack.Screen name="styles/[slug]" options={{ animation: 'default' }} />
+      <Stack.Screen name="cities/index" options={{ animation: 'default' }} />
+      <Stack.Screen name="cities/[city]/index" options={{ animation: 'default' }} />
+      <Stack.Screen name="cities/[city]/[district]" options={{ animation: 'default' }} />
         <Stack.Screen name="book/[instructor]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
       </Stack>
     </ThemeProvider>

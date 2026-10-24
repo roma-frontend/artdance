@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 
@@ -23,7 +23,7 @@ import {
   type CartItem,
   type CartSnapshot,
 } from '@/lib/cart';
-import { plural, price, webUrl } from '@/lib/format';
+import { plural, price } from '@/lib/format';
 import { serverMessageOf } from '@/lib/server-message';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { useAppActive } from '@/lib/use-app-active';
@@ -117,8 +117,7 @@ export default function CartScreen() {
   }
 
   function openCheckout() {
-    // Оформление заказа живёт на сайте: браузерная сессия должна быть того же аккаунта.
-    Linking.openURL(webUrl(locale, '/checkout')).catch(() => undefined);
+    router.push('/checkout');
   }
 
   if (cart === null && failed === null) {

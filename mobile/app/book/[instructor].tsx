@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState, type ComponentProps } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, LinearTransition, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,15 +16,26 @@ import { GlassButton } from '@/components/ui/glass-button';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { getCurrentUser } from '@/lib/auth';
+import { claimWaitlistHold, createRecurringSeries, joinClassWaitlist, listClassSessions } from '@/lib/bookings';
 import { getCatalogDetail, mediaUri } from '@/lib/catalog';
 import { API_URL } from '@/lib/config';
-import { dateLabel, initials } from '@/lib/format';
+import { useEntitlements } from '@/lib/entitlements';
+import { dateLabel, initials, plural } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { resolveServerMessage, serverMessageOf } from '@/lib/server-message';
 import { getSessionToken } from '@/lib/session';
 import { colors, fill, fonts, gradients, radius, space, type } from '@/theme';
 
-type Slot = { startIso: string; startTime: string; endTime: string; endIso: string };
+type Slot = {
+  startIso: string;
+  startTime: string;
+  endTime: string;
+  endIso: string;
+  sessionId?: string;
+  available?: boolean;
+  spotsLeft?: number;
+  waitlist?: { position: number; claimable: boolean } | null;
+};
 type Availability = { instructorSlug: string; slots: Slot[] };
 type Failure = { error?: string; messageKey?: string; params?: Record<string, string | number> };
 type PayMethod = 'CARD' | 'ARCA' | 'IDRAM' | 'TELCELL' | 'ARCA_QR';
@@ -76,8 +87,20 @@ const dayKey = (iso: string) => {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 };
 
+/** Заполненное проведение группы: мест нет, бронь возможна только через лист ожидания. */
+const isFull = (slot: Slot) => slot.sessionId !== undefined && (slot.spotsLeft ?? 0) <= 0;
+const isWaitlistSlot = (slot: Slot) => isFull(slot) && !slot.waitlist?.claimable;
+
+/** Максимум недель в серии, как `recurring.maxWeeks` в `src/config/business.ts`; 1 неделя — обычная бронь. */
+const RECURRING_MAX_WEEKS = 12;
+/** Ереван без перехода на летнее время: UTC+4 круглый год. */
+const YEREVAN_OFFSET_MS = 4 * 60 * 60 * 1000;
+
+/** День недели в Ереване в формате `Date.getDay()`: 0 — воскресенье. */
+const yerevanWeekday = (iso: string) => new Date(Date.parse(iso) + YEREVAN_OFFSET_MS).getUTCDay();
+
 export default function BookScreen() {
-  const { instructor } = useLocalSearchParams<{ instructor: string }>();
+  const { instructor, classSlug } = useLocalSearchParams<{ instructor: string; classSlug?: string }>();
   const locale = deviceLocale(undefined);
   const t = messagesFor(locale);
   const c = catalogFor(locale);
@@ -92,6 +115,10 @@ export default function BookScreen() {
   const [result, setResult] = useState<{ kind: 'success' | 'error'; text: string; paying?: boolean } | null>(null);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [payMethod, setPayMethod] = useState<PayMethod>('CARD');
+  const [pairOnly, setPairOnly] = useState(false);
+  const [weeks, setWeeks] = useState(1);
+  const entitlements = useEntitlements();
+  const recurringEnabled = entitlements?.recurring === true;
 
   useEffect(() => {
     let alive = true;
@@ -101,10 +128,17 @@ export default function BookScreen() {
     getCatalogDetail<Instructor>('instructors', instructor)
       .then((data) => alive && setProfile(data))
       .catch(() => undefined);
-    fetch(`${API_URL}/api/availability?instructor=${encodeURIComponent(instructor)}&count=20`)
-      .then((response) => readJson<Availability>(response))
+    const request: Promise<{ slots: Slot[]; pair: boolean }> = classSlug
+      ? listClassSessions(instructor, classSlug).then((data) => ({ slots: data.slots, pair: data.lessonType === 'PAIR' }))
+      : fetch(`${API_URL}/api/availability?instructor=${encodeURIComponent(instructor)}&count=20`)
+          .then((response) => readJson<Availability>(response))
+          .then((data) => ({ slots: data.slots, pair: false }));
+    request
       .then((data) => {
-        if (alive) setSlots(data.slots);
+        if (alive) {
+          setSlots(data.slots);
+          setPairOnly(data.pair);
+        }
       })
       .catch((err: unknown) => {
         if (alive) setLoadError(err instanceof BookingError ? err.code : 'network');
@@ -112,7 +146,7 @@ export default function BookScreen() {
     return () => {
       alive = false;
     };
-  }, [instructor]);
+  }, [instructor, classSlug]);
 
   const days = useMemo(() => {
     const map = new Map<string, Slot[]>();
@@ -125,43 +159,100 @@ export default function BookScreen() {
 
   const activeDay = days.find((d) => d.key === day) ?? days[0];
 
+  const barLabel =
+    selected && isFull(selected)
+      ? selected.waitlist?.claimable
+        ? c.booking.waitlistClaim
+        : c.common.actions.joinWaitlist
+      : t.bookConfirm;
+
+  async function refreshSlots(): Promise<Slot[]> {
+    if (classSlug) return (await listClassSessions(instructor, classSlug)).slots;
+    const refreshed = await fetch(`${API_URL}/api/availability?instructor=${encodeURIComponent(instructor)}&count=20`).then(
+      (response) => readJson<Availability>(response),
+    );
+    return refreshed.slots;
+  }
+
+  /** Открывает оплату брони: страница провайдера откроется во внешнем браузере. */
+  async function startPayment(bookingId: string) {
+    try {
+      const payResponse = await authed(`/api/booking/${bookingId}/pay`, {
+        method: 'POST',
+        body: JSON.stringify({ method: payMethod, locale, fromApp: true }),
+      });
+      const payment = await readJson<{ redirectUrl: string | null }>(payResponse);
+      if (payment.redirectUrl) {
+        await Linking.openURL(payment.redirectUrl);
+        setResult({ kind: 'success', text: t.bookPayStarted, paying: true });
+      } else {
+        setResult({ kind: 'error', text: t.bookPayFailed });
+      }
+    } catch (payErr: unknown) {
+      setResult({ kind: 'error', text: serverMessageOf(payErr) ?? t.bookPayFailed });
+    }
+  }
+
   async function confirm() {
     if (!selected || busy) return;
     setBusy(true);
     setResult(null);
     try {
-      const holdResponse = await authed('/api/booking/hold', {
-        method: 'POST',
-        body: JSON.stringify({ instructorId: instructor, startsAt: selected.startIso, endsAt: selected.endIso }),
-      });
-      const { hold } = await readJson<{ hold: { id: string } }>(holdResponse);
+      if (classSlug && selected.sessionId && isWaitlistSlot(selected)) {
+        if (!selected.waitlist) {
+          const { waitlist } = await joinClassWaitlist(selected.sessionId);
+          Alert.alert(c.booking.waitlistTitle, c.booking.waitlistJoined.replace('{n}', String(waitlist.position)));
+          setSelected(null);
+          setSlots(await refreshSlots());
+        } else {
+          Alert.alert(c.booking.waitlistTitle, c.booking.waitlistJoined.replace('{n}', String(selected.waitlist.position)));
+        }
+        return;
+      }
 
-      const bookingResponse = await authed('/api/booking', { method: 'POST', body: JSON.stringify({ holdId: hold.id }) });
+      if (recurringEnabled && !classSlug && weeks > 1) {
+        // Серия создаётся сразу, без удержания: сервер бронирует каждую дату. Оплачиваем первую бронь, как на сайте.
+        const series = await createRecurringSeries({
+          instructorId: instructor,
+          weekday: yerevanWeekday(selected.startIso),
+          startTime: selected.startTime,
+          durationMinutes: Math.round((Date.parse(selected.endIso) - Date.parse(selected.startIso)) / 60000),
+          weeks,
+        });
+        setSelected(null);
+        setSlots(await refreshSlots());
+        const first = series.bookings[0];
+        if (first) await startPayment(first.id);
+        else setResult({ kind: 'error', text: t.bookSlotTaken });
+        return;
+      }
+
+      let holdId: string;
+      if (classSlug && selected.sessionId && selected.waitlist?.claimable) {
+        const { hold } = await claimWaitlistHold(selected.sessionId);
+        holdId = hold.id;
+      } else {
+        const holdResponse = await authed('/api/booking/hold', {
+          method: 'POST',
+          body: JSON.stringify(
+            selected.sessionId
+              ? { instructorId: instructor, sessionId: selected.sessionId, startsAt: selected.startIso, endsAt: selected.endIso }
+              : { instructorId: instructor, startsAt: selected.startIso, endsAt: selected.endIso },
+          ),
+        });
+        const { hold } = await readJson<{ hold: { id: string } }>(holdResponse);
+        holdId = hold.id;
+      }
+
+      const bookingResponse = await authed('/api/booking', { method: 'POST', body: JSON.stringify({ holdId }) });
       const { booking } = await readJson<{ booking: { id: string; totalPrice: number } }>(bookingResponse);
       setSelected(null);
       setSlots(null);
-      const refreshed = await fetch(`${API_URL}/api/availability?instructor=${encodeURIComponent(instructor)}&count=20`).then(
-        (response) => readJson<Availability>(response),
-      );
-      setSlots(refreshed.slots);
+      setSlots(await refreshSlots());
 
       if (booking.totalPrice > 0) {
         // Бронь с ценой ждёт оплаты (PENDING): открываем страницу провайдера.
-        try {
-          const payResponse = await authed(`/api/booking/${booking.id}/pay`, {
-            method: 'POST',
-            body: JSON.stringify({ method: payMethod, locale }),
-          });
-          const payment = await readJson<{ redirectUrl: string | null }>(payResponse);
-          if (payment.redirectUrl) {
-            await Linking.openURL(payment.redirectUrl);
-            setResult({ kind: 'success', text: t.bookPayStarted, paying: true });
-          } else {
-            setResult({ kind: 'error', text: t.bookPayFailed });
-          }
-        } catch (payErr: unknown) {
-          setResult({ kind: 'error', text: serverMessageOf(payErr) ?? t.bookPayFailed });
-        }
+        await startPayment(booking.id);
       } else {
         setResult({ kind: 'success', text: t.bookDone });
       }
@@ -227,6 +318,15 @@ export default function BookScreen() {
       <View style={styles.screen}>
         {header}
         <EmptyState icon="cloud-offline-outline" title={t.catalogError} actionLabel={t.catalogBack} onAction={close} />
+      </View>
+    );
+  }
+
+  if (pairOnly) {
+    return (
+      <View style={styles.screen}>
+        {header}
+        <EmptyState icon="people-outline" title={c.booking.pairOnWeb} actionLabel={t.catalogBack} onAction={close} />
       </View>
     );
   }
@@ -301,15 +401,20 @@ export default function BookScreen() {
             <Animated.View key={activeDay.key} entering={FadeIn.duration(300)} style={[styles.times, styles.padded]}>
               {activeDay.slots.map((slot) => {
                 const active = selected?.startIso === slot.startIso;
+                const off = slot.available === false && !isFull(slot);
                 return (
                   <PressableScale
                     key={slot.startIso}
-                    onPress={() => setSelected(slot)}
-                    style={[styles.time, active && styles.timeActive]}
-                    accessibilityState={{ selected: active }}
+                    onPress={() => {
+                      if (!off) setSelected(slot);
+                    }}
+                    style={[styles.time, active && styles.timeActive, off && styles.timeOff]}
+                    accessibilityState={{ selected: active, disabled: off }}
                   >
                     <Text style={[styles.timeText, active && styles.timeTextActive]}>{slot.startTime}</Text>
-                    <Text style={[styles.timeEnd, active && styles.timeEndActive]}>– {slot.endTime}</Text>
+                    <Text style={[styles.timeEnd, active && styles.timeEndActive]}>
+                      {isFull(slot) ? c.booking.sessionFull : `– ${slot.endTime}`}
+                    </Text>
                   </PressableScale>
                 );
               })}
@@ -317,7 +422,41 @@ export default function BookScreen() {
           </>
         ) : null}
 
-        {selected ? (
+        {recurringEnabled && !classSlug && selected ? (
+          <Animated.View entering={FadeInDown.duration(400)} layout={LinearTransition} style={styles.padded}>
+            <Text style={[type.eyebrow, styles.sectionGap, styles.payTitle]}>{c.booking.recurring.weeks}</Text>
+            <View style={styles.stepper}>
+              <PressableScale
+                onPress={() => setWeeks((w) => Math.max(1, w - 1))}
+                disabled={weeks <= 1}
+                style={[styles.stepBtn, weeks <= 1 && styles.timeOff]}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: weeks <= 1 }}
+              >
+                <Ionicons name="remove" size={20} color={colors.text} />
+              </PressableScale>
+              <Text style={styles.stepValue}>{weeks}</Text>
+              <PressableScale
+                onPress={() => setWeeks((w) => Math.min(RECURRING_MAX_WEEKS, w + 1))}
+                disabled={weeks >= RECURRING_MAX_WEEKS}
+                style={[styles.stepBtn, weeks >= RECURRING_MAX_WEEKS && styles.timeOff]}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: weeks >= RECURRING_MAX_WEEKS }}
+              >
+                <Ionicons name="add" size={20} color={colors.text} />
+              </PressableScale>
+            </View>
+            <Text style={[type.caption, styles.stepHint]}>
+              {weeks > 1
+                ? c.booking.recurring.hint.replace(/\{weeks, plural,.*?\}\}/, (placeholder) =>
+                    plural(placeholder.replace('{weeks,', '{count,'), weeks, locale),
+                  )
+                : c.booking.recurring.singleHint}
+            </Text>
+          </Animated.View>
+        ) : null}
+
+        {selected && !isWaitlistSlot(selected) ? (
           <Animated.View entering={FadeInDown.duration(400)} layout={LinearTransition} style={styles.padded}>
             <Text style={[type.eyebrow, styles.sectionGap, styles.payTitle]}>{t.payMethodTitle}</Text>
             <View style={styles.payList}>
@@ -363,7 +502,7 @@ export default function BookScreen() {
             {selected ? `${dateLabel(selected.startIso, locale, { weekday: 'short', day: 'numeric', month: 'short' })} · ${selected.startTime}` : '—'}
           </Text>
         </View>
-        <Button label={t.bookConfirm} onPress={confirm} busy={busy} disabled={!selected} style={styles.barButton} />
+        <Button label={barLabel} onPress={confirm} busy={busy} disabled={!selected} style={styles.barButton} />
       </View>
     </View>
   );
@@ -438,6 +577,20 @@ const styles = StyleSheet.create({
   timeTextActive: { color: colors.bg },
   timeEnd: { fontSize: 11, color: colors.text3, marginTop: 2 },
   timeEndActive: { color: 'rgba(11,8,9,0.6)' },
+  timeOff: { opacity: 0.4 },
+  stepper: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  stepBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+  },
+  stepValue: { minWidth: 36, textAlign: 'center', fontFamily: fonts.display, fontSize: 28, color: colors.text },
+  stepHint: { marginTop: space.md },
   payTitle: { paddingHorizontal: 0, marginBottom: space.md },
   payList: {
     borderRadius: radius.lg,

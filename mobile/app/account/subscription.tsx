@@ -70,6 +70,7 @@ export default function MySubscriptionScreen() {
         <EmptyState icon="ribbon-outline" title={s.empty} body={s.emptyHint} />
       ) : (
         <ScrollView
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentBright} />}
         >

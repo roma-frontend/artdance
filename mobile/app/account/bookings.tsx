@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Linking, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
-import { bookingStatusLabel, listMyBookings, type ClientBooking } from '@/lib/bookings';
+import { bookingStatusLabel, canPayBooking, listMyBookings, payBooking, type ClientBooking } from '@/lib/bookings';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { serverMessageOf } from '@/lib/server-message';
@@ -25,6 +25,7 @@ export default function MyBookingsScreen() {
   const [bookings, setBookings] = useState<ClientBooking[] | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [payingId, setPayingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -35,15 +36,30 @@ export default function MyBookingsScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
   useAppActive(load);
 
   async function onRefresh() {
     setRefreshing(true);
     await load();
     setRefreshing(false);
+  }
+
+  async function onPay(bookingId: string) {
+    setPayingId(bookingId);
+    try {
+      const { redirectUrl } = await payBooking(bookingId, 'CARD');
+      if (redirectUrl) await Linking.openURL(redirectUrl);
+      else Alert.alert(t.bookPayFailed);
+    } catch (error) {
+      Alert.alert(serverMessageOf(error) ?? t.bookPayFailed);
+    } finally {
+      setPayingId(null);
+    }
   }
 
   if (bookings === null && failed === null) {
@@ -64,6 +80,7 @@ export default function MyBookingsScreen() {
       </Animated.View>
 
       <FlatList
+        showsVerticalScrollIndicator={false}
         data={bookings ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
@@ -93,6 +110,11 @@ export default function MyBookingsScreen() {
                 <Text style={styles.status}>{bookingStatusLabel(item.status, c)}</Text>
                 <Text style={type.label}>{price(item.totalPrice, locale)}</Text>
               </View>
+              {canPayBooking(item) ? (
+                <PressableScale onPress={() => onPay(item.id)} disabled={payingId !== null} accessibilityRole="button" style={styles.payButton}>
+                  <Text style={styles.payText}>{t.payBookingCta}</Text>
+                </PressableScale>
+              ) : null}
               <View style={styles.openRow}>
                 <Ionicons name="qr-code-outline" size={14} color={colors.metal} />
                 <Text style={styles.openText}>{c.footer.passTitle}</Text>
@@ -115,4 +137,6 @@ const styles = StyleSheet.create({
   status: { fontSize: 12, fontWeight: '700', color: colors.metal },
   openRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: space.sm },
   openText: { fontSize: 12, fontWeight: '700', color: colors.metal },
+  payButton: { alignSelf: 'flex-start', marginTop: space.sm, paddingHorizontal: space.lg, paddingVertical: space.sm, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.metal },
+  payText: { fontSize: 13, fontWeight: '700', color: colors.text },
 });

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, View, type DimensionValue, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
-import { radius as radii, space } from '@/theme';
+import { colors, radius as radii, space } from '@/theme';
 
 type SkeletonProps = {
   width?: DimensionValue;
@@ -77,10 +77,112 @@ export function PosterRowSkeleton({ count = 3, width = 160 }: { count?: number; 
   );
 }
 
+/**
+ * Каркас перечня направлений: блок с сеткой карточек и список строками.
+ * Размеры и отступы совпадают с `app/styles/index.tsx`, чтобы не было прыжка при загрузке.
+ */
+export function StyleIndexSkeleton({ cardWidth, rows = 4 }: { cardWidth: number; rows?: number }) {
+  return (
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View style={styleSkel.section}>
+        <Skeleton width="45%" height={22} />
+        <Skeleton width="70%" height={12} />
+        <View style={styleSkel.grid}>
+          {[0, 1].map((c) => (
+            <View key={c} style={{ width: cardWidth, gap: space.sm }}>
+              <Skeleton width={cardWidth} height={cardWidth * (4 / 3)} radius={radii.lg} />
+              <Skeleton width="80%" height={14} />
+              <Skeleton width="50%" height={10} />
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styleSkel.section}>
+        <Skeleton width="40%" height={22} />
+        <Skeleton width="65%" height={12} />
+        <View style={styleSkel.list}>
+          {Array.from({ length: rows }, (_, i) => (
+            <View key={i} style={styleSkel.listRow}>
+              <View style={styleSkel.listBody}>
+                <Skeleton width="50%" height={16} />
+                <Skeleton width="30%" height={11} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Каркас хаба направления: полноэкранный hero с текстом поверх, ряд бейджей и
+ * две горизонтальные ленты карточек. Совпадает с `app/styles/[slug].tsx`.
+ */
+export function StyleHubSkeleton({ heroHeight, cardWidth }: { heroHeight: number; cardWidth: number }) {
+  return (
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <View style={{ height: heroHeight }}>
+        <Skeleton height={heroHeight} radius={0} />
+        <View style={styleSkel.heroOverlay}>
+          <Skeleton width={90} height={12} />
+          <Skeleton width="75%" height={40} />
+        </View>
+      </View>
+
+      <View style={styleSkel.hubBody}>
+        <View style={styleSkel.badgeRow}>
+          {[90, 120, 80, 70].map((w) => (
+            <Skeleton key={w} width={w} height={30} radius={radii.pill} />
+          ))}
+        </View>
+
+        {[0, 1].map((s) => (
+          <View key={s} style={styleSkel.hubSection}>
+            <Skeleton width="55%" height={22} />
+            <View style={styleSkel.hRow}>
+              {[0, 1].map((c) => (
+                <View key={c} style={{ width: cardWidth, gap: space.sm }}>
+                  <Skeleton width={cardWidth} height={cardWidth * (4 / 3)} radius={radii.lg} />
+                  <Skeleton width="80%" height={14} />
+                  <Skeleton width="50%" height={10} />
+                </View>
+              ))}
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   block: { backgroundColor: 'rgba(245,241,234,0.06)', overflow: 'hidden' },
   list: { gap: space.xl },
   gridRow: { flexDirection: 'row', gap: space.md },
   cell: { flex: 1, gap: 8 },
   posterRow: { flexDirection: 'row', gap: space.md, paddingHorizontal: space.xl },
+});
+
+const styleSkel = StyleSheet.create({
+  section: { paddingHorizontal: space.xl, marginBottom: space.xxl, gap: space.sm },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.lg, marginTop: space.md },
+  list: { gap: space.sm, marginTop: space.md },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: space.lg,
+    paddingVertical: space.md,
+    borderRadius: radii.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+  },
+  listBody: { flex: 1, gap: space.xs },
+  heroOverlay: { position: 'absolute', left: space.xl, right: space.xl, bottom: space.xl, gap: space.sm },
+  hubBody: { paddingHorizontal: space.xl, paddingTop: space.lg, gap: space.xxl },
+  hubSection: { gap: space.sm },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  hRow: { flexDirection: 'row', gap: space.md, marginTop: space.md },
 });

@@ -160,6 +160,7 @@ export default function AssistantScreen() {
         </View>
 
         <ScrollView
+          showsVerticalScrollIndicator={false}
           ref={scrollRef}
           style={styles.flex}
           contentContainerStyle={[styles.content, messages.length === 0 && styles.contentEmpty]}

@@ -36,6 +36,7 @@ import { CatalogError, getCatalogDetail, mediaUri, type CatalogItem, type ClassC
 import { cardView } from '@/lib/catalog-view';
 import { addToCart, resolveVariantId } from '@/lib/cart';
 import { useEntitlements } from '@/lib/entitlements';
+import { isRegistrationOpen } from '@/lib/events';
 import { FAVORITE_KIND, FavoritesError, listMyFavorites, toggleMyFavorite } from '@/lib/favorites';
 import { dateLabel, initials, levelLabel, plural, price, styleLabel, weekdayShort, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
@@ -218,6 +219,14 @@ function CatalogDetailBody() {
   const perUnit = valid === 'classes' ? t.common.labels.perClass : valid === 'instructors' || valid === 'studios' ? t.common.labels.perHour : null;
   const bookSlug = valid === 'classes' ? str(detail.instructorSlug) : valid === 'instructors' ? slug : null;
   const isFull = valid === 'classes' && num(detail.spotsLeft) === 0;
+  const registerEvent =
+    valid === 'events' &&
+    str(detail.type) === 'COMPETITION' &&
+    isRegistrationOpen({
+      registrationOpenAt: str(detail.registrationOpenAt) ?? undefined,
+      registrationCloseAt: str(detail.registrationCloseAt) ?? undefined,
+    }) &&
+    arr(detail.competitionCategories).length > 0;
 
   const addEvent = () => {
     if (valid !== 'classes' && valid !== 'events') return;
@@ -334,7 +343,11 @@ function CatalogDetailBody() {
       void addShopToCart();
       return;
     }
-    if (bookSlug) router.push({ pathname: '/book/[instructor]', params: { instructor: bookSlug } });
+    if (registerEvent) {
+      router.push({ pathname: '/events/[slug]/register', params: { slug } });
+      return;
+    }
+    if (bookSlug) router.push({ pathname: '/book/[instructor]', params: { instructor: bookSlug, ...(valid === 'classes' ? { classSlug: slug } : {}) } });
     else Linking.openURL(webUrl(locale, `/${valid}/${slug}`)).catch(() => undefined);
   };
 
@@ -660,8 +673,20 @@ function CatalogDetailBody() {
           )}
         </View>
         <Button
-          label={valid === 'shop' ? (inCart ? t.cart.title : t.common.actions.addToCart) : bookSlug ? (isFull ? t.common.actions.joinWaitlist : t.common.actions.bookNow) : m.openOnWeb}
-          icon={valid === 'shop' ? (inCart ? 'cart' : 'cart-outline') : bookSlug ? 'calendar' : 'open-outline'}
+          label={
+            valid === 'shop'
+              ? inCart
+                ? t.cart.title
+                : t.common.actions.addToCart
+              : registerEvent
+                ? t.events.registerCta
+                : bookSlug
+                  ? isFull
+                    ? t.common.actions.joinWaitlist
+                    : t.common.actions.bookNow
+                  : m.openOnWeb
+          }
+          icon={valid === 'shop' ? (inCart ? 'cart' : 'cart-outline') : registerEvent ? 'create-outline' : bookSlug ? 'calendar' : 'open-outline'}
           onPress={cta}
           busy={addingToCart}
           disabled={valid === 'shop' && !inCart && (!selectedVariant || selectedVariant.stock <= 0)}

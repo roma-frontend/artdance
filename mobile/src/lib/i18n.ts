@@ -47,6 +47,7 @@ const dictionary: Dictionary = {
     payMethodIdram: 'Idram',
     payMethodTelcell: 'Telcell',
     payMethodQr: 'QR կոդ',
+    payBookingCta: 'Վճարել',
     tabHome: 'Գլխավոր',
     tabProfile: 'Պրոֆիլ',
     tabClasses: 'Դասեր',
@@ -149,6 +150,7 @@ const dictionary: Dictionary = {
     payMethodIdram: 'Idram',
     payMethodTelcell: 'Telcell',
     payMethodQr: 'QR-код',
+    payBookingCta: 'Оплатить',
     tabHome: 'Главная',
     tabProfile: 'Профиль',
     tabClasses: 'Занятия',
@@ -251,6 +253,7 @@ const dictionary: Dictionary = {
     payMethodIdram: 'Idram',
     payMethodTelcell: 'Telcell',
     payMethodQr: 'QR code',
+    payBookingCta: 'Pay',
     tabHome: 'Home',
     tabProfile: 'Profile',
     tabClasses: 'Classes',
@@ -355,6 +358,7 @@ export type MessageKey =
   | 'payMethodIdram'
   | 'payMethodTelcell'
   | 'payMethodQr'
+  | 'payBookingCta'
   | 'tabHome'
   | 'tabProfile'
   | 'tabClasses'

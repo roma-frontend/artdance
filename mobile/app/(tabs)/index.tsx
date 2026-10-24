@@ -71,9 +71,8 @@ const STYLE_KEYS = [
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 250;
 const SECTIONS: readonly Section[] = ['classes', 'instructors', 'studios', 'events', 'shop'];
-const TAB_SECTIONS: Partial<Record<Section, '/classes' | '/events' | '/shop'>> = {
+const TAB_SECTIONS: Partial<Record<Section, '/classes' | '/shop'>> = {
   classes: '/classes',
-  events: '/events',
   shop: '/shop',
 };
 const SCOPE_ICONS: Record<string, IconName> = {
@@ -216,6 +215,12 @@ export default function HomeScreen() {
   const openDetail = (section: Section, slug: string) =>
     router.push({ pathname: '/catalog/[section]/[slug]', params: { section, slug } });
 
+  const openFullSearch = () => {
+    if (!isSearch) return;
+    Keyboard.dismiss();
+    router.push({ pathname: '/search', params: { q: term } });
+  };
+
   const openHit = (hit: SearchHit) => {
     const parts = hit.href.split('?')[0].split('/').filter(Boolean);
     const slug = parts[parts.length - 1];
@@ -290,6 +295,7 @@ export default function HomeScreen() {
             focused={focused}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
+            onSubmit={openFullSearch}
             clearLabel={t.common.actions.clear}
           />
           <PressableScale
@@ -344,6 +350,12 @@ export default function HomeScreen() {
                 </PressableScale>
               </Animated.View>
             ))}
+            {hits.length > 0 ? (
+              <PressableScale onPress={openFullSearch} accessibilityRole="button" style={styles.viewAll}>
+                <Text style={styles.viewAllText}>{t.search.viewAll}</Text>
+                <Ionicons name="arrow-forward" size={16} color={colors.accentBright} />
+              </PressableScale>
+            ) : null}
           </View>
         ) : filtersActive > 0 ? (
           <View style={styles.results}>
@@ -505,6 +517,7 @@ function SearchField(props: {
   focused: boolean;
   onFocus: () => void;
   onBlur: () => void;
+  onSubmit: () => void;
   clearLabel: string;
 }) {
   const ring = useSharedValue(0);
@@ -530,6 +543,7 @@ function SearchField(props: {
         returnKeyType="search"
         onFocus={props.onFocus}
         onBlur={props.onBlur}
+        onSubmitEditing={props.onSubmit}
         selectionColor={colors.accentBright}
       />
       {props.value.length > 0 ? (
@@ -839,6 +853,16 @@ const styles = StyleSheet.create({
   },
   hitIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accentSoft },
   hitText: { flex: 1, gap: 2 },
+  viewAll: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: space.sm,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+  },
+  viewAllText: { fontSize: 14, fontWeight: '700', color: colors.accentBright },
   spotlightWrap: { marginTop: space.xxl },
   spotlight: { borderRadius: radius.xl, overflow: 'hidden', backgroundColor: colors.surface2 },
   spotlightTop: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

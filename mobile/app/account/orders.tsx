@@ -10,7 +10,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
-import { listMyOrders, type ClientOrder } from '@/lib/orders';
+import { listMyOrders, orderStatusLabel, type ClientOrder } from '@/lib/orders';
 import { serverMessageOf } from '@/lib/server-message';
 import { useAppActive } from '@/lib/use-app-active';
 import { enterItem, EASE_OUT } from '@/lib/motion';
@@ -64,6 +64,7 @@ export default function MyOrdersScreen() {
       </Animated.View>
 
       <FlatList
+        showsVerticalScrollIndicator={false}
         data={orders ?? []}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
@@ -76,28 +77,29 @@ export default function MyOrdersScreen() {
           )
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={enterItem(index)} layout={LinearTransition.springify().damping(18)} style={styles.card}>
-            <Text style={type.h3} numberOfLines={1}>
-              {c.account.orders.orderNumber.replace('{number}', item.orderNumber)}
-            </Text>
-            <Text style={type.bodySm} numberOfLines={2}>
-              {item.items.map((i) => (i.quantity > 1 ? `${i.title} × ${i.quantity}` : i.title)).join(', ')}
-            </Text>
-            <Text style={type.bodySm}>{dateLabel(item.placedAt, locale, { day: '2-digit', month: 'short', year: 'numeric' })}</Text>
-            <View style={styles.footer}>
-              <Text style={styles.status}>{statusLabel(item.status, c)}</Text>
-              <Text style={type.label}>{price(item.total, locale)}</Text>
-            </View>
+          <Animated.View entering={enterItem(index)} layout={LinearTransition.springify().damping(18)}>
+            <PressableScale
+              onPress={() => router.push({ pathname: '/account/orders/[orderNumber]', params: { orderNumber: item.orderNumber } })}
+              accessibilityRole="button"
+              style={styles.card}
+            >
+              <Text style={type.h3} numberOfLines={1}>
+                {c.account.orders.orderNumber.replace('{number}', item.orderNumber)}
+              </Text>
+              <Text style={type.bodySm} numberOfLines={2}>
+                {item.items.map((i) => (i.quantity > 1 ? `${i.title} × ${i.quantity}` : i.title)).join(', ')}
+              </Text>
+              <Text style={type.bodySm}>{dateLabel(item.placedAt, locale, { day: '2-digit', month: 'short', year: 'numeric' })}</Text>
+              <View style={styles.footer}>
+                <Text style={styles.status}>{orderStatusLabel(item.status, c)}</Text>
+                <Text style={type.label}>{price(item.total, locale)}</Text>
+              </View>
+            </PressableScale>
           </Animated.View>
         )}
       />
     </View>
   );
-}
-
-function statusLabel(status: string, c: ReturnType<typeof catalogFor>): string {
-  const labels = c.status.order as Record<string, string>;
-  return labels[status.toLowerCase()] ?? status;
 }
 
 const styles = StyleSheet.create({

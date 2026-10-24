@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { nextClassStart, nextDateOn, yerevanDate } from './class-time.ts';
+import { nextClassStart, nextDateOn, yerevanClock, yerevanDate } from './class-time.ts';
 
 // Ереван = UTC+4. Суббота 2026-10-24, 10:00 по Еревану = 06:00 UTC.
 const SAT_10_YEREVAN = Date.UTC(2026, 9, 24, 6, 0);
+
+test('yerevanClock reads wall-clock time in UTC+4', () => {
+  assert.equal(yerevanClock(SAT_10_YEREVAN), '10:00');
+});
 
 test('yerevanDate uses UTC+4, not the UTC date', () => {
   // 23:30 UTC 24 октября — это уже 25 октября в Ереване.

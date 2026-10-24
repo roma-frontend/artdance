@@ -1,4 +1,5 @@
 import { API_URL } from './config';
+import { readServerMessage } from './server-message';
 import { clearSessionToken, getSessionToken, setSessionToken } from './session';
 
 export type User = {
@@ -89,6 +90,25 @@ export async function requestPasswordReset(email: string): Promise<void> {
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { error?: string };
     throw new AuthError(body.error ?? `HTTP ${response.status}`, response.status);
+  }
+}
+
+/**
+ * Установка нового пароля по токену из письма. Сообщение об ошибке переводится сервером по словарю
+ * приложения (`catalog`); пустое сообщение означает, что перевода нет и нужно показать общий текст.
+ */
+export async function resetPassword(
+  input: { token: string; password: string; confirmPassword: string },
+  catalog: unknown,
+): Promise<void> {
+  const response = await fetch(`${API_URL}/api/account/password/reset`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  if (!response.ok) {
+    const message = (await readServerMessage(response, catalog)) ?? '';
+    throw new AuthError(message, response.status);
   }
 }
 

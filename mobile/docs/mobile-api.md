@@ -54,6 +54,20 @@ Bearer-токен проверен на живом стенде: вход дем
 | `/api/account/wallet` | GET | сессия, тумблер `wallet` (иначе `FEATURE_DISABLED`) |
 | `/api/account/referrals` | GET | сессия, тумблер `referrals`; код заводится при первом запросе |
 | `/api/media/upload` | POST | сессия, роль по правилам загрузки |
+| `/api/account/bookings/[id]` | GET | сессия, только своя бронь |
+| `/api/account/orders/[orderNumber]` | GET | сессия, только свой заказ |
+| `/api/account/dancer-profile` | GET, PUT | сессия; PUT ограничен лимитом `dancerProfile` |
+| `/api/account/notifications` | GET, PUT | сессия; PUT ограничен лимитом `notificationPrefs` |
+| `/api/account/reviews` | POST | сессия, лимит `reviewSubmit` |
+| `/api/account/password/forgot` | POST | лимит `passwordReset`, капча (`assertCaptcha`) |
+| `/api/account/password/reset` | POST | лимит `passwordReset` |
+| `/api/booking/sessions` | GET | лимит `availability`; сессия читается, если передана |
+| `/api/content/cities` | GET | публичный |
+| `/api/content/styles`, `/api/content/styles/[slug]` | GET | публичный |
+| `/api/events/[slug]/register` | POST | сессия читается, лимит `contactForm` |
+| `/api/gift-cards/redeem` | POST | лимит `contactForm` |
+| `/api/instructor-applications` | POST | лимит `contactForm` |
+| `/api/studio/availability` | GET, POST | роль `INSTRUCTOR`; POST — операции расписания (`op`) |
 | `/api/ics/[bookingId]` | GET | владелец брони |
 | `/api/availability` | GET | публичный, лимит частоты |
 | `/api/entitlements` | GET | сессия |
@@ -76,6 +90,35 @@ capability-проверки (`requireCapability`), вебхуки подписа
 `messageKey`, а не из сервера: мобильное приложение должно переводить ключи своими строками
 или запросить словарь, иначе в интерфейсе окажется ключ вместо текста.
 
+## Формы успешных ответов
+
+Успешный ответ — JSON-объект, данные лежат под ключом сущности. В проверенных маршрутах массивов верхнего уровня нет.
+
+| Маршрут | Ответ |
+|---|---|
+| `GET /api/account/bookings` | `{ bookings: [...] }` |
+| `GET /api/account/bookings/[id]` | `{ booking }` |
+| `GET /api/account/orders` | `{ orders: [...] }` |
+| `POST /api/account/orders` | `{ order: { id, orderNumber, total } }`, 201 |
+| `GET /api/account/orders/[orderNumber]` | объект заказа без обёртки (см. маршрут) |
+| `GET /api/account/favorites` | `{ items }` |
+| `POST /api/account/favorites` | `{ isFavorite }` |
+| `GET /api/favorites` | `{ keys }` |
+| `POST /api/booking` | `{ booking: { id, reference, totalPrice, startsAt, endsAt } }`, 201 |
+| `POST /api/booking/hold` | `{ hold: { id, startsAt, endsAt, expiresAt, extensions, ttlMinutes } }`, 201 |
+| продление брони-холда (`/api/booking/hold`) | `{ hold: { id, startsAt, endsAt, expiresAt, extensions } }`, 200 |
+| `POST /api/booking/[id]/cancel` | `{ booking, fee, refund, outcome, credited }` |
+| `POST /api/booking/[id]/reschedule` | `{ booking, priceDifference, remaining, durationMinutes }` |
+| `POST /api/waitlist/claim` | `{ hold: { id, expiresAt } }`, 201 |
+| `/api/cart` (все методы) | `{ snapshot }` |
+| `GET /api/content/cities` | `{ cities }` |
+| `GET /api/saved-searches` | `{ items }`; создание возвращает запись, 201 |
+| `POST /api/account/password/forgot` | `{ sent: true }` |
+| `/api/account/delete` | `{ ok: true, deletionRequestedAt, graceDays }` или `{ ok: true, cancelled: true }` |
+| `POST /api/booking/pass/verify` | `{ ok: true, ... }` или `{ ok: false, reason }` |
+
+Ошибки в этих маршрутах идут в формате из раздела «Формат ошибок», кроме `{ ok: false, reason }` у проверки пропуска. Ключ `snapshot` означает корзину, `booking` — одну бронь, `bookings` и `orders` — списки. Тело ответа 429 содержит `params.seconds`.
+
 ## Что мобильному клиенту пока не хватает
 
 1. **Словари ошибок.** Сервер отдаёт `messageKey`, а не текст. Перевод по словарю приложения делает
@@ -85,9 +128,8 @@ capability-проверки (`requireCapability`), вебхуки подписа
    лендингам для инструкторов и владельцев площадок. Регистрация сопоставляет код better-auth
    `USER_ALREADY_EXISTS*` с текстом занятого адреса. Загрузка списка каталога и страницы FAQ, помощи,
    «о нас», юридических документов общая: маршруты не отдают `messageKey` при ошибке.
-2. **Проверка bearer-токена.** Не подтверждена живым тестом (см. выше).
-3. **Единый контракт ответов.** Часть маршрутов отдаёт `{ snapshot }`, часть `{ booking }`,
-   формат удобно документировать в одном месте (сейчас только код).
+2. **Проверка bearer-токена.** Подтверждена живым тестом (см. выше), отдельного пункта нет.
+3. **Единый контракт ответов.** Формы описаны выше. Часть маршрутов не отдаёт `messageKey` при ошибке: `/api/payments/reconcile`, `/api/booking/pass/*`, `/api/saved-searches`, `/api/cart/variant-id`, `/api/account/orders/[orderNumber]`; в `/api/booking/recurring` — только для доменных ошибок.
 4. **Кабинет клиента в приложении.** Экраны есть для броней, заказов, избранного, подписки,
    кошелька и рефералов. Избранное можно добавлять и убирать (POST `/api/account/favorites`),
    в карточке каталога есть сердечко. Строка «Мои данные» открывает веб-страницу `/account/data`
@@ -96,12 +138,12 @@ capability-проверки (`requireCapability`), вебхуки подписа
    Аренда площадок на вебе выключена («скоро»), в приложении её нет.
    Лендинги (соревнования, социальные танцы, атлеты, федерации, партнёры, спонсорство, реклама,
    корпоратив) открываются в браузере из кабинета.
-   Не сделаны: отзывы (нет веб-маршрута), уведомления (на вебе заглушка).
+   Отзывы (`POST /api/account/reviews`) и уведомления (`/api/account/notifications`) подключены.
    Админка в приложение не переносится.
 5. **Оплата.** После оплаты приложение открывает ссылку провайдера в браузере и предлагает
    перейти к броням. Статус оплаты в приложении не подтверждается: его выставляет вебхук или
    reconcile. При возврате приложения на передний план (`AppState` → `active`) заказы, брони и
-   корзина перезагружаются (`useAppActive`). Deep link для возврата из браузера не описан.
+   корзина перезагружаются (`useAppActive`). Запросы оплаты передают `fromApp: true`: страница результата получает `?app=1` и показывает кнопку `artdance://account/bookings` или `artdance://account/orders/{номер}`.
 6. **Ошибки входа.** `INVALID_EMAIL_OR_PASSWORD` (или 401) показывается как «неверный email
    или пароль», `ACCOUNT_LOCKED` как блокировка, остальное как общая ошибка.
 7. **Промокод в корзине.** `POST /api/cart` с неверным кодом отвечает `VALIDATION_FAILED` и

@@ -16,12 +16,24 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "am.artdance.app",
+      "associatedDomains": ["applinks:artdance.am"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "am.artdance.app",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            { "scheme": "https", "host": "artdance.am", "pathPrefix": "/reset-password" },
+            { "scheme": "https", "host": "artdance.am", "pathPrefix": "/verify-email" }
+          ]
+        }
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",

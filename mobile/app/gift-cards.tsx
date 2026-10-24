@@ -79,6 +79,14 @@ export default function GiftCardsScreen() {
             <Text style={type.caption}>{content.amounts.validity}</Text>
           </Animated.View>
 
+          <View style={styles.card}>
+            <Text style={type.h3}>{c.footer.redeemGiftCard}</Text>
+            <Text style={type.bodySm}>{c.footer.activateHint}</Text>
+            <PressableScale onPress={() => router.push('/gift-cards/redeem')} accessibilityRole="button">
+              <Text style={[type.label, styles.cta]}>{c.footer.redeemCta}</Text>
+            </PressableScale>
+          </View>
+
           <Text style={type.h3}>{content.steps.title}</Text>
           {content.steps.items.map((step, i) => (
             <Animated.View key={step.id} entering={enterItem(i + 1)} style={styles.card}>

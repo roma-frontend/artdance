@@ -548,6 +548,10 @@ const ru: Messages = {
     becomeInstructorCta: 'Преподавать на ArtDance',
   },
 
+  cabinet: {
+    notForRole: 'Этот кабинет недоступен для вашего аккаунта.',
+  },
+
   studio: {
     title: 'Площадки',
     subtitle: 'Залы для репетиций и занятий в Ереване.',
@@ -652,6 +656,32 @@ const ru: Messages = {
     athleteBirthDate: 'Дата рождения',
     partnerName: 'Имя партнёра',
     submitRegistration: 'Подать заявку',
+    alreadyRegistered: 'Вы уже подали заявку на это соревнование.',
+    categoryFull: 'В этой категории не осталось мест.',
+    ageNotEligible: 'Ваш возраст не подходит для этой категории.',
+    categoryLabel: 'Категория',
+    chooseCategory: 'Выберите категорию',
+    birthDatePlaceholder: 'ГГГГ-ММ-ДД',
+    invalidBirthDate: 'Введите дату рождения в формате ГГГГ-ММ-ДД, не в будущем.',
+  },
+
+  notifications: {
+    title: 'Уведомления',
+    emailTitle: 'Уведомления на почту',
+    emailHint: 'Выберите, какие уведомления присылать на email.',
+    historyTitle: 'История писем',
+    historyEmpty: 'Писем пока нет',
+    historyEmptyHint: 'Здесь появятся уведомления о ваших записях и листе ожидания.',
+    statusQueued: 'В очереди',
+    statusSent: 'Отправлено',
+    statusFailed: 'Ошибка отправки',
+    statusSuppressed: 'Не отправлено (отключено)',
+    types: {
+      'booking.confirmed': 'Запись подтверждена',
+      'booking.reminder': 'Напоминание о занятии',
+      'booking.cancelled': 'Запись отменена',
+      'waitlist.ready': 'Освободилось место',
+    },
   },
 
   courses: {
@@ -829,7 +859,14 @@ const ru: Messages = {
     cancelTitle: 'Отменить бронь?',
     cancelFree: 'Вы внутри окна бесплатной отмены — вернём всю сумму.',
     cancelLate: 'Окно бесплатной отмены прошло: удержим {rate} стоимости.',
+    cancelledOnLabel: 'Отменено',
+    cancelledReasonLabel: 'Причина',
     rescheduleTitle: 'Перенести бронь',
+    sessionFull: 'Мест нет',
+    waitlistTitle: 'Лист ожидания',
+    waitlistJoined: 'Вы в листе ожидания, место {n}. Сообщим, когда место освободится.',
+    waitlistClaim: 'Занять место',
+    pairOnWeb: 'Парные занятия пока оформляются на сайте.',
     rescheduleLimit: 'Достигнут лимит переносов для этой брони.',
     rescheduleWindowClosed: 'Перенос закрывается за {hours} до начала. Отмена ещё доступна.',
     recurring: {
@@ -886,6 +923,10 @@ const ru: Messages = {
       success: 'Пароль обновлён. Теперь можно войти.',
       invalidToken: 'Ссылка недействительна или устарела.',
     },
+    verifyEmail: {
+      title: 'Подтвердите почту',
+      body: 'Мы отправили ссылку для подтверждения на вашу почту. Когда адрес подтверждён, войдите в аккаунт.',
+    },
     otp: {
       title: 'Введите код',
       subtitle: 'Отправили {length}-значный код на {target}.',
@@ -936,6 +977,8 @@ const ru: Messages = {
       placedOn: 'Оформлен {date}',
       trackCta: 'Отследить',
       invoiceCta: 'Скачать счёт',
+      itemsTitle: 'Состав заказа',
+      paymentTitle: 'Платежи',
     },
     settings: {
       title: 'Настройки',
@@ -1227,6 +1270,7 @@ const ru: Messages = {
     emptyHint: 'Будьте первым, кто расскажет, как прошло.',
     onlyAfterBooking: 'Оставить отзыв можно после посещения занятия.',
     windowClosed: 'Срок для отзыва по этой брони истёк.',
+    alreadyReviewed: 'Вы уже оставили отзыв по этой брони.',
   },
 
   /**
@@ -1501,8 +1545,10 @@ const ru: Messages = {
     activateHint: 'Введите код из письма — баланс зачислится на счёт',
     giftCardCode: 'Код карты',
     redeemCta: 'Активировать',
-    redeemSuccess: 'Карта активирована. Баланс: {balance} ֏',
+    redeemSuccess: 'Карта активирована. Баланс: {balance}',
     redeemNotFound: 'Код не найден или уже использован',
+    redeemExpired: 'Срок действия карты истёк',
+    redeemAlreadyUsed: 'Карта уже использована полностью',
     scheduleTitle: 'Расписание на неделю',
     scheduleHint: 'Ближайшие занятия — недельная сетка подключится к сессиям',
     searchTitle: 'Поиск',
@@ -1673,6 +1719,45 @@ const ru: Messages = {
     outOfStock: {
       title: 'Нет в наличии',
       description: '{name} в выбранном варианте закончился.',
+    },
+  },
+
+  instructorApply: {
+    cta: 'Подать заявку на преподавание',
+    title: 'Заявка исполнителя',
+    stepOf: 'Шаг {current} из {total}',
+    steps: { about: 'О себе', experience: 'Опыт', documents: 'Документы' },
+    fields: {
+      name: 'Имя и фамилия',
+      email: 'Email',
+      phone: 'Телефон (необязательно)',
+      bio: 'О себе и о том, что вы преподаёте',
+      styles: 'Направления, которые вы преподаёте',
+      stylesHint: 'Выберите хотя бы одно',
+    },
+    documents: {
+      title: 'Загрузите документы',
+      hint: 'Удостоверение личности или паспорт, диплом или сертификат. PDF, JPEG, PNG или WebP, до 10 МБ каждый.',
+      add: 'Добавить документ',
+      remove: 'Удалить',
+      count: '{count} из {max} добавлено',
+      empty: 'Приложите хотя бы один документ.',
+      privacy: 'Документы видят только модераторы. Они никогда не публикуются.',
+      kind: { identity: 'Удостоверение или паспорт', diploma: 'Диплом', certificate: 'Сертификат' },
+    },
+    actions: { next: 'Продолжить', back: 'Назад', submit: 'Отправить заявку' },
+    success: {
+      title: 'Заявка отправлена',
+      body: 'Мы рассматриваем заявки и отвечаем на email.',
+      done: 'Готово',
+    },
+    errors: {
+      documentsRequired: 'Приложите хотя бы один документ.',
+      tooManyDocuments: 'Не больше {max} документов.',
+      fileTooLarge: 'Файл больше {max} МБ.',
+      fileType: 'Только файлы PDF, JPEG, PNG или WebP.',
+      pickFailed: 'Не удалось открыть файл. Попробуйте ещё раз.',
+      submitFailed: 'Не удалось отправить заявку. Попробуйте ещё раз.',
     },
   },
 

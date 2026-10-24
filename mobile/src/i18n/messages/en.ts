@@ -553,6 +553,10 @@ const en = {
     becomeInstructorCta: 'Teach on ArtDance',
   },
 
+  cabinet: {
+    notForRole: 'This cabinet is not available for your account.',
+  },
+
   studio: {
     title: 'Studios',
     subtitle: 'Rehearsal and teaching spaces across Yerevan.',
@@ -657,6 +661,32 @@ const en = {
     athleteBirthDate: 'Date of birth',
     partnerName: 'Partner name',
     submitRegistration: 'Submit application',
+    alreadyRegistered: 'You have already applied to this competition.',
+    categoryFull: 'This category is full.',
+    ageNotEligible: 'Your age does not fit this category.',
+    categoryLabel: 'Category',
+    chooseCategory: 'Choose a category',
+    birthDatePlaceholder: 'YYYY-MM-DD',
+    invalidBirthDate: 'Enter the date of birth as YYYY-MM-DD, not in the future.',
+  },
+
+  notifications: {
+    title: 'Notifications',
+    emailTitle: 'Email notifications',
+    emailHint: 'Choose which notifications are sent to your email.',
+    historyTitle: 'Email history',
+    historyEmpty: 'No emails yet',
+    historyEmptyHint: 'Notifications about your bookings and waitlist will appear here.',
+    statusQueued: 'Queued',
+    statusSent: 'Sent',
+    statusFailed: 'Failed to send',
+    statusSuppressed: 'Not sent (turned off)',
+    types: {
+      'booking.confirmed': 'Booking confirmed',
+      'booking.reminder': 'Class reminder',
+      'booking.cancelled': 'Booking cancelled',
+      'waitlist.ready': 'Spot opened up',
+    },
   },
 
   courses: {
@@ -843,7 +873,14 @@ const en = {
     cancelTitle: 'Cancel this booking?',
     cancelFree: 'You are within the free cancellation window — you will be refunded in full.',
     cancelLate: 'You are past the free window: {rate} of the price will be withheld.',
+    cancelledOnLabel: 'Cancelled on',
+    cancelledReasonLabel: 'Reason',
     rescheduleTitle: 'Reschedule booking',
+    sessionFull: 'Full',
+    waitlistTitle: 'Waitlist',
+    waitlistJoined: "You're on the waitlist, spot {n}. We'll let you know when a place opens.",
+    waitlistClaim: 'Claim the spot',
+    pairOnWeb: 'Pair classes are booked on the website for now.',
     rescheduleLimit: 'You have reached the maximum number of reschedules for this booking.',
     rescheduleWindowClosed: 'Reschedules close {hours} before the session. You can still cancel.',
     capacityError:
@@ -894,6 +931,10 @@ const en = {
       submit: 'Update password',
       success: 'Password updated. You can sign in now.',
       invalidToken: 'This reset link is invalid or has expired.',
+    },
+    verifyEmail: {
+      title: 'Verify email',
+      body: 'Confirmation links are sent to your email. Once your address is confirmed, sign in to continue.',
     },
     otp: {
       title: 'Enter the code',
@@ -946,6 +987,8 @@ const en = {
       placedOn: 'Placed {date}',
       trackCta: 'Track order',
       invoiceCta: 'Download invoice',
+      itemsTitle: 'Items',
+      paymentTitle: 'Payments',
     },
     settings: {
       title: 'Settings',
@@ -1239,6 +1282,7 @@ const en = {
     emptyHint: 'Be the first to share how it went.',
     onlyAfterBooking: 'You can review a class after attending it.',
     windowClosed: 'The review window for this booking has closed.',
+    alreadyReviewed: 'You have already left a review for this booking.',
   },
 
   /**
@@ -1524,8 +1568,10 @@ const en = {
     activateHint: 'Enter the code from the email — it will credit your balance',
     giftCardCode: 'Gift card code',
     redeemCta: 'Redeem',
-    redeemSuccess: 'Gift card activated. Balance: {balance} ֏',
+    redeemSuccess: 'Gift card activated. Balance: {balance}',
     redeemNotFound: 'Code not found or already used',
+    redeemExpired: 'This gift card has expired',
+    redeemAlreadyUsed: 'This gift card has already been used up',
     scheduleTitle: 'Weekly schedule',
     scheduleHint: 'Upcoming classes — full timetable will connect to sessions',
     searchTitle: 'Search',
@@ -1701,6 +1747,45 @@ const en = {
     outOfStock: {
       title: 'Out of stock',
       description: '{name} is no longer available in the selected variant.',
+    },
+  },
+
+  instructorApply: {
+    cta: 'Apply to teach',
+    title: 'Instructor application',
+    stepOf: 'Step {current} of {total}',
+    steps: { about: 'About you', experience: 'Your experience', documents: 'Documents' },
+    fields: {
+      name: 'Full name',
+      email: 'Email',
+      phone: 'Phone (optional)',
+      bio: 'About you and what you teach',
+      styles: 'Styles you teach',
+      stylesHint: 'Pick at least one',
+    },
+    documents: {
+      title: 'Upload documents',
+      hint: 'ID or passport, diploma or certificate. PDF, JPEG, PNG or WebP, up to 10 MB each.',
+      add: 'Add document',
+      remove: 'Remove',
+      count: '{count} of {max} added',
+      empty: 'Attach at least one document.',
+      privacy: 'Only our moderators see documents. They are never published.',
+      kind: { identity: 'ID or passport', diploma: 'Diploma', certificate: 'Certificate' },
+    },
+    actions: { next: 'Continue', back: 'Back', submit: 'Send application' },
+    success: {
+      title: 'Application sent',
+      body: 'We review applications and reply by email.',
+      done: 'Done',
+    },
+    errors: {
+      documentsRequired: 'Attach at least one document.',
+      tooManyDocuments: 'No more than {max} documents.',
+      fileTooLarge: 'File is larger than {max} MB.',
+      fileType: 'Only PDF, JPEG, PNG or WebP files.',
+      pickFailed: 'Could not open the file. Try again.',
+      submitFailed: 'Could not send the application. Try again.',
     },
   },
 
