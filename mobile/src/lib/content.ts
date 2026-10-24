@@ -1,3 +1,7 @@
+import { catalogFor } from '@/i18n/catalog';
+import { deviceLocale } from '@/lib/i18n';
+import { resolveServerMessage } from '@/lib/server-message';
+
 import { API_URL } from './config';
 
 export type FaqEntry = { question: string; answer: string };
@@ -136,6 +140,7 @@ export class ContactError extends Error {
     message: string,
     readonly status: number,
     readonly field: string | null,
+    readonly serverMessage: string | null = null,
   ) {
     super(message);
   }
@@ -155,9 +160,18 @@ export async function sendContact(input: ContactInput): Promise<ContactOutcome> 
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify(input),
   });
-  const body = (await response.json().catch(() => ({}))) as { error?: string; field?: string; delivered?: boolean };
+  const body = (await response.json().catch(() => ({}))) as {
+    error?: string;
+    field?: string;
+    delivered?: boolean;
+    messageKey?: string;
+    params?: Record<string, string | number>;
+  };
   if (!response.ok) {
-    throw new ContactError(body.error ?? `HTTP ${response.status}`, response.status, body.field ?? null);
+    const serverMessage = body.messageKey
+      ? resolveServerMessage(body.messageKey, body.params ?? {}, catalogFor(deviceLocale(undefined)))
+      : null;
+    throw new ContactError(body.error ?? `HTTP ${response.status}`, response.status, body.field ?? null, serverMessage);
   }
   return { delivered: body.delivered === true };
 }

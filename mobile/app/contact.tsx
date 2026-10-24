@@ -11,6 +11,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { ContactError, getContact, sendContact, type ContactContent } from '@/lib/content';
 import { webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
 type Field = 'name' | 'email' | 'message';
@@ -31,7 +32,7 @@ export default function ContactScreen() {
   const [busy, setBusy] = useState(false);
   const [fieldError, setFieldError] = useState<{ field: Field; text: string } | null>(null);
   const [sent, setSent] = useState<{ delivered: boolean; email: string } | null>(null);
-  const [unsent, setUnsent] = useState(false);
+  const [unsent, setUnsent] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -66,7 +67,7 @@ export default function ContactScreen() {
     const trimmedEmail = email.trim();
     setBusy(true);
     setFieldError(null);
-    setUnsent(false);
+    setUnsent(null);
     try {
       const outcome = await sendContact({
         name: name.trim(),
@@ -82,7 +83,7 @@ export default function ContactScreen() {
         setFieldError({ field, text: field === 'email' ? content.errors.email : content.errors.required });
       } else {
         // Капча и сбои сети: отправка через приложение недоступна, даём путь на сайт.
-        setUnsent(true);
+        setUnsent(serverMessageOf(e) ?? content.outcome.failedBody);
       }
     } finally {
       setBusy(false);
@@ -91,7 +92,7 @@ export default function ContactScreen() {
 
   const canSubmit = name.trim().length >= 2 && email.trim().length > 0 && message.trim().length >= 10;
   const delivered = sent?.delivered === true;
-  const failedNotice = unsent || (sent !== null && !sent.delivered);
+  const failedNotice = unsent !== null || (sent !== null && !sent.delivered);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -119,7 +120,7 @@ export default function ContactScreen() {
               {failedNotice ? (
                 <View style={styles.card}>
                   <Text style={type.h3}>{content.outcome.failedTitle}</Text>
-                  <Text style={type.bodySm}>{content.outcome.failedBody}</Text>
+                  <Text style={type.bodySm}>{unsent ?? content.outcome.failedBody}</Text>
                   <Button label={t.openOnWeb} onPress={() => open(webUrl(locale, content.webPath))} variant="ghost" />
                 </View>
               ) : null}
