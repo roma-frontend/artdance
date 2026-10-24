@@ -38,6 +38,7 @@ import { addToCart, resolveVariantId } from '@/lib/cart';
 import { FavoritesError, listMyFavorites, toggleMyFavorite, type FavoriteKind } from '@/lib/favorites';
 import { dateLabel, initials, levelLabel, plural, price, styleLabel, weekdayShort, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { serverMessageOf } from '@/lib/server-message';
 import { colors, fill, fonts, gradients, radius, space, type } from '@/theme';
 
 const sections: readonly Section[] = ['classes', 'instructors', 'studios', 'events', 'shop'];
@@ -299,7 +300,7 @@ export default function CatalogDetailScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
     } catch (err: unknown) {
       const signedOut = err instanceof FavoritesError && err.status === 401;
-      Alert.alert(signedOut ? t.favorites.signInRequired : m.catalogError);
+      Alert.alert(signedOut ? t.favorites.signInRequired : (serverMessageOf(err) ?? m.catalogError));
     }
   };
   const share = () => {
@@ -317,8 +318,8 @@ export default function CatalogDetailScreen() {
       await addToCart(await resolveVariantId(selectedVariant.sku), 1);
       setInCart(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
-    } catch {
-      Alert.alert(m.genericError);
+    } catch (err: unknown) {
+      Alert.alert(serverMessageOf(err) ?? m.genericError);
     } finally {
       setAddingToCart(false);
     }
