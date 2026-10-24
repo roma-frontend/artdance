@@ -24,7 +24,8 @@ export function levelLabel(level: string, t: Messages): string {
 }
 
 export function price(amount: number, locale: Locale): string {
-  return `${new Intl.NumberFormat(localeMeta[locale].bcp47, { maximumFractionDigits: 0 }).format(amount)} ֏`;
+  const number = new Intl.NumberFormat(localeMeta[locale].bcp47, { maximumFractionDigits: 0 }).format(amount);
+  return locale === 'en' ? `֏${number}` : `${number} ֏`;
 }
 
 // Hermes не содержит Intl.PluralRules, поэтому правила для hy/ru/en заданы вручную.
