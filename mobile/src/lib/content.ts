@@ -213,3 +213,35 @@ export async function getPricing(locale: string): Promise<PricingContent> {
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return (await response.json()) as PricingContent;
 }
+
+export type LandingItem = { id: string; title: string; body: string };
+export type LandingFact = { id: string; text: string };
+export type LandingCta = { title: string; subtitle: string; primary: string; secondary: string; secondaryPath: string };
+export type BecomeInstructorContent = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  primaryCta: string;
+  secondaryCta: string;
+  benefits: { title: string; items: LandingItem[] };
+  steps: { title: string; items: LandingItem[] };
+  earnings: { title: string; body: string; items: LandingFact[] };
+  requirements: { title: string; items: LandingFact[] };
+  cta: LandingCta;
+};
+
+/** Лендинг для преподавателей с сервера на выбранном языке. */
+export async function getBecomeInstructor(locale: string): Promise<BecomeInstructorContent> {
+  const response = await fetch(`${API_URL}/api/content/become-instructor?locale=${encodeURIComponent(locale)}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return (await response.json()) as BecomeInstructorContent;
+}
+
+export type ListYourStudioContent = BecomeInstructorContent;
+
+/** Лендинг для владельцев площадок с сервера на выбранном языке. */
+export async function getListYourStudio(locale: string): Promise<ListYourStudioContent> {
+  const response = await fetch(`${API_URL}/api/content/list-your-studio?locale=${encodeURIComponent(locale)}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return (await response.json()) as ListYourStudioContent;
+}
