@@ -34,6 +34,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { CatalogError, getCatalogDetail, mediaUri, type CatalogItem, type ClassCard, type Section } from '@/lib/catalog';
 import { cardView } from '@/lib/catalog-view';
+import { addToCart, resolveVariantId } from '@/lib/cart';
 import { FavoritesError, listMyFavorites, toggleMyFavorite, type FavoriteKind } from '@/lib/favorites';
 import { dateLabel, initials, levelLabel, plural, price, styleLabel, weekdayShort, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
@@ -82,6 +83,8 @@ type Review = { id: string; authorName: string; rating: number; body: string; is
 type ScheduleEntry = { weekday: number; startTime: string; endTime: string; spotsLeft: number };
 type Experience = { title: string; organization?: string; startYear: number; endYear?: number };
 
+type ShopVariant = { sku: string; size?: string; color?: string; price: number; stock: number };
+
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v : null);
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
@@ -104,6 +107,10 @@ export default function CatalogDetailScreen() {
   // null — состояние ещё не известно (или гость); true/false — сохранено ли в избранном.
   const [saved, setSaved] = useState<boolean | null>(null);
   const favoriteKind = valid ? FAVORITE_KIND[valid] : undefined;
+  // Выбранный SKU варианта товара и состояние добавления в корзину.
+  const [variantSku, setVariantSku] = useState<string | null>(null);
+  const [inCart, setInCart] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
 
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
@@ -181,6 +188,8 @@ export default function CatalogDetailScreen() {
   }
 
   const title = str(detail.title) ?? str(detail.name) ?? '';
+  const variants = valid === 'shop' ? arr<ShopVariant>(detail.variants) : [];
+  const selectedVariant = variants.find((v) => v.sku === variantSku) ?? variants.find((v) => v.stock > 0) ?? null;
   const about = str(detail.description) ?? str(detail.bio) ?? str(detail.headline);
   const heroKey = keyOf(detail.heroImage) ?? keyOf(detail.image);
   const rating = (detail.rating as { average?: number; count?: number } | undefined) ?? {
@@ -200,7 +209,7 @@ export default function CatalogDetailScreen() {
   ].slice(0, 5);
 
   const facts = buildFacts(valid, detail, t, locale);
-  const amount = num(detail.price) ?? num(detail.hourlyRateFrom) ?? num(detail.pricePerHour);
+  const amount = selectedVariant?.price ?? num(detail.price) ?? num(detail.hourlyRateFrom) ?? num(detail.pricePerHour);
   const perUnit = valid === 'classes' ? t.common.labels.perClass : valid === 'instructors' || valid === 'studios' ? t.common.labels.perHour : null;
   const bookSlug = valid === 'classes' ? str(detail.instructorSlug) : valid === 'instructors' ? slug : null;
   const isFull = valid === 'classes' && num(detail.spotsLeft) === 0;
@@ -297,7 +306,29 @@ export default function CatalogDetailScreen() {
     const url = webUrl(locale, `/${valid}/${slug}`);
     Share.share({ message: `${title}\n${url}`, url }).catch(() => undefined);
   };
+  const addShopToCart = async () => {
+    if (inCart) {
+      router.push('/cart');
+      return;
+    }
+    if (!selectedVariant || selectedVariant.stock <= 0 || addingToCart) return;
+    setAddingToCart(true);
+    try {
+      await addToCart(await resolveVariantId(selectedVariant.sku), 1);
+      setInCart(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+    } catch {
+      Alert.alert(m.genericError);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
   const cta = () => {
+    if (valid === 'shop') {
+      void addShopToCart();
+      return;
+    }
     if (bookSlug) router.push({ pathname: '/book/[instructor]', params: { instructor: bookSlug } });
     else Linking.openURL(webUrl(locale, `/${valid}/${slug}`)).catch(() => undefined);
   };
@@ -536,6 +567,31 @@ export default function CatalogDetailScreen() {
             </Block>
           ) : null}
 
+          {variants.length > 0 ? (
+            <Block title={t.shop.variantTitle} flush>
+              <View style={[styles.variantRow, styles.padded]}>
+                {variants.map((v) => {
+                  const active = selectedVariant?.sku === v.sku;
+                  const out = v.stock <= 0;
+                  return (
+                    <PressableScale
+                      key={v.sku}
+                      onPress={() => {
+                        setVariantSku(v.sku);
+                        setInCart(false);
+                      }}
+                      accessibilityRole="button"
+                      style={[styles.chip, active && styles.chipActive, out && styles.chipOut]}
+                    >
+                      <Text style={styles.chipText}>{[v.size, v.color].filter(Boolean).join(' · ') || v.sku}</Text>
+                    </PressableScale>
+                  );
+                })}
+              </View>
+              {selectedVariant && selectedVariant.stock <= 0 ? <Text style={[type.bodySm, styles.padded]}>{t.shop.outOfStock}</Text> : null}
+            </Block>
+          ) : null}
+
           {related.length > 0 ? (
             <Block title={valid === 'instructors' ? t.instructor.classesTitle : t.classDetail.similarTitle} flush>
               <FlatList
@@ -599,9 +655,11 @@ export default function CatalogDetailScreen() {
           )}
         </View>
         <Button
-          label={bookSlug ? (isFull ? t.common.actions.joinWaitlist : t.common.actions.bookNow) : m.openOnWeb}
-          icon={bookSlug ? 'calendar' : 'open-outline'}
+          label={valid === 'shop' ? (inCart ? t.cart.title : t.common.actions.addToCart) : bookSlug ? (isFull ? t.common.actions.joinWaitlist : t.common.actions.bookNow) : m.openOnWeb}
+          icon={valid === 'shop' ? (inCart ? 'cart' : 'cart-outline') : bookSlug ? 'calendar' : 'open-outline'}
           onPress={cta}
+          busy={addingToCart}
+          disabled={valid === 'shop' && !inCart && (!selectedVariant || selectedVariant.stock <= 0)}
           style={styles.ctaButton}
         />
       </Animated.View>
@@ -696,6 +754,9 @@ const styles = StyleSheet.create({
     borderColor: colors.lineStrong,
   },
   chipText: { fontSize: 13, fontWeight: '600', color: colors.text },
+  chipActive: { borderColor: colors.accentBright, backgroundColor: colors.accentSoft },
+  chipOut: { opacity: 0.45 },
+  variantRow: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   factsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md, paddingHorizontal: space.xl },
   fact: {
     width: '47.5%',

@@ -29,6 +29,7 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/account/subscription',
   '/account/wallet',
   '/account/referrals',
+  '/cart',
 ]);
 
 export default function AccountScreen() {
@@ -64,6 +65,7 @@ export default function AccountScreen() {
     { icon: 'wallet', label: c.account.nav.wallet, path: '/account/wallet', tint: '#3FB984' },
     { icon: 'people', label: c.account.nav.referrals, path: '/account/referrals', tint: '#5AA9E6' },
     { icon: 'heart', label: c.account.nav.favorites, path: '/account/favorites', tint: '#E0607E' },
+    { icon: 'cart', label: c.cart.title, path: '/cart', tint: '#C9A96A' },
     { icon: 'folder-open', label: c.account.nav.data, path: '/account/data', tint: '#7A8BA6' },
   ];
   const bookingsRow: Row = { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52' };
