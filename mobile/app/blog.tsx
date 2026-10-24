@@ -13,6 +13,7 @@ import { getBlogDetail, getBlogList, type BlogCard, type BlogDetail, type BlogLi
 import { mediaUri } from '@/lib/catalog';
 import { dateLabel, plural } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
 /**
@@ -30,19 +31,19 @@ export default function BlogScreen() {
   const [categories, setCategories] = useState<string[]>([]);
   const [list, setList] = useState<BlogList | null>(null);
   const [post, setPost] = useState<BlogDetail | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    setFailed(false);
+    setFailed(null);
     if (slug) {
       setPost(null);
       getBlogDetail(locale, slug)
         .then((next) => {
           if (alive) setPost(next);
         })
-        .catch(() => {
-          if (alive) setFailed(true);
+        .catch((error: unknown) => {
+          if (alive) setFailed(serverMessageOf(error) ?? t.catalogError);
         });
     } else {
       getBlogList(locale, { category: category ?? undefined })
@@ -52,14 +53,14 @@ export default function BlogScreen() {
           // Список категорий берём только из неотфильтрованного ответа, чтобы чипы не пропадали.
           if (!category) setCategories(next.categories);
         })
-        .catch(() => {
-          if (alive) setFailed(true);
+        .catch((error: unknown) => {
+          if (alive) setFailed(serverMessageOf(error) ?? t.catalogError);
         });
     }
     return () => {
       alive = false;
     };
-  }, [locale, slug, category]);
+  }, [locale, slug, category, t.catalogError]);
 
   const openPost = (next: string) => router.push({ pathname: '/blog', params: { slug: next } });
   const loaded = slug ? post !== null : list !== null;
@@ -76,8 +77,8 @@ export default function BlogScreen() {
         </Text>
       </View>
 
-      {failed ? (
-        <EmptyState icon="alert-circle-outline" title={t.catalogError} actionLabel={m.backToBlog} onAction={() => router.back()} />
+      {failed !== null ? (
+        <EmptyState icon="alert-circle-outline" title={failed} actionLabel={m.backToBlog} onAction={() => router.back()} />
       ) : !loaded ? (
         <View style={styles.center}>
           <ActivityIndicator color={colors.accentBright} />

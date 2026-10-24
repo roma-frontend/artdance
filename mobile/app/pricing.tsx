@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { getPricing, type PricingComparisonCell, type PricingContent } from '@/lib/content';
+import { serverMessageOf } from '@/lib/server-message';
 import { webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors, radius, space, type } from '@/theme';
@@ -17,7 +18,7 @@ export default function PricingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [content, setContent] = useState<PricingContent | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -25,15 +26,15 @@ export default function PricingScreen() {
       .then((next) => {
         if (alive) setContent(next);
       })
-      .catch(() => {
-        if (alive) setFailed(true);
+      .catch((error: unknown) => {
+        if (alive) setFailed(serverMessageOf(error) ?? t.catalogError);
       });
     return () => {
       alive = false;
     };
-  }, [locale]);
+  }, [locale, t.catalogError]);
 
-  if (content === null && !failed) {
+  if (content === null && failed === null) {
     return (
       <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
         <ActivityIndicator color={colors.accentBright} />
@@ -58,7 +59,7 @@ export default function PricingScreen() {
       </View>
 
       {content === null ? (
-        <EmptyState icon="alert-circle-outline" title={t.catalogError} />
+        <EmptyState icon="alert-circle-outline" title={failed ?? t.catalogError} />
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           {content.eyebrow ? <Text style={type.caption}>{content.eyebrow}</Text> : null}

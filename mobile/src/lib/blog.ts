@@ -1,5 +1,6 @@
 import type { MediaRef } from './catalog';
 import { API_URL } from './config';
+import { failureFor } from './content';
 
 export type BlogCard = {
   slug: string;
@@ -22,7 +23,7 @@ export async function getBlogList(locale: string, filter: { category?: string; q
   if (filter.category) search.set('category', filter.category);
   if (filter.q) search.set('q', filter.q);
   const response = await fetch(`${API_URL}/api/content/blog?${search.toString()}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as BlogList;
 }
 
@@ -31,6 +32,6 @@ export async function getBlogDetail(locale: string, slug: string): Promise<BlogD
   const response = await fetch(
     `${API_URL}/api/content/blog/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`,
   );
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as BlogDetail;
 }

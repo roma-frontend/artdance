@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { getGiftCards, type GiftCardsContent } from '@/lib/content';
+import { serverMessageOf } from '@/lib/server-message';
 import { webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors, radius, space, type } from '@/theme';
@@ -19,7 +20,7 @@ export default function GiftCardsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [content, setContent] = useState<GiftCardsContent | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -27,15 +28,15 @@ export default function GiftCardsScreen() {
       .then((next) => {
         if (alive) setContent(next);
       })
-      .catch(() => {
-        if (alive) setFailed(true);
+      .catch((error: unknown) => {
+        if (alive) setFailed(serverMessageOf(error) ?? t.catalogError);
       });
     return () => {
       alive = false;
     };
-  }, [locale]);
+  }, [locale, t.catalogError]);
 
-  if (content === null && !failed) {
+  if (content === null && failed === null) {
     return (
       <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
         <ActivityIndicator color={colors.accentBright} />
@@ -57,7 +58,7 @@ export default function GiftCardsScreen() {
       </View>
 
       {content === null ? (
-        <EmptyState icon="alert-circle-outline" title={t.catalogError} />
+        <EmptyState icon="alert-circle-outline" title={failed ?? t.catalogError} />
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           <Text style={type.bodySm}>{content.subtitle}</Text>

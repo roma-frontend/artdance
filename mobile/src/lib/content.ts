@@ -4,13 +4,35 @@ import { resolveServerMessage } from '@/lib/server-message';
 
 import { API_URL } from './config';
 
+export class ContentError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly serverMessage: string | null = null,
+  ) {
+    super(message);
+  }
+}
+
+export async function failureFor(response: Response): Promise<ContentError> {
+  const body = (await response.json().catch(() => ({}))) as {
+    error?: string;
+    messageKey?: string;
+    params?: Record<string, string | number>;
+  };
+  const serverMessage = body.messageKey
+    ? resolveServerMessage(body.messageKey, body.params ?? {}, catalogFor(deviceLocale(undefined)))
+    : null;
+  return new ContentError(body.error ?? `HTTP ${response.status}`, response.status, serverMessage);
+}
+
 export type FaqEntry = { question: string; answer: string };
 export type FaqGroup = { id: string; title: string; items: FaqEntry[] };
 
 /** Группы FAQ с сервера; тексты уже на выбранном языке. */
 export async function getFaq(locale: string): Promise<FaqGroup[]> {
   const response = await fetch(`${API_URL}/api/content/faq?locale=${encodeURIComponent(locale)}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   const body = (await response.json()) as { groups: FaqGroup[] };
   return body.groups;
 }
@@ -27,7 +49,7 @@ export type HelpContent = {
 /** Справка с сервера: разделы и тексты на выбранном языке. */
 export async function getHelp(locale: string): Promise<HelpContent> {
   const response = await fetch(`${API_URL}/api/content/help?locale=${encodeURIComponent(locale)}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as HelpContent;
 }
 
@@ -45,7 +67,7 @@ export type AboutContent = {
 /** О проекте с сервера на выбранном языке. */
 export async function getAbout(locale: string): Promise<AboutContent> {
   const response = await fetch(`${API_URL}/api/content/about?locale=${encodeURIComponent(locale)}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as AboutContent;
 }
 
@@ -65,7 +87,7 @@ export type GiftCardsContent = {
 /** Подарочные карты с сервера. Сервер отвечает `FEATURE_DISABLED`, если модуль магазина выключен. */
 export async function getGiftCards(locale: string): Promise<GiftCardsContent> {
   const response = await fetch(`${API_URL}/api/content/gift-cards?locale=${encodeURIComponent(locale)}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as GiftCardsContent;
 }
 
@@ -94,7 +116,7 @@ export type LegalDocumentContent = {
 /** Список правовых документов с сервера на выбранном языке. */
 export async function getLegalIndex(locale: string): Promise<LegalIndexContent> {
   const response = await fetch(`${API_URL}/api/content/legal?locale=${encodeURIComponent(locale)}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as LegalIndexContent;
 }
 
@@ -103,7 +125,7 @@ export async function getLegalDocument(locale: string, slug: string): Promise<Le
   const response = await fetch(
     `${API_URL}/api/content/legal/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`,
   );
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as LegalDocumentContent;
 }
 
@@ -149,7 +171,7 @@ export class ContactError extends Error {
 /** Тексты формы обращения с сервера на выбранном языке. */
 export async function getContact(locale: string): Promise<ContactContent> {
   const response = await fetch(`${API_URL}/api/content/contact?locale=${encodeURIComponent(locale)}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as ContactContent;
 }
 
@@ -224,7 +246,7 @@ export type PricingContent = {
 /** Тарифы и пакеты занятий с сервера. Раздел без включённого модуля приходит как `null`. */
 export async function getPricing(locale: string): Promise<PricingContent> {
   const response = await fetch(`${API_URL}/api/content/pricing?locale=${encodeURIComponent(locale)}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as PricingContent;
 }
 
@@ -247,7 +269,7 @@ export type BecomeInstructorContent = {
 /** Лендинг для преподавателей с сервера на выбранном языке. */
 export async function getBecomeInstructor(locale: string): Promise<BecomeInstructorContent> {
   const response = await fetch(`${API_URL}/api/content/become-instructor?locale=${encodeURIComponent(locale)}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as BecomeInstructorContent;
 }
 
@@ -256,6 +278,6 @@ export type ListYourStudioContent = BecomeInstructorContent;
 /** Лендинг для владельцев площадок с сервера на выбранном языке. */
 export async function getListYourStudio(locale: string): Promise<ListYourStudioContent> {
   const response = await fetch(`${API_URL}/api/content/list-your-studio?locale=${encodeURIComponent(locale)}`);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  if (!response.ok) throw await failureFor(response);
   return (await response.json()) as ListYourStudioContent;
 }
