@@ -3,7 +3,8 @@
  *
  * Один маршрут на шесть документов: различаются они текстом, а не устройством
  * страницы. Состав приходит из `config/legal.ts`, текст — из каталога переводов,
- * числа — из бизнес-правил (см. `LegalDocument`).
+ * числа — из бизнес-правил; всё это собирает `buildLegalDocumentContent`, которым
+ * пользуется и мобильное приложение.
  *
  * Страницы статические: содержимое зависит только от конфигурации и локали, а
  * значит его незачем собирать на каждый запрос. `generateStaticParams` перечисляет
@@ -16,7 +17,7 @@
 
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { LegalDocument } from '@/components/content/legal-document';
 import { PageHero, breadcrumbsFromTrail } from '@/components/layout/page-hero';
@@ -31,6 +32,7 @@ import {
 import type { Locale } from '@/i18n/config';
 import type { Crumb } from '@/lib/seo/jsonld';
 import { buildMetadata } from '@/lib/seo/metadata';
+import { buildLegalDocumentContent } from '@/server/content/legal';
 
 interface PageProps {
   params: Promise<{ locale: string; slug: string }>;
@@ -67,25 +69,19 @@ export default async function LegalDocumentPage({ params }: PageProps) {
   const document = legalDocumentBySlug(slug);
   if (!document) notFound();
 
-  const t = await getTranslations();
-  const tLegal = await getTranslations('legal');
-  const format = await getFormatter();
-
-  const title = t(legalDocumentTitleKey(document.id));
-  const trail: Crumb[] = [{ name: title, path: document.href }];
+  const content = await buildLegalDocumentContent(locale as Locale, document);
+  const trail: Crumb[] = [{ name: content.title, path: document.href }];
 
   return (
     <main id={site.mainContentId}>
       <PageHero
-        title={title}
-        subtitle={tLegal('lastUpdated', {
-          date: format.dateTime(new Date(document.effectiveDate), 'mediumDate'),
-        })}
+        title={content.title}
+        subtitle={content.lastUpdated}
         locale={locale as Locale}
         breadcrumbs={breadcrumbsFromTrail(trail)}
       />
 
-      <LegalDocument document={document} />
+      <LegalDocument content={content} />
 
       <SiteFooter />
     </main>

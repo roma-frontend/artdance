@@ -64,3 +64,41 @@ export async function getGiftCards(locale: string): Promise<GiftCardsContent> {
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return (await response.json()) as GiftCardsContent;
 }
+
+export type LegalStatus = 'draft' | 'active';
+export type LegalDocumentSummary = { id: string; slug: string; path: string; title: string; version: string; status: LegalStatus };
+export type LegalIndexContent = { title: string; documents: LegalDocumentSummary[] };
+export type LegalSection = { id: string; title: string; body: string };
+export type LegalDocumentContent = {
+  id: string;
+  slug: string;
+  path: string;
+  title: string;
+  intro: string;
+  status: LegalStatus;
+  draftNotice: string | null;
+  version: string;
+  lastUpdated: string;
+  versionNote: string;
+  contactNote: string;
+  tocTitle: string;
+  documentsTitle: string;
+  sections: LegalSection[];
+  others: LegalDocumentSummary[];
+};
+
+/** Список правовых документов с сервера на выбранном языке. */
+export async function getLegalIndex(locale: string): Promise<LegalIndexContent> {
+  const response = await fetch(`${API_URL}/api/content/legal?locale=${encodeURIComponent(locale)}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return (await response.json()) as LegalIndexContent;
+}
+
+/** Текст одного правового документа. Неизвестный слаг сервер отвечает 404. */
+export async function getLegalDocument(locale: string, slug: string): Promise<LegalDocumentContent> {
+  const response = await fetch(
+    `${API_URL}/api/content/legal/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`,
+  );
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return (await response.json()) as LegalDocumentContent;
+}

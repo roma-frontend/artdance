@@ -20,78 +20,24 @@
  * проверен, хуже отсутствующего: на него начинают ссылаться.
  */
 
-import { useFormatter, useTranslations } from 'next-intl';
-
 import { Reveal } from '@/components/fx/reveal';
-import {
-  booking,
-  commerce,
-  commission,
-  dataRetention,
-  legalDocuments,
-  legalDocumentIntroKey,
-  legalDocumentTitleKey,
-  legalSectionBodyKey,
-  legalSectionTitleKey,
-  promotions,
-  site,
-  tax,
-  venue,
-  type LegalDocumentSpec,
-} from '@/config';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
+import type { LegalDocumentContent } from '@/server/content/legal';
 
 interface LegalDocumentProps {
-  document: LegalDocumentSpec;
+  content: LegalDocumentContent;
 }
 
-export function LegalDocument({ document }: LegalDocumentProps) {
-  const t = useTranslations();
-  const tLegal = useTranslations('legal');
-  const format = useFormatter();
-
-  /**
-   * Значения для подстановки в текст документа.
-   *
-   * Единый объект на все разделы: см. шапку файла. Единицы («24 часа», «14 дней»)
-   * собираются через ICU-плюрализацию каталога, а не склейкой числа со словом —
-   * в армянском и русском форма слова зависит от числа.
-   */
-  const values = {
-    brand: t('brand.name'),
-    legalEntity: site.legalEntity,
-    city: site.address.city,
-    country: site.address.countryName,
-    supportEmail: site.contact.supportEmail,
-    legalEmail: site.contact.legalEmail,
-
-    vatRate: format.number(tax.vatRate, 'percent'),
-    instructorRate: format.number(commission.instructorRate, 'percent'),
-    venueRate: format.number(commission.venueRate, 'percent'),
-    lateFeeRate: format.number(booking.lateCancellationFeeRate, 'percent'),
-
-    freeCancellationHours: t('common.units.hours', { count: booking.freeCancellationHours }),
-    freeRescheduleHours: t('common.units.hours', { count: booking.freeRescheduleHours }),
-    venueCancellationHours: t('common.units.hours', { count: venue.freeCancellationHours }),
-    maxReschedules: booking.maxReschedulesPerBooking,
-    minRentalMinutes: t('common.units.minutes', { count: venue.minRentalMinutes }),
-
-    returnWindowDays: t('common.units.days', { count: commerce.returnWindowDays }),
-    giftCardMonths: t('common.units.months', { count: promotions.giftCard.validityMonths }),
-
-    accountDeletionDays: t('common.units.days', { count: dataRetention.accountDeletionGraceDays }),
-    financialYears: t('common.units.years', { count: dataRetention.financialRecordsYears }),
-    analyticsDays: t('common.units.days', { count: dataRetention.analyticsRawEventRetentionDays }),
-  };
-
-  const effectiveDate = format.dateTime(new Date(document.effectiveDate), 'mediumDate');
-  const others = legalDocuments.filter((entry) => entry.id !== document.id);
-
+/**
+ * Вёрстка документа. Тексты и подстановки собирает `buildLegalDocumentContent` на
+ * сервере, поэтому компонент только рисует готовое и не читает переводы сам.
+ */
+export function LegalDocument({ content }: LegalDocumentProps) {
   return (
     <div className="page-container section-y grid gap-12 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
       <article className="max-w-(--layout-prose-max-width)">
-        {document.status === 'draft' && (
+        {content.draftNotice && (
           /*
            * `role="note"` вместо `alert`: предупреждение не требует немедленной
            * реакции, а `alert` перебивает чтение страницы скринридером.
@@ -100,27 +46,23 @@ export function LegalDocument({ document }: LegalDocumentProps) {
             role="note"
             className="text-body-sm mb-8 rounded-md border border-border-strong bg-surface-sunken p-4 text-content-secondary"
           >
-            {tLegal('draftNotice')}
+            {content.draftNotice}
           </p>
         )}
 
-        <p className="text-body-lg text-content-secondary">
-          {t(legalDocumentIntroKey(document.id), values)}
-        </p>
+        <p className="text-body-lg text-content-secondary">{content.intro}</p>
 
         <div className="mt-12 flex flex-col gap-10">
-          {document.sections.map((section) => (
-            <Reveal key={section} as="section" id={section} className="scroll-mt-(--layout-nav-height)">
-              <h2 className="text-heading-3">{t(legalSectionTitleKey(document.id, section))}</h2>
-              <p className="text-body mt-3 text-content-secondary">
-                {t(legalSectionBodyKey(document.id, section), values)}
-              </p>
+          {content.sections.map((section) => (
+            <Reveal key={section.id} as="section" id={section.id} className="scroll-mt-(--layout-nav-height)">
+              <h2 className="text-heading-3">{section.title}</h2>
+              <p className="text-body mt-3 text-content-secondary">{section.body}</p>
             </Reveal>
           ))}
         </div>
 
         <p className="text-body-sm mt-12 border-t border-border-default pt-6 text-content-tertiary">
-          {tLegal('contactNote', { email: site.contact.legalEmail })}
+          {content.contactNote}
         </p>
       </article>
 
@@ -135,45 +77,44 @@ export function LegalDocument({ document }: LegalDocumentProps) {
         «Содержание», из которых половина ведёт на другие страницы.
       */}
       <div className="lg:sticky lg:top-(--layout-nav-height) flex flex-col gap-8 lg:order-last">
-        <nav aria-label={tLegal('tocTitle')}>
-          <h2 className="text-eyebrow mb-3 text-content-tertiary">{tLegal('tocTitle')}</h2>
+        <nav aria-label={content.tocTitle}>
+          <h2 className="text-eyebrow mb-3 text-content-tertiary">{content.tocTitle}</h2>
           <ul className="flex flex-col gap-2 border-s border-border-default ps-4">
-            {document.sections.map((section) => (
-              <li key={section}>
+            {content.sections.map((section) => (
+              <li key={section.id}>
                 <a
-                  href={`#${section}`}
+                  href={`#${section.id}`}
                   className="text-body-sm text-content-secondary transition-colors duration-normal ease-brand hover:text-content-accent"
                 >
-                  {t(legalSectionTitleKey(document.id, section))}
+                  {section.title}
                 </a>
               </li>
             ))}
           </ul>
         </nav>
 
-        <nav aria-label={tLegal('documentsTitle')}>
-          <h2 className="text-eyebrow mb-3 text-content-tertiary">{tLegal('documentsTitle')}</h2>
+        <nav aria-label={content.documentsTitle}>
+          <h2 className="text-eyebrow mb-3 text-content-tertiary">{content.documentsTitle}</h2>
           <ul className="flex flex-col gap-2">
-            {others.map((entry) => (
+            {content.others.map((entry) => (
               <li key={entry.id}>
                 <Link
-                  href={entry.href}
+                  href={entry.path}
                   className={cn(
                     'text-body-sm text-content-secondary',
                     'transition-colors duration-normal ease-brand hover:text-content-accent',
                   )}
                 >
-                  {t(legalDocumentTitleKey(entry.id))}
+                  {entry.title}
                 </Link>
               </li>
             ))}
           </ul>
         </nav>
 
-        <p className="text-caption text-content-tertiary">
-          {tLegal('versionNote', { version: document.version, date: effectiveDate })}
-        </p>
+        <p className="text-caption text-content-tertiary">{content.versionNote}</p>
       </div>
     </div>
   );
 }
+
