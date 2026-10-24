@@ -121,18 +121,18 @@ export async function createBookingFromHold(input: CreateBookingInput) {
          discountAmount = dynamicPrice;
          payableTotal = travelFee;
        }
-       const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject, lessonType, status: payableTotal > 0 ? 'PENDING' : 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants, partnerName: lessonType === 'PAIR' ? partnerName : null, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount, totalPrice: payableTotal, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules }, select: { id: true, reference: true } });
+       const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject, lessonType, status: 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants, partnerName: lessonType === 'PAIR' ? partnerName : null, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount, totalPrice: payableTotal, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules }, select: { id: true, reference: true } });
        if (classPassId) {
          const redeemed = await tx.classPass.updateMany({ where: { id: classPassId, purchaserId: customerId, lessonsRemaining: { gt: 0 }, expiresAt: { gt: now } }, data: { lessonsRemaining: { decrement: 1 } } });
          if (redeemed.count !== 1) throw domainErrors.validationFailed('classPass');
          await tx.classPassRedemption.create({ data: { passId: classPassId, bookingId: created.id } });
        }
       const ref = refFromId(created.id);
-      const updated = await tx.booking.update({ where: { id: created.id }, data: { reference: ref }, select: { id: true, reference: true, status: true, totalPrice: true, startsAt: true, endsAt: true } });
+      const updated = await tx.booking.update({ where: { id: created.id }, data: { reference: ref }, select: { id: true, reference: true, totalPrice: true, startsAt: true, endsAt: true } });
       return updated;
     });
     createdId = result.id;
-    if (result.status === 'CONFIRMED') void notifyBookingConfirmed(result.id).catch(() => {});
+    void notifyBookingConfirmed(result.id).catch(() => {});
     return result;
   } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; } finally { void createdId; }
 }

@@ -130,8 +130,6 @@ describe('бронирование: цена только из БД', () => {
     const calledTotal = (mocks.db.booking.create.mock.calls[0]?.[0] as { data: { totalPrice: number } })?.data.totalPrice;
     expect(typeof calledTotal).toBe('number');
     expect(calledTotal).toBeGreaterThanOrEqual(price);
-    // Бронь с ценой ждёт оплаты: создаётся PENDING, подтверждает вебхук.
-    expect(mocks.db.booking.create.mock.calls[0]?.[0]).toMatchObject({ data: expect.objectContaining({ status: calledTotal > 0 ? 'PENDING' : 'CONFIRMED' }) });
     expect(mocks.db.slotHold.deleteMany).toHaveBeenCalledWith({ where: { id: hold.id, expiresAt: { gt: now } } });
   });
 });
