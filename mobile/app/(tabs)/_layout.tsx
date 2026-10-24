@@ -43,7 +43,10 @@ export default function TabsLayout() {
   };
 
   return (
-    <Tabs tabBar={(props) => <GlassTabBar {...props} />} screenOptions={{ headerShown: false }}>
+    <Tabs
+      tabBar={(props) => <GlassTabBar {...props} />}
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}
+    >
       {Object.keys(ICONS).map((name) => (
         <Tabs.Screen key={name} name={name} options={{ title: titles[name] }} />
       ))}

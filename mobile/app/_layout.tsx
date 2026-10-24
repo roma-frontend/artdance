@@ -4,7 +4,7 @@ import {
   PlayfairDisplay_700Bold_Italic,
   useFonts,
 } from '@expo-google-fonts/playfair-display';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 
@@ -14,6 +14,20 @@ import '@/lib/reminders';
 import { colors } from '@/theme';
 
 const SPLASH_MIN_MS = 2000;
+
+// Фон темы под экранами: без него при свайпе назад виден светлый фон.
+const navTheme = {
+  ...DefaultTheme,
+  dark: true,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: colors.accentBright,
+    background: colors.bg,
+    card: colors.bg,
+    text: colors.text,
+    border: colors.line,
+  },
+};
 
 export default function RootLayout() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
@@ -64,7 +78,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <ThemeProvider value={navTheme}>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -93,6 +107,6 @@ export default function RootLayout() {
         <Stack.Screen name="legal" options={{ animation: 'default' }} />
         <Stack.Screen name="book/[instructor]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
       </Stack>
-    </>
+    </ThemeProvider>
   );
 }
