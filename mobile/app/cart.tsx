@@ -12,6 +12,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { mediaUri } from '@/lib/catalog';
 import {
   applyPromoCode,
+  CartError,
   getCart,
   removeCartItem,
   removePromoCode,
@@ -63,6 +64,7 @@ export default function CartScreen() {
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [promo, setPromo] = useState('');
+  const [promoError, setPromoError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -94,7 +96,18 @@ export default function CartScreen() {
   async function applyPromo() {
     const code = promo.trim();
     if (!code) return;
-    if (await run(() => applyPromoCode(code))) setPromo('');
+    setBusy(true);
+    setPromoError(null);
+    try {
+      setCart(await applyPromoCode(code));
+      setPromo('');
+    } catch (e) {
+      // Неверный/истёкший/исчерпанный код сервер отдаёт как 422 (VALIDATION_FAILED).
+      if (e instanceof CartError && e.status === 422) setPromoError(c.cart.promoInvalid);
+      else Alert.alert(m.genericError);
+    } finally {
+      setBusy(false);
+    }
   }
 
   function openCheckout() {
@@ -167,6 +180,7 @@ export default function CartScreen() {
               />
               <Button label={c.cart.promoApply} variant="ghost" onPress={applyPromo} disabled={busy || promo.trim() === ''} style={styles.promoButton} />
             </View>
+            {promoError ? <Text style={styles.promoError}>{promoError}</Text> : null}
             {cart?.promoCode ? (
               <View style={styles.promoApplied}>
                 <Text style={type.label}>{cart.promoCode}</Text>
@@ -324,6 +338,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   promoButton: { minWidth: 96 },
+  promoError: { ...type.bodySm, color: colors.danger, marginTop: space.sm },
   promoApplied: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   summaryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   summaryLabel: { ...type.bodySm },

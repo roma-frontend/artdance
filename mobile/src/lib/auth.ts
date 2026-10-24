@@ -86,7 +86,10 @@ export async function requestPasswordReset(email: string): Promise<void> {
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   });
-  if (!response.ok) throw await readError(response);
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new AuthError(body.error ?? `HTTP ${response.status}`, response.status);
+  }
 }
 
 /** Текущий пользователь или null, если сессии нет или она истекла. */

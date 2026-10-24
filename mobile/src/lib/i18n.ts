@@ -21,6 +21,8 @@ const dictionary: Dictionary = {
     forgotTitle: 'Գաղտնաբառի վերականգնում',
     forgotSubmit: 'Ուղարկել հղումը',
     forgotSent: 'Եթե այս հասցեով հաշիվ կա, հղումն արդեն ճանապարհին է։ Բացեք այն բրաուզերում՝ նոր գաղտնաբառ սահմանելու համար։',
+    forgotCaptcha: 'Անվտանգության ստուգումը չանցավ։ Վերականգնեք գաղտնաբառը կայքում։',
+    forgotOpenWeb: 'Բացել կայքում',
     backToSignIn: 'Վերադառնալ մուտք',
     catalogEmpty: 'Դատարկ է',
     catalogNotFound: 'Չգտնվեց',
@@ -80,6 +82,8 @@ const dictionary: Dictionary = {
     forgotTitle: 'Сброс пароля',
     forgotSubmit: 'Отправить ссылку',
     forgotSent: 'Если аккаунт с этим адресом есть, ссылка уже в пути. Откройте её в браузере, чтобы задать новый пароль.',
+    forgotCaptcha: 'Проверка безопасности не пройдена. Сбросьте пароль на сайте.',
+    forgotOpenWeb: 'Открыть на сайте',
     backToSignIn: 'Вернуться ко входу',
     catalogEmpty: 'Пока пусто',
     catalogNotFound: 'Не найдено',
@@ -139,6 +143,8 @@ const dictionary: Dictionary = {
     forgotTitle: 'Reset password',
     forgotSubmit: 'Send reset link',
     forgotSent: 'If an account exists for this email, the link is on its way. Open it in a browser to set a new password.',
+    forgotCaptcha: 'Security check failed. Reset your password on the website.',
+    forgotOpenWeb: 'Open on the website',
     backToSignIn: 'Back to sign in',
     catalogEmpty: 'Nothing here yet',
     catalogNotFound: 'Not found',
@@ -200,6 +206,8 @@ export type MessageKey =
   | 'forgotTitle'
   | 'forgotSubmit'
   | 'forgotSent'
+  | 'forgotCaptcha'
+  | 'forgotOpenWeb'
   | 'backToSignIn'
   | 'catalogEmpty'
   | 'catalogNotFound'

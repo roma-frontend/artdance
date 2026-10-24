@@ -97,7 +97,7 @@ function devWebOriginResponse(request: NextRequest): NextResponse | null {
   const headers = {
     'Access-Control-Allow-Origin': DEV_WEB_ORIGIN,
     'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Expose-Headers': 'set-auth-token',
     Vary: 'Origin',
