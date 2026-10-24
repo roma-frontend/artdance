@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { SplashLoader } from '@/components/splash-loader';
 import { getCurrentUser, onSessionChange, type User } from '@/lib/auth';
+import '@/lib/reminders';
 import { colors } from '@/theme';
 
 const SPLASH_MIN_MS = 2000;
@@ -78,6 +79,12 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="catalog/[section]/index" options={{ animation: 'default' }} />
         <Stack.Screen name="catalog/[section]/[slug]" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/bookings" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/orders" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/favorites" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/subscription" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/wallet" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/referrals" options={{ animation: 'default' }} />
         <Stack.Screen name="book/[instructor]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
       </Stack>
     </>

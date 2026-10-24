@@ -7,6 +7,7 @@ import {
   FlatList,
   Keyboard,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
@@ -104,6 +105,8 @@ export default function HomeScreen() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [styleFilter, setStyleFilter] = useState<string | null>(null);
   const [levelFilter, setLevelFilter] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -112,14 +115,15 @@ export default function HomeScreen() {
       .then((u) => alive && setUser(u));
     listCatalog('events', { page: '1', pageSize: '5' })
       .then((r) => alive && setEvents(r.items as EventCard[]))
-      .catch(() => alive && setEvents([]));
+      .catch(() => alive && setEvents([]))
+      .finally(() => alive && setRefreshing(false));
     listCatalog('instructors', { page: '1', pageSize: '12' })
       .then((r) => alive && setInstructors(r.items as InstructorCard[]))
       .catch(() => alive && setInstructors([]));
     return () => {
       alive = false;
     };
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     let alive = true;
@@ -134,7 +138,7 @@ export default function HomeScreen() {
     return () => {
       alive = false;
     };
-  }, [mood, styleFilter, levelFilter]);
+  }, [mood, styleFilter, levelFilter, refreshKey]);
 
   const term = query.trim();
   const isSearch = term.length >= MIN_QUERY_LENGTH;
@@ -209,6 +213,19 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              setRefreshKey((k) => k + 1);
+            }}
+            tintColor={colors.text2}
+            colors={[colors.accentBright]}
+            progressBackgroundColor={colors.surface2}
+            progressViewOffset={insets.top}
+          />
+        }
         contentContainerStyle={{ paddingTop: insets.top + space.md, paddingBottom: 140 }}
       >
         <Animated.View entering={FadeInDown.duration(600)} style={styles.header}>

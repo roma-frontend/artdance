@@ -21,6 +21,16 @@ import { colors, fonts, gradients, radius, space, type } from '@/theme';
 type IconName = ComponentProps<typeof Ionicons>['name'];
 type Row = { icon: IconName; label: string; path: string; tint: string };
 
+/** Разделы, которые открываются экраном приложения; остальные ведут на сайт. */
+const NATIVE_PATHS: ReadonlySet<string> = new Set([
+  '/account/bookings',
+  '/account/orders',
+  '/account/favorites',
+  '/account/subscription',
+  '/account/wallet',
+  '/account/referrals',
+]);
+
 export default function AccountScreen() {
   const locale = deviceLocale(undefined);
   const t = messagesFor(locale);
@@ -49,11 +59,14 @@ export default function AccountScreen() {
   }
 
   const mine: Row[] = [
-    { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52' },
     { icon: 'receipt', label: c.account.nav.orders, path: '/account/orders', tint: '#C9A96A' },
+    { icon: 'ribbon', label: c.account.nav.subscription, path: '/account/subscription', tint: '#8E7CC3' },
+    { icon: 'wallet', label: c.account.nav.wallet, path: '/account/wallet', tint: '#3FB984' },
+    { icon: 'people', label: c.account.nav.referrals, path: '/account/referrals', tint: '#5AA9E6' },
     { icon: 'heart', label: c.account.nav.favorites, path: '/account/favorites', tint: '#E0607E' },
     { icon: 'settings', label: c.account.nav.settings, path: '/account/settings', tint: '#7D8AA8' },
   ];
+  const bookingsRow: Row = { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52' };
   const info: Row[] = [
     { icon: 'help-buoy', label: c.footer.help, path: '/help', tint: '#3FB984' },
     { icon: 'document-text', label: c.footer.terms, path: '/legal/terms', tint: '#8E7CC3' },
@@ -97,8 +110,8 @@ export default function AccountScreen() {
           </View>
         </Animated.View>
 
-        <Group title={t.accountSectionMine} rows={mine} locale={locale} delay={160} />
-        <Group title={t.accountSectionInfo} rows={info} locale={locale} delay={240} />
+        <Group title={t.accountSectionMine} rows={[bookingsRow, ...mine]} locale={locale} delay={160} router={router} />
+        <Group title={t.accountSectionInfo} rows={info} locale={locale} delay={240} router={router} />
 
         <Animated.View entering={FadeInDown.delay(320).duration(500)}>
           <PressableScale onPress={onSignOut} style={styles.signOut} pressedScale={0.97}>
@@ -118,7 +131,19 @@ export default function AccountScreen() {
   );
 }
 
-function Group({ title, rows, locale, delay }: { title: string; rows: Row[]; locale: ReturnType<typeof deviceLocale>; delay: number }) {
+function Group({
+  title,
+  rows,
+  locale,
+  delay,
+  router,
+}: {
+  title: string;
+  rows: Row[];
+  locale: ReturnType<typeof deviceLocale>;
+  delay: number;
+  router: ReturnType<typeof useRouter>;
+}) {
   return (
     <Animated.View entering={FadeInDown.delay(delay).duration(500)} style={styles.group}>
       <Text style={[type.eyebrow, styles.groupTitle]}>{title}</Text>
@@ -127,7 +152,7 @@ function Group({ title, rows, locale, delay }: { title: string; rows: Row[]; loc
           <PressableScale
             key={row.path}
             pressedScale={0.98}
-            onPress={() => Linking.openURL(webUrl(locale, row.path)).catch(() => undefined)}
+            onPress={() => (NATIVE_PATHS.has(row.path) ? router.push(row.path as '/account/bookings') : Linking.openURL(webUrl(locale, row.path)).catch(() => undefined))}
             style={[styles.row, index > 0 && styles.divider]}
             accessibilityRole="link"
           >

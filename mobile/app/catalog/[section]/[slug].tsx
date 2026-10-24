@@ -1,9 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
-import { FlatList, Linking, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useEffect, useRef, useState, type ComponentProps, type ComponentRef, type ReactNode } from 'react';
+import * as Sharing from 'expo-sharing';
+import { captureRef } from 'react-native-view-shot';
+import { Alert, FlatList, Linking, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Extrapolation,
   FadeIn,
@@ -16,6 +19,11 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Skeleton } from '@/components/skeleton';
+import { addToCalendar } from '@/lib/calendar';
+import { scheduleClassReminder } from '@/lib/reminders';
+
+
+import { ShareCard } from '@/components/share-card';
 import { Button } from '@/components/ui/button';
 import { CollapsingHeader } from '@/components/ui/collapsing-header';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -31,6 +39,33 @@ import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors, fill, fonts, gradients, radius, space, type } from '@/theme';
 
 const sections: readonly Section[] = ['classes', 'instructors', 'studios', 'events', 'shop'];
+
+/** Подпись кнопки «В календарь»: строк для неё нет в словарях, поэтому задаём по локали, как HINTS в каталоге. */
+const CALENDAR_LABEL: Record<string, string> = {
+  ru: 'В календарь',
+  hy: 'Օրացույցում',
+  en: 'Add to calendar',
+};
+const REMIND_LABEL: Record<string, string> = {
+  ru: 'Напомнить',
+  hy: 'Հիշեցնել',
+  en: 'Remind me',
+};
+const REMIND_SOON: Record<string, string> = {
+  ru: 'Занятие начнётся через час',
+  hy: 'Դասը կսկսվի մեկ ժամից',
+  en: 'Starts in an hour',
+};
+const REMIND_DONE: Record<string, string> = {
+  ru: 'Напомним за час до занятия',
+  hy: 'Դասից մեկ ժամ առաջ կհիշեցնենք',
+  en: "We'll remind you an hour before",
+};
+const REMIND_DENIED: Record<string, string> = {
+  ru: 'Включите уведомления в настройках телефона',
+  hy: 'Միացրեք ծանուցումները հեռախոսի կարգավորումներում',
+  en: 'Enable notifications in phone settings',
+};
 
 type Detail = Record<string, unknown>;
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -62,6 +97,8 @@ export default function CatalogDetailScreen() {
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
   });
+  // Хуки должны вызываться до ранних return (ошибка и загрузка), иначе порядок хуков сбивается.
+  const cardRef = useRef<ComponentRef<typeof View>>(null);
 
   useEffect(() => {
     if (!valid || !slug) return;
@@ -145,6 +182,84 @@ export default function CatalogDetailScreen() {
   const bookSlug = valid === 'classes' ? str(detail.instructorSlug) : valid === 'instructors' ? slug : null;
   const isFull = valid === 'classes' && num(detail.spotsLeft) === 0;
 
+  const addEvent = () => {
+    if (valid !== 'classes' && valid !== 'events') return;
+    const url = webUrl(locale, `/${valid}/${slug}`);
+    const venue = valid === 'classes' ? str(detail.venueName) ?? undefined : str(detail.locationName) ?? undefined;
+    const input =
+      valid === 'classes'
+        ? {
+            kind: 'class' as const,
+            title,
+            weekday: num(detail.weekday) ?? 0,
+            startTime: str(detail.startTime) ?? '00:00',
+            durationMinutes: num(detail.durationMinutes) ?? 60,
+            venue,
+            url,
+          }
+        : {
+            kind: 'event' as const,
+            title,
+            startsAt: str(detail.startsAt) ?? new Date().toISOString(),
+            startTime: str(detail.startTime) ?? '00:00',
+            endTime: str(detail.endTime) ?? '01:00',
+            venue,
+            url,
+          };
+    addToCalendar(input)
+      .then((ok) => {
+        if (ok) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+      })
+      .catch(() => undefined);
+  };
+
+  const remind = () => {
+    if (valid !== 'classes') return;
+    const lang = locale in REMIND_SOON ? locale : 'en';
+    scheduleClassReminder({
+      slug,
+      title,
+      weekday: num(detail.weekday) ?? 0,
+      startTime: str(detail.startTime) ?? '00:00',
+      remindText: REMIND_SOON[lang],
+    })
+      .then((ok) => {
+        if (!ok) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => undefined);
+          Alert.alert('', REMIND_DENIED[lang]);
+        } else {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+          Alert.alert('', REMIND_DONE[lang]);
+        }
+      })
+      .catch(() => undefined);
+  };
+
+  const shareCard = async () => {
+    if (valid !== 'classes' || !cardRef.current) return;
+    try {
+      const file = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile' });
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file, { mimeType: 'image/png', UTI: 'public.png' });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+      }
+    } catch {
+      // Пользователь закрыл лист или снимок не получился — ничего не показываем.
+    }
+  };
+
+  // Карта открывается только если сервер отдал координаты или адрес студии.
+  const lat = num(detail.latitude);
+  const lng = num(detail.longitude);
+  // В схеме веба у площадки поля `addressLine`, `latitude`, `longitude`; сервер должен их отдавать.
+  const address = str(detail.addressLine) ?? str(detail.address);
+  const mapQuery = lat !== null && lng !== null ? `${lat},${lng}` : address;
+  const openMap = () => {
+    if (!mapQuery) return;
+    const query = encodeURIComponent(mapQuery);
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`).catch(() => undefined);
+  };
+
   const share = () => {
     const url = webUrl(locale, `/${valid}/${slug}`);
     Share.share({ message: `${title}\n${url}`, url }).catch(() => undefined);
@@ -161,7 +276,20 @@ export default function CatalogDetailScreen() {
         title={title}
         threshold={heroHeight - insets.top - 70}
         left={backButton}
-        right={<GlassButton icon="share-outline" label={t.common.actions.share} onPress={share} />}
+        right={
+          <View style={styles.headerActions}>
+            {valid === 'classes' ? (
+              <GlassButton icon="image-outline" label={t.common.actions.share} onPress={shareCard} />
+            ) : null}
+            {valid === 'classes' ? (
+              <GlassButton icon="notifications-outline" label={REMIND_LABEL[locale] ?? REMIND_LABEL.en} onPress={remind} />
+            ) : null}
+            {valid === 'classes' || valid === 'events' ? (
+              <GlassButton icon="calendar-outline" label={CALENDAR_LABEL[locale] ?? CALENDAR_LABEL.en} onPress={addEvent} />
+            ) : null}
+            <GlassButton icon="share-outline" label={t.common.actions.share} onPress={share} />
+          </View>
+        }
       />
 
       <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -315,6 +443,18 @@ export default function CatalogDetailScreen() {
             </Block>
           ) : null}
 
+          {valid === 'studios' && mapQuery ? (
+            <Block title={t.studio.mapTitle}>
+              <PressableScale onPress={openMap} style={styles.person} pressedScale={0.98}>
+                <Ionicons name="map-outline" size={22} color={colors.accentBright} />
+                <Text style={[type.body, styles.flex]} numberOfLines={2}>
+                  {address ?? title}
+                </Text>
+                <Ionicons name="open-outline" size={18} color={colors.text3} />
+              </PressableScale>
+            </Block>
+          ) : null}
+
           {arr<string>(detail.amenities).length > 0 ? (
             <Block title={t.common.labels.studio}>
               <View style={styles.chips}>
@@ -383,6 +523,20 @@ export default function CatalogDetailScreen() {
           ) : null}
         </View>
       </Animated.ScrollView>
+
+      {valid === 'classes' ? (
+        <View style={styles.offscreen} pointerEvents="none">
+          <ShareCard
+            ref={cardRef}
+            title={title}
+            eyebrow={t.nav.classes}
+            brand="ArtDance"
+            meta={[weekdayShort(num(detail.weekday) ?? 0, locale), str(detail.startTime), str(detail.instructorName)].filter(Boolean).join(' · ')}
+            price={num(detail.price) ? price(num(detail.price) as number, locale) : t.common.labels.free}
+            uri={heroKey ? mediaUri(heroKey) : undefined}
+          />
+        </View>
+      ) : null}
 
       <Animated.View entering={FadeIn.delay(250)} style={[styles.ctaBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
         <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
@@ -471,6 +625,7 @@ function Block({ title, children, delay = 0, flush }: { title: string; children:
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
+  headerActions: { flexDirection: 'row', gap: 8 },
   padded: { paddingHorizontal: space.xl },
   scroll: { paddingBottom: 140 },
   floatingBack: { position: 'absolute', left: 16, zIndex: 30 },
@@ -612,4 +767,5 @@ const styles = StyleSheet.create({
   ctaTint: { ...fill, backgroundColor: 'rgba(11,8,9,0.6)' },
   ctaPrice: { fontFamily: fonts.display, fontSize: 22, lineHeight: 28, color: colors.text },
   ctaButton: { minWidth: 150 },
+  offscreen: { position: 'absolute', left: -5000, top: 0, opacity: 0 },
 });

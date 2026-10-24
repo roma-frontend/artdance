@@ -224,7 +224,11 @@ function TabItem({
       <Animated.View style={iconStyle}>
         <Ionicons name={icon} size={23} color={focused ? colors.text : colors.text3} />
       </Animated.View>
-      <Animated.Text style={[styles.label, { color: focused ? colors.text : colors.text3 }, labelStyle]} numberOfLines={1}>
+      <Animated.Text
+        style={[styles.label, { color: focused ? colors.text : colors.text3 }, labelStyle]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.3}
+      >
         {label}
       </Animated.Text>
     </Pressable>

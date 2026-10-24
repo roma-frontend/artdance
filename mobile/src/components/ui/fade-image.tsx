@@ -1,22 +1,23 @@
-import { Image, StyleSheet, type ImageStyle, type StyleProp } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { Image } from 'expo-image';
+import { StyleSheet, type ImageStyle, type StyleProp } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 
 type Props = { uri: string; style?: StyleProp<ImageStyle> };
 
-/** Фото проявляется плавно после загрузки — без «мигания» пустого кадра. */
+/**
+ * Фото проявляется плавно после загрузки — без «мигания» пустого кадра.
+ * expo-image кэширует картинки на диске и в памяти, поэтому повторное открытие экрана мгновенное.
+ */
 export function FadeImage({ uri, style }: Props) {
-  const opacity = useSharedValue(0);
-  const animated = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const reduceMotion = useReducedMotion();
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, animated]}>
-      <Image
-        source={{ uri }}
-        style={[StyleSheet.absoluteFill, style]}
-        resizeMode="cover"
-        onLoad={() => {
-          opacity.value = withTiming(1, { duration: 450 });
-        }}
-      />
-    </Animated.View>
+    <Image
+      source={{ uri }}
+      style={[StyleSheet.absoluteFill, style]}
+      contentFit="cover"
+      transition={reduceMotion ? 0 : 450}
+      cachePolicy="memory-disk"
+      recyclingKey={uri}
+    />
   );
 }

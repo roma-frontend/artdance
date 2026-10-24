@@ -1,0 +1,106 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { EmptyState } from '@/components/ui/empty-state';
+import { PressableScale } from '@/components/ui/pressable-scale';
+import { catalogFor } from '@/i18n/catalog';
+import { dateLabel, price } from '@/lib/format';
+import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { listMyOrders, type ClientOrder } from '@/lib/orders';
+import { colors, radius, space, type } from '@/theme';
+
+export default function MyOrdersScreen() {
+  const locale = deviceLocale(undefined);
+  const t = messagesFor(locale);
+  const c = catalogFor(locale);
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const [orders, setOrders] = useState<ClientOrder[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      setOrders(await listMyOrders());
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function onRefresh() {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }
+
+  if (orders === null && !failed) {
+    return (
+      <View style={[styles.screen, styles.center, { paddingTop: insets.top }]}>
+        <ActivityIndicator color={colors.accentBright} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+          <Ionicons name="chevron-back" size={26} color={colors.text} />
+        </PressableScale>
+        <Text style={type.h2}>{c.account.orders.title}</Text>
+      </View>
+
+      <FlatList
+        data={orders ?? []}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentBright} />}
+        ListEmptyComponent={
+          failed ? (
+            <EmptyState icon="alert-circle-outline" title={t.catalogError} />
+          ) : (
+            <EmptyState icon="receipt-outline" title={c.account.orders.empty} />
+          )
+        }
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Text style={type.h3} numberOfLines={1}>
+              {c.account.orders.orderNumber.replace('{number}', item.orderNumber)}
+            </Text>
+            <Text style={type.bodySm} numberOfLines={2}>
+              {item.items.map((i) => (i.quantity > 1 ? `${i.title} × ${i.quantity}` : i.title)).join(', ')}
+            </Text>
+            <Text style={type.bodySm}>{dateLabel(item.placedAt, locale, { day: '2-digit', month: 'short', year: 'numeric' })}</Text>
+            <View style={styles.footer}>
+              <Text style={styles.status}>{statusLabel(item.status, c)}</Text>
+              <Text style={type.label}>{price(item.total, locale)}</Text>
+            </View>
+          </View>
+        )}
+      />
+    </View>
+  );
+}
+
+function statusLabel(status: string, c: ReturnType<typeof catalogFor>): string {
+  const labels = c.status.order as Record<string, string>;
+  return labels[status.toLowerCase()] ?? status;
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.bg },
+  center: { alignItems: 'center', justifyContent: 'center' },
+  header: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.xl, paddingVertical: space.lg },
+  list: { paddingHorizontal: space.xl, paddingBottom: 60, gap: space.md },
+  card: { padding: space.lg, borderRadius: radius.md, backgroundColor: 'rgba(245,241,234,0.06)', gap: 4 },
+  footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: space.sm },
+  status: { fontSize: 12, fontWeight: '700', color: colors.metal },
+});
