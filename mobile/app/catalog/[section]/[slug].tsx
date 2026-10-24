@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentProps, type ComponentRef, type ReactNode } from 'react';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
@@ -35,21 +35,14 @@ import { catalogFor } from '@/i18n/catalog';
 import { CatalogError, getCatalogDetail, mediaUri, type CatalogItem, type ClassCard, type Section } from '@/lib/catalog';
 import { cardView } from '@/lib/catalog-view';
 import { addToCart, resolveVariantId } from '@/lib/cart';
-import { FavoritesError, listMyFavorites, toggleMyFavorite, type FavoriteKind } from '@/lib/favorites';
+import { useEntitlements } from '@/lib/entitlements';
+import { FAVORITE_KIND, FavoritesError, listMyFavorites, toggleMyFavorite } from '@/lib/favorites';
 import { dateLabel, initials, levelLabel, plural, price, styleLabel, weekdayShort, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { serverMessageOf } from '@/lib/server-message';
 import { colors, fill, fonts, gradients, radius, space, type } from '@/theme';
 
 const sections: readonly Section[] = ['classes', 'instructors', 'studios', 'events', 'shop'];
-
-/** Разделы, которые можно добавить в избранное (события в избранное не сохраняются). */
-const FAVORITE_KIND: Partial<Record<Section, FavoriteKind>> = {
-  classes: 'class',
-  instructors: 'instructor',
-  studios: 'venue',
-  shop: 'product',
-};
 
 /** Подпись кнопки «В календарь»: строк для неё нет в словарях, поэтому задаём по локали, как HINTS в каталоге. */
 const CALENDAR_LABEL: Record<string, string> = {
@@ -91,7 +84,18 @@ const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFi
 const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 const keyOf = (v: unknown): string | null => str((v as { key?: unknown } | undefined)?.key);
 
+/** Карточка события открывается только при включённом модуле; иначе уводим на главную. */
 export default function CatalogDetailScreen() {
+  const { section } = useLocalSearchParams<{ section: string }>();
+  const entitlements = useEntitlements();
+  if (section === 'events') {
+    if (!entitlements) return null;
+    if (entitlements.events !== true) return <Redirect href="/" />;
+  }
+  return <CatalogDetailBody />;
+}
+
+function CatalogDetailBody() {
   const { section, slug } = useLocalSearchParams<{ section: string; slug: string }>();
   const locale = deviceLocale(undefined);
   const m = messagesFor(locale);

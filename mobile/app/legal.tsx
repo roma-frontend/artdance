@@ -3,11 +3,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { getLegalDocument, getLegalIndex, type LegalDocumentContent, type LegalIndexContent } from '@/lib/content';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 /**
@@ -55,14 +57,14 @@ export default function LegalScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={[type.h2, styles.title]} numberOfLines={2}>
           {title ?? ''}
         </Text>
-      </View>
+      </Animated.View>
 
       {loaded === null ? (
         <EmptyState icon="alert-circle-outline" title={t.catalogError} />
@@ -76,11 +78,11 @@ export default function LegalScreen() {
           )}
           <Text style={type.bodySm}>{doc.intro}</Text>
 
-          {doc.sections.map((section) => (
-            <View key={section.id} style={styles.card}>
+          {doc.sections.map((section, i) => (
+            <Animated.View key={section.id} entering={enterItem(i)} style={styles.card}>
               <Text style={type.h3}>{section.title}</Text>
               <Text style={type.bodySm}>{section.body}</Text>
-            </View>
+            </Animated.View>
           ))}
 
           <Text style={type.caption}>{doc.versionNote}</Text>
@@ -88,17 +90,15 @@ export default function LegalScreen() {
         </ScrollView>
       ) : index ? (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {index.documents.map((item) => (
-            <PressableScale
-              key={item.id}
-              onPress={() => router.push({ pathname: '/legal', params: { slug: item.slug } })}
-              accessibilityRole="button"
-            >
-              <View style={styles.card}>
-                <Text style={type.h3}>{item.title}</Text>
-                <Text style={type.caption}>{item.version}</Text>
-              </View>
-            </PressableScale>
+          {index.documents.map((item, i) => (
+            <Animated.View key={item.id} entering={enterItem(i)}>
+              <PressableScale onPress={() => router.push({ pathname: '/legal', params: { slug: item.slug } })} accessibilityRole="button">
+                <View style={styles.card}>
+                  <Text style={type.h3}>{item.title}</Text>
+                  <Text style={type.caption}>{item.version}</Text>
+                </View>
+              </PressableScale>
+            </Animated.View>
           ))}
         </ScrollView>
       ) : null}

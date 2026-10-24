@@ -2,13 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Collapsible } from '@/components/ui/collapsible';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { getFaq, type FaqGroup } from '@/lib/content';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { animateNextLayout, enterItem } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 export default function FaqScreen() {
@@ -56,8 +59,8 @@ export default function FaqScreen() {
         <EmptyState icon="alert-circle-outline" title={t.catalogError} />
       ) : (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {(groups ?? []).map((group) => (
-            <View key={group.id} style={styles.group}>
+          {(groups ?? []).map((group, groupIndex) => (
+            <Animated.View key={group.id} entering={enterItem(groupIndex)} style={styles.group}>
               <Text style={type.h3}>{group.title}</Text>
               {group.items.map((item, index) => {
                 const key = `${group.id}-${index}`;
@@ -65,7 +68,10 @@ export default function FaqScreen() {
                 return (
                   <View key={key} style={styles.card}>
                     <PressableScale
-                      onPress={() => setOpenKey(open ? null : key)}
+                      onPress={() => {
+                        animateNextLayout();
+                        setOpenKey(open ? null : key);
+                      }}
                       accessibilityRole="button"
                       accessibilityState={{ expanded: open }}
                       style={styles.questionRow}
@@ -73,20 +79,22 @@ export default function FaqScreen() {
                       <Text style={[type.label, styles.question]}>{item.question}</Text>
                       <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={18} color={colors.metal} />
                     </PressableScale>
-                    {open ? <Text style={[type.bodySm, styles.answer]}>{item.answer}</Text> : null}
+                    <Collapsible open={open}>
+                      <Text style={[type.bodySm, styles.answer]}>{item.answer}</Text>
+                    </Collapsible>
                   </View>
                 );
               })}
-            </View>
+            </Animated.View>
           ))}
 
-          <View style={styles.card}>
+          <Animated.View entering={enterItem(groups?.length ?? 0)} style={styles.card}>
             <Text style={type.h3}>{c.help.stillStuck.title}</Text>
             <Text style={type.bodySm}>{c.help.stillStuck.body}</Text>
             <PressableScale onPress={() => router.push('/contact')} accessibilityRole="button">
               <Text style={[type.label, styles.cta]}>{c.help.stillStuck.cta}</Text>
             </PressableScale>
-          </View>
+          </Animated.View>
         </ScrollView>
       )}
     </View>

@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -11,6 +12,7 @@ import { getMyReferrals, type ClientReferrals, type InvitedReferral } from '@/li
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { serverMessageOf } from '@/lib/server-message';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 export default function MyReferralsScreen() {
@@ -54,12 +56,12 @@ export default function MyReferralsScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{r.title}</Text>
-      </View>
+      </Animated.View>
 
       <FlatList
         data={data?.invited ?? []}
@@ -68,19 +70,23 @@ export default function MyReferralsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentBright} />}
         ListHeaderComponent={
           data ? (
-            <View style={styles.card}>
+            <Animated.View entering={FadeInDown.delay(60).duration(420).easing(EASE_OUT)} style={styles.card}>
               <Text style={type.eyebrow}>{r.codeLabel}</Text>
               <Text style={styles.code} selectable>
                 {data.code}
               </Text>
               <Text style={type.bodySm}>{r.hint.replace('{bonus}', price(data.bonusAmount, locale))}</Text>
-            </View>
+            </Animated.View>
           ) : undefined
         }
         ListEmptyComponent={
           failed !== null ? <EmptyState icon="alert-circle-outline" title={failed} /> : <EmptyState icon="people-outline" title={r.empty} />
         }
-        renderItem={({ item }) => <InvitedRow item={item} locale={locale} paidLabel={r.paid} pendingLabel={r.pending} />}
+        renderItem={({ item, index }) => (
+          <Animated.View entering={enterItem(index, 120)} layout={LinearTransition.springify().damping(18)}>
+            <InvitedRow item={item} locale={locale} paidLabel={r.paid} pendingLabel={r.pending} />
+          </Animated.View>
+        )}
       />
     </View>
   );

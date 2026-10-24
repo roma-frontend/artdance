@@ -53,6 +53,23 @@ const dictionary: Dictionary = {
     tabEvents: 'Իրադարձություններ',
     tabShop: 'Խանութ',
     tabAccount: 'Հաշիվ',
+    tabAi: 'AI',
+    aiTitle: 'ArtDance AI',
+    aiOnline: 'Առցանց',
+    aiIntro: 'Հարցրեք դասերի, գրաֆիկի, գների կամ ձեր բրոնավորումների մասին։',
+    aiPlaceholder: 'Գրեք հաղորդագրություն',
+    aiThinking: 'Մտածում եմ…',
+    aiError: 'Չհաջողվեց պատասխանել։ Փորձեք նորից։',
+    aiRateLimited: 'Հարցումները շատ են։ Փորձեք քիչ հետո։',
+    aiSignInTitle: 'Մուտք գործեք',
+    aiSignInBody: 'Ասիստենտը տեսնում է ձեր բրոնավորումները, ուստի անհրաժեշտ է մուտքը։',
+    aiSignIn: 'Մուտք',
+    aiClear: 'Մաքրել զրույցը',
+    aiSend: 'Ուղարկել',
+    aiSuggestion1: 'Ի՞նչ ընտրել սկսնակին',
+    aiSuggestion2: 'Ո՞ր դասերն են այս շաբաթ',
+    aiSuggestion3: 'Ինչպե՞ս է աշխատում չեղարկումը',
+    aiSuggestion4: 'Իմ մոտալուտ բրոնավորումները',
     accountSignOut: 'Դուրս գալ',
     accountEmpty: 'Դուք մուտք չեք գործել',
     greetMorning: 'Բարի առավոտ',
@@ -66,6 +83,29 @@ const dictionary: Dictionary = {
     accountSectionMine: 'Իմը',
     accountSectionInfo: 'Տեղեկություն',
     accountSectionLanding: 'Ծրագրեր և գործընկերներ',
+    accountSectionHelp: 'Օգնություն',
+    accountSectionPartners: 'Մարզիչների և ստուդիաների համար',
+    accountSignOutTitle: 'Դուրս գալ հաշվից՞',
+    accountCancel: 'Չեղարկել',
+    profileTitle: 'Պրոֆիլ',
+    profileHint: 'Սեղմեք՝ կարգավորումների համար։ Պահեք՝ տեսնելու, թե ինչ կարելի է փոխել',
+    profileSave: 'Պահպանել',
+    profileSaved: 'Պահպանված է',
+    profilePasswordTitle: 'Փոխել գաղտնաբառը',
+    profileCurrentPassword: 'Ընթացիկ գաղտնաբառ',
+    profileNewPassword: 'Նոր գաղտնաբառ',
+    profilePasswordRules: 'Առնվազն 10 նիշ, թվով',
+    profilePasswordChanged: 'Գաղտնաբառը թարմացվեց։ Այլ սարքերը դուրս են եկել',
+    profileWrongPassword: 'Ընթացիկ գաղտնաբառը սխալ է',
+    profileActionsTitle: 'Ի՞նչ կարելի է փոխել',
+    profileEditable: 'Հնարավոր է',
+    profileLocked: 'Անհնար',
+    profileSoon: 'Շուտով',
+    profileNameHint: 'Անունը, որ տեսնում են ուրիշները',
+    profilePasswordHint: 'Ընթացիկ և նոր գաղտնաբառ',
+    profilePhotoTitle: 'Նկար',
+    profilePhotoHint: 'Նկարի բեռնումը՝ հաջորդ տարբերակում',
+    profileEmailHint: 'Էլ. հասցեն փոխվում է աջակցության միջոցով',
   },
   ru: {
     signInTitle: 'Вход',
@@ -115,6 +155,23 @@ const dictionary: Dictionary = {
     tabEvents: 'События',
     tabShop: 'Магазин',
     tabAccount: 'Аккаунт',
+    tabAi: 'AI',
+    aiTitle: 'ArtDance AI',
+    aiOnline: 'Онлайн',
+    aiIntro: 'Спросите про занятия, расписание, цены или ваши брони.',
+    aiPlaceholder: 'Напишите сообщение',
+    aiThinking: 'Думаю…',
+    aiError: 'Не удалось ответить. Попробуйте ещё раз.',
+    aiRateLimited: 'Слишком много запросов. Попробуйте позже.',
+    aiSignInTitle: 'Войдите в аккаунт',
+    aiSignInBody: 'Ассистент видит ваши брони, поэтому нужен вход.',
+    aiSignIn: 'Войти',
+    aiClear: 'Очистить чат',
+    aiSend: 'Отправить',
+    aiSuggestion1: 'Что выбрать новичку?',
+    aiSuggestion2: 'Какие занятия на этой неделе?',
+    aiSuggestion3: 'Как работает отмена?',
+    aiSuggestion4: 'Мои ближайшие брони',
     accountSignOut: 'Выйти',
     accountEmpty: 'Вы не вошли',
     greetMorning: 'Доброе утро',
@@ -128,6 +185,29 @@ const dictionary: Dictionary = {
     accountSectionMine: 'Моё',
     accountSectionInfo: 'Информация',
     accountSectionLanding: 'Программы и партнёры',
+    accountSectionHelp: 'Помощь',
+    accountSectionPartners: 'Для преподавателей и студий',
+    accountSignOutTitle: 'Выйти из аккаунта?',
+    accountCancel: 'Отмена',
+    profileTitle: 'Профиль',
+    profileHint: 'Нажмите — настройки. Удерживайте — что можно изменить',
+    profileSave: 'Сохранить',
+    profileSaved: 'Сохранено',
+    profilePasswordTitle: 'Сменить пароль',
+    profileCurrentPassword: 'Текущий пароль',
+    profileNewPassword: 'Новый пароль',
+    profilePasswordRules: 'Не короче 10 символов, с цифрой',
+    profilePasswordChanged: 'Пароль обновлён. Другие устройства вышли из аккаунта',
+    profileWrongPassword: 'Текущий пароль неверный',
+    profileActionsTitle: 'Что можно изменить',
+    profileEditable: 'Можно',
+    profileLocked: 'Нельзя',
+    profileSoon: 'Скоро',
+    profileNameHint: 'Имя, которое видят другие',
+    profilePasswordHint: 'Текущий и новый пароль',
+    profilePhotoTitle: 'Фото',
+    profilePhotoHint: 'Загрузка фото — в следующей версии',
+    profileEmailHint: 'Адрес меняется через поддержку',
   },
   en: {
     signInTitle: 'Sign in',
@@ -177,6 +257,23 @@ const dictionary: Dictionary = {
     tabEvents: 'Events',
     tabShop: 'Shop',
     tabAccount: 'Account',
+    tabAi: 'AI',
+    aiTitle: 'ArtDance AI',
+    aiOnline: 'Online',
+    aiIntro: 'Ask about classes, the schedule, prices or your bookings.',
+    aiPlaceholder: 'Type a message',
+    aiThinking: 'Thinking…',
+    aiError: 'Could not answer. Please try again.',
+    aiRateLimited: 'Too many requests. Try again later.',
+    aiSignInTitle: 'Sign in to continue',
+    aiSignInBody: 'The assistant can see your bookings, so please sign in.',
+    aiSignIn: 'Sign in',
+    aiClear: 'Clear chat',
+    aiSend: 'Send',
+    aiSuggestion1: 'What should a beginner take?',
+    aiSuggestion2: 'Which classes are this week?',
+    aiSuggestion3: 'How does cancellation work?',
+    aiSuggestion4: 'My upcoming bookings',
     accountSignOut: 'Sign out',
     accountEmpty: 'You are not signed in',
     greetMorning: 'Good morning',
@@ -190,6 +287,29 @@ const dictionary: Dictionary = {
     accountSectionMine: 'Mine',
     accountSectionInfo: 'Information',
     accountSectionLanding: 'Programs & partners',
+    accountSectionHelp: 'Help',
+    accountSectionPartners: 'For teachers & studios',
+    accountSignOutTitle: 'Sign out of your account?',
+    accountCancel: 'Cancel',
+    profileTitle: 'Profile',
+    profileHint: 'Tap to open settings. Hold to see what you can change',
+    profileSave: 'Save',
+    profileSaved: 'Saved',
+    profilePasswordTitle: 'Change password',
+    profileCurrentPassword: 'Current password',
+    profileNewPassword: 'New password',
+    profilePasswordRules: 'At least 10 characters, with a number',
+    profilePasswordChanged: 'Password updated. Other devices were signed out',
+    profileWrongPassword: 'Current password is incorrect',
+    profileActionsTitle: 'What you can change',
+    profileEditable: 'Editable',
+    profileLocked: 'Locked',
+    profileSoon: 'Soon',
+    profileNameHint: 'The name others see',
+    profilePasswordHint: 'Current and new password',
+    profilePhotoTitle: 'Photo',
+    profilePhotoHint: 'Photo upload comes in a later version',
+    profileEmailHint: 'Email changes go through support',
   },
 };
 
@@ -241,6 +361,23 @@ export type MessageKey =
   | 'tabEvents'
   | 'tabShop'
   | 'tabAccount'
+  | 'tabAi'
+  | 'aiTitle'
+  | 'aiOnline'
+  | 'aiIntro'
+  | 'aiPlaceholder'
+  | 'aiThinking'
+  | 'aiError'
+  | 'aiRateLimited'
+  | 'aiSignInTitle'
+  | 'aiSignInBody'
+  | 'aiSignIn'
+  | 'aiClear'
+  | 'aiSend'
+  | 'aiSuggestion1'
+  | 'aiSuggestion2'
+  | 'aiSuggestion3'
+  | 'aiSuggestion4'
   | 'accountSignOut'
   | 'accountEmpty'
   | 'greetMorning'
@@ -253,7 +390,30 @@ export type MessageKey =
   | 'accountMember'
   | 'accountSectionMine'
   | 'accountSectionInfo'
-  | 'accountSectionLanding';
+  | 'accountSectionLanding'
+  | 'accountSectionHelp'
+  | 'accountSectionPartners'
+  | 'accountSignOutTitle'
+  | 'accountCancel'
+  | 'profileTitle'
+  | 'profileHint'
+  | 'profileSave'
+  | 'profileSaved'
+  | 'profilePasswordTitle'
+  | 'profileCurrentPassword'
+  | 'profileNewPassword'
+  | 'profilePasswordRules'
+  | 'profilePasswordChanged'
+  | 'profileWrongPassword'
+  | 'profileActionsTitle'
+  | 'profileEditable'
+  | 'profileLocked'
+  | 'profileSoon'
+  | 'profileNameHint'
+  | 'profilePasswordHint'
+  | 'profilePhotoTitle'
+  | 'profilePhotoHint'
+  | 'profileEmailHint';
 
 export type Messages = Record<MessageKey, string>;
 

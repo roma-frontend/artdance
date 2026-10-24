@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, type AlertButton, Pressable, RefreshControl, Share, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import Animated, { Extrapolation, FadeInDown, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 
 import { BrandLogo } from '@/components/brand-logo';
 import { GestureHint } from '@/components/gesture-hint';
@@ -20,8 +21,11 @@ import type { Locale } from '@/i18n/config';
 import type { Messages } from '@/i18n/types';
 import { CatalogError, listCatalog, type CatalogItem, type Section } from '@/lib/catalog';
 import { cardView } from '@/lib/catalog-view';
-import { plural } from '@/lib/format';
+import { plural, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { useEntitlements } from '@/lib/entitlements';
+import { FAVORITE_KIND, FavoritesError, listMyFavorites, toggleMyFavorite, type FavoriteKind } from '@/lib/favorites';
+import { serverMessageOf } from '@/lib/server-message';
 import { useScrollChrome } from '@/lib/use-scroll-chrome';
 import { colors, fonts, gradients, radius, space, type } from '@/theme';
 
@@ -29,8 +33,8 @@ const sections: readonly Section[] = ['classes', 'instructors', 'studios', 'even
 
 /** Подсказка жеста над списком; для армянского пока используется английский текст. */
 const HINTS: Record<string, string> = {
-  ru: 'Нажмите на карточку, чтобы открыть подробности',
-  en: 'Tap a card to see details',
+  ru: 'Нажмите — открыть, удержите — быстрые действия',
+  en: 'Tap to open, hold for quick actions',
 };
 
 const COUNT_KEYS: Partial<Record<Section, 'classes' | 'instructors' | 'studios'>> = {
@@ -39,7 +43,19 @@ const COUNT_KEYS: Partial<Record<Section, 'classes' | 'instructors' | 'studios'>
   studios: 'studios',
 };
 
+/** Раздел событий открывается только при включённом модуле; иначе уводим на главную. */
 export default function CatalogListScreen({ sectionProp }: { sectionProp?: string }) {
+  const params = useLocalSearchParams<{ section: string }>();
+  const entitlements = useEntitlements();
+  const section = sectionProp ?? params.section;
+  if (section === 'events') {
+    if (!entitlements) return null;
+    if (entitlements.events !== true) return <Redirect href="/" />;
+  }
+  return <CatalogListBody sectionProp={sectionProp} />;
+}
+
+function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
   const params = useLocalSearchParams<{ section: string }>();
   const section = sectionProp ?? params.section;
   const locale = deviceLocale(undefined);
@@ -122,6 +138,42 @@ export default function CatalogListScreen({ sectionProp }: { sectionProp?: strin
   const title = t.catalog[valid].title;
   const countKey = COUNT_KEYS[valid];
   const open = (slug: string) => router.push({ pathname: '/catalog/[section]/[slug]', params: { section: valid, slug } });
+
+  const toggleFavorite = async (kind: FavoriteKind, slug: string) => {
+    try {
+      await toggleMyFavorite(kind, slug);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+    } catch (err: unknown) {
+      const signedOut = err instanceof FavoritesError && err.status === 401;
+      Alert.alert(signedOut ? t.favorites.signInRequired : (serverMessageOf(err) ?? m.catalogError));
+    }
+  };
+
+  // Долгое нажатие на карточку: сохранить, поделиться или открыть, не переходя сразу в карточку.
+  const quickActions = async (item: CatalogItem) => {
+    const kind = FAVORITE_KIND[valid];
+    const view = cardView(item, t, locale);
+    const url = webUrl(locale, `/${valid}/${item.slug}`);
+    const saved = kind
+      ? await listMyFavorites()
+          .then((list) => list.some((f) => f.kind === kind && f.slug === item.slug))
+          .catch(() => false)
+      : false;
+    const buttons: AlertButton[] = [];
+    if (kind) {
+      buttons.push({
+        text: saved ? t.common.actions.removeFromFavorites : t.common.actions.addToFavorites,
+        onPress: () => void toggleFavorite(kind, item.slug),
+      });
+    }
+    buttons.push({
+      text: t.common.actions.share,
+      onPress: () => void Share.share({ message: `${view.title}\n${url}`, url }).catch(() => undefined),
+    });
+    buttons.push({ text: t.common.actions.viewDetails, onPress: () => open(item.slug) });
+    Haptics.selectionAsync().catch(() => undefined);
+    Alert.alert(view.title, undefined, buttons);
+  };
   const backButton = pushed ? <GlassButton icon="chevron-back" label={m.catalogBack} onPress={() => router.back()} /> : null;
 
   const header = (
@@ -164,7 +216,16 @@ export default function CatalogListScreen({ sectionProp }: { sectionProp?: strin
           ) : null}
         </View>
       </View>
-      {items[0] ? <Featured item={items[0]} section={valid} t={t} locale={locale} onPress={() => open(items[0].slug)} /> : null}
+      {items[0] ? (
+        <Featured
+          item={items[0]}
+          section={valid}
+          t={t}
+          locale={locale}
+          onPress={() => open(items[0].slug)}
+          onLongPress={() => void quickActions(items[0])}
+        />
+      ) : null}
     </View>
   );
 
@@ -207,6 +268,7 @@ export default function CatalogListScreen({ sectionProp }: { sectionProp?: strin
                 price={view.price}
                 rating={view.rating}
                 onPress={() => open(item.slug)}
+                onLongPress={() => void quickActions(item)}
               />
             </Animated.View>
           );
@@ -244,17 +306,25 @@ function Featured({
   t,
   locale,
   onPress,
+  onLongPress,
 }: {
   item: CatalogItem;
   section: Section;
   t: Messages;
   locale: Locale;
   onPress: () => void;
+  onLongPress: () => void;
 }) {
   const view = cardView(item, t, locale);
   return (
     <Animated.View entering={FadeInDown.duration(600)} style={styles.padded}>
-      <PressableScale onPress={onPress} pressedScale={0.97} style={styles.hero} accessibilityLabel={view.title}>
+      <PressableScale
+        onPress={onPress}
+        onLongPress={onLongPress}
+        pressedScale={0.97}
+        style={styles.hero}
+        accessibilityLabel={view.title}
+      >
         <LinearGradient colors={['#3A1520', '#140C0F']} style={StyleSheet.absoluteFill} />
         {view.uri ? <FadeImage uri={view.uri} /> : null}
         <LinearGradient colors={gradients.heroShade} locations={[0.35, 0.65, 1]} style={StyleSheet.absoluteFill} />

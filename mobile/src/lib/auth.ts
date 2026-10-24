@@ -102,6 +102,21 @@ export async function getCurrentUser(): Promise<User | null> {
   return body?.user ?? null;
 }
 
+/** Смена имени в профиле (адрес и роль здесь не меняются). */
+export async function updateName(name: string): Promise<void> {
+  const response = await request('/update-user', { method: 'POST', body: JSON.stringify({ name }) });
+  if (!response.ok) throw await readError(response);
+}
+
+/** Смена пароля; другие устройства выходят из сессии, текущее устройство остаётся. */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  const response = await request('/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ currentPassword, newPassword, revokeOtherSessions: true }),
+  });
+  if (!response.ok) throw await readError(response);
+}
+
 export async function signOut(): Promise<void> {
   // Ошибка сети не должна мешать локальному выходу: токен всё равно стирается.
   await request('/sign-out', { method: 'POST', body: '{}' }).catch(() => undefined);

@@ -14,15 +14,22 @@ type Props = {
   price?: string;
   rating?: number;
   onPress: () => void;
+  onLongPress?: () => void;
   width?: number;
   aspect?: number;
   style?: StyleProp<ViewStyle>;
 };
 
 /** Постер: фото с проявлением, мягкая тень снизу, бейдж, рейтинг и цена-«пилюля» поверх фото. */
-export function MediaCard({ uri, title, meta, badge, price, rating, onPress, width, aspect = 4 / 3, style }: Props) {
+export function MediaCard({ uri, title, meta, badge, price, rating, onPress, onLongPress, width, aspect = 4 / 3, style }: Props) {
   return (
-    <PressableScale onPress={onPress} style={[{ width }, style]} accessibilityRole="button" accessibilityLabel={title}>
+    <PressableScale
+      onPress={onPress}
+      onLongPress={onLongPress}
+      style={[{ width }, style]}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+    >
       <View style={[styles.frame, { aspectRatio: 1 / aspect }]}>
         <LinearGradient colors={['#2A1D21', '#160F12']} style={StyleSheet.absoluteFill} />
         {uri ? (

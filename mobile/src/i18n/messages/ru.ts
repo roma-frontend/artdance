@@ -621,7 +621,7 @@ const ru: Messages = {
 
   events: {
     title: 'События',
-    subtitle: 'Воркшопы, баттлы, мастер-классы и showcase.',
+    subtitle: 'Воркшопы, баттлы, мастер-классы и шоукейсы.',
     aboutTitle: 'О событии',
     whenTitle: 'Когда',
     whereTitle: 'Где',
@@ -631,7 +631,7 @@ const ru: Messages = {
     typeWorkshop: 'Воркшоп',
     typeBattle: 'Баттл',
     typeMasterclass: 'Мастер-класс',
-    typeShowcase: 'Showcase',
+    typeShowcase: 'Шоукейс',
     typeSocial: 'Вечеринка',
     typeCompetition: 'Соревнование',
     typeConcert: 'Концерт',
@@ -721,7 +721,7 @@ const ru: Messages = {
       title: 'Контактные данные',
       firstName: 'Имя',
       lastName: 'Фамилия',
-      email: 'Email',
+      email: 'Эл. почта',
       phone: 'Телефон',
       createAccountLabel: 'Создать аккаунт, чтобы отслеживать заказы',
       guestNote: 'Можно оформить заказ без регистрации.',
@@ -848,7 +848,7 @@ const ru: Messages = {
     signIn: {
       title: 'С возвращением',
       subtitle: 'Войдите, чтобы управлять бронями.',
-      emailLabel: 'Email',
+      emailLabel: 'Электронная почта',
       passwordLabel: 'Пароль',
       forgotLink: 'Забыли пароль?',
       submit: 'Войти',
@@ -1189,7 +1189,7 @@ const ru: Messages = {
     },
     presetHint: {
       mvp: 'Объём по договору: курсы, инструкторы, площадки, бронь, магазин, вход, почта, SEO. Без видео, маркетплейса, CRM.',
-      full: 'Добавляет движок бронирования, площадки, Paynet, Email и Push, отзывы, избранное, промо, карты, 3 языка, QA.',
+      full: 'Добавляет движок бронирования, площадки, Paynet, email-рассылку и Push, отзывы, избранное, промо, карты, 3 языка, QA.',
       premium: 'Добавляет видеокурсы, комиссии и выплаты маркетплейса, CRM, напоминания, синхр. календарей.',
     },
     presetPrice: {

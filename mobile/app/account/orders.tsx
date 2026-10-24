@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -12,6 +13,7 @@ import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { listMyOrders, type ClientOrder } from '@/lib/orders';
 import { serverMessageOf } from '@/lib/server-message';
 import { useAppActive } from '@/lib/use-app-active';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 export default function MyOrdersScreen() {
@@ -54,12 +56,12 @@ export default function MyOrdersScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.account.orders.title}</Text>
-      </View>
+      </Animated.View>
 
       <FlatList
         data={orders ?? []}
@@ -73,8 +75,8 @@ export default function MyOrdersScreen() {
             <EmptyState icon="receipt-outline" title={c.account.orders.empty} />
           )
         }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
+        renderItem={({ item, index }) => (
+          <Animated.View entering={enterItem(index)} layout={LinearTransition.springify().damping(18)} style={styles.card}>
             <Text style={type.h3} numberOfLines={1}>
               {c.account.orders.orderNumber.replace('{number}', item.orderNumber)}
             </Text>
@@ -86,7 +88,7 @@ export default function MyOrdersScreen() {
               <Text style={styles.status}>{statusLabel(item.status, c)}</Text>
               <Text style={type.label}>{price(item.total, locale)}</Text>
             </View>
-          </View>
+          </Animated.View>
         )}
       />
     </View>

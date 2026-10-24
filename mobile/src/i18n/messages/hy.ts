@@ -1214,7 +1214,7 @@ const hy: Messages = {
       referrals: "Հրավերներ",
       packages: "Փաթեթներ",
       recurring: "Կրկնվող ամրագրումներ",
-      push: "Push",
+      push: "Push ծանուցումներ",
       boost: "Առաջխաղացում",
       cms: "Բովանդակություն",
     },

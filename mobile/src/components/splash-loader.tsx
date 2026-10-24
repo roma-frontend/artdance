@@ -1,30 +1,17 @@
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedProps,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withSequence,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
-import Svg, { ClipPath, Defs, G, LinearGradient as SvgGradient, Path, Rect, Stop } from 'react-native-svg';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSpring, withTiming } from 'react-native-reanimated';
 
-import { brandLogoHeight } from '@/components/brand-logo';
-import { BRAND_LOGO_LAYERS, BRAND_LOGO_VIEWBOX } from '@/components/brand-logo-paths';
+import { BRAND_LOGO_SOURCE, brandLogoHeight } from '@/components/brand-logo';
 
 const LOGO_WIDTH = 260;
 const LOGO_HEIGHT = brandLogoHeight(LOGO_WIDTH);
-const LOGO_VIEW_WIDTH = 1151;
-const SHINE_WIDTH = 300;
+const GLINT_WIDTH = 64;
 const GOLD = '#C9A96A';
+const GLINT_TINT = '#F3DFA8';
 const ROSE = '#C93B52';
-
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 /** Искры разлетаются по окружности: угол в градусах. */
 const SPARKS = [
@@ -47,24 +34,29 @@ const HALOS = [
 
 export function SplashLoader() {
   const fade = useSharedValue(0);
-  const scale = useSharedValue(0.6);
-  const shine = useSharedValue(0);
+  const reveal = useSharedValue(0);
+  const glint = useSharedValue(0);
   const track = useSharedValue(0);
 
   useEffect(() => {
-    fade.value = withDelay(100, withTiming(1, { duration: 500 }));
-    scale.value = withDelay(100, withSpring(1, { damping: 13, stiffness: 140 }));
-    shine.value = withDelay(700, withTiming(1, { duration: 1000, easing: Easing.inOut(Easing.cubic) }));
+    fade.value = withDelay(60, withTiming(1, { duration: 480, easing: Easing.out(Easing.cubic) }));
+    reveal.value = withDelay(60, withSpring(1, { damping: 15, stiffness: 130 }));
+    glint.value = withDelay(850, withTiming(1, { duration: 1050, easing: Easing.inOut(Easing.cubic) }));
     track.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.cubic) }), -1, false);
-  }, [fade, scale, shine, track]);
+  }, [fade, reveal, glint, track]);
 
   const logoStyle = useAnimatedStyle(() => ({
     opacity: fade.value,
-    transform: [{ scale: scale.value }],
+    transform: [{ translateY: (1 - reveal.value) * 14 }, { scale: 0.9 + reveal.value * 0.1 }],
   }));
 
-  const shineProps = useAnimatedProps(() => ({
-    x: -SHINE_WIDTH + shine.value * (LOGO_VIEW_WIDTH + SHINE_WIDTH),
+  // Полоса и её золотая копия движутся синхронно: блик виден только внутри букв.
+  const glintStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: -GLINT_WIDTH + glint.value * (LOGO_WIDTH + GLINT_WIDTH) }],
+  }));
+
+  const glintImageStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: GLINT_WIDTH - glint.value * (LOGO_WIDTH + GLINT_WIDTH) }],
   }));
 
   const line = useAnimatedStyle(() => ({ transform: [{ translateX: -60 + track.value * 120 }] }));
@@ -84,27 +76,13 @@ export function SplashLoader() {
           <Spark key={spark.angle} angle={spark.angle} delay={spark.delay} />
         ))}
 
-        <Animated.View style={logoStyle}>
-          <Svg width={LOGO_WIDTH} height={LOGO_HEIGHT} viewBox={BRAND_LOGO_VIEWBOX}>
-            <Defs>
-              <ClipPath id="logoClip">
-                {BRAND_LOGO_LAYERS.map((layer) => (
-                  <Path key={layer.fill} d={layer.d} />
-                ))}
-              </ClipPath>
-              <SvgGradient id="shineGrad" x1="0" y1="0" x2="1" y2="0">
-                <Stop offset="0" stopColor="#FFFFFF" stopOpacity="0" />
-                <Stop offset="0.5" stopColor="#FFF4DC" stopOpacity="0.9" />
-                <Stop offset="1" stopColor="#FFFFFF" stopOpacity="0" />
-              </SvgGradient>
-            </Defs>
-            {BRAND_LOGO_LAYERS.map((layer) => (
-              <Path key={layer.fill} d={layer.d} fill={layer.fill} />
-            ))}
-            <G clipPath="url(#logoClip)">
-              <AnimatedRect y={0} width={SHINE_WIDTH} height={389} fill="url(#shineGrad)" animatedProps={shineProps} />
-            </G>
-          </Svg>
+        <Animated.View style={[styles.logo, logoStyle]}>
+          <Image source={BRAND_LOGO_SOURCE} style={styles.logoImage} contentFit="contain" />
+          <Animated.View pointerEvents="none" style={[styles.glint, glintStyle]}>
+            <Animated.View style={[styles.glintImage, glintImageStyle]}>
+              <Image source={BRAND_LOGO_SOURCE} style={styles.logoImage} contentFit="contain" tintColor={GLINT_TINT} />
+            </Animated.View>
+          </Animated.View>
         </Animated.View>
       </View>
 
@@ -172,6 +150,10 @@ function Spark({ angle, delay }: { angle: number; delay: number }) {
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0B0809', gap: 28 },
   stage: { width: 400, height: 400, alignItems: 'center', justifyContent: 'center' },
+  logo: { width: LOGO_WIDTH, height: LOGO_HEIGHT },
+  logoImage: { width: LOGO_WIDTH, height: LOGO_HEIGHT },
+  glint: { position: 'absolute', top: 0, left: 0, width: GLINT_WIDTH, height: LOGO_HEIGHT, overflow: 'hidden' },
+  glintImage: { position: 'absolute', top: 0, left: 0, width: LOGO_WIDTH, height: LOGO_HEIGHT },
   halo: { position: 'absolute', backgroundColor: ROSE },
   ring: { position: 'absolute', width: 220, height: 220, borderRadius: 110, borderWidth: 1, borderColor: GOLD },
   spark: { position: 'absolute', width: 6, height: 6, borderRadius: 3, backgroundColor: '#E8D2A4' },

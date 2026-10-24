@@ -30,6 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FiltersSheet } from '@/components/filters-sheet';
 import { PosterRowSkeleton, Skeleton } from '@/components/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import { FadeImage } from '@/components/ui/fade-image';
 import { MediaCard } from '@/components/ui/media-card';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -41,6 +42,7 @@ import { getCurrentUser, type User } from '@/lib/auth';
 import { listCatalog, mediaUri, type ClassCard, type EventCard, type InstructorCard, type Section } from '@/lib/catalog';
 import { cardView } from '@/lib/catalog-view';
 import { API_URL } from '@/lib/config';
+import { useEntitlements } from '@/lib/entitlements';
 import { dateLabel, initials, price } from '@/lib/format';
 import { deviceLocale, greeting, messagesFor } from '@/lib/i18n';
 import { useScrollChrome } from '@/lib/use-scroll-chrome';
@@ -102,43 +104,52 @@ export default function HomeScreen() {
   const [instructors, setInstructors] = useState<InstructorCard[] | null>(null);
   const [mood, setMood] = useState<MoodKey>('energy');
   const [moodClasses, setMoodClasses] = useState<ClassCard[] | null>(null);
+  const [filtered, setFiltered] = useState<ClassCard[] | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [styleFilter, setStyleFilter] = useState<string | null>(null);
   const [levelFilter, setLevelFilter] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const entitlements = useEntitlements();
+  const eventsOn = entitlements?.events === true;
 
   useEffect(() => {
     let alive = true;
     getCurrentUser()
       .catch(() => null)
       .then((u) => alive && setUser(u));
-    listCatalog('events', { page: '1', pageSize: '5' })
-      .then((r) => alive && setEvents(r.items as EventCard[]))
-      .catch(() => alive && setEvents([]))
-      .finally(() => alive && setRefreshing(false));
     listCatalog('instructors', { page: '1', pageSize: '12' })
       .then((r) => alive && setInstructors(r.items as InstructorCard[]))
-      .catch(() => alive && setInstructors([]));
+      .catch(() => alive && setInstructors([]))
+      .finally(() => alive && setRefreshing(false));
     return () => {
       alive = false;
     };
   }, [refreshKey]);
 
   useEffect(() => {
+    if (!eventsOn) return;
+    let alive = true;
+    listCatalog('events', { page: '1', pageSize: '5' })
+      .then((r) => alive && setEvents(r.items as EventCard[]))
+      .catch(() => alive && setEvents([]));
+    return () => {
+      alive = false;
+    };
+  }, [refreshKey, eventsOn]);
+
+  useEffect(() => {
     let alive = true;
     const chosen = MOODS.find((x) => x.key === mood);
     if (!chosen) return;
     setMoodClasses(null);
-    const styles = styleFilter ? [styleFilter] : chosen.styles;
-    const extra: Record<string, string> = levelFilter ? { level: levelFilter } : {};
-    Promise.all(styles.map((style) => listCatalog('classes', { style, pageSize: '3', ...extra })))
+    Promise.all(chosen.styles.map((style) => listCatalog('classes', { style, pageSize: '3' })))
       .then((results) => alive && setMoodClasses(results.flatMap((r) => r.items as ClassCard[]).slice(0, 8)))
       .catch(() => alive && setMoodClasses([]));
     return () => {
       alive = false;
     };
-  }, [mood, styleFilter, levelFilter, refreshKey]);
+  }, [mood, refreshKey]);
 
   const term = query.trim();
   const isSearch = term.length >= MIN_QUERY_LENGTH;
@@ -178,6 +189,25 @@ export default function HomeScreen() {
     };
   }, [term, isSearch, locale]);
 
+  // Фильтры показывают классы под строкой поиска, как результаты поиска.
+  useEffect(() => {
+    if (isSearch || (!styleFilter && !levelFilter)) {
+      setFiltered(null);
+      return;
+    }
+    let alive = true;
+    setFiltered(null);
+    const params: Record<string, string> = { pageSize: '20' };
+    if (styleFilter) params.style = styleFilter;
+    if (levelFilter) params.level = levelFilter;
+    listCatalog('classes', params)
+      .then((r) => alive && setFiltered(r.items as ClassCard[]))
+      .catch(() => alive && setFiltered([]));
+    return () => {
+      alive = false;
+    };
+  }, [isSearch, styleFilter, levelFilter, refreshKey]);
+
   const openSection = (section: Section) => {
     const tab = TAB_SECTIONS[section];
     if (tab) router.navigate(tab);
@@ -194,6 +224,11 @@ export default function HomeScreen() {
   };
 
   const filtersActive = (styleFilter ? 1 : 0) + (levelFilter ? 1 : 0);
+  const gridCardWidth = Math.floor((width - space.xl * 2 - space.md) / 2);
+  const resetFilters = () => {
+    setStyleFilter(null);
+    setLevelFilter(null);
+  };
   const tagline = t.brand.taglineAlt.replace(/\.$/, '');
   const lastSpace = tagline.lastIndexOf(' ');
   const glow = useAnimatedStyle(() => ({
@@ -310,16 +345,51 @@ export default function HomeScreen() {
               </Animated.View>
             ))}
           </View>
+        ) : filtersActive > 0 ? (
+          <View style={styles.results}>
+            <View style={styles.filterHeader}>
+              <Text style={type.eyebrow}>{t.catalog.filters.title}</Text>
+              <Pressable onPress={resetFilters} hitSlop={10}>
+                <Text style={styles.resetText}>{t.catalog.filters.reset}</Text>
+              </Pressable>
+            </View>
+            {filtered === null ? (
+              <PosterRowSkeleton />
+            ) : filtered.length === 0 ? (
+              <EmptyState icon="sparkles-outline" title={t.catalog.empty.title} body={m.catalogEmpty} />
+            ) : (
+              <View style={styles.grid}>
+                {filtered.map((item, index) => {
+                  const view = cardView(item, t, locale);
+                  return (
+                    <Animated.View key={item.slug} entering={FadeInDown.delay(index * 50).duration(400)}>
+                      <MediaCard
+                        width={gridCardWidth}
+                        uri={view.uri}
+                        title={view.title}
+                        meta={view.meta}
+                        badge={view.badge}
+                        price={view.price}
+                        onPress={() => openDetail('classes', item.slug)}
+                      />
+                    </Animated.View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
         ) : (
           <Animated.View exiting={FadeOut.duration(150)}>
-            <Spotlight
-              events={events}
-              width={width}
-              eyebrow={t.home.eventSpotlight.eyebrow}
-              locale={locale}
-              freeLabel={t.common.labels.free}
-              onOpen={(slug) => openDetail('events', slug)}
-            />
+            {eventsOn ? (
+              <Spotlight
+                events={events}
+                width={width}
+                eyebrow={t.home.eventSpotlight.eyebrow}
+                locale={locale}
+                freeLabel={t.common.labels.free}
+                onOpen={(slug) => openDetail('events', slug)}
+              />
+            ) : null}
 
             <View style={styles.block}>
               <SectionHeader eyebrow={m.forYourMood} title={t.home.finder.intentLabel} />
@@ -377,7 +447,7 @@ export default function HomeScreen() {
 
             <View style={styles.block}>
               <SectionHeader eyebrow={t.home.discover.eyebrow} title={t.home.discover.title} />
-              <Bento t={t} onOpen={openSection} />
+              <Bento t={t} onOpen={openSection} eventsOn={eventsOn} />
             </View>
 
             <Animated.View entering={FadeInDown.delay(200).duration(700)} style={styles.editorial}>
@@ -421,10 +491,7 @@ export default function HomeScreen() {
         selectedLevel={levelFilter}
         onSelectStyle={setStyleFilter}
         onSelectLevel={setLevelFilter}
-        onReset={() => {
-          setStyleFilter(null);
-          setLevelFilter(null);
-        }}
+        onReset={resetFilters}
         onClose={() => setFiltersOpen(false)}
       />
     </View>
@@ -673,8 +740,8 @@ const BENTO: { section: Section; icon: IconName; desc: 'megaDescClasses' | 'mega
 ];
 
 /** Плитки разделов «бенто»: первая — широкая, остальные парами; у каждой свой цветовой тон. */
-function Bento({ t, onOpen }: { t: ReturnType<typeof catalogFor>; onOpen: (section: Section) => void }) {
-  const [first, ...rest] = BENTO;
+function Bento({ t, onOpen, eventsOn }: { t: ReturnType<typeof catalogFor>; onOpen: (section: Section) => void; eventsOn: boolean }) {
+  const [first, ...rest] = BENTO.filter((entry) => entry.section !== 'events' || eventsOn);
   const tile = (entry: (typeof BENTO)[number], wide: boolean, index: number) => (
     <Animated.View key={entry.section} entering={FadeInDown.delay(index * 70).duration(500)} style={wide ? styles.bentoWide : styles.bentoHalf}>
       <PressableScale style={[styles.bento, wide && styles.bentoWideInner]} onPress={() => onOpen(entry.section)}>
@@ -754,6 +821,9 @@ const styles = StyleSheet.create({
   },
   filterBadgeText: { fontSize: 11, fontWeight: '800', color: colors.white },
   results: { paddingHorizontal: space.xl, paddingTop: space.lg, gap: 8 },
+  filterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  resetText: { fontSize: 14, fontWeight: '700', color: colors.accentBright },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   loader: { marginVertical: space.lg },
   notice: { ...type.bodySm, paddingHorizontal: space.xl },
   noResults: { alignItems: 'center', gap: 8, paddingVertical: 40 },

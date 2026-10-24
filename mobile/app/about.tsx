@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -10,6 +11,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { getAbout, type AboutContent } from '@/lib/content';
 import { webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 export default function AboutScreen() {
@@ -49,12 +51,12 @@ export default function AboutScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.footer.about}</Text>
-      </View>
+      </Animated.View>
 
       {content === null ? (
         <EmptyState icon="alert-circle-outline" title={t.catalogError} />
@@ -62,25 +64,25 @@ export default function AboutScreen() {
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
           <Text style={type.bodySm}>{content.subtitle}</Text>
 
-          <View style={styles.card}>
+          <Animated.View entering={enterItem(0)} style={styles.card}>
             <Text style={type.h3}>{content.mission.title}</Text>
             <Text style={type.bodySm}>{content.mission.body}</Text>
-          </View>
+          </Animated.View>
 
           <Text style={type.h3}>{content.values.title}</Text>
-          {content.values.items.map((value) => (
-            <View key={value.id} style={styles.card}>
+          {content.values.items.map((value, index) => (
+            <Animated.View key={value.id} entering={enterItem(index + 1)} style={styles.card}>
               <Text style={type.h3}>{value.title}</Text>
               <Text style={type.bodySm}>{value.body}</Text>
-            </View>
+            </Animated.View>
           ))}
 
-          <View style={styles.card}>
+          <Animated.View entering={enterItem(content.values.items.length + 1)} style={styles.card}>
             <Text style={type.h3}>{content.story.title}</Text>
             <Text style={type.bodySm}>{content.story.body}</Text>
-          </View>
+          </Animated.View>
 
-          <View style={styles.card}>
+          <Animated.View entering={enterItem(content.values.items.length + 2)} style={styles.card}>
             <Text style={type.h3}>{content.cta.title}</Text>
             <Text style={type.bodySm}>{content.cta.subtitle}</Text>
             <PressableScale onPress={() => openWeb(content.cta.primaryPath)} accessibilityRole="button">
@@ -89,7 +91,7 @@ export default function AboutScreen() {
             <PressableScale onPress={() => openWeb(content.cta.secondaryPath)} accessibilityRole="button">
               <Text style={[type.label, styles.cta]}>{content.cta.secondary}</Text>
             </PressableScale>
-          </View>
+          </Animated.View>
         </ScrollView>
       )}
     </View>

@@ -3,13 +3,16 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { SwipeActionRow } from '@/components/ui/swipe-action-row';
 import { catalogFor } from '@/i18n/catalog';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import type { Section } from '@/lib/catalog';
 import { listMyFavorites, toggleMyFavorite, type FavoriteItem, type FavoriteKind } from '@/lib/favorites';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
@@ -63,12 +66,12 @@ export default function MyFavoritesScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.favorites.title}</Text>
-      </View>
+      </Animated.View>
 
       <FlatList
         data={items ?? []}
@@ -82,31 +85,35 @@ export default function MyFavoritesScreen() {
             <EmptyState icon="heart-outline" title={c.favorites.empty} body={c.favorites.emptyHint} />
           )
         }
-        renderItem={({ item }) => (
-          <PressableScale
-            pressedScale={0.98}
-            accessibilityRole="link"
-            onPress={() => router.push({ pathname: '/catalog/[section]/[slug]', params: { section: KIND_SECTION[item.kind], slug: item.slug } })}
-            style={styles.card}
-          >
-            <Ionicons name={KIND_ICON[item.kind]} size={18} color={colors.accentBright} />
-            <View style={styles.body}>
-              <Text style={type.label} numberOfLines={1}>
-                {item.title}
-              </Text>
-              <Text style={styles.kind}>{kindLabel(item.kind, c)}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.text3} />
-            <PressableScale
-              onPress={() => unfavorite(item)}
-              accessibilityRole="button"
-              accessibilityLabel={c.favorites.toggleLabelActive.replace('{name}', item.title)}
-              haptic={false}
-              hitSlop={10}
-            >
-              <Ionicons name="heart" size={20} color={colors.accentBright} />
-            </PressableScale>
-          </PressableScale>
+        renderItem={({ item, index }) => (
+          <Animated.View entering={enterItem(index)} exiting={FadeOut.duration(200)} layout={LinearTransition.springify().damping(18)}>
+            <SwipeActionRow actionLabel={c.common.actions.remove} onAction={() => unfavorite(item)}>
+              <PressableScale
+                pressedScale={0.98}
+                accessibilityRole="link"
+                onPress={() => router.push({ pathname: '/catalog/[section]/[slug]', params: { section: KIND_SECTION[item.kind], slug: item.slug } })}
+                style={styles.card}
+              >
+                <Ionicons name={KIND_ICON[item.kind]} size={18} color={colors.accentBright} />
+                <View style={styles.body}>
+                  <Text style={type.label} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <Text style={styles.kind}>{kindLabel(item.kind, c)}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.text3} />
+                <PressableScale
+                  onPress={() => unfavorite(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={c.favorites.toggleLabelActive.replace('{name}', item.title)}
+                  haptic={false}
+                  hitSlop={10}
+                >
+                  <Ionicons name="heart" size={20} color={colors.accentBright} />
+                </PressableScale>
+              </PressableScale>
+            </SwipeActionRow>
+          </Animated.View>
         )}
       />
     </View>

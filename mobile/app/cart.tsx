@@ -3,11 +3,13 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FadeImage } from '@/components/ui/fade-image';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { SwipeActionRow } from '@/components/ui/swipe-action-row';
 import { catalogFor } from '@/i18n/catalog';
 import { mediaUri } from '@/lib/catalog';
 import {
@@ -25,6 +27,7 @@ import { plural, price, webUrl } from '@/lib/format';
 import { serverMessageOf } from '@/lib/server-message';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { useAppActive } from '@/lib/use-app-active';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 type Locale = ReturnType<typeof deviceLocale>;
@@ -133,12 +136,12 @@ export default function CartScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={c.common.actions.back}>
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.cart.title}</Text>
-      </View>
+      </Animated.View>
 
       {failed !== null && cart === null ? (
         <EmptyState icon="alert-circle-outline" title={failed} />
@@ -146,15 +149,23 @@ export default function CartScreen() {
         <EmptyState icon="cart-outline" title={c.cart.empty} body={c.cart.emptyHint} />
       ) : (
         <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space.xxxl }]} showsVerticalScrollIndicator={false}>
-          {items.map((item) => (
-            <CartRow
+          {items.map((item, index) => (
+            <Animated.View
               key={item.id}
-              item={item}
-              locale={locale}
-              disabled={busy}
-              onQuantity={(quantity) => run(() => setCartItemQuantity(item.id, quantity))}
-              onRemove={() => run(() => removeCartItem(item.id))}
-            />
+              entering={enterItem(index)}
+              exiting={FadeOut.duration(180)}
+              layout={LinearTransition.springify().damping(18)}
+            >
+              <SwipeActionRow actionLabel={c.common.actions.remove} disabled={busy} onAction={() => run(() => removeCartItem(item.id))}>
+                <CartRow
+                  item={item}
+                  locale={locale}
+                  disabled={busy}
+                  onQuantity={(quantity) => run(() => setCartItemQuantity(item.id, quantity))}
+                  onRemove={() => run(() => removeCartItem(item.id))}
+                />
+              </SwipeActionRow>
+            </Animated.View>
           ))}
 
           {texts.length > 0 ? (

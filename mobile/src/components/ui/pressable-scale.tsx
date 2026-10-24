@@ -1,7 +1,14 @@
 import * as Haptics from 'expo-haptics';
 import type { ComponentProps } from 'react';
 import { Pressable, type GestureResponderEvent, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { springs } from '@/theme';
 
@@ -14,8 +21,16 @@ type Props = Omit<ComponentProps<typeof Pressable>, 'style' | 'ref'> & {
   haptic?: boolean;
 };
 
-/** Pressable с пружинным сжатием и лёгкой тактильной отдачей — базовый отклик всех карточек и кнопок. */
-export function PressableScale({ style, pressedScale = 0.96, haptic = true, onPressIn, onPressOut, ...rest }: Props) {
+/** Pressable с пружинным сжатием и тактильной отдачей; при удержании — сильный толчок и импульс. */
+export function PressableScale({
+  style,
+  pressedScale = 0.96,
+  haptic = true,
+  onPressIn,
+  onPressOut,
+  onLongPress,
+  ...rest
+}: Props) {
   const scale = useSharedValue(1);
   // Системная настройка «уменьшить движение»: без пружинного сжатия, только тактильный отклик.
   const reduceMotion = useReducedMotion();
@@ -33,6 +48,20 @@ export function PressableScale({ style, pressedScale = 0.96, haptic = true, onPr
         if (!reduceMotion) scale.value = withSpring(1, springs.press);
         onPressOut?.(event);
       }}
+      onLongPress={
+        onLongPress
+          ? (event: GestureResponderEvent) => {
+              if (haptic) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => undefined);
+              if (!reduceMotion) {
+                scale.value = withSequence(
+                  withTiming(pressedScale - 0.03, { duration: 90 }),
+                  withSpring(pressedScale, springs.press),
+                );
+              }
+              onLongPress?.(event);
+            }
+          : undefined
+      }
       style={[style, animated]}
     />
   );

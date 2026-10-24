@@ -1,26 +1,44 @@
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import Constants from 'expo-constants';
+import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
-import Animated, { Extrapolation, FadeInDown, interpolate, useAnimatedStyle } from 'react-native-reanimated';
+import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Extrapolation,
+  FadeInDown,
+  ZoomIn,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ProfileSheet, type ProfileField } from '@/components/account/profile-sheet';
 import { BrandLogo } from '@/components/brand-logo';
+import { Collapsible } from '@/components/ui/collapsible';
 import { CollapsingHeader } from '@/components/ui/collapsing-header';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { Segmented } from '@/components/ui/segmented';
 import { catalogFor } from '@/i18n/catalog';
 import { chooseLocale } from '@/lib/app-locale';
 import { getCurrentUser, signOut, type User } from '@/lib/auth';
 import { initials, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor, type Locale } from '@/lib/i18n';
+import { animateNextLayout, openTiming } from '@/lib/motion';
 import { useScrollChrome } from '@/lib/use-scroll-chrome';
 import { colors, fonts, gradients, radius, space, type } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 type Row = { icon: IconName; label: string; path: string; tint: string };
+type SectionDef = { key: string; title: string; rows: Row[]; open: boolean };
+
+const liquidGlass = isLiquidGlassAvailable();
 
 /** Разделы, которые открываются экраном приложения; остальные ведут на сайт. */
 const NATIVE_PATHS: ReadonlySet<string> = new Set([
@@ -52,6 +70,7 @@ export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const { scrollY, onScroll } = useScrollChrome();
   const [user, setUser] = useState<User | null>(null);
+  const [profileSheet, setProfileSheet] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -65,43 +84,105 @@ export default function AccountScreen() {
     };
   }, []);
 
-  async function onSignOut() {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    await signOut();
-    router.replace('/sign-in');
+  const signOutShake = useSharedValue(0);
+  const signOutShakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: signOutShake.value }] }));
+
+  function onSignOut() {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => undefined);
+    signOutShake.value = withSequence(
+      withTiming(-10, { duration: 60 }),
+      withTiming(10, { duration: 60 }),
+      withTiming(-6, { duration: 60 }),
+      withTiming(0, { duration: 60 }),
+    );
+    Alert.alert(t.accountSignOutTitle, undefined, [
+      { text: t.accountCancel, style: 'cancel' },
+      {
+        text: t.accountSignOut,
+        style: 'destructive',
+        onPress: () => {
+          signOut()
+            .then(() => router.replace('/sign-in'))
+            .catch(() => undefined);
+        },
+      },
+    ]);
   }
 
-  const mine: Row[] = [
+  function openRow(row: Row) {
+    if (NATIVE_PATHS.has(row.path)) router.push(row.path as '/account/bookings');
+    else Linking.openURL(webUrl(locale, row.path)).catch(() => undefined);
+  }
+
+  function openProfileField(field: ProfileField) {
+    setProfileSheet(false);
+    if (field === 'name' || field === 'password') router.push({ pathname: '/account/profile', params: { focus: field } });
+  }
+
+  const quick: Row[] = [
+    { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52' },
     { icon: 'receipt', label: c.account.nav.orders, path: '/account/orders', tint: '#C9A96A' },
-    { icon: 'ribbon', label: c.account.nav.subscription, path: '/account/subscription', tint: '#8E7CC3' },
     { icon: 'wallet', label: c.account.nav.wallet, path: '/account/wallet', tint: '#3FB984' },
-    { icon: 'people', label: c.account.nav.referrals, path: '/account/referrals', tint: '#5AA9E6' },
     { icon: 'heart', label: c.account.nav.favorites, path: '/account/favorites', tint: '#E0607E' },
-    { icon: 'cart', label: c.cart.title, path: '/cart', tint: '#C9A96A' },
-    { icon: 'folder-open', label: c.account.nav.data, path: '/account/data', tint: '#7A8BA6' },
   ];
-  const bookingsRow: Row = { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52' };
-  const info: Row[] = [
-    { icon: 'help-circle', label: c.footer.faq, path: '/faq', tint: '#E0607E' },
-    { icon: 'help-buoy', label: c.footer.help, path: '/help', tint: '#3FB984' },
-    { icon: 'information-circle', label: c.footer.about, path: '/about', tint: '#C9A96A' },
-    { icon: 'gift', label: c.footer.giftCards, path: '/gift-cards', tint: '#C9A96A' },
-    { icon: 'document-text', label: c.footer.legalTitle, path: '/legal', tint: '#8E7CC3' },
-    { icon: 'mail', label: c.footer.contact, path: '/contact', tint: '#3FB984' },
-    { icon: 'pricetags', label: c.nav.pricing, path: '/pricing', tint: '#C9A96A' },
-    { icon: 'school', label: c.footer.becomeInstructor, path: '/become-instructor', tint: '#3FB984' },
-    { icon: 'business', label: c.footer.listStudio, path: '/list-your-studio', tint: '#C9A96A' },
-    { icon: 'newspaper', label: c.blog.title, path: '/blog', tint: '#5AA9E6' },
-  ];
-  const landing: Row[] = [
-    { icon: 'trophy', label: c.nav.competitions, path: '/competitions', tint: '#C9A96A' },
-    { icon: 'musical-notes', label: c.nav.socialEvents, path: '/social-events', tint: '#E0607E' },
-    { icon: 'medal', label: c.nav.athletes, path: '/athletes', tint: '#8E7CC3' },
-    { icon: 'globe', label: c.footer.federations, path: '/federations', tint: '#5AA9E6' },
-    { icon: 'people', label: c.footer.partners, path: '/partners', tint: '#3FB984' },
-    { icon: 'heart', label: c.footer.sponsors, path: '/sponsors', tint: '#E0607E' },
-    { icon: 'megaphone', label: c.footer.advertise, path: '/advertise', tint: '#C9A96A' },
-    { icon: 'briefcase', label: c.nav.corporate, path: '/corporate', tint: '#7A8BA6' },
+  const sections: SectionDef[] = [
+    {
+      key: 'mine',
+      title: t.accountSectionMine,
+      open: true,
+      rows: [
+        { icon: 'ribbon', label: c.account.nav.subscription, path: '/account/subscription', tint: '#8E7CC3' },
+        { icon: 'people', label: c.account.nav.referrals, path: '/account/referrals', tint: '#5AA9E6' },
+        { icon: 'cart', label: c.cart.title, path: '/cart', tint: '#C9A96A' },
+        { icon: 'folder-open', label: c.account.nav.data, path: '/account/data', tint: '#7A8BA6' },
+      ],
+    },
+    {
+      key: 'help',
+      title: t.accountSectionHelp,
+      open: true,
+      rows: [
+        { icon: 'help-circle', label: c.footer.faq, path: '/faq', tint: '#E0607E' },
+        { icon: 'help-buoy', label: c.footer.help, path: '/help', tint: '#3FB984' },
+        { icon: 'mail', label: c.footer.contact, path: '/contact', tint: '#3FB984' },
+      ],
+    },
+    {
+      key: 'info',
+      title: t.accountSectionInfo,
+      open: false,
+      rows: [
+        { icon: 'information-circle', label: c.footer.about, path: '/about', tint: '#C9A96A' },
+        { icon: 'document-text', label: c.footer.legalTitle, path: '/legal', tint: '#8E7CC3' },
+        { icon: 'newspaper', label: c.blog.title, path: '/blog', tint: '#5AA9E6' },
+        { icon: 'pricetags', label: c.nav.pricing, path: '/pricing', tint: '#C9A96A' },
+        { icon: 'gift', label: c.footer.giftCards, path: '/gift-cards', tint: '#C9A96A' },
+      ],
+    },
+    {
+      key: 'partners',
+      title: t.accountSectionPartners,
+      open: false,
+      rows: [
+        { icon: 'school', label: c.footer.becomeInstructor, path: '/become-instructor', tint: '#3FB984' },
+        { icon: 'business', label: c.footer.listStudio, path: '/list-your-studio', tint: '#C9A96A' },
+      ],
+    },
+    {
+      key: 'landing',
+      title: t.accountSectionLanding,
+      open: false,
+      rows: [
+        { icon: 'trophy', label: c.nav.competitions, path: '/competitions', tint: '#C9A96A' },
+        { icon: 'musical-notes', label: c.nav.socialEvents, path: '/social-events', tint: '#E0607E' },
+        { icon: 'medal', label: c.nav.athletes, path: '/athletes', tint: '#8E7CC3' },
+        { icon: 'globe', label: c.footer.federations, path: '/federations', tint: '#5AA9E6' },
+        { icon: 'people', label: c.footer.partners, path: '/partners', tint: '#3FB984' },
+        { icon: 'heart', label: c.footer.sponsors, path: '/sponsors', tint: '#E0607E' },
+        { icon: 'megaphone', label: c.footer.advertise, path: '/advertise', tint: '#C9A96A' },
+        { icon: 'briefcase', label: c.nav.corporate, path: '/corporate', tint: '#7A8BA6' },
+      ],
+    },
   ];
 
   const avatarStyle = useAnimatedStyle(() => ({
@@ -123,49 +204,77 @@ export default function AccountScreen() {
           {c.account.title}
         </Animated.Text>
 
-        <Animated.View entering={FadeInDown.delay(80).duration(550)} style={styles.profile}>
-          <Animated.View style={[styles.ring, avatarStyle]}>
-            <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-            <View style={styles.avatar}>
-              <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <Text style={styles.avatarText}>{initials(user?.name ?? 'A D')}</Text>
+        <Animated.View entering={FadeInDown.delay(80).duration(550)}>
+          <PressableScale
+            pressedScale={0.985}
+            delayLongPress={350}
+            onPress={() => router.push('/account/profile')}
+            onLongPress={() => setProfileSheet(true)}
+            style={styles.hero}
+            accessibilityRole="button"
+            accessibilityHint={t.profileHint}
+          >
+            {liquidGlass ? (
+              <GlassView glassEffectStyle="regular" style={StyleSheet.absoluteFill} />
+            ) : (
+              <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+            )}
+            <Animated.View style={[styles.ring, avatarStyle]}>
+              <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+              <View style={styles.avatar}>
+                <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                <Text style={styles.avatarText}>{initials(user?.name ?? 'A D')}</Text>
+              </View>
+            </Animated.View>
+            <Text style={styles.name} numberOfLines={1}>
+              {user?.name ?? t.accountEmpty}
+            </Text>
+            {user ? <Text style={type.bodySm}>{user.email}</Text> : null}
+            <View style={styles.member}>
+              <Ionicons name="sparkles" size={12} color={colors.metal} />
+              <Text style={styles.memberText}>{t.accountMember}</Text>
             </View>
-          </Animated.View>
-          <Text style={styles.name} numberOfLines={1}>
-            {user?.name ?? t.accountEmpty}
-          </Text>
-          {user ? <Text style={type.bodySm}>{user.email}</Text> : null}
-          <View style={styles.member}>
-            <Ionicons name="sparkles" size={12} color={colors.metal} />
-            <Text style={styles.memberText}>{t.accountMember}</Text>
-          </View>
+            <Text style={styles.editHint}>{t.profileHint}</Text>
+          </PressableScale>
         </Animated.View>
 
-        <Animated.View entering={FadeInDown.delay(120).duration(500)} style={styles.group}>
+        <View style={styles.quickRow}>
+          {quick.map((row, index) => (
+            <Animated.View key={row.path} entering={ZoomIn.delay(160 + index * 60).duration(420)} style={styles.quickCell}>
+              <PressableScale pressedScale={0.94} onPress={() => openRow(row)} style={styles.quickTile} accessibilityRole="link">
+                <LinearGradient
+                  colors={[`${row.tint}33`, 'rgba(0,0,0,0)']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0.9, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <View style={[styles.quickIcon, { backgroundColor: `${row.tint}33` }]}>
+                  <Ionicons name={row.icon} size={18} color={row.tint} />
+                </View>
+                <Text style={styles.quickLabel} numberOfLines={2}>
+                  {row.label}
+                </Text>
+              </PressableScale>
+            </Animated.View>
+          ))}
+        </View>
+
+        {sections.map((section, index) => (
+          <Section key={section.key} section={section} delay={240 + index * 60} onOpen={openRow} />
+        ))}
+
+        <Animated.View entering={FadeInDown.delay(560).duration(500)} style={styles.group}>
           <Text style={[type.eyebrow, styles.groupTitle]}>{c.common.labels.language}</Text>
-          <View style={styles.langRow}>
-            {LOCALE_OPTIONS.map((option) => {
-              const active = option.code === locale;
-              return (
-                <PressableScale
-                  key={option.code}
-                  pressedScale={0.97}
-                  onPress={() => chooseLocale(option.code).catch(() => undefined)}
-                  style={[styles.langChip, active && styles.langChipActive]}
-                  accessibilityRole="button"
-                >
-                  <Text style={[type.label, active && styles.langChipActiveText]}>{option.name}</Text>
-                </PressableScale>
-              );
-            })}
-          </View>
+          <Segmented
+            options={LOCALE_OPTIONS}
+            value={locale}
+            onChange={(code) => {
+              chooseLocale(code).catch(() => undefined);
+            }}
+          />
         </Animated.View>
 
-        <Group title={t.accountSectionMine} rows={[bookingsRow, ...mine]} locale={locale} delay={160} router={router} />
-        <Group title={t.accountSectionInfo} rows={info} locale={locale} delay={240} router={router} />
-        <Group title={t.accountSectionLanding} rows={landing} locale={locale} delay={280} router={router} />
-
-        <Animated.View entering={FadeInDown.delay(320).duration(500)}>
+        <Animated.View entering={FadeInDown.delay(620).duration(500)} style={signOutShakeStyle}>
           <PressableScale onPress={onSignOut} style={styles.signOut} pressedScale={0.97}>
             <Ionicons name="log-out-outline" size={20} color={colors.danger} />
             <Text style={styles.signOutText}>{t.accountSignOut}</Text>
@@ -179,49 +288,66 @@ export default function AccountScreen() {
           </Text>
         </View>
       </Animated.ScrollView>
+
+      <ProfileSheet visible={profileSheet} onClose={() => setProfileSheet(false)} onPick={openProfileField} />
     </View>
   );
 }
 
-const LOCALE_OPTIONS: { code: Locale; name: string }[] = [
-  { code: 'hy', name: 'Հայերեն' },
-  { code: 'ru', name: 'Русский' },
-  { code: 'en', name: 'English' },
+const LOCALE_OPTIONS: { key: Locale; label: string }[] = [
+  { key: 'hy', label: 'Հայերեն' },
+  { key: 'ru', label: 'Русский' },
+  { key: 'en', label: 'English' },
 ];
 
-function Group({
-  title,
-  rows,
-  locale,
-  delay,
-  router,
-}: {
-  title: string;
-  rows: Row[];
-  locale: ReturnType<typeof deviceLocale>;
-  delay: number;
-  router: ReturnType<typeof useRouter>;
-}) {
+function Section({ section, delay, onOpen }: { section: SectionDef; delay: number; onOpen: (row: Row) => void }) {
+  const [open, setOpen] = useState(section.open);
+  const turn = useSharedValue(section.open ? 1 : 0);
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 180}deg` }] }));
+
+  useEffect(() => {
+    turn.value = withTiming(open ? 1 : 0, openTiming);
+  }, [open, turn]);
+
   return (
     <Animated.View entering={FadeInDown.delay(delay).duration(500)} style={styles.group}>
-      <Text style={[type.eyebrow, styles.groupTitle]}>{title}</Text>
-      <View style={styles.card}>
-        {rows.map((row, index) => (
-          <PressableScale
-            key={row.path}
-            pressedScale={0.98}
-            onPress={() => (NATIVE_PATHS.has(row.path) ? router.push(row.path as '/account/bookings') : Linking.openURL(webUrl(locale, row.path)).catch(() => undefined))}
-            style={[styles.row, index > 0 && styles.divider]}
-            accessibilityRole="link"
-          >
-            <View style={[styles.rowIcon, { backgroundColor: `${row.tint}26` }]}>
-              <Ionicons name={row.icon} size={17} color={row.tint} />
-            </View>
-            <Text style={[type.label, styles.flex]}>{row.label}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.text3} />
-          </PressableScale>
-        ))}
-      </View>
+      <PressableScale
+        onPress={() => {
+          animateNextLayout();
+          setOpen((value) => !value);
+        }}
+        pressedScale={0.985}
+        style={styles.sectionHeader}
+        accessibilityRole="button"
+        accessibilityState={{ expanded: open }}
+      >
+        <Text style={[type.eyebrow, styles.flex]}>{section.title}</Text>
+        <View style={styles.countPill}>
+          <Text style={styles.countText}>{section.rows.length}</Text>
+        </View>
+        <Animated.View style={chevron}>
+          <Ionicons name="chevron-down" size={16} color={colors.text3} />
+        </Animated.View>
+      </PressableScale>
+      <Collapsible open={open}>
+        <View style={styles.card}>
+          {section.rows.map((row, index) => (
+            <PressableScale
+              key={row.path}
+              pressedScale={0.98}
+              onPress={() => onOpen(row)}
+              style={[styles.row, index > 0 && styles.divider]}
+              accessibilityRole="link"
+            >
+              <View style={[styles.rowIcon, { backgroundColor: `${row.tint}26` }]}>
+                <Ionicons name={row.icon} size={17} color={row.tint} />
+              </View>
+              <Text style={[type.label, styles.flex]}>{row.label}</Text>
+              <Ionicons name="chevron-forward" size={16} color={colors.text3} />
+            </PressableScale>
+          ))}
+        </View>
+      </Collapsible>
     </Animated.View>
   );
 }
@@ -231,19 +357,41 @@ const styles = StyleSheet.create({
   glow: { position: 'absolute', top: 0, left: 0, right: 0, height: 380 },
   content: { paddingHorizontal: space.xl, paddingBottom: 140, gap: space.xxl },
   flex: { flex: 1 },
-  langRow: { flexDirection: 'row', gap: space.sm },
-  langChip: {
-    flex: 1,
-    minHeight: 48,
+  hero: {
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
+    gap: 6,
+    paddingVertical: space.xxl,
+    paddingHorizontal: space.lg,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.line,
   },
-  langChipActive: { borderColor: colors.accentBright },
-  langChipActiveText: { color: colors.accentBright },
-  profile: { alignItems: 'center', gap: 6, paddingVertical: space.lg },
+  quickRow: { flexDirection: 'row', gap: space.sm },
+  quickCell: { flex: 1 },
+  quickTile: {
+    height: 108,
+    padding: space.md,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+  },
+  quickIcon: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  quickLabel: { fontSize: 12, fontWeight: '700', lineHeight: 16, color: colors.text },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: 4 },
+  countPill: {
+    minWidth: 22,
+    height: 20,
+    paddingHorizontal: 6,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(245,241,234,0.08)',
+  },
+  countText: { fontSize: 11, fontWeight: '700', color: colors.text2 },
   ring: { width: 100, height: 100, borderRadius: 50, padding: 3, overflow: 'hidden', marginBottom: space.sm },
   avatar: {
     flex: 1,
@@ -269,6 +417,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(201,169,106,0.35)',
   },
   memberText: { fontSize: 12, fontWeight: '700', color: colors.metal },
+  editHint: { marginTop: 8, fontSize: 11, color: colors.text3, textAlign: 'center' },
   group: { gap: space.md },
   groupTitle: { paddingHorizontal: 4 },
   card: {

@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -12,6 +13,7 @@ import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { serverMessageOf } from '@/lib/server-message';
 import { useAppActive } from '@/lib/use-app-active';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 export default function MyBookingsScreen() {
@@ -54,12 +56,12 @@ export default function MyBookingsScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.account.bookings.title}</Text>
-      </View>
+      </Animated.View>
 
       <FlatList
         data={bookings ?? []}
@@ -73,28 +75,30 @@ export default function MyBookingsScreen() {
             <EmptyState icon="calendar-outline" title={c.account.bookings.empty} actionLabel={c.account.bookings.emptyCta} onAction={() => router.replace('/(tabs)/classes')} />
           )
         }
-        renderItem={({ item }) => (
-          <PressableScale
-            onPress={() => router.push({ pathname: '/booking/[id]/pass', params: { id: item.id } })}
-            accessibilityRole="button"
-            style={styles.card}
-          >
-            <Text style={type.h3} numberOfLines={1}>
-              {item.classTitle ?? item.reference}
-            </Text>
-            {item.instructorName ? <Text style={type.bodySm}>{item.instructorName}</Text> : null}
-            <Text style={type.bodySm}>
-              {dateLabel(item.startsAt, locale, { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-            </Text>
-            <View style={styles.footer}>
-              <Text style={styles.status}>{bookingStatusLabel(item.status, c)}</Text>
-              <Text style={type.label}>{price(item.totalPrice, locale)}</Text>
-            </View>
-            <View style={styles.openRow}>
-              <Ionicons name="qr-code-outline" size={14} color={colors.metal} />
-              <Text style={styles.openText}>{c.footer.passTitle}</Text>
-            </View>
-          </PressableScale>
+        renderItem={({ item, index }) => (
+          <Animated.View entering={enterItem(index)} layout={LinearTransition.springify().damping(18)}>
+            <PressableScale
+              onPress={() => router.push({ pathname: '/booking/[id]/pass', params: { id: item.id } })}
+              accessibilityRole="button"
+              style={styles.card}
+            >
+              <Text style={type.h3} numberOfLines={1}>
+                {item.classTitle ?? item.reference}
+              </Text>
+              {item.instructorName ? <Text style={type.bodySm}>{item.instructorName}</Text> : null}
+              <Text style={type.bodySm}>
+                {dateLabel(item.startsAt, locale, { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </Text>
+              <View style={styles.footer}>
+                <Text style={styles.status}>{bookingStatusLabel(item.status, c)}</Text>
+                <Text style={type.label}>{price(item.totalPrice, locale)}</Text>
+              </View>
+              <View style={styles.openRow}>
+                <Ionicons name="qr-code-outline" size={14} color={colors.metal} />
+                <Text style={styles.openText}>{c.footer.passTitle}</Text>
+              </View>
+            </PressableScale>
+          </Animated.View>
         )}
       />
     </View>

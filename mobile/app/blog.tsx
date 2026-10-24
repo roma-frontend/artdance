@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { FadeImage } from '@/components/ui/fade-image';
@@ -13,6 +14,7 @@ import { getBlogDetail, getBlogList, type BlogCard, type BlogDetail, type BlogLi
 import { mediaUri } from '@/lib/catalog';
 import { dateLabel, plural } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
@@ -68,14 +70,14 @@ export default function BlogScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={m.backToBlog}>
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={[type.h2, styles.headerTitle]} numberOfLines={1}>
           {title}
         </Text>
-      </View>
+      </Animated.View>
 
       {failed !== null ? (
         <EmptyState icon="alert-circle-outline" title={failed} actionLabel={m.backToBlog} onAction={() => router.back()} />
@@ -123,8 +125,10 @@ export default function BlogScreen() {
           {list.items.length === 0 ? (
             <EmptyState icon="newspaper-outline" title={m.empty} body={m.emptyHint} />
           ) : (
-            list.items.map((item) => (
-              <BlogCardView key={item.slug} item={item} locale={locale} readingLabel={m.readingTime} onPress={() => openPost(item.slug)} />
+            list.items.map((item, index) => (
+              <Animated.View key={item.slug} entering={enterItem(index)}>
+                <BlogCardView item={item} locale={locale} readingLabel={m.readingTime} onPress={() => openPost(item.slug)} />
+              </Animated.View>
             ))
           )}
         </ScrollView>

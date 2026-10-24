@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -11,6 +12,7 @@ import { getMySubscription, type ClientSubscription } from '@/lib/account-data';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { serverMessageOf } from '@/lib/server-message';
+import { EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 const METRIC_KEYS = ['groupClasses', 'privateSessions'] as const;
@@ -51,12 +53,12 @@ export default function MySubscriptionScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{s.title}</Text>
-      </View>
+      </Animated.View>
 
       {!loaded ? (
         <View style={styles.center}>
@@ -71,7 +73,7 @@ export default function MySubscriptionScreen() {
           contentContainerStyle={styles.content}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentBright} />}
         >
-          <View style={styles.card}>
+          <Animated.View entering={FadeInDown.delay(80).duration(420).easing(EASE_OUT)} style={styles.card}>
             <Text style={type.h3}>{subscription.planId}</Text>
             <Text style={type.bodySm}>{subscription.cancelAtPeriodEnd ? s.cancelAtPeriodEnd : subscription.status}</Text>
             <Text style={type.bodySm}>
@@ -80,9 +82,9 @@ export default function MySubscriptionScreen() {
               {dateLabel(subscription.currentPeriodEnd, locale, { day: '2-digit', month: 'short', year: 'numeric' })}
             </Text>
             <Text style={type.label}>{price(subscription.price, locale)}</Text>
-          </View>
+          </Animated.View>
 
-          <View style={styles.card}>
+          <Animated.View entering={FadeInDown.delay(160).duration(420).easing(EASE_OUT)} style={styles.card}>
             <Text style={type.eyebrow}>{s.usageTitle}</Text>
             {subscription.usage.length === 0 ? (
               <Text style={type.bodySm}>{s.usageEmpty}</Text>
@@ -94,7 +96,7 @@ export default function MySubscriptionScreen() {
                 </View>
               ))
             )}
-          </View>
+          </Animated.View>
         </ScrollView>
       )}
     </View>

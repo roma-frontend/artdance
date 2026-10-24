@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -10,6 +11,7 @@ import { getPricing, type PricingComparisonCell, type PricingContent } from '@/l
 import { serverMessageOf } from '@/lib/server-message';
 import { webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 export default function PricingScreen() {
@@ -51,12 +53,12 @@ export default function PricingScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{content?.title ?? ''}</Text>
-      </View>
+      </Animated.View>
 
       {content === null ? (
         <EmptyState icon="alert-circle-outline" title={failed ?? t.catalogError} />
@@ -67,8 +69,8 @@ export default function PricingScreen() {
 
           {plans ? (
             <>
-              {plans.items.map((plan) => (
-                <View key={plan.id} style={[styles.card, plan.highlighted && styles.highlighted]}>
+              {plans.items.map((plan, index) => (
+                <Animated.View key={plan.id} entering={enterItem(index)} style={[styles.card, plan.highlighted && styles.highlighted]}>
                   {plan.badges.length > 0 ? (
                     <View style={styles.chips}>
                       {plan.badges.map((badge) => (
@@ -95,11 +97,11 @@ export default function PricingScreen() {
                   <PressableScale onPress={() => openWeb(content.webPath)} accessibilityRole="button">
                     <Text style={[type.label, styles.cta]}>{plan.cta}</Text>
                   </PressableScale>
-                </View>
+                </Animated.View>
               ))}
               <Text style={type.caption}>{plans.note}</Text>
 
-              <View style={styles.card}>
+              <Animated.View entering={enterItem(plans.items.length)} style={styles.card}>
                 <Text style={type.h3}>{plans.comparison.title}</Text>
                 <Text style={type.bodySm}>{plans.comparison.subtitle}</Text>
                 {plans.comparison.rows.map((row) => (
@@ -113,7 +115,7 @@ export default function PricingScreen() {
                     ))}
                   </View>
                 ))}
-              </View>
+              </Animated.View>
             </>
           ) : null}
 
@@ -121,8 +123,8 @@ export default function PricingScreen() {
             <>
               <Text style={type.h3}>{classPasses.title}</Text>
               <Text style={type.bodySm}>{classPasses.subtitle}</Text>
-              {classPasses.items.map((pass) => (
-                <View key={pass.id} style={styles.card}>
+              {classPasses.items.map((pass, index) => (
+                <Animated.View key={pass.id} entering={enterItem(index)} style={styles.card}>
                   {pass.badge ? (
                     <View style={styles.chip}>
                       <Text style={type.caption}>{pass.badge}</Text>
@@ -134,7 +136,7 @@ export default function PricingScreen() {
                   <PressableScale onPress={() => openWeb(content.webPath)} accessibilityRole="button">
                     <Text style={[type.label, styles.cta]}>{pass.cta}</Text>
                   </PressableScale>
-                </View>
+                </Animated.View>
               ))}
             </>
           ) : null}

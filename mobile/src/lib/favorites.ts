@@ -1,11 +1,20 @@
 import { catalogFor } from '@/i18n/catalog';
 import { deviceLocale } from '@/lib/i18n';
 
+import type { Section } from './catalog';
 import { API_URL } from './config';
 import { readServerMessage } from './server-message';
 import { getSessionToken } from './session';
 
 export type FavoriteKind = 'class' | 'instructor' | 'venue' | 'product';
+
+/** Разделы, которые можно добавить в избранное (события в избранное не сохраняются). */
+export const FAVORITE_KIND: Partial<Record<Section, FavoriteKind>> = {
+  classes: 'class',
+  instructors: 'instructor',
+  studios: 'venue',
+  shop: 'product',
+};
 
 export type FavoriteItem = {
   kind: FavoriteKind;

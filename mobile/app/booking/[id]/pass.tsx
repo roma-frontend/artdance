@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -18,6 +19,7 @@ import {
 } from '@/lib/bookings';
 import { dateLabel } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
@@ -49,12 +51,12 @@ export default function BookingPassScreen() {
   }, [load]);
 
   const header = (
-    <View style={styles.header}>
+    <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
       <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
         <Ionicons name="chevron-back" size={26} color={colors.text} />
       </PressableScale>
       <Text style={type.h2}>{f.passTitle}</Text>
-    </View>
+    </Animated.View>
   );
 
   if (!pass) {
@@ -79,7 +81,7 @@ export default function BookingPassScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {header}
       <ScrollView contentContainerStyle={styles.body}>
-        <View style={styles.card}>
+        <Animated.View entering={enterItem(0)} style={styles.card}>
           <Text style={type.h3}>{booking?.classTitle ?? pass.reference}</Text>
           {booking?.instructorName ? <Detail label={c.common.labels.instructor} value={booking.instructorName} /> : null}
           <Detail label={f.bookingLabel} value={pass.reference} />
@@ -90,15 +92,15 @@ export default function BookingPassScreen() {
               <Text style={styles.status}>{bookingStatusLabel(booking.status, c)}</Text>
             </>
           ) : null}
-        </View>
+        </Animated.View>
 
         {cancelled ? (
           <Text style={type.body}>{f.qrCancelledHint}</Text>
         ) : (
           <>
-            <View style={styles.qrFrame}>
+            <Animated.View entering={ZoomIn.delay(160).duration(420).easing(EASE_OUT)} style={styles.qrFrame}>
               <QRCode value={pass.qrData} size={220} color="#000000" backgroundColor="#FFFFFF" />
-            </View>
+            </Animated.View>
             <Text style={styles.tip}>{f.passFooterTip}</Text>
           </>
         )}

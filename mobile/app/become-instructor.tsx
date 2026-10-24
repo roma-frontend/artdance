@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { LandingBody } from '@/components/content/landing-body';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -11,6 +12,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { getBecomeInstructor, type BecomeInstructorContent } from '@/lib/content';
 import { serverMessageOf } from '@/lib/server-message';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { EASE_OUT } from '@/lib/motion';
 import { colors, space, type } from '@/theme';
 
 export default function BecomeInstructorScreen() {
@@ -46,12 +48,12 @@ export default function BecomeInstructorScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
         <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.footer.becomeInstructor}</Text>
-      </View>
+      </Animated.View>
 
       {content === null ? (
         <EmptyState icon="alert-circle-outline" title={failed ?? t.catalogError} />

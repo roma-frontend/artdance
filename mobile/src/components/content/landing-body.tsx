@@ -1,11 +1,13 @@
 import { useRouter } from 'expo-router';
 import { useRef, type ComponentRef } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { PressableScale } from '@/components/ui/pressable-scale';
 import type { BecomeInstructorContent } from '@/lib/content';
 import { webUrl } from '@/lib/format';
 import type { Locale } from '@/lib/i18n';
+import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 /** Общий экран лендинга: преподаватели и площадки имеют одинаковый состав. */
@@ -37,22 +39,23 @@ export function LandingBody({ content, locale }: { content: BecomeInstructorCont
       </View>
 
       <Text style={type.h3}>{content.benefits.title}</Text>
-      {content.benefits.items.map((item) => (
-        <View key={item.id} style={styles.card}>
+      {content.benefits.items.map((item, index) => (
+        <Animated.View key={item.id} entering={enterItem(index)} style={styles.card}>
           <Text style={type.title}>{item.title}</Text>
           <Text style={type.bodySm}>{item.body}</Text>
-        </View>
+        </Animated.View>
       ))}
 
       <Text style={type.h3}>{content.steps.title}</Text>
-      {content.steps.items.map((step) => (
-        <View key={step.id} style={styles.card}>
+      {content.steps.items.map((step, index) => (
+        <Animated.View key={step.id} entering={enterItem(index)} style={styles.card}>
           <Text style={type.title}>{step.title}</Text>
           <Text style={type.bodySm}>{step.body}</Text>
-        </View>
+        </Animated.View>
       ))}
 
-      <View
+      <Animated.View
+        entering={FadeInDown.duration(420).easing(EASE_OUT)}
         style={styles.card}
         onLayout={(e) => {
           earningsY.current = e.nativeEvent.layout.y;
@@ -65,18 +68,18 @@ export function LandingBody({ content, locale }: { content: BecomeInstructorCont
             {fact.text}
           </Text>
         ))}
-      </View>
+      </Animated.View>
 
-      <View style={styles.card}>
+      <Animated.View entering={enterItem(1)} style={styles.card}>
         <Text style={type.h3}>{content.requirements.title}</Text>
         {content.requirements.items.map((fact) => (
           <Text key={fact.id} style={type.bodySm}>
             {fact.text}
           </Text>
         ))}
-      </View>
+      </Animated.View>
 
-      <View style={styles.card}>
+      <Animated.View entering={enterItem(2)} style={styles.card}>
         <Text style={type.h3}>{content.cta.title}</Text>
         <Text style={type.bodySm}>{content.cta.subtitle}</Text>
         <PressableScale onPress={() => router.push('/contact')} accessibilityRole="button">
@@ -85,7 +88,7 @@ export function LandingBody({ content, locale }: { content: BecomeInstructorCont
         <PressableScale onPress={() => openWeb(content.cta.secondaryPath)} accessibilityRole="button">
           <Text style={[type.label, styles.cta]}>{content.cta.secondary}</Text>
         </PressableScale>
-      </View>
+      </Animated.View>
     </ScrollView>
   );
 }
