@@ -44,3 +44,23 @@ export async function getAbout(locale: string): Promise<AboutContent> {
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return (await response.json()) as AboutContent;
 }
+
+export type GiftCardsPreset = { amount: number; label: string };
+export type GiftCardsStep = { id: string; title: string; body: string };
+export type GiftCardsTerm = { id: string; text: string };
+export type GiftCardsContent = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  amounts: { title: string; note: string; presets: GiftCardsPreset[]; comingSoon: string; validity: string };
+  steps: { title: string; items: GiftCardsStep[] };
+  terms: { title: string; items: GiftCardsTerm[] };
+  cta: { title: string; subtitle: string; primary: string; primaryPath: string; secondary: string; secondaryPath: string };
+};
+
+/** Подарочные карты с сервера. Сервер отвечает `FEATURE_DISABLED`, если модуль магазина выключен. */
+export async function getGiftCards(locale: string): Promise<GiftCardsContent> {
+  const response = await fetch(`${API_URL}/api/content/gift-cards?locale=${encodeURIComponent(locale)}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return (await response.json()) as GiftCardsContent;
+}
