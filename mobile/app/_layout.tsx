@@ -112,6 +112,7 @@ export default function RootLayout() {
       <Stack.Screen name="become-instructor" options={{ animation: 'default' }} />
       <Stack.Screen name="list-your-studio" options={{ animation: 'default' }} />
       <Stack.Screen name="blog" options={{ animation: 'default' }} />
+      <Stack.Screen name="schedule" options={{ animation: 'default' }} />
         <Stack.Screen name="book/[instructor]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
       </Stack>
     </ThemeProvider>

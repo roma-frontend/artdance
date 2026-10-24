@@ -137,6 +137,12 @@ export default function CatalogListScreen({ sectionProp }: { sectionProp?: strin
         ) : null}
         {items[0] ? <GestureHint text={HINTS[locale] ?? HINTS.en} /> : null}
       </Animated.View>
+      {valid === 'classes' ? (
+        <PressableScale onPress={() => router.push({ pathname: '/schedule' })} style={styles.schedulePill} accessibilityLabel={t.nav.schedule}>
+          <Ionicons name="calendar-outline" size={16} color={colors.text} />
+          <Text style={styles.scheduleText}>{t.nav.schedule}</Text>
+        </PressableScale>
+      ) : null}
       <View style={styles.searchWrap}>
         <View style={styles.search}>
           <Ionicons name="search" size={18} color={colors.text3} />
@@ -307,6 +313,21 @@ const styles = StyleSheet.create({
   gridRow: { gap: space.md, paddingHorizontal: space.xl },
   cell: { flex: 1, marginBottom: space.xl },
   loader: { marginVertical: space.lg },
+  schedulePill: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: space.xl,
+    marginBottom: space.lg,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.lineStrong,
+  },
+  scheduleText: { fontSize: 13, fontWeight: '700', color: colors.text },
   searchWrap: { paddingHorizontal: space.xl, marginBottom: space.xl },
   search: {
     flexDirection: 'row',
