@@ -34,11 +34,20 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { CatalogError, getCatalogDetail, mediaUri, type CatalogItem, type ClassCard, type Section } from '@/lib/catalog';
 import { cardView } from '@/lib/catalog-view';
+import { FavoritesError, listMyFavorites, toggleMyFavorite, type FavoriteKind } from '@/lib/favorites';
 import { dateLabel, initials, levelLabel, plural, price, styleLabel, weekdayShort, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors, fill, fonts, gradients, radius, space, type } from '@/theme';
 
 const sections: readonly Section[] = ['classes', 'instructors', 'studios', 'events', 'shop'];
+
+/** Разделы, которые можно добавить в избранное (события в избранное не сохраняются). */
+const FAVORITE_KIND: Partial<Record<Section, FavoriteKind>> = {
+  classes: 'class',
+  instructors: 'instructor',
+  studios: 'venue',
+  shop: 'product',
+};
 
 /** Подпись кнопки «В календарь»: строк для неё нет в словарях, поэтому задаём по локали, как HINTS в каталоге. */
 const CALENDAR_LABEL: Record<string, string> = {
@@ -92,6 +101,9 @@ export default function CatalogDetailScreen() {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  // null — состояние ещё не известно (или гость); true/false — сохранено ли в избранном.
+  const [saved, setSaved] = useState<boolean | null>(null);
+  const favoriteKind = valid ? FAVORITE_KIND[valid] : undefined;
 
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
@@ -114,6 +126,17 @@ export default function CatalogDetailScreen() {
       alive = false;
     };
   }, [valid, slug, m.catalogNotFound, m.catalogError]);
+
+  useEffect(() => {
+    if (!favoriteKind || !slug) return;
+    let alive = true;
+    listMyFavorites()
+      .then((items) => alive && setSaved(items.some((i) => i.kind === favoriteKind && i.slug === slug)))
+      .catch(() => alive && setSaved(false));
+    return () => {
+      alive = false;
+    };
+  }, [favoriteKind, slug]);
 
   const heroStyle = useAnimatedStyle(() => ({
     transform: [
@@ -260,6 +283,16 @@ export default function CatalogDetailScreen() {
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${query}`).catch(() => undefined);
   };
 
+  const toggleSave = async () => {
+    if (!favoriteKind || !slug) return;
+    try {
+      setSaved(await toggleMyFavorite(favoriteKind, slug));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+    } catch (err: unknown) {
+      const signedOut = err instanceof FavoritesError && err.status === 401;
+      Alert.alert(signedOut ? t.favorites.signInRequired : m.catalogError);
+    }
+  };
   const share = () => {
     const url = webUrl(locale, `/${valid}/${slug}`);
     Share.share({ message: `${title}\n${url}`, url }).catch(() => undefined);
@@ -286,6 +319,13 @@ export default function CatalogDetailScreen() {
             ) : null}
             {valid === 'classes' || valid === 'events' ? (
               <GlassButton icon="calendar-outline" label={CALENDAR_LABEL[locale] ?? CALENDAR_LABEL.en} onPress={addEvent} />
+            ) : null}
+            {favoriteKind ? (
+              <GlassButton
+                icon={saved ? 'heart' : 'heart-outline'}
+                label={(saved ? t.favorites.toggleLabelActive : t.favorites.toggleLabel).replace('{name}', title)}
+                onPress={toggleSave}
+              />
             ) : null}
             <GlassButton icon="share-outline" label={t.common.actions.share} onPress={share} />
           </View>

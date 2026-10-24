@@ -64,7 +64,7 @@ export default function AccountScreen() {
     { icon: 'wallet', label: c.account.nav.wallet, path: '/account/wallet', tint: '#3FB984' },
     { icon: 'people', label: c.account.nav.referrals, path: '/account/referrals', tint: '#5AA9E6' },
     { icon: 'heart', label: c.account.nav.favorites, path: '/account/favorites', tint: '#E0607E' },
-    { icon: 'settings', label: c.account.nav.settings, path: '/account/settings', tint: '#7D8AA8' },
+    { icon: 'folder-open', label: c.account.nav.data, path: '/account/data', tint: '#7A8BA6' },
   ];
   const bookingsRow: Row = { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52' };
   const info: Row[] = [

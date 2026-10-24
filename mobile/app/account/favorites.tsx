@@ -1,14 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { Alert, ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
-import { listMyFavorites, type FavoriteItem, type FavoriteKind } from '@/lib/favorites';
+import type { Section } from '@/lib/catalog';
+import { listMyFavorites, toggleMyFavorite, type FavoriteItem, type FavoriteKind } from '@/lib/favorites';
 import { colors, radius, space, type } from '@/theme';
 
 export default function MyFavoritesScreen() {
@@ -33,6 +34,17 @@ export default function MyFavoritesScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function unfavorite(item: FavoriteItem) {
+    try {
+      // Сервер переключает состояние: если запись уже была убрана на другом устройстве, он вернёт `true`.
+      const saved = await toggleMyFavorite(item.kind, item.slug);
+      if (saved) await load();
+      else setItems((prev) => prev?.filter((i) => !(i.kind === item.kind && i.slug === item.slug)) ?? null);
+    } catch {
+      Alert.alert(t.catalogError);
+    }
+  }
 
   async function onRefresh() {
     setRefreshing(true);
@@ -70,7 +82,12 @@ export default function MyFavoritesScreen() {
           )
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <PressableScale
+            pressedScale={0.98}
+            accessibilityRole="link"
+            onPress={() => router.push({ pathname: '/catalog/[section]/[slug]', params: { section: KIND_SECTION[item.kind], slug: item.slug } })}
+            style={styles.card}
+          >
             <Ionicons name={KIND_ICON[item.kind]} size={18} color={colors.accentBright} />
             <View style={styles.body}>
               <Text style={type.label} numberOfLines={1}>
@@ -78,12 +95,29 @@ export default function MyFavoritesScreen() {
               </Text>
               <Text style={styles.kind}>{kindLabel(item.kind, c)}</Text>
             </View>
-          </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.text3} />
+            <PressableScale
+              onPress={() => unfavorite(item)}
+              accessibilityRole="button"
+              accessibilityLabel={c.favorites.toggleLabelActive.replace('{name}', item.title)}
+              haptic={false}
+              hitSlop={10}
+            >
+              <Ionicons name="heart" size={20} color={colors.accentBright} />
+            </PressableScale>
+          </PressableScale>
         )}
       />
     </View>
   );
 }
+
+const KIND_SECTION: Record<FavoriteKind, Section> = {
+  class: 'classes',
+  instructor: 'instructors',
+  venue: 'studios',
+  product: 'shop',
+};
 
 const KIND_ICON: Record<FavoriteKind, 'school-outline' | 'person-outline' | 'business-outline' | 'bag-outline'> = {
   class: 'school-outline',

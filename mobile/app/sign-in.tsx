@@ -35,8 +35,11 @@ export default function SignInScreen() {
         withTiming(-6, { duration: 60 }),
         withTiming(0, { duration: 60 }),
       );
-      const isLocked = e instanceof AuthError && e.message === 'ACCOUNT_LOCKED';
-      setError(isLocked ? t.locked : t.genericError);
+      const code = e instanceof AuthError ? e.message : '';
+      const status = e instanceof AuthError ? e.status : 0;
+      if (code === 'ACCOUNT_LOCKED') setError(t.locked);
+      else if (code === 'INVALID_EMAIL_OR_PASSWORD' || status === 401) setError(t.invalidCredentials);
+      else setError(t.genericError);
     } finally {
       setBusy(false);
     }

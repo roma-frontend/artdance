@@ -80,7 +80,7 @@ export default function BookScreen() {
   const [day, setDay] = useState<string | null>(null);
   const [selected, setSelected] = useState<Slot | null>(null);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ kind: 'success' | 'error'; text: string } | null>(null);
+  const [result, setResult] = useState<{ kind: 'success' | 'error'; text: string; paying?: boolean } | null>(null);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [payMethod, setPayMethod] = useState<PayMethod>('CARD');
 
@@ -146,7 +146,7 @@ export default function BookScreen() {
           const payment = await readJson<{ redirectUrl: string | null }>(payResponse);
           if (payment.redirectUrl) {
             await Linking.openURL(payment.redirectUrl);
-            setResult({ kind: 'success', text: t.bookPayStarted });
+            setResult({ kind: 'success', text: t.bookPayStarted, paying: true });
           } else {
             setResult({ kind: 'error', text: t.bookPayFailed });
           }
@@ -195,7 +195,10 @@ export default function BookScreen() {
           {result.text}
         </Animated.Text>
         <Animated.View entering={FadeInUp.delay(420).duration(500)} style={styles.successAction}>
-          <Button label={c.common.actions.continue} onPress={close} />
+          {result.paying ? (
+            <Button label={c.account.nav.bookings} onPress={() => router.replace('/account/bookings')} />
+          ) : null}
+          <Button label={c.common.actions.continue} onPress={close} variant={result.paying ? 'ghost' : 'primary'} />
         </Animated.View>
       </View>
     );
@@ -486,5 +489,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
   },
   successTitle: { fontFamily: fonts.display, fontSize: 34, color: colors.text },
-  successAction: { alignSelf: 'stretch', marginTop: space.lg },
+  successAction: { alignSelf: 'stretch', marginTop: space.lg, gap: space.md },
 });

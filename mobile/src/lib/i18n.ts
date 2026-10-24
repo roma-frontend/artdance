@@ -16,6 +16,7 @@ const dictionary: Dictionary = {
     signOut: 'Դուրս գալ',
     genericError: 'Չհաջողվեց. փորձեք կրկին',
     locked: 'Հաշիվը ժամանակավորապես արգելափակված է',
+    invalidCredentials: 'Էլ. փոստը կամ գաղտնաբառը սխալ է',
     catalogEmpty: 'Դատարկ է',
     catalogNotFound: 'Չգտնվեց',
     catalogError: 'Չհաջողվեց բեռնել. փորձեք կրկին',
@@ -69,6 +70,7 @@ const dictionary: Dictionary = {
     signOut: 'Выйти',
     genericError: 'Не удалось. Попробуйте ещё раз',
     locked: 'Аккаунт временно заблокирован',
+    invalidCredentials: 'Неверный email или пароль',
     catalogEmpty: 'Пока пусто',
     catalogNotFound: 'Не найдено',
     catalogError: 'Не удалось загрузить. Попробуйте ещё раз',
@@ -122,6 +124,7 @@ const dictionary: Dictionary = {
     signOut: 'Sign out',
     genericError: 'Something went wrong. Try again',
     locked: 'Account is temporarily locked',
+    invalidCredentials: 'Email or password is incorrect',
     catalogEmpty: 'Nothing here yet',
     catalogNotFound: 'Not found',
     catalogError: 'Could not load. Try again',
@@ -177,6 +180,7 @@ export type MessageKey =
   | 'signOut'
   | 'genericError'
   | 'locked'
+  | 'invalidCredentials'
   | 'catalogEmpty'
   | 'catalogNotFound'
   | 'catalogError'
