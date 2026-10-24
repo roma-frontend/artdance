@@ -23,6 +23,7 @@ import {
 } from '@/lib/cart';
 import { plural, price, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { useAppActive } from '@/lib/use-app-active';
 import { colors, radius, space, type } from '@/theme';
 
 type Locale = ReturnType<typeof deviceLocale>;
@@ -78,6 +79,7 @@ export default function CartScreen() {
   useEffect(() => {
     load();
   }, [load]);
+  useAppActive(load);
 
   /** Каждая операция возвращает свежий снимок корзины: его и показываем. */
   async function run(action: () => Promise<CartSnapshot>): Promise<boolean> {

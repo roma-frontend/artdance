@@ -10,6 +10,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { listMyBookings, type ClientBooking } from '@/lib/bookings';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { useAppActive } from '@/lib/use-app-active';
 import { colors, radius, space, type } from '@/theme';
 
 export default function MyBookingsScreen() {
@@ -34,6 +35,7 @@ export default function MyBookingsScreen() {
   useEffect(() => {
     load();
   }, [load]);
+  useAppActive(load);
 
   async function onRefresh() {
     setRefreshing(true);

@@ -10,6 +10,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { listMyOrders, type ClientOrder } from '@/lib/orders';
+import { useAppActive } from '@/lib/use-app-active';
 import { colors, radius, space, type } from '@/theme';
 
 export default function MyOrdersScreen() {
@@ -34,6 +35,7 @@ export default function MyOrdersScreen() {
   useEffect(() => {
     load();
   }, [load]);
+  useAppActive(load);
 
   async function onRefresh() {
     setRefreshing(true);
