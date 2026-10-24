@@ -79,6 +79,14 @@ export default function FaqScreen() {
               })}
             </View>
           ))}
+
+          <View style={styles.card}>
+            <Text style={type.h3}>{c.help.stillStuck.title}</Text>
+            <Text style={type.bodySm}>{c.help.stillStuck.body}</Text>
+            <PressableScale onPress={() => router.push('/contact')} accessibilityRole="button">
+              <Text style={[type.label, styles.cta]}>{c.help.stillStuck.cta}</Text>
+            </PressableScale>
+          </View>
         </ScrollView>
       )}
     </View>
@@ -95,4 +103,5 @@ const styles = StyleSheet.create({
   questionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.md },
   question: { flex: 1 },
   answer: { marginTop: space.xs },
+  cta: { color: colors.accentBright, marginTop: space.xs },
 });
