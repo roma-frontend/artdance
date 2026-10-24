@@ -102,3 +102,62 @@ export async function getLegalDocument(locale: string, slug: string): Promise<Le
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return (await response.json()) as LegalDocumentContent;
 }
+
+export type ContactTopicOption = { value: string; label: string };
+export type ContactChannel = { id: string; title: string; note: string; value: string | null; href: string | null };
+export type ContactContent = {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  responseTime: string;
+  channelsTitle: string;
+  channels: ContactChannel[];
+  form: {
+    title: string;
+    nameLabel: string;
+    emailLabel: string;
+    topicLabel: string;
+    messageLabel: string;
+    messagePlaceholder: string;
+    submit: string;
+    defaultTopic: string;
+    topics: ContactTopicOption[];
+  };
+  outcome: { successTitle: string; successBody: string; failedTitle: string; failedBody: string };
+  errors: { required: string; email: string };
+  supportEmail: string;
+  webPath: string;
+};
+export type ContactInput = { name: string; email: string; topic: string; message: string; locale: string };
+export type ContactOutcome = { delivered: boolean };
+
+export class ContactError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly field: string | null,
+  ) {
+    super(message);
+  }
+}
+
+/** Тексты формы обращения с сервера на выбранном языке. */
+export async function getContact(locale: string): Promise<ContactContent> {
+  const response = await fetch(`${API_URL}/api/content/contact?locale=${encodeURIComponent(locale)}`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return (await response.json()) as ContactContent;
+}
+
+/** Отправка обращения. `delivered: false` — письмо не ушло: показать адрес поддержки. Ошибка несёт код и поле. */
+export async function sendContact(input: ContactInput): Promise<ContactOutcome> {
+  const response = await fetch(`${API_URL}/api/contact`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(input),
+  });
+  const body = (await response.json().catch(() => ({}))) as { error?: string; field?: string; delivered?: boolean };
+  if (!response.ok) {
+    throw new ContactError(body.error ?? `HTTP ${response.status}`, response.status, body.field ?? null);
+  }
+  return { delivered: body.delivered === true };
+}

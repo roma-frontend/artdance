@@ -28,6 +28,8 @@ Bearer-токен проверен на живом стенде: вход дем
 | `/api/content/gift-cards` | GET | `?locale=`, без кэша; `FEATURE_DISABLED`, если выключен `shop` |
 | `/api/content/legal` | GET | публичный, `?locale=`, без кэша |
 | `/api/content/legal/[slug]` | GET | публичный, `?locale=`, без кэша; `NOT_FOUND` для неизвестного слага |
+| `/api/content/contact` | GET | публичный, `?locale=`, без кэша |
+| `/api/contact` | POST | публичный, лимит `contactForm`, капча; `{ delivered }`, `VALIDATION_FAILED` с `field`, `CAPTCHA_FAILED` (422) |
 | `/api/search` | GET | публичный, лимит частоты |
 | `/api/booking` | POST | сессия или `anonymousId` |
 | `/api/booking/hold` | POST | сессия или `anonymousId` |
@@ -96,6 +98,7 @@ capability-проверки (`requireCapability`), вебхуки подписа
    Turnstile, капчу в обход сервера не отключаем. При `CAPTCHA_FAILED` экран показывает
    сообщение и кнопку «Открыть на сайте», которая открывает веб-страницу `/forgot-password`.
    В dev без секрета запрос проходит и возвращает `{ sent: true }`.
+   Так же устроен `POST /api/contact`: при `CAPTCHA_FAILED` экран контактов показывает адрес поддержки и кнопку «Открыть на сайте» (`/contact`).
 
 ## Что НЕ переносим в приложение
 
