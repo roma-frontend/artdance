@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { GlassBackdrop } from '@/components/ui/glass-backdrop';
 import * as Haptics from 'expo-haptics';
+import { useEventListener } from 'expo';
 import { LinearGradient } from 'expo-linear-gradient';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { useEffect, useState } from 'react';
 import { Alert, BackHandler, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
@@ -23,7 +25,7 @@ import { FadeImage } from '@/components/ui/fade-image';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { listAvailableSlots, type Slot } from '@/lib/bookings';
-import { mediaUri, type InstructorCard } from '@/lib/catalog';
+import { instructorPeekVideoUri, mediaUri, type InstructorCard } from '@/lib/catalog';
 import { FavoritesError, listMyFavorites, toggleMyFavorite } from '@/lib/favorites';
 import { dateLabel, initials } from '@/lib/format';
 import { deviceLocale } from '@/lib/i18n';
@@ -38,8 +40,7 @@ type Props = {
 /** Ближайший свободный слот: `undefined` — загружается, `null` — свободных нет. */
 type NextSlot = Slot | null | undefined;
 
-const CARD_MAX_WIDTH = 340;
-const AVATAR = 96;
+const FRAME_MAX_WIDTH = 232;
 
 /**
  * Превью инструктора по долгому нажатию на «сторис»: ореол дышит, ближайший слот
@@ -54,6 +55,7 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
   // `null` — статус ещё не известен (список избранного грузится), `false` — не сохранено или не вошёл.
   const [saved, setSaved] = useState<boolean | null>(null);
   const pulse = useSharedValue(0);
+  const progress = useSharedValue(0);
 
   useEffect(() => {
     let alive = true;
@@ -83,10 +85,18 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
     pulse.value = withRepeat(withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.ease) }), -1, true);
   }, [pulse, reduceMotion]);
 
+  // Длительность совпадает с роликом (8 с).
+  useEffect(() => {
+    if (reduceMotion) return;
+    progress.value = withRepeat(withTiming(1, { duration: 8000, easing: Easing.linear }), -1, false);
+  }, [progress, reduceMotion]);
+
   const halo = useAnimatedStyle(() => ({
     opacity: 0.22 + pulse.value * 0.5,
-    transform: [{ scale: 1 + pulse.value * 0.09 }],
+    transform: [{ scale: 1 + pulse.value * 0.035 }],
   }));
+
+  const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 
   const toggleSave = async () => {
     if (saved === null) return;
@@ -104,7 +114,7 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
     nextSlot
       ? dateLabel(nextSlot.startIso, locale, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
       : null;
-  const cardWidth = Math.min(width - space.xl * 2, CARD_MAX_WIDTH);
+  const frameWidth = Math.min(width - space.xl * 4, FRAME_MAX_WIDTH);
   const enter = reduceMotion ? FadeIn.duration(160) : ZoomIn.springify().damping(16).stiffness(190);
   const exit = reduceMotion ? FadeOut.duration(120) : ZoomOut.duration(180);
 
@@ -118,46 +128,88 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
       </Animated.View>
 
       <View style={styles.center} pointerEvents="box-none">
-        <Animated.View entering={enter} exiting={exit} style={[styles.card, shadow, { width: cardWidth }]}>
-          <View style={styles.avatarWrap}>
+        <Animated.View entering={enter} exiting={exit} style={[styles.card, shadow]}>
+          <View style={{ width: frameWidth }}>
             <Animated.View style={[styles.halo, halo]} pointerEvents="none">
               <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             </Animated.View>
-            <View style={styles.ring}>
+            <View style={styles.frame}>
               <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <View style={styles.inner}>
+              <View style={styles.media}>
                 {instructor.image?.key ? (
                   <FadeImage uri={mediaUri(instructor.image.key)} />
                 ) : (
-                  <Text style={styles.initials}>{initials(instructor.name)}</Text>
+                  <View style={styles.placeholder}>
+                    <Text style={styles.initials}>{initials(instructor.name)}</Text>
+                  </View>
                 )}
+                {reduceMotion ? null : <PeekVideo uri={instructorPeekVideoUri(instructor.slug)} />}
+                {reduceMotion ? null : (
+                  <View style={styles.progressTrack} pointerEvents="none">
+                    <Animated.View style={[styles.progressFill, progressStyle]} />
+                  </View>
+                )}
+                <LinearGradient colors={gradients.heroShade} style={StyleSheet.absoluteFill} pointerEvents="none" />
+                <LinearGradient colors={['rgba(11,8,9,0.6)', 'rgba(11,8,9,0)']} style={styles.topShade} pointerEvents="none" />
+                <View style={styles.header}>
+                  <View style={styles.avatarRing}>
+                    <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                    <View style={styles.avatar}>
+                      {instructor.image?.key ? (
+                        <FadeImage uri={mediaUri(instructor.image.key)} />
+                      ) : (
+                        <View style={styles.placeholder}>
+                          <Text style={styles.avatarInitials}>{initials(instructor.name)}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.nameRow}>
+                    <Text style={styles.name} numberOfLines={1}>
+                      {instructor.name}
+                    </Text>
+                    {instructor.isVerified ? (
+                      <Animated.View entering={ZoomIn.delay(200).springify().damping(12)}>
+                        <Ionicons name="checkmark-circle" size={16} color={colors.metal} />
+                      </Animated.View>
+                    ) : null}
+                  </View>
+                  <Pressable onPress={onClose} hitSlop={12} style={styles.closeButton} accessibilityRole="button" accessibilityLabel={c.common.actions.close}>
+                    <Ionicons name="close" size={24} color={colors.white} />
+                  </Pressable>
+                </View>
+                <Animated.View entering={FadeInUp.delay(60).duration(320)} style={styles.textBlock}>
+                  {instructor.headline ? (
+                    <Text style={styles.headline} numberOfLines={2}>
+                      {instructor.headline}
+                    </Text>
+                  ) : null}
+                  {instructor.ratingAverage > 0 ? (
+                    <View style={styles.ratingRow}>
+                      <Ionicons name="star" size={12} color={colors.metal} />
+                      <Text style={styles.rating}>
+                        {c.instructor.statsRating.replace('{rating}', instructor.ratingAverage.toFixed(1)).replace('{count}', String(instructor.ratingCount))}
+                      </Text>
+                    </View>
+                  ) : null}
+                </Animated.View>
+                <View style={styles.sideColumn}>
+                  <PressableScale
+                    style={[styles.sideButton, saved === true && styles.sideButtonActive]}
+                    onPress={toggleSave}
+                    disabled={saved === null}
+                    accessibilityRole="button"
+                    accessibilityLabel={saved ? c.common.actions.removeFromFavorites : c.common.actions.addToFavorites}
+                    pressedScale={0.9}
+                  >
+                    <Animated.View key={String(saved)} entering={ZoomIn.springify().damping(12).stiffness(260)}>
+                      <Ionicons name={saved ? 'heart' : 'heart-outline'} size={24} color={saved ? colors.accentBright : colors.white} />
+                    </Animated.View>
+                  </PressableScale>
+                </View>
               </View>
             </View>
-            {instructor.isVerified ? (
-              <Animated.View entering={ZoomIn.delay(200).springify().damping(12)} style={styles.verified}>
-                <Ionicons name="checkmark" size={13} color={colors.bg} />
-              </Animated.View>
-            ) : null}
           </View>
-
-          <Animated.View entering={FadeInUp.delay(60).duration(320)} style={styles.textBlock}>
-            <Text style={styles.name} numberOfLines={1}>
-              {instructor.name}
-            </Text>
-            {instructor.headline ? (
-              <Text style={styles.headline} numberOfLines={2}>
-                {instructor.headline}
-              </Text>
-            ) : null}
-            {instructor.ratingAverage > 0 ? (
-              <View style={styles.ratingRow}>
-                <Ionicons name="star" size={12} color={colors.metal} />
-                <Text style={styles.rating}>
-                  {c.instructor.statsRating.replace('{rating}', instructor.ratingAverage.toFixed(1)).replace('{count}', String(instructor.ratingCount))}
-                </Text>
-              </View>
-            ) : null}
-          </Animated.View>
 
           <View style={styles.slotWrap}>
             {nextSlot === undefined ? (
@@ -171,19 +223,6 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
           </View>
 
           <View style={styles.actions}>
-            <PressableScale
-              style={[styles.secondary, saved === true && styles.secondaryActive]}
-              onPress={toggleSave}
-              disabled={saved === null}
-              accessibilityRole="button"
-              accessibilityLabel={saved ? c.common.actions.removeFromFavorites : c.common.actions.addToFavorites}
-              pressedScale={0.92}
-            >
-              <Animated.View key={String(saved)} entering={ZoomIn.springify().damping(12).stiffness(260)}>
-                <Ionicons name={saved ? 'heart' : 'heart-outline'} size={21} color={saved ? colors.accentBright : colors.text} />
-              </Animated.View>
-            </PressableScale>
-
             <PressableScale
               style={styles.primary}
               onPress={() => onBook(instructor.slug)}
@@ -201,6 +240,32 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
   );
 }
 
+/** Фото под видео остаётся на месте до готовности ролика; сбой загрузки оставляет фото. */
+function PeekVideo({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (instance) => {
+    instance.loop = true;
+    instance.muted = true;
+    instance.play();
+  });
+  const [ready, setReady] = useState(player.status === 'readyToPlay');
+  useEventListener(player, 'statusChange', ({ status }) => {
+    if (status === 'readyToPlay') setReady(true);
+  });
+
+  if (!ready) return null;
+  return (
+    <Animated.View entering={FadeIn.duration(360)} style={StyleSheet.absoluteFill} pointerEvents="none">
+      <VideoView
+        player={player}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        nativeControls={false}
+        surfaceType="textureView"
+      />
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   scrim: { backgroundColor: 'rgba(11,8,9,0.45)' },
   center: {
@@ -215,49 +280,65 @@ const styles = StyleSheet.create({
   },
   card: {
     alignItems: 'center',
-    padding: space.xxl,
-    paddingTop: space.xxxl,
+    padding: space.lg,
+    paddingBottom: space.xl,
     borderRadius: radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.lineStrong,
     backgroundColor: 'rgba(28,22,24,0.94)',
   },
-  avatarWrap: { width: AVATAR, height: AVATAR, alignSelf: 'center' },
   halo: {
     position: 'absolute',
-    top: -12,
-    left: -12,
-    width: AVATAR + 24,
-    height: AVATAR + 24,
-    borderRadius: (AVATAR + 24) / 2,
+    top: -14,
+    right: -14,
+    bottom: -14,
+    left: -14,
+    borderRadius: radius.xl + 14,
     overflow: 'hidden',
   },
-  ring: { width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2, padding: 3, overflow: 'hidden' },
-  inner: {
-    flex: 1,
-    borderRadius: (AVATAR - 6) / 2,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface2,
-  },
-  initials: { fontSize: 26, fontWeight: '800', color: colors.text },
-  verified: {
+  frame: { aspectRatio: 9 / 16, borderRadius: radius.xl, padding: 2, overflow: 'hidden' },
+  media: { flex: 1, borderRadius: radius.xl - 2, overflow: 'hidden', backgroundColor: colors.surface2 },
+  placeholder: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
+  initials: { fontSize: 44, fontWeight: '800', color: colors.text },
+  progressTrack: {
     position: 'absolute',
-    right: 0,
-    bottom: 2,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    top: space.md,
+    left: space.md,
+    right: space.md,
+    height: 3,
+    borderRadius: 2,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(245,241,234,0.28)',
+  },
+  progressFill: { height: '100%', borderRadius: 2, backgroundColor: colors.text },
+  textBlock: { position: 'absolute', left: space.lg, right: space.lg + 52, bottom: space.lg, gap: space.xs },
+  topShade: { position: 'absolute', top: 0, right: 0, left: 0, height: 120 },
+  header: { position: 'absolute', top: space.xl, left: space.md, right: space.md, flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  avatarRing: { width: 36, height: 36, borderRadius: 18, padding: 2, overflow: 'hidden' },
+  avatar: { flex: 1, borderRadius: 16, overflow: 'hidden', backgroundColor: colors.surface2 },
+  avatarInitials: { fontSize: 13, fontWeight: '800', color: colors.text },
+  nameRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: space.xs },
+  name: {
+    ...type.title,
+    flexShrink: 1,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowRadius: 6,
+    textShadowOffset: { width: 0, height: 1 },
+  },
+  closeButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  sideColumn: { position: 'absolute', right: space.md, bottom: space.lg },
+  sideButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.metal,
-    borderWidth: 2,
-    borderColor: colors.surface2,
+    backgroundColor: 'rgba(11,8,9,0.45)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(245,241,234,0.22)',
   },
-  textBlock: { alignItems: 'center', marginTop: space.lg, gap: space.xs, alignSelf: 'stretch' },
-  name: { ...type.h2, textAlign: 'center' },
-  headline: { ...type.bodySm, textAlign: 'center' },
+  sideButtonActive: { backgroundColor: colors.accentSoft, borderColor: 'rgba(201,59,82,0.45)' },
+  headline: { ...type.bodySm, color: colors.text },
   ratingRow: { flexDirection: 'row', alignItems: 'center', gap: space.xs, marginTop: space.xs },
   rating: { ...type.caption, color: colors.text2 },
   slotWrap: { minHeight: 34, marginTop: space.lg, alignItems: 'center', justifyContent: 'center' },
@@ -275,17 +356,6 @@ const styles = StyleSheet.create({
   slotDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.success },
   slotText: { fontSize: 13, fontWeight: '600', color: colors.text },
   actions: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xl, alignSelf: 'stretch' },
-  secondary: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.lineStrong,
-  },
-  secondaryActive: { backgroundColor: colors.accentSoft, borderColor: 'rgba(201,59,82,0.45)' },
   primary: {
     flex: 1,
     height: 52,

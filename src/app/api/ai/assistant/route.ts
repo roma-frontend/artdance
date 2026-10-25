@@ -21,7 +21,9 @@ import { z } from 'zod';
 import { cacheControl } from '@/config/cache';
 import { getServerEnv } from '@/config/env';
 import { getCaller } from '@/lib/auth/guards';
-import { loadKnowledgeText, loadPersonalContext } from '@/lib/ai/assistant/knowledge';
+import { loadKnowledgeText, loadClientProfile, loadPartnerContext, loadPersonalContext } from '@/lib/ai/assistant/knowledge';
+import { resolveBookingActions } from '@/lib/ai/assistant/actions';
+import { extractBookingIntents } from '@/lib/ai/assistant/booking-intent';
 import { buildSystemPrompt } from '@/lib/ai/assistant/prompt';
 import { checkRateLimit, rateLimitHeaders } from '@/lib/security/rate-limit';
 
@@ -89,16 +91,19 @@ export async function POST(request: Request): Promise<NextResponse> {
   const now = new Date();
 
   try {
-    const [knowledge, personal] = await Promise.all([
+    const [knowledge, bookings, profile, partner] = await Promise.all([
       loadKnowledgeText(caller.locale, now),
       loadPersonalContext(caller.id, caller.locale, now),
+      loadClientProfile(caller.id),
+      loadPartnerContext(caller, caller.locale, now),
     ]);
 
     const system = buildSystemPrompt({
       locale: caller.locale,
       userName: caller.name ?? null,
       knowledge,
-      personal,
+      personal: `${bookings}\n\n${profile}`,
+      partner,
     });
 
     const google = createGoogleGenerativeAI({ apiKey });
@@ -110,10 +115,11 @@ export async function POST(request: Request): Promise<NextResponse> {
       abortSignal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
     });
 
-    const reply = text.trim();
-    if (!reply) return errorResponse('assistant_unavailable', 503);
+    const intents = extractBookingIntents(text);
+    const actions = await resolveBookingActions(intents.sessionIds, caller.locale, now);
+    if (!intents.text && actions.length === 0) return errorResponse('assistant_unavailable', 503);
 
-    return jsonResponse({ reply }, 200, { 'X-RateLimit-Remaining': String(limit.remaining) });
+    return jsonResponse({ reply: intents.text, actions }, 200, { 'X-RateLimit-Remaining': String(limit.remaining) });
   } catch (error) {
     console.error('[ai-assistant] generation failed', error);
     return errorResponse('assistant_unavailable', 503);

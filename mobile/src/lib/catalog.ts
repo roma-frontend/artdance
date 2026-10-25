@@ -133,3 +133,11 @@ export function mediaUri(key: string): string {
   if (key.startsWith('/media/')) return `${API_URL}/media-proxy${key}`;
   return `${API_URL}/media-proxy/${key.replace(/^\//, '')}`;
 }
+
+/** Логотип ассистента: объект R2 `brand/apple-icon.png`. */
+export const ASSISTANT_LOGO_URI = mediaUri('brand/apple-icon.png');
+
+/** Превью-ролик инструктора; ключ задаёт `scripts/upload-instructor-videos.ts`. */
+export function instructorPeekVideoUri(slug: string): string {
+  return mediaUri(`media/instructor-peek/${slug}.mp4`);
+}

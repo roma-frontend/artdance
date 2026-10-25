@@ -81,6 +81,17 @@ const dictionary: Dictionary = {
     aiSuggestion2: 'Ո՞ր դասերն են այս շաբաթ',
     aiSuggestion3: 'Ինչպե՞ս է աշխատում չեղարկումը',
     aiSuggestion4: 'Իմ մոտալուտ բրոնավորումները',
+    aiBookAction: 'Գրանցվել',
+    aiBookBusy: 'Գրանցում ենք…',
+    aiBookDone: 'Դուք գրանցված եք',
+    aiBookDoneHint: 'Վճարումը կարող եք կատարել «Իմ գրանցումներում» կամ տեղում։',
+    aiSpotsLeft: 'Տեղեր մնացել են՝',
+    aiMic: 'Ձայնային մուտքագրում',
+    aiMicStop: 'Կանգնեցնել ձայնագրումը',
+    aiListening: 'Խոսեք…',
+    aiMicDenied: 'Միկրոֆոնի հասանելիություն չկա։ Թույլ տվեք կարգավորումներում։',
+    aiMicUnavailable: 'Ձայնային մուտքագրումը այս սարքում հասանելի չէ։',
+    bookingReminderBody: 'Մեկ ժամից դաս է։ Եկեք 10 րոպե շուտ։',
     accountSignOut: 'Դուրս գալ',
     accountEmpty: 'Դուք մուտք չեք գործել',
     greetMorning: 'Բարի առավոտ',
@@ -213,6 +224,17 @@ const dictionary: Dictionary = {
     aiSuggestion2: 'Какие занятия на этой неделе?',
     aiSuggestion3: 'Как работает отмена?',
     aiSuggestion4: 'Мои ближайшие брони',
+    aiBookAction: 'Записаться',
+    aiBookBusy: 'Записываем…',
+    aiBookDone: 'Вы записаны',
+    aiBookDoneHint: 'Оплату можно внести в «Моих записях» или на месте.',
+    aiSpotsLeft: 'Мест осталось:',
+    aiMic: 'Голосовой ввод',
+    aiMicStop: 'Остановить запись',
+    aiListening: 'Говорите…',
+    aiMicDenied: 'Нет доступа к микрофону. Разрешите его в настройках телефона.',
+    aiMicUnavailable: 'Голосовой ввод недоступен на этом устройстве.',
+    bookingReminderBody: 'Через час занятие. Приходите за 10 минут до начала.',
     accountSignOut: 'Выйти',
     accountEmpty: 'Вы не вошли',
     greetMorning: 'Доброе утро',
@@ -345,6 +367,17 @@ const dictionary: Dictionary = {
     aiSuggestion2: 'Which classes are this week?',
     aiSuggestion3: 'How does cancellation work?',
     aiSuggestion4: 'My upcoming bookings',
+    aiBookAction: 'Book',
+    aiBookBusy: 'Booking…',
+    aiBookDone: 'You are booked',
+    aiBookDoneHint: 'You can pay in My bookings or at the studio.',
+    aiSpotsLeft: 'Spots left:',
+    aiMic: 'Voice input',
+    aiMicStop: 'Stop recording',
+    aiListening: 'Listening…',
+    aiMicDenied: 'No microphone access. Allow it in phone settings.',
+    aiMicUnavailable: 'Voice input is not available on this device.',
+    bookingReminderBody: 'Class starts in an hour. Arrive 10 minutes early.',
     accountSignOut: 'Sign out',
     accountEmpty: 'You are not signed in',
     greetMorning: 'Good morning',
@@ -479,6 +512,17 @@ export type MessageKey =
   | 'aiSuggestion2'
   | 'aiSuggestion3'
   | 'aiSuggestion4'
+  | 'aiBookAction'
+  | 'aiBookBusy'
+  | 'aiBookDone'
+  | 'aiBookDoneHint'
+  | 'aiSpotsLeft'
+  | 'aiMic'
+  | 'aiMicStop'
+  | 'aiListening'
+  | 'aiMicDenied'
+  | 'aiMicUnavailable'
+  | 'bookingReminderBody'
   | 'accountSignOut'
   | 'accountEmpty'
   | 'greetMorning'

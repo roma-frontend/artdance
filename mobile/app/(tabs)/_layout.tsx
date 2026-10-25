@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
@@ -9,6 +10,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
+  interpolateColor,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
@@ -23,9 +25,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { GlassBackdrop } from '@/components/ui/glass-backdrop';
+import { ASSISTANT_LOGO_URI } from '@/lib/catalog';
 import { tabBarCompact, tabBarHidden } from '@/lib/tab-bar';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
-import { colors, fill, fonts, gradients, springs } from '@/theme';
+import { colors, fill, gradients, springs } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -154,6 +157,13 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
     transform: [{ translateX: (pillWidth / 2 - (x.value + itemWidth / 2)) * compact.value }],
   }));
 
+  const chromeStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(compact.value, [0, 1], ['rgba(20,16,18,0.55)', 'rgba(20,16,18,0)']),
+    borderColor: interpolateColor(compact.value, [0, 1], [colors.lineStrong, 'rgba(0,0,0,0)']),
+    shadowOpacity: 0.5 * (1 - compact.value),
+  }));
+  const glassFade = useAnimatedStyle(() => ({ opacity: 1 - compact.value }));
+
   return (
     <Animated.View
       style={[styles.wrap, { bottom: bottomInset }, hide]}
@@ -164,22 +174,26 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
         <LinearGradient colors={['rgba(11,8,9,0)', 'rgba(11,8,9,0.85)']} style={fill} />
       </View>
       <GestureDetector gesture={pan}>
-      <Animated.View style={[styles.bar, barStyle]}>
-        {liquidGlass ? (
-          <>
-            <GlassView glassEffectStyle="regular" isInteractive style={StyleSheet.absoluteFill} />
-            <View style={styles.glassTint} />
-          </>
-        ) : (
-          <>
-            <GlassBackdrop intensity={70} />
-            <View style={styles.tint} />
-          </>
-        )}
+      <Animated.View style={[styles.bar, barStyle, chromeStyle]}>
+        <Animated.View style={[fill, glassFade]} pointerEvents="none">
+          {liquidGlass ? (
+            <>
+              <GlassView glassEffectStyle="regular" isInteractive style={StyleSheet.absoluteFill} />
+              <View style={styles.glassTint} />
+            </>
+          ) : (
+            <>
+              <GlassBackdrop intensity={70} />
+              <View style={styles.tint} />
+            </>
+          )}
+        </Animated.View>
         <Animated.View style={[styles.row, rowStyle]}>
           {width > 0 ? (
             <Animated.View style={[styles.blobTrack, blob]} pointerEvents="none">
-              <Animated.View style={[styles.blob, blobInner]} />
+              <Animated.View style={[styles.blob, blobInner]}>
+                <View style={styles.blobTint} />
+              </Animated.View>
             </Animated.View>
           ) : null}
           {state.routes.map((route, index) => {
@@ -350,9 +364,9 @@ function HeroIcon() {
       <OrbitSpark orbit={orbit} lag={40} size={3} alpha={0.3} />
       <View style={styles.heroDisc}>
         <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={fill} />
-        <Animated.Text style={[styles.heroLetter, letter]} allowFontScaling={false}>
-          A
-        </Animated.Text>
+        <Animated.View style={[fill, letter]}>
+          <Image source={{ uri: ASSISTANT_LOGO_URI }} style={fill} contentFit="cover" />
+        </Animated.View>
         <Animated.View style={[styles.heroSweep, sweep]} pointerEvents="none" />
       </View>
     </View>
@@ -383,10 +397,12 @@ const styles = StyleSheet.create({
   blob: {
     flex: 1,
     borderRadius: 30,
-    backgroundColor: 'rgba(201,59,82,0.22)',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(20,16,18,0.55)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(201,59,82,0.45)',
   },
+  blobTint: { ...fill, backgroundColor: 'rgba(201,59,82,0.22)' },
   row: { position: 'absolute', top: 0, bottom: 0, left: 0, flexDirection: 'row' },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
   heroWrap: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
@@ -415,7 +431,6 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   heroDisc: { width: 40, height: 40, borderRadius: 20, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
-  heroLetter: { fontFamily: fonts.displayItalic, fontSize: 25, lineHeight: 30, color: colors.white, includeFontPadding: false },
   heroSweep: { position: 'absolute', top: -10, left: 14, width: 12, height: 60, backgroundColor: colors.white },
   label: { fontSize: 10.5, fontWeight: '700', letterSpacing: 0.1 },
 });

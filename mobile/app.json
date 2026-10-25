@@ -84,7 +84,15 @@
       "@react-native-community/datetimepicker",
       "expo-web-browser",
       "expo-apple-authentication",
-      "./plugins/with-release-signing"
+      "./plugins/with-release-signing",
+      "expo-video",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Нужен микрофон, чтобы продиктовать сообщение ассистенту.",
+          "speechRecognitionPermission": "Распознавание речи нужно, чтобы превращать голос в текст для ассистента."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

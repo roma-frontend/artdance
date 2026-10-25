@@ -188,6 +188,18 @@ export function claimWaitlistHold(sessionId: string): Promise<{ hold: { id: stri
   return postAuthed('/api/waitlist/claim', { sessionId });
 }
 
+export type ChatBooking = { id: string; totalPrice: number; reference?: string };
+
+/**
+ * Запись на групповое занятие из чата: удержание и бронь тем же путём, что и страница записи.
+ * Оплату здесь не запускаем: клиент оплатит в «Моих записях» или на месте.
+ */
+export async function bookClassSession(input: { sessionId: string; startsAt: string; endsAt: string }): Promise<ChatBooking> {
+  const { hold } = await postAuthed<{ hold: { id: string } }>('/api/booking/hold', input);
+  const { booking } = await postAuthed<{ booking: ChatBooking }>('/api/booking', { holdId: hold.id });
+  return booking;
+}
+
 export type RecurringSeries = { seriesId: string; bookings: { id: string; startsAt: string }[] };
 
 /** Серия еженедельных броней у инструктора. Занятия, которые не удалось забронировать, сервер пропускает. */

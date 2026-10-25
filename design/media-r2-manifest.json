@@ -820,5 +820,35 @@
     "contentType": "image/webp",
     "bytes": 73476,
     "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/seed/event-friday-bachata-social.e7722269.webp"
+  },
+  {
+    "key": "media/instructor-peek/anna-mkrtchyan.mp4",
+    "contentType": "video/mp4",
+    "bytes": 6292947,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/instructor-peek/anna-mkrtchyan.mp4"
+  },
+  {
+    "key": "media/instructor-peek/arman-harutyunyan.mp4",
+    "contentType": "video/mp4",
+    "bytes": 5316301,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/instructor-peek/arman-harutyunyan.mp4"
+  },
+  {
+    "key": "media/instructor-peek/david-sargsyan.mp4",
+    "contentType": "video/mp4",
+    "bytes": 3300266,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/instructor-peek/david-sargsyan.mp4"
+  },
+  {
+    "key": "media/instructor-peek/nare-grigoryan.mp4",
+    "contentType": "video/mp4",
+    "bytes": 3796004,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/instructor-peek/nare-grigoryan.mp4"
+  },
+  {
+    "key": "media/instructor-peek/sona-hovhannisyan.mp4",
+    "contentType": "video/mp4",
+    "bytes": 3636271,
+    "url": "https://pub-3a0600ebdb9946a09619fd872274be49.r2.dev/media/instructor-peek/sona-hovhannisyan.mp4"
   }
 ]

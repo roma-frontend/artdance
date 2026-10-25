@@ -60,3 +60,67 @@ export async function scheduleClassReminder(opts: {
 export async function cancelClassReminder(slug: string): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(`class-${slug}`).catch(() => undefined);
 }
+
+const BOOKING_PREFIX = 'booking-';
+
+async function ensurePermission(): Promise<boolean> {
+  const current = await Notifications.getPermissionsAsync();
+  if (current.granted) return true;
+  if (!current.canAskAgain) return false;
+  return (await Notifications.requestPermissionsAsync()).granted;
+}
+
+async function scheduleBookingOne(opts: { bookingId: string; title: string; startsAt: string; body: string }): Promise<boolean> {
+  const fireAt = new Date(Date.parse(opts.startsAt) - LEAD_MS);
+  if (fireAt.getTime() <= Date.now()) return false;
+
+  await ensureChannel();
+  const identifier = `${BOOKING_PREFIX}${opts.bookingId}`;
+  await Notifications.cancelScheduledNotificationAsync(identifier).catch(() => undefined);
+  await Notifications.scheduleNotificationAsync({
+    identifier,
+    content: { title: opts.title, body: opts.body, data: { bookingId: opts.bookingId, section: 'account' } },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireAt, channelId: 'classes' },
+  });
+  return true;
+}
+
+/**
+ * Напоминание за час до занятия, которое клиент записал из чата.
+ * Запрашивает разрешение: вызывается сразу после подтверждённой записи.
+ */
+export async function scheduleBookingReminder(opts: {
+  bookingId: string;
+  title: string;
+  startsAt: string;
+  body: string;
+}): Promise<boolean> {
+  if (!(await ensurePermission())) return false;
+  return scheduleBookingOne(opts);
+}
+
+/**
+ * Сверяет напоминания с активными бронями: ставит недостающие и снимает напоминания
+ * отменённых или прошедших броней. Разрешение не запрашивает, только использует выданное.
+ */
+export async function syncBookingReminders(
+  bookings: { id: string; title: string; startsAt: string; active: boolean }[],
+  body: string,
+): Promise<void> {
+  const current = await Notifications.getPermissionsAsync().catch(() => null);
+  if (!current?.granted) return;
+
+  const wanted = new Set(bookings.filter((item) => item.active).map((item) => `${BOOKING_PREFIX}${item.id}`));
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  for (const item of scheduled) {
+    const identifier = item.identifier;
+    if (identifier.startsWith(BOOKING_PREFIX) && !wanted.has(identifier)) {
+      await Notifications.cancelScheduledNotificationAsync(identifier).catch(() => undefined);
+    }
+  }
+
+  for (const item of bookings) {
+    if (!item.active) continue;
+    await scheduleBookingOne({ bookingId: item.id, title: item.title, startsAt: item.startsAt, body }).catch(() => undefined);
+  }
+}

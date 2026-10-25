@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -32,10 +33,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
-import { askAssistant, AssistantError, type AssistantMessage } from '@/lib/assistant';
+import { askAssistant, AssistantError, type AssistantBookAction, type AssistantMessage } from '@/lib/assistant';
 import { splitAssistantText } from '@/lib/assistant-links';
 import { getCurrentUser, type User } from '@/lib/auth';
-import { deviceLocale, greeting, messagesFor } from '@/lib/i18n';
+import { ASSISTANT_LOGO_URI as ASSISTANT_LOGO } from '@/lib/catalog';
+import { bookClassSession, BookingsError } from '@/lib/bookings';
+import { dateLabel } from '@/lib/format';
+import { deviceLocale, greeting, messagesFor, type Locale } from '@/lib/i18n';
+import { scheduleBookingReminder } from '@/lib/reminders';
+import { SpeechModule } from '@/lib/speech';
 import { tabBarHidden } from '@/lib/tab-bar';
 import { colors, fill, gradients, radius, space, type } from '@/theme';
 
@@ -44,17 +50,45 @@ const TAB_BAR_CLEARANCE = 66 + 10;
 const MAX_HISTORY = 20;
 const SUGGESTION_KEYS = ['aiSuggestion1', 'aiSuggestion2', 'aiSuggestion3', 'aiSuggestion4'] as const;
 
-type ChatItem = { id: string; role: AssistantMessage['role']; content: string; failed?: boolean };
+type ChatItem = {
+  id: string;
+  role: AssistantMessage['role'];
+  content: string;
+  failed?: boolean;
+  actions?: AssistantBookAction[];
+};
+
+/** Состояние записи по занятию; ключ — ID занятия. */
+type BookState = { status: 'busy' } | { status: 'done'; reference?: string } | { status: 'error'; message: string };
+
+/** Языки распознавания речи по языку приложения. */
+const SPEECH_LANG: Record<Locale, string> = { hy: 'hy-AM', ru: 'ru-RU', en: 'en-US' };
+
+/** Останавливает распознавание; исключение означает, что модуль речи недоступен, и останавливать нечего. */
+function stopVoice() {
+  try {
+    SpeechModule?.stop();
+  } catch {
+    // Распознавание уже остановлено.
+  }
+}
 
 export default function AssistantScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const t = messagesFor(deviceLocale(undefined));
+  const locale = deviceLocale(undefined);
+  const t = messagesFor(locale);
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [messages, setMessages] = useState<ChatItem[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [bookStates, setBookStates] = useState<Record<string, BookState>>({});
+  const [listening, setListening] = useState(false);
+  const [voiceNote, setVoiceNote] = useState<'denied' | 'unavailable' | null>(null);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  /** Текст черновика на момент нажатия микрофона: распознанное дописывается к нему. */
+  const draftBeforeVoice = useRef('');
   const scrollRef = useRef<ScrollViewInstance>(null);
   const seq = useRef(0);
   /** Очистка и уход с экрана меняют поколение: опоздавший ответ старого диалога отбрасывается. */
@@ -94,7 +128,33 @@ export default function AssistantScreen() {
       hide.remove();
       tabBarHidden.value = 0;
       generation.current += 1;
+      stopVoice();
     };
+  }, []);
+
+  useEffect(() => {
+    if (!SpeechModule) return;
+    const subscriptions = [
+      SpeechModule.addListener('start', () => setListening(true)),
+      SpeechModule.addListener('end', () => setListening(false)),
+      SpeechModule.addListener('result', (event) => {
+        const transcript = event.results[0]?.transcript?.trim() ?? '';
+        setDraft([draftBeforeVoice.current.trim(), transcript].filter(Boolean).join(' '));
+      }),
+      SpeechModule.addListener('error', (event) => {
+        setListening(false);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setVoiceNote('denied');
+        } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          setVoiceNote('unavailable');
+        }
+      }),
+    ];
+    return () => subscriptions.forEach((subscription) => subscription.remove());
+  }, []);
+
+  useEffect(() => {
+    setVoiceSupported(SpeechModule?.isRecognitionAvailable() ?? false);
   }, []);
 
   const nextId = () => {
@@ -102,7 +162,58 @@ export default function AssistantScreen() {
     return `m${seq.current}`;
   };
 
-  const canSend = draft.trim().length > 0 && !busy;
+  // Отправка во время записи блокируется: распознанный текст не должен попасть в уже отправленный черновик.
+  const canSend = draft.trim().length > 0 && !busy && !listening;
+
+  /** Микрофон включается только по нажатию; текст попадает в черновик и не отправляется сам. */
+  const toggleMic = async () => {
+    if (!SpeechModule) return;
+    if (listening) {
+      stopVoice();
+      return;
+    }
+    setVoiceNote(null);
+    try {
+      const permission = await SpeechModule.requestPermissionsAsync();
+      if (!permission.granted) {
+        setVoiceNote('denied');
+        return;
+      }
+      draftBeforeVoice.current = draft;
+      SpeechModule.start({ lang: SPEECH_LANG[locale], interimResults: true });
+    } catch {
+      setVoiceNote('unavailable');
+    }
+  };
+
+  /** Запись идёт только по явному нажатию кнопки в карточке. Оплата здесь не запускается. */
+  const bookAction = async (action: AssistantBookAction) => {
+    const current = bookStates[action.sessionId];
+    if (current?.status === 'busy' || current?.status === 'done') return;
+    setBookStates((states) => ({ ...states, [action.sessionId]: { status: 'busy' } }));
+    try {
+      const booking = await bookClassSession({
+        sessionId: action.sessionId,
+        startsAt: action.startsAt,
+        endsAt: action.endsAt,
+      });
+      setBookStates((states) => ({ ...states, [action.sessionId]: { status: 'done', reference: booking.reference } }));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+      scheduleBookingReminder({
+        bookingId: booking.id,
+        title: action.title,
+        startsAt: action.startsAt,
+        body: t.bookingReminderBody,
+      }).catch(() => undefined);
+    } catch (error) {
+      const message =
+        error instanceof BookingsError && error.status === 409
+          ? t.bookSlotTaken
+          : (error instanceof BookingsError && error.serverMessage) || t.bookFailed;
+      setBookStates((states) => ({ ...states, [action.sessionId]: { status: 'error', message } }));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => undefined);
+    }
+  };
 
   const send = async (text?: string) => {
     const content = (text ?? draft).trim();
@@ -121,7 +232,10 @@ export default function AssistantScreen() {
     try {
       const reply = await askAssistant(history);
       if (gen !== generation.current) return;
-      setMessages((list) => [...list, { id: nextId(), role: 'assistant', content: reply }]);
+      setMessages((list) => [
+        ...list,
+        { id: nextId(), role: 'assistant', content: reply.reply, actions: reply.actions },
+      ]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
     } catch (error) {
       if (gen !== generation.current) return;
@@ -168,6 +282,7 @@ export default function AssistantScreen() {
   }
 
   const firstName = user.name.split(' ')[0];
+  const initial = (user.name.trim().charAt(0) || '?').toUpperCase();
   const bottomInset = Math.max(insets.bottom, 12);
   const composerBottom = keyboardOpen ? bottomInset : bottomInset + TAB_BAR_CLEARANCE;
 
@@ -228,17 +343,38 @@ export default function AssistantScreen() {
               </View>
             </View>
           ) : (
-            messages.map((item) => <Bubble key={item.id} item={item} />)
+            messages.map((item) => (
+              <Bubble key={item.id} item={item} initial={initial} bookStates={bookStates} onBook={bookAction} />
+            ))
           )}
           {busy ? <Typing label={t.aiThinking} /> : null}
         </ScrollView>
 
+        {voiceNote ? (
+          <Text accessibilityLiveRegion="polite" style={styles.voiceNote}>
+            {voiceNote === 'denied' ? t.aiMicDenied : t.aiMicUnavailable}
+          </Text>
+        ) : null}
         <View style={[styles.composer, { paddingBottom: composerBottom }]}>
+          {voiceSupported ? (
+            <PressableScale
+              onPress={() => void toggleMic()}
+              accessibilityRole="button"
+              accessibilityLabel={listening ? t.aiMicStop : t.aiMic}
+              style={[styles.micButton, listening && styles.micButtonOn]}
+            >
+              <Ionicons
+                name={listening ? 'stop' : 'mic-outline'}
+                size={20}
+                color={listening ? colors.white : colors.text2}
+              />
+            </PressableScale>
+          ) : null}
           <View style={styles.inputWrap}>
             <TextInput
               value={draft}
               onChangeText={setDraft}
-              placeholder={t.aiPlaceholder}
+              placeholder={listening ? t.aiListening : t.aiPlaceholder}
               placeholderTextColor={colors.text3}
               style={styles.input}
               multiline
@@ -318,9 +454,7 @@ function OrbHero() {
     <View style={styles.heroOrb}>
       <Animated.View style={[styles.heroGlow, glow]} />
       <Animated.View style={core}>
-        <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroCore}>
-          <Ionicons name="sparkles" size={34} color={colors.white} />
-        </LinearGradient>
+        <Image source={{ uri: ASSISTANT_LOGO }} style={styles.heroCore} contentFit="cover" transition={300} accessibilityLabel="ArtDance AI" />
       </Animated.View>
     </View>
   );
@@ -372,7 +506,17 @@ function LinkedText({ text, style }: { text: string; style: StyleProp<TextStyle>
   );
 }
 
-function Bubble({ item }: { item: ChatItem }) {
+function Bubble({
+  item,
+  initial,
+  bookStates,
+  onBook,
+}: {
+  item: ChatItem;
+  initial: string;
+  bookStates: Record<string, BookState>;
+  onBook: (action: AssistantBookAction) => void;
+}) {
   const entering = FadeInUp.springify().damping(18).stiffness(220);
 
   if (item.role === 'user') {
@@ -383,6 +527,9 @@ function Bubble({ item }: { item: ChatItem }) {
             {item.content}
           </Text>
         </LinearGradient>
+        <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.userAvatar}>
+          <Text style={styles.userInitial}>{initial}</Text>
+        </LinearGradient>
       </Animated.View>
     );
   }
@@ -390,15 +537,78 @@ function Bubble({ item }: { item: ChatItem }) {
   return (
     <Animated.View entering={entering} style={styles.rowAssistant}>
       <View style={styles.avatar}>
-        <Ionicons
-          name={item.failed ? 'alert-circle-outline' : 'sparkles'}
-          size={14}
-          color={item.failed ? colors.danger : colors.metal}
-        />
+        {item.failed ? (
+          <Ionicons name="alert-circle-outline" size={14} color={colors.danger} />
+        ) : (
+          <Image source={{ uri: ASSISTANT_LOGO }} style={styles.avatarLogo} contentFit="cover" />
+        )}
       </View>
-      <View style={[styles.bubbleAssistant, item.failed && styles.bubbleFailed]}>
-        <LinkedText text={item.content} style={[styles.textAssistant, item.failed && styles.textFailed]} />
+      <View style={styles.assistantColumn}>
+        {item.content ? (
+          <View style={[styles.bubbleAssistant, item.failed && styles.bubbleFailed]}>
+            <LinkedText text={item.content} style={[styles.textAssistant, item.failed && styles.textFailed]} />
+          </View>
+        ) : null}
+        {item.actions?.map((action) => (
+          <BookCard key={action.sessionId} action={action} state={bookStates[action.sessionId]} onBook={onBook} />
+        ))}
       </View>
+    </Animated.View>
+  );
+}
+
+/** Карточка предложенного занятия: запись только по кнопке, без автоматического бронирования. */
+function BookCard({
+  action,
+  state,
+  onBook,
+}: {
+  action: AssistantBookAction;
+  state: BookState | undefined;
+  onBook: (action: AssistantBookAction) => void;
+}) {
+  const locale = deviceLocale(undefined);
+  const t = messagesFor(locale);
+  const busy = state?.status === 'busy';
+
+  return (
+    <Animated.View entering={FadeInUp.springify().damping(18)} style={styles.bookCard}>
+      <View style={styles.bookHead}>
+        <Ionicons name="calendar-outline" size={16} color={colors.accentText} />
+        <Text style={styles.bookTitle} numberOfLines={2}>
+          {action.title}
+        </Text>
+      </View>
+      <Text style={styles.bookMeta}>
+        {dateLabel(action.startsAt, locale, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+      </Text>
+      <Text style={styles.bookMeta}>{`${t.aiSpotsLeft} ${action.spotsLeft}`}</Text>
+      {state?.status === 'done' ? (
+        <>
+          <View style={styles.bookDone}>
+            <Ionicons name="checkmark-circle" size={18} color={colors.success} />
+            <Text style={styles.bookDoneText}>
+              {state.reference ? `${t.aiBookDone} · ${state.reference}` : t.aiBookDone}
+            </Text>
+          </View>
+          <Text style={styles.bookMeta}>{t.aiBookDoneHint}</Text>
+        </>
+      ) : (
+        <>
+          {state?.status === 'error' ? <Text style={styles.bookError}>{state.message}</Text> : null}
+          <PressableScale
+            disabled={busy}
+            onPress={() => onBook(action)}
+            accessibilityRole="button"
+            accessibilityLabel={t.aiBookAction}
+            style={[styles.bookButton, busy && styles.sendDisabled]}
+          >
+            <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.bookButtonFill}>
+              <Text style={styles.bookButtonText}>{busy ? t.aiBookBusy : t.aiBookAction}</Text>
+            </LinearGradient>
+          </PressableScale>
+        </>
+      )}
     </Animated.View>
   );
 }
@@ -407,7 +617,7 @@ function Typing({ label }: { label: string }) {
   return (
     <Animated.View entering={FadeInUp.springify().damping(18)} style={styles.rowAssistant} accessibilityLabel={label}>
       <View style={styles.avatar}>
-        <Ionicons name="sparkles" size={14} color={colors.metal} />
+        <Image source={{ uri: ASSISTANT_LOGO }} style={styles.avatarLogo} contentFit="cover" />
       </View>
       <View style={[styles.bubbleAssistant, styles.dots]}>
         <Dot delay={0} />
@@ -468,7 +678,7 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', gap: space.md, paddingHorizontal: space.md },
   heroOrb: { width: 150, height: 150, alignItems: 'center', justifyContent: 'center' },
   heroGlow: { position: 'absolute', width: 150, height: 150, borderRadius: 75, backgroundColor: colors.accentBright },
-  heroCore: { width: 96, height: 96, borderRadius: 48, alignItems: 'center', justifyContent: 'center' },
+  heroCore: { width: 96, height: 96, borderRadius: 48, overflow: 'hidden' },
   heroTitle: { ...type.h2, textAlign: 'center' },
   heroBody: { ...type.body, textAlign: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.sm, marginTop: space.md },
@@ -481,7 +691,9 @@ const styles = StyleSheet.create({
     borderColor: colors.lineStrong,
   },
   chipText: { ...type.bodySm, color: colors.text },
-  rowUser: { alignItems: 'flex-end' },
+  rowUser: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end', gap: space.sm },
+  userAvatar: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  userInitial: { color: colors.white, fontSize: 12, fontWeight: '700' },
   bubbleUser: {
     maxWidth: '82%',
     paddingHorizontal: 16,
@@ -501,6 +713,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.lineStrong,
   },
+  avatarLogo: { width: 26, height: 26, borderRadius: 13 },
   bubbleAssistant: {
     maxWidth: '78%',
     paddingHorizontal: 16,
@@ -539,4 +752,36 @@ const styles = StyleSheet.create({
   sendWrap: { borderRadius: 24, overflow: 'hidden' },
   sendDisabled: { opacity: 0.4 },
   send: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  micButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.lineStrong,
+  },
+  micButtonOn: { backgroundColor: colors.accentBright, borderColor: colors.accentBright },
+  voiceNote: { ...type.caption, color: colors.danger, paddingHorizontal: space.lg, paddingTop: space.sm },
+  assistantColumn: { flex: 1, gap: space.sm, alignItems: 'flex-start' },
+  bookCard: {
+    maxWidth: '86%',
+    gap: 6,
+    padding: space.md,
+    borderRadius: radius.lg,
+    borderBottomLeftRadius: 6,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.lineStrong,
+  },
+  bookHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  bookTitle: { ...type.bodySm, color: colors.text, flexShrink: 1, fontWeight: '600' },
+  bookMeta: { ...type.caption },
+  bookDone: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bookDoneText: { ...type.bodySm, color: colors.text, fontWeight: '600' },
+  bookError: { ...type.caption, color: colors.danger },
+  bookButton: { alignSelf: 'flex-start', borderRadius: radius.pill, overflow: 'hidden', marginTop: 2 },
+  bookButtonFill: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: radius.pill },
+  bookButtonText: { color: colors.white, fontSize: 14, fontWeight: '700' },
 });

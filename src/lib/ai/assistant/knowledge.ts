@@ -13,8 +13,11 @@ import { booking, currency } from '@/config/business';
 import { subscriptionPlanIds, subscriptionPlans } from '@/config/pricing';
 import { routes } from '@/config/routes';
 import { absoluteUrl, site } from '@/config/site';
+import { notTrashed } from '@/domain/trash';
 import type { Locale } from '@/i18n/config';
 import { db } from '@/lib/db';
+import type { FaqGroup } from '@/components/content/faq-accordion';
+import { buildFaqGroups } from '@/server/content/faq';
 import { publicClassWhere } from '@/server/queries/classes';
 import { publicEventWhere } from '@/server/queries/events';
 import { publicInstructorWhere } from '@/server/queries/instructors';
@@ -25,7 +28,7 @@ const DAY_MS = 86_400_000;
 /** Окно расписания: дальше две недели ассистент не знает, и это честнее, чем гадать. */
 const SCHEDULE_DAYS = 14;
 /** Потолки, чтобы промпт не рос с каталогом: длинный контекст дорог и размывает ответ. */
-const LIMITS = { classes: 60, sessions: 120, instructors: 50, products: 60, studios: 40, events: 30 } as const;
+const LIMITS = { classes: 60, sessions: 120, instructors: 50, products: 60, studios: 40, events: 30, faq: 40 } as const;
 
 const YEREVAN = 'Asia/Yerevan';
 
@@ -40,7 +43,7 @@ function formatDateTime(date: Date): string {
 }
 
 /** Название на языке клиента, а если перевода нет — базовое. */
-function pickTitle(base: string, translations: { locale: string; title: string }[], locale: Locale): string {
+export function pickTitle(base: string, translations: { locale: string; title: string }[], locale: Locale): string {
   return translations.find((t) => t.locale === locale)?.title ?? base;
 }
 
@@ -139,13 +142,24 @@ function renderPlans(): string {
 }
 
 /**
+ * Частые вопросы и ответы из той же базы, что и страница FAQ. Ассистент отвечает
+ * на вопросы о политике и порядке действий по этим ответам, а не по догадкам.
+ */
+function renderFaq(groups: FaqGroup[]): string {
+  const lines = groups
+    .flatMap((group) => group.items.map((item) => `- Q: ${item.question}\n  A: ${item.answer}`))
+    .slice(0, LIMITS.faq);
+  return ['FAQ', ...lines].join('\n');
+}
+
+/**
  * Текстовый снимок каталога и расписания на языке клиента.
  * Возвращает строку, которую вставляют в системный промпт как ДАННЫЕ.
  */
 export async function loadKnowledgeText(locale: Locale, now: Date): Promise<string> {
   const horizon = new Date(now.getTime() + SCHEDULE_DAYS * DAY_MS);
 
-  const [classes, sessions, instructors, products, studios, events] = await Promise.all([
+  const [classes, sessions, instructors, products, studios, events, faqGroups] = await Promise.all([
     db.danceClass.findMany({
       where: publicClassWhere,
       take: LIMITS.classes,
@@ -171,6 +185,7 @@ export async function loadKnowledgeText(locale: Locale, now: Date): Promise<stri
       take: LIMITS.sessions,
       orderBy: { startsAt: 'asc' },
       select: {
+        id: true,
         startsAt: true,
         capacity: true,
         bookedCount: true,
@@ -178,6 +193,8 @@ export async function loadKnowledgeText(locale: Locale, now: Date): Promise<stri
           select: {
             slug: true,
             title: true,
+            style: true,
+            level: true,
             translations: { select: { locale: true, title: true } },
           },
         },
@@ -223,6 +240,7 @@ export async function loadKnowledgeText(locale: Locale, now: Date): Promise<stri
         translations: { select: { locale: true, title: true } },
       },
     }),
+    buildFaqGroups(locale),
   ]);
 
   const classLines = classes.map((c) => {
@@ -231,10 +249,11 @@ export async function loadKnowledgeText(locale: Locale, now: Date): Promise<stri
     return `- [${c.slug}] ${title} | ${c.style} | ${c.level} | ${c.lessonType} | ${c.durationMinutes} min | from ${formatPrice(c.price)} | teacher: ${teacher} | ${pageUrl(locale, routes.class(c.slug))}`;
   });
 
-  const sessionLines = sessions.map((s) => {
+  const openSessions = sessions.filter((s) => s.bookedCount < s.capacity);
+  const sessionLines = openSessions.map((s) => {
     const title = pickTitle(s.danceClass.title, s.danceClass.translations, locale);
-    const spotsLeft = Math.max(0, s.capacity - s.bookedCount);
-    return `- ${formatDateTime(s.startsAt)} (Yerevan) | ${title} | spots left: ${spotsLeft} | ${pageUrl(locale, routes.class(s.danceClass.slug))}`;
+    const spotsLeft = s.capacity - s.bookedCount;
+    return `- [${s.id}] ${formatDateTime(s.startsAt)} (Yerevan) | ${title} | ${s.danceClass.style} | ${s.danceClass.level} | spots left: ${spotsLeft} | ${pageUrl(locale, routes.class(s.danceClass.slug))}`;
   });
 
   const instructorLines = instructors.map((i) => {
@@ -268,11 +287,12 @@ export async function loadKnowledgeText(locale: Locale, now: Date): Promise<stri
     renderPages(locale),
     renderOrdering(locale),
     renderPolicies(),
+    renderFaq(faqGroups),
     renderPlans(),
     `STUDIOS AND HALLS\n${studioLines.join('\n') || '- none'}`,
     `EVENTS AND COMPETITIONS (upcoming)\n${eventLines.join('\n') || '- none'}`,
     `CLASSES (catalog)\n${classLines.join('\n') || '- none'}`,
-    `UPCOMING SESSIONS (next ${SCHEDULE_DAYS} days)\n${sessionLines.join('\n') || '- none scheduled'}`,
+    `UPCOMING SESSIONS (next ${SCHEDULE_DAYS} days, open spots only; the [ID] is used only in a booking token)\n${sessionLines.join('\n') || '- none scheduled'}`,
     `INSTRUCTORS\n${instructorLines.join('\n') || '- none'}`,
     `SHOP\n${productLines.join('\n') || '- none'}`,
   ];
@@ -311,4 +331,112 @@ export async function loadPersonalContext(userId: string, locale: Locale, now: D
   });
 
   return `CLIENT BOOKINGS\n${lines.join('\n')}\n${myBookings}`;
+}
+
+/**
+ * Профиль танцора из анкеты и стили, которые клиент уже посещал. Заметки
+ * преподавателя (`note`) сюда не попадают: они предназначены для преподавателя.
+ */
+export async function loadClientProfile(userId: string): Promise<string> {
+  const [profile, attended] = await Promise.all([
+    db.dancerProfile.findUnique({ where: { userId }, select: { level: true, styles: true, goal: true } }),
+    db.booking.findMany({
+      where: { customerId: userId, status: 'COMPLETED' },
+      orderBy: { startsAt: 'desc' },
+      take: 30,
+      select: { session: { select: { danceClass: { select: { style: true } } } } },
+    }),
+  ]);
+
+  const styleCounts = new Map<string, number>();
+  for (const row of attended) {
+    const style = row.session?.danceClass.style;
+    if (style) styleCounts.set(style, (styleCounts.get(style) ?? 0) + 1);
+  }
+  const attendedStyles = [...styleCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([style, count]) => `${style} (${count})`);
+
+  const lines = ['CLIENT PROFILE'];
+  lines.push(profile ? `- level: ${profile.level}` : '- level: not set');
+  lines.push(profile?.styles.length ? `- interested in: ${profile.styles.join(', ')}` : '- interested in: not set');
+  if (profile?.goal) lines.push(`- goal (client's own words): ${profile.goal}`);
+  lines.push(
+    attendedStyles.length ? `- attended before: ${attendedStyles.join(', ')}` : '- attended before: no completed classes yet',
+  );
+  return lines.join('\n');
+}
+
+const PARTNER_ROLES = new Set(['INSTRUCTOR', 'VENUE_OWNER']);
+
+/**
+ * Статистика партнёра: только его собственные занятия и залы. Суммы валовые
+ * (сумма броней), без вычета комиссии. Чужие данные сюда не попадают.
+ */
+export async function loadPartnerContext(caller: { id: string; role: string }, locale: Locale, now: Date): Promise<string> {
+  if (!PARTNER_ROLES.has(caller.role)) return '';
+
+  const instructor =
+    caller.role === 'INSTRUCTOR'
+      ? await db.instructorProfile.findFirst({ where: { userId: caller.id, ...notTrashed }, select: { id: true } })
+      : null;
+  const venueIds =
+    caller.role === 'VENUE_OWNER'
+      ? (await db.venueMember.findMany({ where: { userId: caller.id }, select: { venueId: true } })).map((m) => m.venueId)
+      : [];
+
+  if (!instructor && venueIds.length === 0) return '';
+
+  const ownerWhere = instructor ? { instructorId: instructor.id } : { venueId: { in: venueIds } };
+  const pastFrom = new Date(now.getTime() - 30 * DAY_MS);
+  const weekAhead = new Date(now.getTime() + 7 * DAY_MS);
+
+  const [done, cancelled, upcoming, sessions] = await Promise.all([
+    db.booking.aggregate({
+      where: { ...ownerWhere, status: { in: ['CONFIRMED', 'COMPLETED'] }, startsAt: { gte: pastFrom, lt: now } },
+      _count: { _all: true },
+      _sum: { totalPrice: true },
+    }),
+    db.booking.count({
+      where: {
+        ...ownerWhere,
+        status: { in: ['CANCELLED_BY_CUSTOMER', 'CANCELLED_BY_PROVIDER'] },
+        startsAt: { gte: pastFrom, lt: now },
+      },
+    }),
+    db.booking.count({
+      where: { ...ownerWhere, status: { in: ['PENDING', 'CONFIRMED', 'RESCHEDULED'] }, startsAt: { gte: now, lt: weekAhead } },
+    }),
+    instructor
+      ? db.classSession.findMany({
+          where: {
+            ...notTrashed,
+            isCancelled: false,
+            startsAt: { gte: now, lt: weekAhead },
+            danceClass: { ...notTrashed, instructorId: instructor.id },
+          },
+          take: 30,
+          orderBy: { startsAt: 'asc' },
+          select: {
+            startsAt: true,
+            capacity: true,
+            bookedCount: true,
+            danceClass: { select: { title: true, translations: { select: { locale: true, title: true } } } },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const sessionLines = sessions.map((s) => {
+    const title = pickTitle(s.danceClass.title, s.danceClass.translations, locale);
+    return `  - ${formatDateTime(s.startsAt)} (Yerevan) | ${title} | booked ${s.bookedCount}/${s.capacity}`;
+  });
+
+  return [
+    'PARTNER DATA (own data only; gross booked amounts, before commission, in ' + currency.code + ')',
+    `- bookings last 30 days (confirmed or completed): ${done._count._all}, booked amount ${formatPrice(Number(done._sum.totalPrice ?? 0))}`,
+    `- cancelled bookings last 30 days: ${cancelled}`,
+    `- bookings next 7 days: ${upcoming}`,
+    ...(instructor ? ['- sessions next 7 days:', ...(sessionLines.length ? sessionLines : ['  - none'])] : []),
+  ].join('\n');
 }

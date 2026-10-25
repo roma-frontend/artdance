@@ -8,10 +8,11 @@ import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated'
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
-import { bookingStatusLabel, canPayBooking, listMyBookings, payBooking, type ClientBooking } from '@/lib/bookings';
+import { bookingStatusLabel, canCancelBooking, canPayBooking, listMyBookings, payBooking, type ClientBooking } from '@/lib/bookings';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { openPaymentUrl } from '@/lib/payment-url';
+import { syncBookingReminders } from '@/lib/reminders';
 import { serverMessageOf } from '@/lib/server-message';
 import { useAppActive } from '@/lib/use-app-active';
 import { enterItem, EASE_OUT } from '@/lib/motion';
@@ -30,8 +31,18 @@ export default function MyBookingsScreen() {
 
   const load = useCallback(async () => {
     try {
-      setBookings(await listMyBookings());
+      const list = await listMyBookings();
+      setBookings(list);
       setFailed(null);
+      syncBookingReminders(
+        list.map((item) => ({
+          id: item.id,
+          title: item.classTitle ?? 'ArtDance',
+          startsAt: item.startsAt,
+          active: canCancelBooking(item),
+        })),
+        t.bookingReminderBody,
+      ).catch(() => undefined);
     } catch (error) {
       setFailed(serverMessageOf(error) ?? t.catalogError);
     }
