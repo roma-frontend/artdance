@@ -6,11 +6,10 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState, type ComponentProps } from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Linking, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Extrapolation,
   FadeInDown,
-  ZoomIn,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -27,11 +26,12 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Segmented } from '@/components/ui/segmented';
 import { catalogFor } from '@/i18n/catalog';
 import { chooseLocale } from '@/lib/app-locale';
+import { loadAccountProfile, onProfileChange } from '@/lib/account-profile';
 import { getCurrentUser, signOut, type User } from '@/lib/auth';
 import { loadDancerProfile } from '@/lib/dancer-profile';
 import { initials, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor, type Locale } from '@/lib/i18n';
-import { animateNextLayout, openTiming } from '@/lib/motion';
+import { animateNextLayout, enterCard3D, openTiming } from '@/lib/motion';
 import { useScrollChrome } from '@/lib/use-scroll-chrome';
 import { colors, fonts, gradients, radius, space, type } from '@/theme';
 
@@ -81,7 +81,10 @@ export default function AccountScreen() {
   const insets = useSafeAreaInsets();
   const { scrollY, onScroll } = useScrollChrome();
   const [user, setUser] = useState<User | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileSheet, setProfileSheet] = useState(false);
+
+  useEffect(() => onProfileChange((p) => setAvatarUrl(p.avatarUrl)), []);
 
   useEffect(() => {
     let alive = true;
@@ -90,6 +93,13 @@ export default function AccountScreen() {
       .then((u) => {
         if (!alive) return;
         setUser(u);
+        if (u) {
+          loadAccountProfile()
+            .then((p) => {
+              if (alive) setAvatarUrl(p.avatarUrl);
+            })
+            .catch(() => undefined);
+        }
         // Как на вебе: танцору без пройденной анкеты сначала предлагаем тур.
         if (u && DANCER_ROLES.has(u.role)) {
           loadDancerProfile()
@@ -136,7 +146,9 @@ export default function AccountScreen() {
 
   function openProfileField(field: ProfileField) {
     setProfileSheet(false);
-    if (field === 'name' || field === 'password') router.push({ pathname: '/account/profile', params: { focus: field } });
+    if (field === 'name' || field === 'password' || field === 'photo') {
+      router.push({ pathname: '/account/profile', params: { focus: field } });
+    }
   }
 
   const isDancer = user !== null && DANCER_ROLES.has(user.role);
@@ -242,6 +254,7 @@ export default function AccountScreen() {
 
         <Animated.View entering={FadeInDown.delay(80).duration(550)}>
           <PressableScale
+            tilt
             pressedScale={0.985}
             delayLongPress={350}
             onPress={() => router.push('/account/profile')}
@@ -255,11 +268,18 @@ export default function AccountScreen() {
             ) : (
               <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
             )}
-            <Animated.View style={[styles.ring, avatarStyle]}>
-              <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-              <View style={styles.avatar}>
-                <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-                <Text style={styles.avatarText}>{initials(user?.name ?? 'A D')}</Text>
+            <LinearGradient colors={['rgba(201,59,82,0.28)', 'rgba(11,8,9,0)']} style={StyleSheet.absoluteFill} pointerEvents="none" />
+            <Animated.View style={[styles.ringGlow, avatarStyle]}>
+              <View style={styles.ring}>
+                <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                <View style={styles.avatar}>
+                  <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                  {avatarUrl ? (
+                    <Image source={{ uri: avatarUrl }} style={StyleSheet.absoluteFill} />
+                  ) : (
+                    <Text style={styles.avatarText}>{initials(user?.name ?? 'A D')}</Text>
+                  )}
+                </View>
               </View>
             </Animated.View>
             <Text style={styles.name} numberOfLines={1}>
@@ -274,25 +294,36 @@ export default function AccountScreen() {
           </PressableScale>
         </Animated.View>
 
-        <View style={styles.quickRow}>
-          {quick.map((row, index) => (
-            <Animated.View key={row.path} entering={ZoomIn.delay(160 + index * 60).duration(420)} style={styles.quickCell}>
-              <PressableScale pressedScale={0.94} onPress={() => openRow(row)} style={styles.quickTile} accessibilityRole="link">
-                <LinearGradient
-                  colors={[`${row.tint}33`, 'rgba(0,0,0,0)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 0.9, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={[styles.quickIcon, { backgroundColor: `${row.tint}33` }]}>
-                  <Ionicons name={row.icon} size={18} color={row.tint} />
-                </View>
-                <Text style={styles.quickLabel} numberOfLines={2}>
-                  {row.label}
-                </Text>
-              </PressableScale>
-            </Animated.View>
-          ))}
+        <View style={styles.bento}>
+          {quick.map((row, index) => {
+            const lead = index === 0;
+            return (
+              <Animated.View key={row.path} entering={enterCard3D(index, 160)} style={lead ? styles.bentoLead : styles.bentoTrio}>
+                <PressableScale
+                  tilt
+                  pressedScale={0.94}
+                  onPress={() => openRow(row)}
+                  style={[styles.tile, lead ? styles.tileLead : styles.tileTrio]}
+                  accessibilityRole="link"
+                >
+                  <LinearGradient
+                    colors={[`${row.tint}40`, 'rgba(11,8,9,0)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
+                  />
+                  <Ionicons name={row.icon} size={lead ? 96 : 56} color={`${row.tint}26`} style={styles.watermark} />
+                  <LinearGradient colors={[row.tint, `${row.tint}99`]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.quickIcon}>
+                    <Ionicons name={row.icon} size={18} color={colors.white} />
+                  </LinearGradient>
+                  <Text style={[styles.quickLabel, lead && styles.leadLabel]} numberOfLines={2}>
+                    {row.label}
+                  </Text>
+                  {lead ? <Ionicons name="chevron-forward" size={16} color={colors.text3} /> : null}
+                </PressableScale>
+              </Animated.View>
+            );
+          })}
         </View>
 
         {sections.map((section, index) => (
@@ -357,7 +388,7 @@ function Section({ section, delay, onOpen }: { section: SectionDef; delay: numbe
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
       >
-        <Text style={[type.eyebrow, styles.flex]}>{section.title}</Text>
+        <Text style={[type.h3, styles.flex]}>{section.title}</Text>
         <View style={styles.countPill}>
           <Text style={styles.countText}>{section.rows.length}</Text>
         </View>
@@ -375,9 +406,9 @@ function Section({ section, delay, onOpen }: { section: SectionDef; delay: numbe
               style={[styles.row, index > 0 && styles.divider]}
               accessibilityRole="link"
             >
-              <View style={[styles.rowIcon, { backgroundColor: `${row.tint}26` }]}>
-                <Ionicons name={row.icon} size={17} color={row.tint} />
-              </View>
+              <LinearGradient colors={[row.tint, `${row.tint}99`]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.rowIcon}>
+                <Ionicons name={row.icon} size={17} color={colors.white} />
+              </LinearGradient>
               <Text style={[type.label, styles.flex]}>{row.label}</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.text3} />
             </PressableScale>
@@ -403,10 +434,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.line,
   },
-  quickRow: { flexDirection: 'row', gap: space.sm },
-  quickCell: { flex: 1 },
-  quickTile: {
-    height: 108,
+  bento: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  bentoLead: { width: '100%' },
+  bentoTrio: { flexBasis: 0, flexGrow: 1 },
+  tile: {
     padding: space.md,
     borderRadius: radius.lg,
     overflow: 'hidden',
@@ -415,8 +446,12 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.line,
   },
+  tileLead: { height: 88, flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.lg },
+  tileTrio: { height: 116 },
+  watermark: { position: 'absolute', right: -10, bottom: -14 },
   quickIcon: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  quickLabel: { fontSize: 12, fontWeight: '700', lineHeight: 16, color: colors.text },
+  quickLabel: { fontSize: 13, fontWeight: '700', lineHeight: 17, color: colors.text },
+  leadLabel: { flex: 1, fontSize: 16, lineHeight: 20 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: 4 },
   countPill: {
     minWidth: 22,
@@ -428,7 +463,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245,241,234,0.08)',
   },
   countText: { fontSize: 11, fontWeight: '700', color: colors.text2 },
-  ring: { width: 100, height: 100, borderRadius: 50, padding: 3, overflow: 'hidden', marginBottom: space.sm },
+  ringGlow: {
+    borderRadius: 50,
+    marginBottom: space.sm,
+    shadowColor: colors.accentBright,
+    shadowOpacity: 0.55,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 12,
+  },
+  ring: { width: 100, height: 100, borderRadius: 50, padding: 3, overflow: 'hidden' },
   avatar: {
     flex: 1,
     borderRadius: 47,
@@ -465,7 +509,7 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: space.lg },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
-  rowIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  rowIcon: { width: 36, height: 36, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   signOut: {
     flexDirection: 'row',
     alignItems: 'center',

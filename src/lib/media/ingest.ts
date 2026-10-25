@@ -41,6 +41,9 @@ import {
 
 /* ───────────────────────────── Типы ───────────────────────────── */
 
+/** Форматы, которые умеет энкодировать пайплайн. JPEG — только для универсально читаемых мастеров (аватары). */
+export type EncodeFormat = MediaOutputFormat | 'jpeg';
+
 export type MediaRejection =
   | { code: 'MEDIA_UNREADABLE'; params: Record<string, never> }
   | { code: 'MEDIA_FORMAT_UNSUPPORTED'; params: { format: string } }
@@ -51,7 +54,7 @@ export type MediaRejection =
 export interface RenderedImage {
   width: number;
   height: number;
-  format: MediaOutputFormat;
+  format: EncodeFormat;
   bytes: number;
   data: Buffer;
 }
@@ -87,7 +90,7 @@ export interface ProcessOptions {
   /** Переопределение набора ширин. По умолчанию — `mediaProcessing.variantWidths`. */
   widths?: readonly number[];
   /** Переопределение форматов. По умолчанию — `mediaProcessing.outputFormats`. */
-  formats?: readonly MediaOutputFormat[];
+  formats?: readonly EncodeFormat[];
   /** Не генерировать производные (нужно для аватаров: одна ширина). */
   masterOnly?: boolean;
   /**
@@ -145,7 +148,7 @@ export function budgetFor(preset: ImagePresetKey): number {
 
 /* ──────────────────────────── Конвейер ──────────────────────────── */
 
-function encode(pipeline: Sharp, format: MediaOutputFormat): Sharp {
+function encode(pipeline: Sharp, format: EncodeFormat): Sharp {
   switch (format) {
     case 'avif':
       return pipeline.avif({
@@ -154,6 +157,8 @@ function encode(pipeline: Sharp, format: MediaOutputFormat): Sharp {
       });
     case 'webp':
       return pipeline.webp({ quality: mediaProcessing.quality.webp });
+    case 'jpeg':
+      return pipeline.jpeg({ quality: mediaProcessing.quality.jpeg });
   }
 }
 

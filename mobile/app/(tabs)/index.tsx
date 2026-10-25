@@ -29,6 +29,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FiltersSheet } from '@/components/filters-sheet';
+import { InstructorPeek } from '@/components/instructor-peek';
 import { PosterRowSkeleton, Skeleton } from '@/components/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FadeImage } from '@/components/ui/fade-image';
@@ -38,6 +39,7 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { Segmented } from '@/components/ui/segmented';
 import { catalogFor } from '@/i18n/catalog';
 import type { Locale } from '@/i18n/config';
+import { loadAccountProfile, onProfileChange } from '@/lib/account-profile';
 import { getCurrentUser, type User } from '@/lib/auth';
 import { listCatalog, mediaUri, type ClassCard, type EventCard, type InstructorCard, type Section } from '@/lib/catalog';
 import { cardView } from '@/lib/catalog-view';
@@ -45,6 +47,7 @@ import { API_URL } from '@/lib/config';
 import { useEntitlements } from '@/lib/entitlements';
 import { dateLabel, initials, price } from '@/lib/format';
 import { deviceLocale, greeting, messagesFor } from '@/lib/i18n';
+import { enterCard3D } from '@/lib/motion';
 import { useScrollChrome } from '@/lib/use-scroll-chrome';
 import { colors, fonts, gradients, radius, space, springs, type } from '@/theme';
 
@@ -109,8 +112,23 @@ export default function HomeScreen() {
   const [levelFilter, setLevelFilter] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [peek, setPeek] = useState<InstructorCard | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const entitlements = useEntitlements();
   const eventsOn = entitlements?.events === true;
+
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    loadAccountProfile()
+      .then((p) => alive && setAvatarUrl(p.avatarUrl))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [user]);
+
+  useEffect(() => onProfileChange((p) => setAvatarUrl(p.avatarUrl)), []);
 
   useEffect(() => {
     let alive = true;
@@ -282,7 +300,11 @@ export default function HomeScreen() {
           <PressableScale onPress={() => router.navigate('/account')} accessibilityLabel={m.tabAccount} style={styles.avatarRing}>
             <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials(user?.name ?? 'A D')}</Text>
+              {avatarUrl ? (
+                <FadeImage uri={avatarUrl} />
+              ) : (
+                <Text style={styles.avatarText}>{initials(user?.name ?? 'A D')}</Text>
+              )}
             </View>
           </PressableScale>
         </Animated.View>
@@ -374,7 +396,7 @@ export default function HomeScreen() {
                 {filtered.map((item, index) => {
                   const view = cardView(item, t, locale);
                   return (
-                    <Animated.View key={item.slug} entering={FadeInDown.delay(index * 50).duration(400)}>
+                    <Animated.View key={item.slug} entering={enterCard3D(index)}>
                       <MediaCard
                         width={gridCardWidth}
                         uri={view.uri}
@@ -454,7 +476,7 @@ export default function HomeScreen() {
                 actionLabel={t.common.actions.viewAll}
                 onAction={() => openSection('instructors')}
               />
-              <Stories items={instructors} onOpen={(slug) => openDetail('instructors', slug)} />
+              <Stories items={instructors} onOpen={(slug) => openDetail('instructors', slug)} onPeek={setPeek} />
             </View>
 
             <View style={styles.block}>
@@ -506,6 +528,18 @@ export default function HomeScreen() {
         onReset={resetFilters}
         onClose={() => setFiltersOpen(false)}
       />
+
+      {peek ? (
+        <InstructorPeek
+          key={peek.slug}
+          instructor={peek}
+          onClose={() => setPeek(null)}
+          onBook={(slug) => {
+            setPeek(null);
+            router.push({ pathname: '/book/[instructor]', params: { instructor: slug } });
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -688,7 +722,15 @@ function Dot({ index, x, step }: { index: number; x: SharedValue<number>; step: 
 }
 
 /** Инструкторы «как сторис»: фото в градиентном кольце бренда, имя и рейтинг. */
-function Stories({ items, onOpen }: { items: InstructorCard[] | null; onOpen: (slug: string) => void }) {
+function Stories({
+  items,
+  onOpen,
+  onPeek,
+}: {
+  items: InstructorCard[] | null;
+  onOpen: (slug: string) => void;
+  onPeek: (item: InstructorCard) => void;
+}) {
   if (items === null) {
     return (
       <View style={[styles.row, styles.storiesSkeleton]}>
@@ -711,7 +753,13 @@ function Stories({ items, onOpen }: { items: InstructorCard[] | null; onOpen: (s
       contentContainerStyle={styles.row}
       renderItem={({ item, index }) => (
         <Animated.View entering={FadeInDown.delay(index * 50).duration(400)}>
-          <PressableScale style={styles.story} onPress={() => onOpen(item.slug)} accessibilityLabel={item.name}>
+          <PressableScale
+            style={styles.story}
+            onPress={() => onOpen(item.slug)}
+            onLongPress={() => onPeek(item)}
+            delayLongPress={350}
+            accessibilityLabel={item.name}
+          >
             <View>
               <View style={styles.storyRing}>
                 <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
@@ -757,8 +805,8 @@ const BENTO: { section: Section; icon: IconName; desc: 'megaDescClasses' | 'mega
 function Bento({ t, onOpen, eventsOn }: { t: ReturnType<typeof catalogFor>; onOpen: (section: Section) => void; eventsOn: boolean }) {
   const [first, ...rest] = BENTO.filter((entry) => entry.section !== 'events' || eventsOn);
   const tile = (entry: (typeof BENTO)[number], wide: boolean, index: number) => (
-    <Animated.View key={entry.section} entering={FadeInDown.delay(index * 70).duration(500)} style={wide ? styles.bentoWide : styles.bentoHalf}>
-      <PressableScale style={[styles.bento, wide && styles.bentoWideInner]} onPress={() => onOpen(entry.section)}>
+    <Animated.View key={entry.section} entering={enterCard3D(index, 0)} style={wide ? styles.bentoWide : styles.bentoHalf}>
+      <PressableScale tilt style={[styles.bento, wide && styles.bentoWideInner]} onPress={() => onOpen(entry.section)}>
         <LinearGradient
           colors={[`${entry.tint}CC`, `${entry.tint}33`, 'rgba(20,16,18,0.9)']}
           start={{ x: 0, y: 0 }}
@@ -794,7 +842,7 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 14, fontWeight: '600', color: colors.text2 },
   heroAccent: { fontFamily: fonts.displayItalic, color: colors.accentBright },
   avatarRing: { width: 48, height: 48, borderRadius: 24, padding: 2, overflow: 'hidden', marginTop: 4 },
-  avatar: { flex: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface2 },
+  avatar: { flex: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', backgroundColor: colors.surface2 },
   avatarText: { fontSize: 15, fontWeight: '800', color: colors.text },
   searchRow: { flexDirection: 'row', gap: 10, paddingHorizontal: space.xl, marginTop: space.xl },
   search: {

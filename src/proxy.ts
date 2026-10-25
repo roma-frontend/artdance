@@ -37,6 +37,7 @@ import {
 } from '@/config/security';
 import { locales } from '@/i18n/config';
 import { routing } from '@/i18n/routing';
+import { isBearerRequest } from '@/lib/auth/bearer';
 import { checkApiFloodLimit, clientIdentifier } from '@/lib/security/rate-limit';
 
 const intlMiddleware = createIntlMiddleware(routing);
@@ -114,6 +115,9 @@ function rejectsCrossOrigin(request: NextRequest): boolean {
 
   const pathname = request.nextUrl.pathname;
   if (originExemptPathPrefixes.some((prefix) => pathname.startsWith(prefix))) return false;
+
+  // Нативный клиент с Bearer: Origin у Expo не совпадает с хостом, но подделать Bearer с чужого сайта нельзя.
+  if (isBearerRequest(request)) return false;
 
   const origin = request.headers.get('origin');
   if (!origin) return false;

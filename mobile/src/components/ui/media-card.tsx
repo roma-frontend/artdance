@@ -24,6 +24,7 @@ type Props = {
 export function MediaCard({ uri, title, meta, badge, price, rating, onPress, onLongPress, width, aspect = 4 / 3, style }: Props) {
   return (
     <PressableScale
+      tilt
       onPress={onPress}
       onLongPress={onLongPress}
       style={[{ width }, style]}

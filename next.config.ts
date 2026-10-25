@@ -84,6 +84,8 @@ const nextConfig: NextConfig = {
   /** Барели библиотек иконок и UI тянут весь пакет: включаем tree-shaking. */
   experimental: {
     optimizePackageImports: ['lucide-react', 'radix-ui', 'date-fns', 'framer-motion', 'next-intl'],
+    // Совпадает с SOURCE_MAX_BYTES в api/account/avatar: иначе фото 10–12 МБ режется до маршрута.
+    proxyClientMaxBodySize: '12mb',
   },
 
   /** Типизированные роуты включим после стабилизации набора страниц. */

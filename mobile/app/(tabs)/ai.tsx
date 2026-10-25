@@ -12,6 +12,8 @@ import {
   TextInput,
   View,
   type ScrollViewInstance,
+  type StyleProp,
+  type TextStyle,
 } from 'react-native';
 import Animated, {
   Easing,
@@ -28,6 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { askAssistant, AssistantError, type AssistantMessage } from '@/lib/assistant';
+import { splitAssistantText } from '@/lib/assistant-links';
 import { getCurrentUser, type User } from '@/lib/auth';
 import { deviceLocale, greeting, messagesFor } from '@/lib/i18n';
 import { tabBarHidden } from '@/lib/tab-bar';
@@ -314,6 +317,31 @@ function PulseDot() {
   );
 }
 
+/** Ссылки в ответе ведут на экраны приложения; остальной текст остаётся выделяемым. */
+function LinkedText({ text, style }: { text: string; style: StyleProp<TextStyle> }) {
+  const router = useRouter();
+  const segments = splitAssistantText(text, deviceLocale(undefined));
+  return (
+    <Text selectable style={style}>
+      {segments.map((segment, index) => {
+        if (segment.type === 'text') return <Text key={index}>{segment.value}</Text>;
+        if (!segment.href) return <Text key={index}>{segment.label}</Text>;
+        const href = segment.href;
+        return (
+          <Text
+            key={index}
+            accessibilityRole="link"
+            style={styles.link}
+            onPress={() => router.push(href)}
+          >
+            {segment.label}
+          </Text>
+        );
+      })}
+    </Text>
+  );
+}
+
 function Bubble({ item }: { item: ChatItem }) {
   const entering = FadeInUp.springify().damping(18).stiffness(220);
 
@@ -339,9 +367,7 @@ function Bubble({ item }: { item: ChatItem }) {
         />
       </View>
       <View style={[styles.bubbleAssistant, item.failed && styles.bubbleFailed]}>
-        <Text selectable style={[styles.textAssistant, item.failed && styles.textFailed]}>
-          {item.content}
-        </Text>
+        <LinkedText text={item.content} style={[styles.textAssistant, item.failed && styles.textFailed]} />
       </View>
     </Animated.View>
   );
@@ -457,6 +483,7 @@ const styles = StyleSheet.create({
   },
   bubbleFailed: { borderColor: 'rgba(255,107,122,0.4)' },
   textAssistant: { color: colors.text, fontSize: 15, lineHeight: 21 },
+  link: { color: colors.accentBright, textDecorationLine: 'underline' },
   textFailed: { color: colors.danger },
   dots: { flexDirection: 'row', gap: 5, paddingVertical: 14 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.metal },

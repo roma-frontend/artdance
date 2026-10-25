@@ -105,7 +105,26 @@ const dictionary: Dictionary = {
     profileNameHint: 'Անունը, որ տեսնում են ուրիշները',
     profilePasswordHint: 'Ընթացիկ և նոր գաղտնաբառ',
     profilePhotoTitle: 'Նկար',
-    profilePhotoHint: 'Նկարի բեռնումը՝ հաջորդ տարբերակում',
+    profilePhotoHint: 'Ավելացրեք կամ փոխեք նկարը և կտրեք այն քառակուսի',
+    profilePhotoChange: 'Փոխել նկարը',
+    profilePhotoRemove: 'Հեռացնել նկարը',
+    profilePhotoLimit: 'JPG, PNG, WebP կամ AVIF, մինչև 12 ՄԲ',
+    profilePhotoSaved: 'Նկարը թարմացվեց',
+    profilePhotoRemoved: 'Նկարը հեռացվեց',
+    profilePhotoTooLarge: 'Ֆայլը 12 ՄԲ-ից մեծ է։ Ընտրեք ավելի փոքր նկար',
+    profilePhotoBadType: 'Աջակցվում են JPG, PNG, WebP և AVIF',
+    profileAvatarCropTitle: 'Կտրել նկարը',
+    profileAvatarCropHint: 'Տեղափոխեք նկարը և մեծացրեք՝ ցանկալի մասը ընտրելու համար',
+    profileAvatarSave: 'Պահպանել նկարը',
+    profileAvatarUnreadable: 'Չհաջողվեց կարդալ նկարը',
+    profileAvatarZoomIn: 'Մեծացնել',
+    profileAvatarZoomOut: 'Փոքրացնել',
+    profileTimeZoneTitle: 'Ժամային գոտի',
+    profileTimeZoneHint: 'Պահպանվում է ձեր հաշվում։ Գրանցումներն ու դասերը՝ ըստ ստուդիայի ժամանակի (Երևան)',
+    profileTimeZoneSaved: 'Ժամային գոտին պահպանվեց',
+    profileLanguageTitle: 'Լեզու',
+    profileLanguageHint: 'Հավելվածի լեզուն, պահպանվում է ձեր հաշվում',
+    profileLanguageSaved: 'Լեզուն պահպանվեց',
     profileEmailHint: 'Էլ. հասցեն փոխվում է աջակցության միջոցով',
   },
   ru: {
@@ -208,7 +227,26 @@ const dictionary: Dictionary = {
     profileNameHint: 'Имя, которое видят другие',
     profilePasswordHint: 'Текущий и новый пароль',
     profilePhotoTitle: 'Фото',
-    profilePhotoHint: 'Загрузка фото — в следующей версии',
+    profilePhotoHint: 'Добавьте или смените фото и выберите квадрат',
+    profilePhotoChange: 'Сменить фото',
+    profilePhotoRemove: 'Удалить фото',
+    profilePhotoLimit: 'JPG, PNG, WebP или AVIF, до 12 МБ',
+    profilePhotoSaved: 'Фото обновлено',
+    profilePhotoRemoved: 'Фото удалено',
+    profilePhotoTooLarge: 'Файл больше 12 МБ. Выберите фото меньше',
+    profilePhotoBadType: 'Поддерживаются JPG, PNG, WebP и AVIF',
+    profileAvatarCropTitle: 'Кадрирование',
+    profileAvatarCropHint: 'Перетащите фото и увеличьте, чтобы выбрать часть',
+    profileAvatarSave: 'Сохранить фото',
+    profileAvatarUnreadable: 'Не удалось прочитать фото',
+    profileAvatarZoomIn: 'Увеличить',
+    profileAvatarZoomOut: 'Уменьшить',
+    profileTimeZoneTitle: 'Часовой пояс',
+    profileTimeZoneHint: 'Сохраняется в аккаунте. Записи и занятия идут по времени студии (Ереван)',
+    profileTimeZoneSaved: 'Часовой пояс сохранён',
+    profileLanguageTitle: 'Язык',
+    profileLanguageHint: 'Язык приложения, сохраняется в аккаунте',
+    profileLanguageSaved: 'Язык сохранён',
     profileEmailHint: 'Адрес меняется через поддержку',
   },
   en: {
@@ -311,7 +349,26 @@ const dictionary: Dictionary = {
     profileNameHint: 'The name others see',
     profilePasswordHint: 'Current and new password',
     profilePhotoTitle: 'Photo',
-    profilePhotoHint: 'Photo upload comes in a later version',
+    profilePhotoHint: 'Add or change your photo and crop it to a square',
+    profilePhotoChange: 'Change photo',
+    profilePhotoRemove: 'Remove photo',
+    profilePhotoLimit: 'JPG, PNG, WebP or AVIF, up to 12 MB',
+    profilePhotoSaved: 'Photo updated',
+    profilePhotoRemoved: 'Photo removed',
+    profilePhotoTooLarge: 'File is over 12 MB. Choose a smaller photo',
+    profilePhotoBadType: 'Supported formats: JPG, PNG, WebP and AVIF',
+    profileAvatarCropTitle: 'Crop photo',
+    profileAvatarCropHint: 'Drag the photo and zoom in to choose the part to keep',
+    profileAvatarSave: 'Save photo',
+    profileAvatarUnreadable: 'Could not read this photo',
+    profileAvatarZoomIn: 'Zoom in',
+    profileAvatarZoomOut: 'Zoom out',
+    profileTimeZoneTitle: 'Time zone',
+    profileTimeZoneHint: 'Saved to your account. Bookings and classes follow studio time (Yerevan)',
+    profileTimeZoneSaved: 'Time zone saved',
+    profileLanguageTitle: 'Language',
+    profileLanguageHint: 'App language, saved to your account',
+    profileLanguageSaved: 'Language saved',
     profileEmailHint: 'Email changes go through support',
   },
 };
@@ -417,6 +474,25 @@ export type MessageKey =
   | 'profilePasswordHint'
   | 'profilePhotoTitle'
   | 'profilePhotoHint'
+  | 'profilePhotoChange'
+  | 'profilePhotoRemove'
+  | 'profilePhotoLimit'
+  | 'profilePhotoSaved'
+  | 'profilePhotoRemoved'
+  | 'profilePhotoTooLarge'
+  | 'profilePhotoBadType'
+  | 'profileAvatarCropTitle'
+  | 'profileAvatarCropHint'
+  | 'profileAvatarSave'
+  | 'profileAvatarUnreadable'
+  | 'profileAvatarZoomIn'
+  | 'profileAvatarZoomOut'
+  | 'profileTimeZoneTitle'
+  | 'profileTimeZoneHint'
+  | 'profileTimeZoneSaved'
+  | 'profileLanguageTitle'
+  | 'profileLanguageHint'
+  | 'profileLanguageSaved'
   | 'profileEmailHint';
 
 export type Messages = Record<MessageKey, string>;

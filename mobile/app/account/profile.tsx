@@ -1,26 +1,64 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AvatarCropModal } from '@/components/account/avatar-crop-modal';
 import { FloatingInput } from '@/components/auth/floating-input';
 import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { Segmented } from '@/components/ui/segmented';
+import {
+  AccountProfileError,
+  loadAccountProfile,
+  removeAvatar,
+  saveAccountPreferences,
+  uploadAvatar,
+  type AccountProfile,
+  type AvatarCropRect,
+  type PickedImage,
+} from '@/lib/account-profile';
+import { chooseLocale, useLocale } from '@/lib/app-locale';
 import { AuthError, changePassword, getCurrentUser, updateName, type User } from '@/lib/auth';
-import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { initials } from '@/lib/format';
+import { messagesFor, type Locale } from '@/lib/i18n';
 import { EASE_OUT } from '@/lib/motion';
-import { colors, radius, space, type } from '@/theme';
+import { colors, gradients, radius, space, type } from '@/theme';
 
 const MIN_PASSWORD_LENGTH = 10;
+const MAX_SOURCE_BYTES = 12 * 1024 * 1024;
+const IMAGE_TYPES: readonly string[] = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+const DEFAULT_TIME_ZONE = 'Asia/Yerevan';
+/** Часовые пояса, которые чаще всего нужны клиентам студии. */
+const TIME_ZONES: readonly string[] = [
+  'Asia/Yerevan',
+  'Europe/Moscow',
+  'Europe/Berlin',
+  'Europe/London',
+  'Asia/Dubai',
+  'Asia/Tbilisi',
+  'Asia/Tokyo',
+  'America/New_York',
+  'America/Los_Angeles',
+  'UTC',
+];
+const LOCALE_OPTIONS: { key: Locale; label: string }[] = [
+  { key: 'hy', label: 'Հայերեն' },
+  { key: 'ru', label: 'Русский' },
+  { key: 'en', label: 'English' },
+];
 
 type Notice = { ok: boolean; text: string };
 
 /** Настройки профиля: имя и пароль. Адрес и роль меняются через поддержку. */
 export default function ProfileScreen() {
-  const t = messagesFor(deviceLocale(undefined));
+  const locale = useLocale();
+  const t = messagesFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { focus } = useLocalSearchParams<{ focus?: string }>();
@@ -28,7 +66,14 @@ export default function ProfileScreen() {
   const passwordY = useRef(0);
 
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [cropImage, setCropImage] = useState<PickedImage | null>(null);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarNotice, setAvatarNotice] = useState<Notice | null>(null);
+  const [zoneBusy, setZoneBusy] = useState(false);
+  const [zoneNotice, setZoneNotice] = useState<Notice | null>(null);
+  const [languageNotice, setLanguageNotice] = useState<Notice | null>(null);
   const [name, setName] = useState('');
   const [nameBusy, setNameBusy] = useState(false);
   const [nameNotice, setNameNotice] = useState<Notice | null>(null);
@@ -39,14 +84,13 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     let alive = true;
-    getCurrentUser()
-      .catch(() => null)
-      .then((found) => {
-        if (!alive) return;
-        setUser(found);
-        setName(found?.name ?? '');
-        setLoaded(true);
-      });
+    Promise.all([getCurrentUser().catch(() => null), loadAccountProfile().catch(() => null)]).then(([found, loaded]) => {
+      if (!alive) return;
+      setUser(found);
+      setName(found?.name ?? '');
+      setProfile(loaded);
+      setLoaded(true);
+    });
     return () => {
       alive = false;
     };
@@ -55,6 +99,107 @@ export default function ProfileScreen() {
   const trimmedName = name.trim();
   const nameReady = trimmedName.length > 0 && trimmedName !== user?.name;
   const passwordReady = current.length > 0 && next.length >= MIN_PASSWORD_LENGTH;
+
+  const currentZone = profile?.timeZone ?? DEFAULT_TIME_ZONE;
+  const zones = TIME_ZONES.includes(currentZone) ? TIME_ZONES : [currentZone, ...TIME_ZONES];
+
+  function avatarFailure(error: unknown): string {
+    const status = error instanceof AccountProfileError ? error.status : 0;
+    if (status === 413) return t.profilePhotoTooLarge;
+    if (status === 415) return t.profilePhotoBadType;
+    if (status === 422) return t.profileAvatarUnreadable;
+    return t.genericError;
+  }
+
+  async function pickAvatar() {
+    setAvatarNotice(null);
+    try {
+      // Системная галерея (Photo Picker на Android, PHPicker на iOS), а не Файлы.
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsMultipleSelection: false,
+        allowsEditing: false,
+        quality: 1,
+        // HEIC с iPhone сервер не декодирует, просим iOS отдать JPEG.
+        preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Compatible,
+      });
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType ?? '';
+      if (!IMAGE_TYPES.includes(mimeType)) {
+        setAvatarNotice({ ok: false, text: t.profilePhotoBadType });
+        return;
+      }
+      // Исходник может быть больше 2 МБ: сервер кадрирует и сжимает его сам.
+      if (asset.fileSize != null && asset.fileSize > MAX_SOURCE_BYTES) {
+        setAvatarNotice({ ok: false, text: t.profilePhotoTooLarge });
+        return;
+      }
+      setCropImage({ uri: asset.uri, name: asset.fileName ?? 'avatar.jpg', mimeType });
+    } catch {
+      setAvatarNotice({ ok: false, text: t.genericError });
+    }
+  }
+
+  async function applyCrop(crop: AvatarCropRect) {
+    if (!cropImage) return;
+    setAvatarBusy(true);
+    setAvatarNotice(null);
+    try {
+      const saved = await uploadAvatar(cropImage, crop);
+      setProfile(saved);
+      setCropImage(null);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setAvatarNotice({ ok: true, text: t.profilePhotoSaved });
+    } catch (error: unknown) {
+      if (__DEV__) console.warn('[avatar] upload failed', error);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setAvatarNotice({ ok: false, text: avatarFailure(error) });
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  async function dropAvatar() {
+    setAvatarBusy(true);
+    setAvatarNotice(null);
+    try {
+      setProfile(await removeAvatar());
+      setAvatarNotice({ ok: true, text: t.profilePhotoRemoved });
+    } catch {
+      setAvatarNotice({ ok: false, text: t.genericError });
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  async function pickTimeZone(zone: string) {
+    if (zone === currentZone) return;
+    setZoneBusy(true);
+    setZoneNotice(null);
+    try {
+      setProfile(await saveAccountPreferences({ timeZone: zone }));
+      setZoneNotice({ ok: true, text: t.profileTimeZoneSaved });
+    } catch {
+      setZoneNotice({ ok: false, text: t.genericError });
+    } finally {
+      setZoneBusy(false);
+    }
+  }
+
+  async function pickLocale(code: Locale) {
+    setLanguageNotice(null);
+    try {
+      // Сначала сохраняем на сервере: при ошибке язык интерфейса не меняется.
+      const saved = await saveAccountPreferences({ locale: code });
+      await chooseLocale(code);
+      setProfile(saved);
+      setLanguageNotice({ ok: true, text: messagesFor(code).profileLanguageSaved });
+    } catch {
+      setLanguageNotice({ ok: false, text: t.genericError });
+    }
+  }
 
   async function saveName() {
     setNameBusy(true);
@@ -109,6 +254,36 @@ export default function ProfileScreen() {
           contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxl }]}
         >
           <Animated.View entering={FadeInDown.delay(60).duration(420).easing(EASE_OUT)} style={styles.card}>
+            <Text style={type.h3}>{t.profilePhotoTitle}</Text>
+            <View style={styles.avatarRow}>
+              <View style={styles.avatar}>
+                {profile?.avatarUrl ? (
+                  <Image source={{ uri: profile.avatarUrl }} style={styles.avatarFill} />
+                ) : (
+                  <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarFill}>
+                    <Text style={styles.avatarText}>{initials(user.name)}</Text>
+                  </LinearGradient>
+                )}
+              </View>
+              <View style={styles.flex}>
+                <Text style={styles.hint}>{t.profilePhotoHint}</Text>
+                <Text style={styles.rules}>{t.profilePhotoLimit}</Text>
+              </View>
+            </View>
+            <View style={styles.actions}>
+              <Button label={t.profilePhotoChange} onPress={pickAvatar} variant="ghost" busy={avatarBusy} disabled={avatarBusy} style={styles.flex} />
+              {profile?.avatarUrl ? (
+                <Button label={t.profilePhotoRemove} onPress={dropAvatar} variant="ghost" disabled={avatarBusy} style={styles.flex} />
+              ) : null}
+            </View>
+            {avatarNotice ? (
+              <Animated.Text entering={FadeInDown.duration(250)} style={avatarNotice.ok ? styles.ok : styles.error}>
+                {avatarNotice.text}
+              </Animated.Text>
+            ) : null}
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(100).duration(420).easing(EASE_OUT)} style={styles.card}>
             <Text style={type.h3}>{t.name}</Text>
             <FloatingInput
               label={t.name}
@@ -125,6 +300,44 @@ export default function ProfileScreen() {
             {nameNotice ? (
               <Animated.Text entering={FadeInDown.duration(250)} style={nameNotice.ok ? styles.ok : styles.error}>
                 {nameNotice.text}
+              </Animated.Text>
+            ) : null}
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(120).duration(420).easing(EASE_OUT)} style={styles.card}>
+            <Text style={type.h3}>{t.profileLanguageTitle}</Text>
+            <Text style={styles.hint}>{t.profileLanguageHint}</Text>
+            <Segmented options={LOCALE_OPTIONS} value={locale} onChange={pickLocale} />
+            {languageNotice ? (
+              <Animated.Text entering={FadeInDown.duration(250)} style={languageNotice.ok ? styles.ok : styles.error}>
+                {languageNotice.text}
+              </Animated.Text>
+            ) : null}
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(130).duration(420).easing(EASE_OUT)} style={styles.card}>
+            <Text style={type.h3}>{t.profileTimeZoneTitle}</Text>
+            <Text style={styles.hint}>{t.profileTimeZoneHint}</Text>
+            <View style={styles.chips}>
+              {zones.map((zone) => {
+                const active = zone === currentZone;
+                return (
+                  <PressableScale
+                    key={zone}
+                    onPress={() => pickTimeZone(zone)}
+                    disabled={zoneBusy}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active, disabled: zoneBusy }}
+                    style={[styles.chip, active && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, active && styles.chipTextActive]}>{zone}</Text>
+                  </PressableScale>
+                );
+              })}
+            </View>
+            {zoneNotice ? (
+              <Animated.Text entering={FadeInDown.duration(250)} style={zoneNotice.ok ? styles.ok : styles.error}>
+                {zoneNotice.text}
               </Animated.Text>
             ) : null}
           </Animated.View>
@@ -172,6 +385,14 @@ export default function ProfileScreen() {
           </Animated.View>
         </ScrollView>
       )}
+
+      <AvatarCropModal
+        image={cropImage}
+        busy={avatarBusy}
+        notice={avatarNotice && !avatarNotice.ok ? avatarNotice.text : null}
+        onCancel={() => setCropImage(null)}
+        onConfirm={applyCrop}
+      />
     </View>
   );
 }
@@ -190,6 +411,32 @@ const styles = StyleSheet.create({
     borderColor: colors.line,
   },
   rules: { fontSize: 12, color: colors.text3 },
+  hint: { fontSize: 13, color: colors.text2, lineHeight: 18 },
+  flex: { flex: 1 },
+  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  avatar: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+  },
+  avatarFill: { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 22, fontWeight: '700', color: colors.white },
+  actions: { flexDirection: 'row', gap: space.sm },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  chip: {
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+    backgroundColor: 'rgba(245,241,234,0.04)',
+  },
+  chipActive: { backgroundColor: 'rgba(201,59,82,0.18)', borderColor: colors.accentBright },
+  chipText: { fontSize: 13, color: colors.text2 },
+  chipTextActive: { color: colors.text, fontWeight: '600' },
   ok: { fontSize: 13, color: colors.metal, fontWeight: '600' },
   error: { fontSize: 13, color: colors.accentBright },
 });

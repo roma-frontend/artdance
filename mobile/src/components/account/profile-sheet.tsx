@@ -18,7 +18,7 @@ function itemsFor(t: Messages): Item[] {
   return [
     { key: 'name', icon: 'person-outline', title: t.name, hint: t.profileNameHint, editable: true, soon: false },
     { key: 'password', icon: 'lock-closed-outline', title: t.profilePasswordTitle, hint: t.profilePasswordHint, editable: true, soon: false },
-    { key: 'photo', icon: 'camera-outline', title: t.profilePhotoTitle, hint: t.profilePhotoHint, editable: false, soon: true },
+    { key: 'photo', icon: 'camera-outline', title: t.profilePhotoTitle, hint: t.profilePhotoHint, editable: true, soon: false },
     { key: 'email', icon: 'mail-outline', title: t.email, hint: t.profileEmailHint, editable: false, soon: false },
   ];
 }

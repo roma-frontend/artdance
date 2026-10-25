@@ -382,6 +382,8 @@ export const rateLimits = {
    * выглядел бы как обычная форма.
    */
   dancerProfile: { requests: 20, windowSeconds: 600 },
+  /** Часовой пояс и язык в профиле: переключаются кликами, но не сотнями. */
+  accountPreferences: { requests: 60, windowSeconds: 600 },
   /**
    * Мутация в админке. Лимит существует не против администратора, а против
    * украденной сессии: у server action нет интерфейса, и скрипт с чужой cookie

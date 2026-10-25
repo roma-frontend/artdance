@@ -51,7 +51,13 @@
       "expo-image",
       "expo-calendar",
       "expo-notifications",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ArtDance использует фото из галереи, чтобы вы могли выбрать аватар."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

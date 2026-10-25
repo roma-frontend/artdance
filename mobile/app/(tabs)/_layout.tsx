@@ -21,7 +21,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { tabBarHidden } from '@/lib/tab-bar';
+import { tabBarCompact, tabBarHidden } from '@/lib/tab-bar';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors, fill, fonts, gradients, springs } from '@/theme';
 
@@ -59,6 +59,8 @@ export default function TabsLayout() {
 
 const BAR_HEIGHT = 66;
 const SIDE = 16;
+const COMPACT_MIN = 104;
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const liquidGlass = isLiquidGlassAvailable();
 
 /**
@@ -72,7 +74,7 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
   const count = state.routes.length;
   const itemWidth = width / Math.max(count, 1);
   const x = useSharedValue(0);
-  const barRef = useRef<ComponentRef<typeof View>>(null);
+  const barRef = useRef<ComponentRef<typeof Animated.View>>(null);
   const barPageX = useRef(0);
   const dragIndex = useRef<number | null>(null);
   const pressed = useSharedValue(0);
@@ -87,6 +89,7 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
 
     const settle = (index: number) => {
       dragIndex.current = null;
+      tabBarCompact.value = 0;
       pressed.value = withSpring(0, springs.snappy);
       let target = state.index;
       if (index !== state.index) {
@@ -102,10 +105,13 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
 
     return PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 6,
+      onMoveShouldSetPanResponderCapture: (_, g) => tabBarCompact.value < 0.5 && Math.abs(g.dx) > 6,
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         dragIndex.current = state.index;
+        barRef.current?.measure((_x, _y, _w, _h, pageX) => {
+          barPageX.current = pageX;
+        });
         pressed.value = withSpring(1, springs.snappy);
       },
       onPanResponderMove: (e) => {
@@ -133,22 +139,26 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
     transform: [{ translateY: hidden.value * (BAR_HEIGHT + insets.bottom + 24) }],
   }));
 
+  const compact = useDerivedValue(() => withSpring(tabBarCompact.value, springs.gentle));
+  const pillWidth = Math.min(Math.max(itemWidth * 1.5, COMPACT_MIN), width);
+  const barStyle = useAnimatedStyle(() => ({
+    width: width > 0 ? width + (pillWidth - width) * compact.value : undefined,
+  }));
+  const rowStyle = useAnimatedStyle(() => ({
+    width,
+    transform: [{ translateX: (pillWidth / 2 - (x.value + itemWidth / 2)) * compact.value }],
+  }));
+
   return (
-    <Animated.View style={[styles.wrap, { bottom: bottomInset }, hide]} pointerEvents="box-none">
+    <Animated.View
+      style={[styles.wrap, { bottom: bottomInset }, hide]}
+      pointerEvents="box-none"
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+    >
       <View pointerEvents="none" style={[styles.scrim, { height: BAR_HEIGHT + bottomInset + 40, bottom: -bottomInset }]}>
         <LinearGradient colors={['rgba(11,8,9,0)', 'rgba(11,8,9,0.85)']} style={fill} />
       </View>
-      <View
-        ref={barRef}
-        style={styles.bar}
-        onLayout={(e) => {
-          setWidth(e.nativeEvent.layout.width);
-          barRef.current?.measure((_x, _y, _w, _h, pageX) => {
-            barPageX.current = pageX;
-          });
-        }}
-        {...panHandlers}
-      >
+      <Animated.View ref={barRef} style={[styles.bar, barStyle]} {...panHandlers}>
         {liquidGlass ? (
           <>
             <GlassView glassEffectStyle="regular" isInteractive style={StyleSheet.absoluteFill} />
@@ -160,12 +170,13 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
             <View style={styles.tint} />
           </>
         )}
-        {width > 0 ? (
-          <Animated.View style={[styles.blobTrack, blob]} pointerEvents="none">
-            <Animated.View style={[styles.blob, blobInner]} />
-          </Animated.View>
-        ) : null}
-        {state.routes.map((route, index) => {
+        <Animated.View style={[styles.row, rowStyle]}>
+          {width > 0 ? (
+            <Animated.View style={[styles.blobTrack, blob]} pointerEvents="none">
+              <Animated.View style={[styles.blob, blobInner]} />
+            </Animated.View>
+          ) : null}
+          {state.routes.map((route, index) => {
           const focused = state.index === index;
           const [icon, iconActive] = ICONS[route.name] ?? ['ellipse-outline', 'ellipse'];
           const label = descriptors[route.key]?.options.title ?? route.name;
@@ -179,17 +190,20 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
               index={index}
               itemWidth={itemWidth}
               blobX={x}
+              compact={compact}
               drag={pressed}
               onPress={() => {
                 const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
                 Haptics.selectionAsync().catch(() => undefined);
                 tabBarHidden.value = 0;
+                tabBarCompact.value = 0;
                 if (!focused && !event.defaultPrevented) navigateToTab(route.key);
               }}
             />
           );
-        })}
-      </View>
+          })}
+        </Animated.View>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -204,6 +218,7 @@ function TabItem({
   blobX,
   drag,
   hero,
+  compact,
 }: {
   label: string;
   icon: IconName;
@@ -214,6 +229,7 @@ function TabItem({
   itemWidth: number;
   blobX: SharedValue<number>;
   drag: SharedValue<number>;
+  compact: SharedValue<number>;
 }) {
   const bounce = useSharedValue(1);
   const lift = useSharedValue(focused ? 1 : 0);
@@ -228,11 +244,12 @@ function TabItem({
     return { transform: [{ scale: bounce.value * (1 + near * 0.16) }, { translateY: -lift.value * 1.5 - near * 2 }] };
   });
   const labelStyle = useAnimatedStyle(() => ({ opacity: 0.55 + lift.value * 0.45 }));
+  const itemStyle = useAnimatedStyle(() => ({ opacity: Math.max(0, 1 - compact.value * (1 - lift.value)) }));
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
-      style={styles.item}
+      style={[styles.item, itemStyle]}
       accessibilityRole="tab"
       accessibilityState={{ selected: focused }}
       accessibilityLabel={label}
@@ -251,7 +268,17 @@ function TabItem({
       >
         {label}
       </Animated.Text>
-    </Pressable>
+    </AnimatedPressable>
+  );
+}
+
+/** Вращающаяся искра с хвостом: каждая следующая отстаёт на `lag` градусов и тускнеет. */
+function OrbitSpark({ orbit, lag, size, alpha }: { orbit: SharedValue<number>; lag: number; size: number; alpha: number }) {
+  const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${orbit.value * 360 - lag}deg` }] }));
+  return (
+    <Animated.View style={[styles.heroOrbit, style]} pointerEvents="none">
+      <View style={[styles.heroSpark, { width: size, height: size, borderRadius: size / 2, opacity: alpha }]} />
+    </Animated.View>
   );
 }
 
@@ -261,10 +288,14 @@ function HeroIcon() {
   const orbit = useSharedValue(0);
   const wobble = useSharedValue(0);
   const glint = useSharedValue(0);
+  const ringA = useSharedValue(0);
+  const ringB = useSharedValue(0);
 
   useEffect(() => {
     breath.value = withRepeat(withTiming(1, { duration: 1400, easing: Easing.inOut(Easing.quad) }), -1, true);
     orbit.value = withRepeat(withTiming(1, { duration: 3200, easing: Easing.linear }), -1, false);
+    ringA.value = withRepeat(withTiming(1, { duration: 2400, easing: Easing.out(Easing.quad) }), -1, false);
+    ringB.value = withDelay(1200, withRepeat(withTiming(1, { duration: 2400, easing: Easing.out(Easing.quad) }), -1, false));
     wobble.value = withRepeat(
       withSequence(
         withTiming(1, { duration: 120, easing: Easing.out(Easing.quad) }),
@@ -280,13 +311,20 @@ function HeroIcon() {
       -1,
       false,
     );
-  }, [breath, orbit, wobble, glint]);
+  }, [breath, orbit, wobble, glint, ringA, ringB]);
 
   const halo = useAnimatedStyle(() => ({
     opacity: 0.2 + breath.value * 0.4,
     transform: [{ scale: 0.9 + breath.value * 0.2 }],
   }));
-  const orbitStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${orbit.value * 360}deg` }] }));
+  const ringStyleA = useAnimatedStyle(() => ({
+    opacity: (1 - ringA.value) * 0.8,
+    transform: [{ scale: 1 + ringA.value * 0.25 }],
+  }));
+  const ringStyleB = useAnimatedStyle(() => ({
+    opacity: (1 - ringB.value) * 0.8,
+    transform: [{ scale: 1 + ringB.value * 0.25 }],
+  }));
   const letter = useAnimatedStyle(() => ({
     transform: [{ scale: 1 + breath.value * 0.07 }, { translateY: -breath.value * 1.2 }, { rotate: `${wobble.value * 9}deg` }],
   }));
@@ -298,9 +336,11 @@ function HeroIcon() {
   return (
     <View style={styles.heroWrap}>
       <Animated.View style={[styles.heroHalo, halo]} pointerEvents="none" />
-      <Animated.View style={[styles.heroOrbit, orbitStyle]} pointerEvents="none">
-        <View style={styles.heroSpark} />
-      </Animated.View>
+      <Animated.View style={[styles.heroRing, ringStyleA]} pointerEvents="none" />
+      <Animated.View style={[styles.heroRing, ringStyleB]} pointerEvents="none" />
+      <OrbitSpark orbit={orbit} lag={0} size={5} alpha={1} />
+      <OrbitSpark orbit={orbit} lag={20} size={4} alpha={0.55} />
+      <OrbitSpark orbit={orbit} lag={40} size={3} alpha={0.3} />
       <View style={styles.heroDisc}>
         <LinearGradient colors={gradients.accent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={fill} />
         <Animated.Text style={[styles.heroLetter, letter]} allowFontScaling={false}>
@@ -315,6 +355,7 @@ function HeroIcon() {
 const styles = StyleSheet.create({
   wrap: { position: 'absolute', left: SIDE, right: SIDE },
   bar: {
+    alignSelf: 'center',
     height: BAR_HEIGHT,
     borderRadius: BAR_HEIGHT / 2,
     flexDirection: 'row',
@@ -331,18 +372,29 @@ const styles = StyleSheet.create({
   tint: { ...fill, backgroundColor: 'rgba(14,10,12,0.5)' },
   glassTint: { ...fill, backgroundColor: 'rgba(14,10,12,0.4)' },
   scrim: { position: 'absolute', left: -SIDE, right: -SIDE },
-  blobTrack: { position: 'absolute', top: 0, bottom: 0, left: 0, padding: 6 },
+  blobTrack: { position: 'absolute', top: 1, bottom: 1, left: 0, paddingHorizontal: 4 },
   blob: {
     flex: 1,
-    borderRadius: (BAR_HEIGHT - 12) / 2,
+    borderRadius: 30,
     backgroundColor: 'rgba(201,59,82,0.22)',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(201,59,82,0.45)',
   },
+  row: { position: 'absolute', top: 0, bottom: 0, left: 0, flexDirection: 'row' },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  heroWrap: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  heroHalo: { position: 'absolute', width: 52, height: 52, borderRadius: 26, backgroundColor: colors.accentBright },
-  heroOrbit: { position: 'absolute', width: 52, height: 52 },
+  heroWrap: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
+  heroHalo: { position: 'absolute', width: 46, height: 46, borderRadius: 23, backgroundColor: colors.accentBright },
+  heroRing: {
+    position: 'absolute',
+    top: 3,
+    left: 3,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: colors.accentBright,
+  },
+  heroOrbit: { position: 'absolute', width: 46, height: 46 },
   heroSpark: {
     position: 'absolute',
     top: 0,
