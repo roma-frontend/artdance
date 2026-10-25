@@ -1,0 +1,1 @@
+npx eas update --branch production --message "test"

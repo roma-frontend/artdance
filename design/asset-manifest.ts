@@ -230,7 +230,6 @@ export const designAssets: readonly DesignAsset[] = [
     usedFor: [
       { entity: 'danceStyle', id: 'HIP_HOP' },
       { entity: 'class', id: 'street-flow' },
-      { entity: 'instructor', id: 'david-sargsyan', placeholder: true },
     ],
   },
   {
@@ -317,6 +316,13 @@ export const designAssets: readonly DesignAsset[] = [
     preset: 'instructorCard',
     subject: 'Портрет инструктора: Наре Григорян',
     usedFor: [{ entity: 'instructor', id: 'nare-grigoryan' }],
+  },
+  {
+    name: 'instructor-david-sargsyan',
+    source: 'david-sargsyan-photo.jpg',
+    preset: 'instructorCard',
+    subject: 'Портрет инструктора: Давид Саргсян',
+    usedFor: [{ entity: 'instructor', id: 'david-sargsyan' }],
   },
 
   /* Площадки */

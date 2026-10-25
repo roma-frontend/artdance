@@ -3,10 +3,12 @@
  *
  *   node --conditions=react-server --env-file-if-exists=.env --env-file-if-exists=.env.local --import tsx scripts/upload-instructor-videos.ts [папка]
  *
- * Файл `<slug>-video.mp4` уходит в `media/instructor-peek/<slug>.mp4`. Каждый объект
+ * Файл `<slug>-video.mp4` уходит в `media/instructor-peek/<slug>.<отпечаток>.mp4`. Каждый объект
  * проверяется HEAD-запросом по публичному адресу, затем дописывается в манифест.
+ * Отпечаток в имени нужен: объекты отдаются с `immutable` на год, и перезапись по тому же имени не обновляет кеш.
  */
 
+import { createHash } from 'node:crypto';
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { config as dotenvConfig } from 'dotenv';
@@ -35,8 +37,9 @@ async function main() {
   const uploaded: ManifestEntry[] = [];
   for (const name of names) {
     const slug = name.replace(/-video\.mp4$/, '');
-    const key = `media/instructor-peek/${slug}.mp4`;
     const data = await readFile(join(sourceDir, name));
+    const fingerprint = createHash('sha256').update(data).digest('hex').slice(0, 8);
+    const key = `media/instructor-peek/${slug}.${fingerprint}.mp4`;
 
     await putMediaObject(key, data, 'video/mp4');
 

@@ -206,6 +206,8 @@ function mediaData(assetName: string, sortOrder = 0) {
   };
 }
 
+const seededMedia: { owner: { instructorId?: string; venueId?: string; roomId?: string; classId?: string; productId?: string; eventId?: string; bannerId?: string }; storageKey?: string }[] = [];
+
 /**
  * Привязка изображения к сущности.
  *
@@ -222,11 +224,16 @@ async function attachMedia(
   const { translations, ...data } = mediaData(assetName);
   const storageKey = `${data.storageKey}#${ownerTag}`;
 
-  // Прошлый сид-кадр владельца с другим файлом или ключом остался бы первым по sortOrder.
-  await prisma.mediaAsset.updateMany({
-    where: { ...owner, deletedAt: null, storageKey: { endsWith: `#${ownerTag}`, not: storageKey } },
-    data: { deletedAt: now },
+  /* Владелец с загрузкой из админки: сид-кадр не добавляем, прошлые снимаем в prune. */
+  const hasAdminUpload = await prisma.mediaAsset.findFirst({
+    where: { ...owner, deletedAt: null, NOT: { storageKey: { contains: '#' } } },
+    select: { id: true },
   });
+  if (hasAdminUpload) {
+    seededMedia.push({ owner });
+    return;
+  }
+  seededMedia.push({ owner, storageKey });
 
   const asset = await prisma.mediaAsset.upsert({
     where: { storageKey },
@@ -250,6 +257,31 @@ async function attachMedia(
       create: { assetId: asset.id, locale, altText: translations[locale] },
     });
   }
+}
+
+/**
+ * Снимает у сид-владельцев сид-кадры, которых нет в этом прогоне.
+ *
+ * Загрузки из админки (без тега `#`) и записи без владельца не трогает.
+ */
+async function pruneStaleSeedMedia(): Promise<void> {
+  const byOwner = new Map<string, { owner: Parameters<typeof attachMedia>[1]; keys: string[] }>();
+  for (const { owner, storageKey } of seededMedia) {
+    const id = JSON.stringify(owner);
+    const entry = byOwner.get(id) ?? { owner, keys: [] };
+    if (storageKey) entry.keys.push(storageKey);
+    byOwner.set(id, entry);
+  }
+
+  let removed = 0;
+  for (const { owner, keys } of byOwner.values()) {
+    const result = await prisma.mediaAsset.updateMany({
+      where: { ...owner, deletedAt: null, storageKey: { contains: '#', notIn: keys } },
+      data: { deletedAt: now },
+    });
+    removed += result.count;
+  }
+  if (removed) console.log(`  медиа: снято лишних фото ${removed}`);
 }
 
 /* ─────────────────────────── Аккаунты ─────────────────────────── */
@@ -1028,6 +1060,7 @@ async function main(): Promise<void> {
   if (process.env.CI === 'true') await seedCiFixtures();
   await seedCities();
   await seedFooterLinks();
+  await pruneStaleSeedMedia();
 
   if (CLEAN_SLOTS) {
     const holds = await prisma.slotHold.deleteMany({});

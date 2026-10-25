@@ -146,6 +146,15 @@ export const seedMedia = {
     blurDataUrl:
       'data:image/webp;base64,UklGRmgAAABXRUJQVlA4IFwAAAAQAgCdASoMAAwAAwBSJbACdAD0Flgos+IAAPv/Fa5sgH3R1D2YDOsHtPYMn1nbwbycXXJ6WTooWyW/Hln36Cfe3VyX4OR49IAuW+xG08jb0GrL2Mqii1FbBgAAAA==',
   },
+  'instructor-david-sargsyan': {
+    file: 'instructor-david-sargsyan.7f2083ae.webp',
+    width: 1024,
+    height: 1024,
+    bytes: 22082,
+    fingerprint: '7f2083ae',
+    blurDataUrl:
+      'data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoMAAwAAwBSJZACdAEDfMohgAD++T9eBT+w4/gCc5GAxsyq6HRG420RYAA=',
+  },
   'instructor-nare-grigoryan': {
     file: 'instructor-nare-grigoryan.a3abb381.webp',
     width: 765,
@@ -322,4 +331,4 @@ export const seedMedia = {
 export type SeedMediaName = keyof typeof seedMedia;
 
 /** Суммарный вес папки сид-медиа, байт. Сверяется с `mediaProcessing.budgetBytes.seedTotal`. */
-export const seedMediaTotalBytes = 1702984;
+export const seedMediaTotalBytes = 1725066;
