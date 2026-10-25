@@ -16,13 +16,13 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://artdance.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://artdance.am"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://artdance.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://artdance.am"
       },
       "channel": "production"
     }
