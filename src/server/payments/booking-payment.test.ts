@@ -102,4 +102,21 @@ describe('createBookingPayment', () => {
     expect(mocks.provider.createPayment).not.toHaveBeenCalled();
     expect(result).toMatchObject({ paymentId: 'payment-0', providerTransactionId: 'tx-0', redirectUrl: 'https://pay.example/tx-0' });
   });
+
+  it('reissues the attempt on the same row when the previous session expired', async () => {
+    mocks.db.booking.findUnique.mockResolvedValue(pendingBooking);
+    mocks.db.payment.findUnique.mockResolvedValue({
+      id: 'payment-0',
+      status: 'PENDING',
+      providerTransactionId: 'tx-0',
+      providerPayload: { redirectUrl: 'https://pay.example/tx-0', expiresAt: new Date(Date.now() - 60_000).toISOString() },
+    });
+    mocks.db.payment.update.mockResolvedValueOnce({ id: 'payment-0' });
+
+    const result = await createBookingPayment(input);
+
+    expect(mocks.db.payment.create).not.toHaveBeenCalled();
+    expect(mocks.provider.createPayment).toHaveBeenCalledWith(expect.objectContaining({ paymentId: 'payment-0', amount: 17_000 }));
+    expect(result).toMatchObject({ paymentId: 'payment-0', redirectUrl: 'https://pay.example/tx-1' });
+  });
 });

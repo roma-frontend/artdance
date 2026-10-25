@@ -88,6 +88,13 @@ function returnUrlFor(orderNumber: string, locale: string, fromApp: boolean): st
   return absoluteUrl(`/${resolved}${routes.checkoutResult(orderNumber)}${fromApp ? '?app=1' : ''}`);
 }
 
+/* Строка платежа уникальна по idempotencyKey, поэтому новая попытка пишется в ту же строку. */
+function isReusableAttempt(existing: { status: string; providerPayload: unknown }): boolean {
+  if (existing.status === 'FAILED' || existing.status === 'CANCELLED') return false;
+  const { expiresAt } = (existing.providerPayload ?? {}) as { expiresAt?: string | null };
+  return !expiresAt || new Date(expiresAt).getTime() > Date.now();
+}
+
 export interface CreateBookingPaymentInput {
   bookingId: string;
   /** Бронь оплачивает только её владелец-аккаунт. */
@@ -144,7 +151,7 @@ export async function createBookingPayment(input: CreateBookingPaymentInput): Pr
   });
 
   /* Уже созданная попытка возвращается, а не создаёт вторую оплату. */
-  if (existing?.providerTransactionId) {
+  if (existing?.providerTransactionId && isReusableAttempt(existing)) {
     const payload = (existing.providerPayload ?? {}) as { redirectUrl?: string; qrPayload?: string };
     return {
       bookingId: booking.id,
@@ -158,19 +165,21 @@ export async function createBookingPayment(input: CreateBookingPaymentInput): Pr
     };
   }
 
-  const payment = await db.payment.create({
-    data: {
-      bookingId: booking.id,
-      provider: provider.id,
-      method: input.method,
-      status: 'PENDING',
-      amount,
-      paidAmount: 0,
-      currencyCode: 'AMD',
-      idempotencyKey,
-    },
-    select: { id: true },
-  });
+  const payment = existing
+    ? await db.payment.update({ where: { id: existing.id }, data: { status: 'PENDING' }, select: { id: true } })
+    : await db.payment.create({
+        data: {
+          bookingId: booking.id,
+          provider: provider.id,
+          method: input.method,
+          status: 'PENDING',
+          amount,
+          paidAmount: 0,
+          currencyCode: 'AMD',
+          idempotencyKey,
+        },
+        select: { id: true },
+      });
 
   const intent = await provider.createPayment({
     paymentId: payment.id,
@@ -325,7 +334,7 @@ export async function createOrderPayment(input: CreateOrderPaymentInput): Promis
   });
 
   /* Уже созданная попытка: возвращаем её, а не тянем у клиента вторую оплату. */
-  if (existing?.providerTransactionId) {
+  if (existing?.providerTransactionId && isReusableAttempt(existing)) {
     const payload = (existing.providerPayload ?? {}) as { redirectUrl?: string; qrPayload?: string };
     return {
       orderId: order.id,
@@ -342,19 +351,21 @@ export async function createOrderPayment(input: CreateOrderPaymentInput): Promis
     };
   }
 
-  const payment = await db.payment.create({
-    data: {
-      orderId: order.id,
-      provider: provider.id,
-      method: input.method,
-      status: 'PENDING',
-      amount: charge,
-      paidAmount: 0,
-      currencyCode: order.currencyCode,
-      idempotencyKey,
-    },
-    select: { id: true },
-  });
+  const payment = existing
+    ? await db.payment.update({ where: { id: existing.id }, data: { status: 'PENDING' }, select: { id: true } })
+    : await db.payment.create({
+        data: {
+          orderId: order.id,
+          provider: provider.id,
+          method: input.method,
+          status: 'PENDING',
+          amount: charge,
+          paidAmount: 0,
+          currencyCode: order.currencyCode,
+          idempotencyKey,
+        },
+        select: { id: true },
+      });
 
   const description = order.items
     .map((item) => (item.quantity > 1 ? `${item.titleSnapshot} ×${item.quantity}` : item.titleSnapshot))

@@ -75,4 +75,49 @@ describe('createOrderPayment', () => {
     expect(mocks.provider.createPayment).toHaveBeenCalledTimes(1);
     expect(result.redirectUrl).toBe('https://pay.example/tx-1');
   });
+
+  it('reissues a card attempt on the same payment row when the previous session expired', async () => {
+    mocks.db.payment.findUnique.mockResolvedValue({
+      id: 'payment-1',
+      status: 'PENDING',
+      providerTransactionId: 'cs_old',
+      providerPayload: { redirectUrl: 'https://old.example', expiresAt: new Date(Date.now() - 60_000).toISOString() },
+    });
+    mocks.db.payment.update.mockResolvedValueOnce({ id: 'payment-1' });
+
+    const result = await createOrderPayment({ ...input, method: 'CARD' });
+
+    expect(mocks.db.payment.create).not.toHaveBeenCalled();
+    expect(mocks.provider.createPayment).toHaveBeenCalledWith(expect.objectContaining({ paymentId: 'payment-1', amount: 30_500 }));
+    expect(mocks.db.payment.update).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'payment-1' }, data: { status: 'PENDING' } }));
+    expect(result.redirectUrl).toBe('https://pay.example/tx-1');
+  });
+
+  it('reissues a card attempt when the previous one FAILED', async () => {
+    mocks.db.payment.findUnique.mockResolvedValue({
+      id: 'payment-1',
+      status: 'FAILED',
+      providerTransactionId: 'cs_old',
+      providerPayload: { redirectUrl: 'https://old.example' },
+    });
+
+    const result = await createOrderPayment({ ...input, method: 'CARD' });
+
+    expect(mocks.provider.createPayment).toHaveBeenCalledTimes(1);
+    expect(result.redirectUrl).toBe('https://pay.example/tx-1');
+  });
+
+  it('returns the live attempt without calling the provider again', async () => {
+    mocks.db.payment.findUnique.mockResolvedValue({
+      id: 'payment-1',
+      status: 'PENDING',
+      providerTransactionId: 'cs_live',
+      providerPayload: { redirectUrl: 'https://live.example', expiresAt: new Date(Date.now() + 3_600_000).toISOString() },
+    });
+
+    const result = await createOrderPayment({ ...input, method: 'CARD' });
+
+    expect(mocks.provider.createPayment).not.toHaveBeenCalled();
+    expect(result.redirectUrl).toBe('https://live.example');
+  });
 });
