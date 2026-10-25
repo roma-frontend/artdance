@@ -6,15 +6,20 @@ import {
 } from '@expo-google-fonts/playfair-display';
 import { DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SplashLoader } from '@/components/splash-loader';
+import { EmptyState } from '@/components/ui/empty-state';
+import { catalogFor } from '@/i18n/catalog';
 import { loadLocale, useLocale } from '@/lib/app-locale';
 import { getCurrentUser, onSessionChange, type User } from '@/lib/auth';
 import '@/lib/reminders';
 import { colors } from '@/theme';
 
-const SPLASH_MIN_MS = 2000;
+// Короткий минимум, чтобы заставка не мигала; остальное время задаёт реальная готовность.
+const SPLASH_MIN_MS = 700;
 
 // Фон темы под экранами: без него при свайпе назад виден светлый фон.
 const navTheme = {
@@ -32,6 +37,8 @@ const navTheme = {
 
 export default function RootLayout() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
+  const [offline, setOffline] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [splashTimeUp, setSplashTimeUp] = useState(false);
   const [localeReady, setLocaleReady] = useState(false);
   const locale = useLocale();
@@ -65,17 +72,21 @@ export default function RootLayout() {
     let alive = true;
     const refresh = () => {
       getCurrentUser()
-        .catch(() => null)
         .then((u) => {
           if (!alive) return;
+          setOffline(false);
           setUser(u);
           const segment = segmentsRef.current[0] ?? '';
           const inAuth = ['sign-in', 'sign-up', 'forgot-password'].includes(segment);
           // Ссылки из письма открываются и без сессии: сброс пароля и подтверждение почты.
-          // Страница доступности публичная, поэтому тоже открыта без входа.
-          const openLink = ['reset-password', 'verify-email', 'accessibility'].includes(segment);
+          // Справочные страницы публичные: условия нужно прочитать до регистрации.
+          const openLink = ['reset-password', 'verify-email', 'accessibility', 'legal', 'faq', 'help', 'about', 'blog'].includes(segment);
           if (!u && !inAuth && !openLink) router.replace('/sign-in');
           if (u && inAuth) router.replace('/');
+        })
+        .catch(() => {
+          // Сеть или сервер недоступны и прежнего пользователя нет: не выход, а экран повтора.
+          if (alive) setOffline(true);
         });
     };
     refresh();
@@ -84,13 +95,29 @@ export default function RootLayout() {
       alive = false;
       unsubscribe();
     };
-  }, [group, router]);
+  }, [group, router, retryKey]);
+
+  const retry = useCallback(() => {
+    setOffline(false);
+    setRetryKey((k) => k + 1);
+  }, []);
+
+  if (offline && user === undefined && localeReady) {
+    const c = catalogFor(locale);
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.bg }}>
+        <StatusBar style="light" />
+        <EmptyState icon="cloud-offline-outline" title={c.common.states.offline} actionLabel={c.common.actions.retry} onAction={retry} />
+      </View>
+    );
+  }
 
   if (!localeReady || user === undefined || (!fontsLoaded && !fontError) || !splashTimeUp) {
     return <SplashLoader />;
   }
 
   return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
     <ThemeProvider value={navTheme}>
       <StatusBar style="light" />
       <Stack
@@ -152,5 +179,6 @@ export default function RootLayout() {
         <Stack.Screen name="book/[instructor]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
       </Stack>
     </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,15 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { DateTimeField } from '@/components/ui/date-time-field';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { yerevanClock, yerevanDate } from '@/lib/class-time';
-import { deviceLocale } from '@/lib/i18n';
+import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { EASE_OUT, enterItem } from '@/lib/motion';
 import { serverMessageOf } from '@/lib/server-message';
 import {
@@ -42,7 +44,13 @@ const DAY_KEY: Record<number, WeekdayKey> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: '
 const EMPTY_RULE: RuleDraft = { weekday: 1, startTime: '', endTime: '', validFrom: '', validUntil: '' };
 const EMPTY_EXCEPTION: ExceptionDraft = { date: '', startTime: '', endTime: '', isAvailable: false, reason: '' };
 
-const DANGER = '#E36A6A';
+const DANGER = colors.danger;
+
+/** Первая ошибка формы; сервер проверит пересечения и остальное. */
+function rangeProblem(start: string, end: string, messages: { required: string; order: string }): string | null {
+  if (!start || !end) return messages.required;
+  return start < end ? null : messages.order;
+}
 
 /** Время расписания — Ереван, как и на сервере. */
 function wallTime(iso: string) {
@@ -59,6 +67,7 @@ function wallDay(iso: string) {
  */
 export default function AvailabilityScreen() {
   const c = catalogFor(deviceLocale(undefined));
+  const m = messagesFor(deviceLocale(undefined));
   const a = c.studio.availability;
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -68,13 +77,21 @@ export default function AvailabilityScreen() {
   const [busy, setBusy] = useState(false);
   const [rule, setRule] = useState<RuleDraft>(EMPTY_RULE);
   const [exception, setException] = useState<ExceptionDraft>(EMPTY_EXCEPTION);
+  const [ruleError, setRuleError] = useState<string | null>(null);
+  const [exceptionError, setExceptionError] = useState<string | null>(null);
+  const hasSnapshot = useRef(false);
+  const rangeMessages = { required: c.validation.required, order: m.timeRangeInvalid };
 
-  const load = useCallback(async () => {
+  /** Ошибка перечитывания не прячет уже загруженное расписание. */
+  const load = useCallback(async (): Promise<boolean> => {
     try {
       setSnapshot(await getAvailability());
+      hasSnapshot.current = true;
       setLoadError(null);
+      return true;
     } catch (error) {
-      setLoadError(serverMessageOf(error) ?? a.error);
+      if (!hasSnapshot.current) setLoadError(serverMessageOf(error) ?? a.error);
+      return false;
     }
   }, [a.error]);
 
@@ -91,12 +108,40 @@ export default function AvailabilityScreen() {
       await action();
       onDone?.();
       setNotice({ ok: true, text: a.saved });
+      // Запись уже сохранена: неудачное перечитывание не превращает её в ошибку.
       await load();
     } catch (error) {
       setNotice({ ok: false, text: serverMessageOf(error) ?? a.error });
     } finally {
       setBusy(false);
     }
+  }
+
+  function confirmDelete(kind: 'rule' | 'exception', id: string) {
+    if (busy) return;
+    Alert.alert(m.confirmDelete, undefined, [
+      { text: c.common.actions.cancel, style: 'cancel' },
+      { text: a.delete, style: 'destructive', onPress: () => void run(() => deleteEntry(kind, id)) },
+    ]);
+  }
+
+  function addRule() {
+    const problem =
+      rangeProblem(rule.startTime, rule.endTime, rangeMessages) ??
+      (rule.validFrom && rule.validUntil && rule.validFrom > rule.validUntil ? c.validation.invalidDate : null);
+    setRuleError(problem);
+    if (problem) return;
+    void run(
+      () => saveRule(rule),
+      () => setRule((prev) => ({ ...prev, startTime: '', endTime: '' })),
+    );
+  }
+
+  function addException() {
+    const problem = !exception.date ? c.validation.required : rangeProblem(exception.startTime, exception.endTime, rangeMessages);
+    setExceptionError(problem);
+    if (problem) return;
+    void run(() => saveException(exception), () => setException(EMPTY_EXCEPTION));
   }
 
   if (snapshot === null && loadError === null) {
@@ -110,7 +155,7 @@ export default function AvailabilityScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
-        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+        <PressableScale onPress={() => goBack('/studio')} accessibilityRole="button" accessibilityLabel={backLabel()}>
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={[type.h2, styles.title]} numberOfLines={2}>
@@ -119,12 +164,13 @@ export default function AvailabilityScreen() {
       </Animated.View>
 
       {loadError !== null || snapshot === null ? (
-        <EmptyState icon="alert-circle-outline" title={loadError ?? a.error} />
+        <EmptyState icon="alert-circle-outline" title={loadError ?? a.error} actionLabel={c.common.actions.retry} onAction={() => void load()} />
       ) : (
         <ScrollView
           contentContainerStyle={styles.body}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
         >
           <Text style={type.bodySm}>{a.subtitle}</Text>
 
@@ -152,18 +198,14 @@ export default function AvailabilityScreen() {
                       <Switch
                         value={item.isActive}
                         disabled={busy}
+                        accessibilityLabel={`${c.studio.availability.weekday[DAY_KEY[item.weekday] ?? 'mon']} ${item.startTime}–${item.endTime}, ${a.active}`}
                         onValueChange={(next) => void run(() => setRuleActive(item.id, next))}
                         trackColor={{ false: 'rgba(245,241,234,0.2)', true: colors.accentBright }}
                       />
                     </View>
                   </View>
                   <Text style={type.bodySm}>{`${item.startTime}–${item.endTime}${validity}`}</Text>
-                  <PressableScale
-                    onPress={() => {
-                      if (!busy) void run(() => deleteEntry('rule', item.id));
-                    }}
-                    accessibilityRole="button"
-                  >
+                  <PressableScale onPress={() => confirmDelete('rule', item.id)} accessibilityRole="button" style={styles.deleteButton}>
                     <Text style={styles.danger}>{a.delete}</Text>
                   </PressableScale>
                 </Animated.View>
@@ -184,43 +226,47 @@ export default function AvailabilityScreen() {
               ))}
             </View>
             <View style={styles.pair}>
-              <Field
+              <DateTimeField
+                mode="time"
                 label={a.startTime}
                 value={rule.startTime}
                 placeholder="09:00"
-                onChangeText={(v) => setRule((prev) => ({ ...prev, startTime: v }))}
+                disabled={busy}
+                onChange={(v) => setRule((prev) => ({ ...prev, startTime: v }))}
               />
-              <Field
+              <DateTimeField
+                mode="time"
                 label={a.endTime}
                 value={rule.endTime}
                 placeholder="12:00"
-                onChangeText={(v) => setRule((prev) => ({ ...prev, endTime: v }))}
+                disabled={busy}
+                onChange={(v) => setRule((prev) => ({ ...prev, endTime: v }))}
               />
             </View>
             <View style={styles.pair}>
-              <Field
+              <DateTimeField
+                mode="date"
                 label={a.validFrom}
                 value={rule.validFrom}
-                placeholder="YYYY-MM-DD"
-                onChangeText={(v) => setRule((prev) => ({ ...prev, validFrom: v }))}
+                placeholder="—"
+                disabled={busy}
+                onChange={(v) => setRule((prev) => ({ ...prev, validFrom: v }))}
               />
-              <Field
+              <DateTimeField
+                mode="date"
                 label={a.validUntil}
                 value={rule.validUntil}
-                placeholder="YYYY-MM-DD"
-                onChangeText={(v) => setRule((prev) => ({ ...prev, validUntil: v }))}
+                placeholder="—"
+                disabled={busy}
+                onChange={(v) => setRule((prev) => ({ ...prev, validUntil: v }))}
               />
             </View>
-            <PrimaryButton
-              label={a.addRule}
-              disabled={busy}
-              onPress={() =>
-                void run(
-                  () => saveRule(rule),
-                  () => setRule((prev) => ({ ...prev, startTime: '', endTime: '' })),
-                )
-              }
-            />
+            {ruleError ? (
+              <Text style={styles.danger} accessibilityLiveRegion="polite">
+                {ruleError}
+              </Text>
+            ) : null}
+            <PrimaryButton label={a.addRule} disabled={busy} onPress={addRule} />
           </View>
 
           {/* Разовые исключения */}
@@ -236,12 +282,7 @@ export default function AvailabilityScreen() {
                 </View>
                 <Text style={type.caption}>{item.isAvailable ? a.extraWindow : a.blocked}</Text>
                 {item.reason ? <Text style={type.bodySm}>{item.reason}</Text> : null}
-                <PressableScale
-                  onPress={() => {
-                    if (!busy) void run(() => deleteEntry('exception', item.id));
-                  }}
-                  accessibilityRole="button"
-                >
+                <PressableScale onPress={() => confirmDelete('exception', item.id)} accessibilityRole="button" style={styles.deleteButton}>
                   <Text style={styles.danger}>{a.delete}</Text>
                 </PressableScale>
               </Animated.View>
@@ -249,24 +290,31 @@ export default function AvailabilityScreen() {
           )}
 
           <View style={styles.form}>
-            <Field
+            <DateTimeField
+              mode="date"
               label={a.date}
               value={exception.date}
-              placeholder="YYYY-MM-DD"
-              onChangeText={(v) => setException((prev) => ({ ...prev, date: v }))}
+              placeholder="—"
+              minimumDate={new Date()}
+              disabled={busy}
+              onChange={(v) => setException((prev) => ({ ...prev, date: v }))}
             />
             <View style={styles.pair}>
-              <Field
+              <DateTimeField
+                mode="time"
                 label={a.startTime}
                 value={exception.startTime}
                 placeholder="09:00"
-                onChangeText={(v) => setException((prev) => ({ ...prev, startTime: v }))}
+                disabled={busy}
+                onChange={(v) => setException((prev) => ({ ...prev, startTime: v }))}
               />
-              <Field
+              <DateTimeField
+                mode="time"
                 label={a.endTime}
                 value={exception.endTime}
                 placeholder="12:00"
-                onChangeText={(v) => setException((prev) => ({ ...prev, endTime: v }))}
+                disabled={busy}
+                onChange={(v) => setException((prev) => ({ ...prev, endTime: v }))}
               />
             </View>
             <View style={styles.chips}>
@@ -286,11 +334,12 @@ export default function AvailabilityScreen() {
               value={exception.reason}
               onChangeText={(v) => setException((prev) => ({ ...prev, reason: v }))}
             />
-            <PrimaryButton
-              label={a.addException}
-              disabled={busy}
-              onPress={() => void run(() => saveException(exception), () => setException(EMPTY_EXCEPTION))}
-            />
+            {exceptionError ? (
+              <Text style={styles.danger} accessibilityLiveRegion="polite">
+                {exceptionError}
+              </Text>
+            ) : null}
+            <PrimaryButton label={a.addException} disabled={busy} onPress={addException} />
           </View>
         </ScrollView>
       )}
@@ -300,7 +349,7 @@ export default function AvailabilityScreen() {
 
 function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   return (
-    <PressableScale onPress={onPress} accessibilityRole="button">
+    <PressableScale onPress={onPress} accessibilityRole="button" accessibilityState={{ selected }}>
       <View style={[styles.chip, selected && styles.chipOn]}>
         <Text style={[type.caption, selected && styles.chipOnText]}>{label}</Text>
       </View>
@@ -327,6 +376,7 @@ function Field({
         placeholder={placeholder}
         placeholderTextColor={colors.text3}
         onChangeText={onChangeText}
+        accessibilityLabel={label}
         autoCapitalize="none"
         autoCorrect={false}
         style={styles.input}
@@ -360,9 +410,12 @@ const styles = StyleSheet.create({
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   rowGap: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   danger: { color: DANGER },
+  deleteButton: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   form: { padding: space.lg, borderRadius: radius.md, backgroundColor: 'rgba(245,241,234,0.04)', gap: space.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingHorizontal: space.md,
     paddingVertical: space.sm,
     borderRadius: radius.pill,

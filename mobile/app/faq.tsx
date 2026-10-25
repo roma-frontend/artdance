@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Collapsible } from '@/components/ui/collapsible';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { getFaq, type FaqGroup } from '@/lib/content';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
@@ -49,7 +50,7 @@ export default function FaqScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+        <PressableScale onPress={() => goBack()} accessibilityRole="button" accessibilityLabel={backLabel()}>
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.footer.faq}</Text>

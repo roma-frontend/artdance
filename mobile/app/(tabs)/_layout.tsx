@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
-import { useEffect, useMemo, useRef, useState, type ComponentProps, type ComponentRef } from 'react';
-import { PanResponder, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState, type ComponentProps } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -20,7 +20,9 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 
+import { GlassBackdrop } from '@/components/ui/glass-backdrop';
 import { tabBarCompact, tabBarHidden } from '@/lib/tab-bar';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors, fill, fonts, gradients, springs } from '@/theme';
@@ -74,21 +76,15 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
   const count = state.routes.length;
   const itemWidth = width / Math.max(count, 1);
   const x = useSharedValue(0);
-  const barRef = useRef<ComponentRef<typeof Animated.View>>(null);
-  const barPageX = useRef(0);
-  const dragIndex = useRef<number | null>(null);
+  const dragIndex = useSharedValue(-1);
   const pressed = useSharedValue(0);
 
   useEffect(() => {
     if (itemWidth > 0) x.value = withSpring(state.index * itemWidth, springs.snappy);
   }, [state.index, itemWidth, x]);
 
-  const panHandlers = useMemo(() => {
-    const indexAt = (pageX: number) =>
-      Math.min(Math.max(Math.floor((pageX - barPageX.current) / Math.max(itemWidth, 1)), 0), count - 1);
-
-    const settle = (index: number) => {
-      dragIndex.current = null;
+  const settle = useCallback(
+    (index: number) => {
       tabBarCompact.value = 0;
       pressed.value = withSpring(0, springs.snappy);
       let target = state.index;
@@ -101,32 +97,41 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
         }
       }
       x.value = withSpring(target * itemWidth, springs.snappy);
-    };
+    },
+    [emitter, itemWidth, navigateToTab, pressed, state.index, state.routes, x],
+  );
+  const tick = useCallback(() => {
+    Haptics.selectionAsync().catch(() => undefined);
+  }, []);
 
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponderCapture: (_, g) => tabBarCompact.value < 0.5 && Math.abs(g.dx) > 6,
-      onPanResponderTerminationRequest: () => false,
-      onPanResponderGrant: () => {
-        dragIndex.current = state.index;
-        barRef.current?.measure((_x, _y, _w, _h, pageX) => {
-          barPageX.current = pageX;
-        });
-        pressed.value = withSpring(1, springs.snappy);
-      },
-      onPanResponderMove: (e) => {
-        const finger = e.nativeEvent.pageX - barPageX.current;
-        const index = indexAt(e.nativeEvent.pageX);
-        if (index !== dragIndex.current) {
-          dragIndex.current = index;
-          Haptics.selectionAsync().catch(() => undefined);
-        }
-        x.value = Math.min(Math.max(finger - itemWidth / 2, 0), (count - 1) * itemWidth);
-      },
-      onPanResponderRelease: () => settle(dragIndex.current ?? state.index),
-      onPanResponderTerminate: () => settle(dragIndex.current ?? state.index),
-    }).panHandlers;
-  }, [count, emitter, itemWidth, navigateToTab, pressed, state.index, state.routes, x]);
+  // Палец ведёт подсветку на UI-потоке; JS только переключает вкладку и даёт отклик.
+  // Вертикальное и диагональное движение отменяет жест и остаётся прокруткой экрана.
+  const currentIndex = state.index;
+  const pan = usePanGesture({
+    activeOffsetX: [-6, 6],
+    failOffsetY: [-12, 12],
+    onActivate: () => {
+      if (tabBarCompact.value >= 0.5) return;
+      dragIndex.value = currentIndex;
+      pressed.value = withSpring(1, springs.snappy);
+    },
+    onUpdate: (event) => {
+      if (dragIndex.value < 0) return;
+      const index = Math.min(Math.max(Math.floor(event.x / Math.max(itemWidth, 1)), 0), count - 1);
+      if (index !== dragIndex.value) {
+        dragIndex.value = index;
+        scheduleOnRN(tick);
+      }
+      x.value = Math.min(Math.max(event.x - itemWidth / 2, 0), (count - 1) * itemWidth);
+    },
+    onDeactivate: (event) => {
+      if (dragIndex.value < 0) return;
+      // Прерванный системой жест не переключает вкладку.
+      const index = event.canceled ? currentIndex : dragIndex.value;
+      dragIndex.value = -1;
+      scheduleOnRN(settle, index);
+    },
+  });
 
   const blob = useAnimatedStyle(() => ({ width: itemWidth, transform: [{ translateX: x.value }] }));
   const blobInner = useAnimatedStyle(() => ({
@@ -158,7 +163,8 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
       <View pointerEvents="none" style={[styles.scrim, { height: BAR_HEIGHT + bottomInset + 40, bottom: -bottomInset }]}>
         <LinearGradient colors={['rgba(11,8,9,0)', 'rgba(11,8,9,0.85)']} style={fill} />
       </View>
-      <Animated.View ref={barRef} style={[styles.bar, barStyle]} {...panHandlers}>
+      <GestureDetector gesture={pan}>
+      <Animated.View style={[styles.bar, barStyle]}>
         {liquidGlass ? (
           <>
             <GlassView glassEffectStyle="regular" isInteractive style={StyleSheet.absoluteFill} />
@@ -166,7 +172,7 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
           </>
         ) : (
           <>
-            <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
+            <GlassBackdrop intensity={70} />
             <View style={styles.tint} />
           </>
         )}
@@ -204,6 +210,7 @@ function GlassTabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBa
           })}
         </Animated.View>
       </Animated.View>
+      </GestureDetector>
     </Animated.View>
   );
 }
@@ -243,7 +250,7 @@ function TabItem({
     const near = drag.value * Math.max(0, 1 - Math.abs(blobX.value - index * itemWidth) / Math.max(itemWidth, 1));
     return { transform: [{ scale: bounce.value * (1 + near * 0.16) }, { translateY: -lift.value * 1.5 - near * 2 }] };
   });
-  const labelStyle = useAnimatedStyle(() => ({ opacity: 0.55 + lift.value * 0.45 }));
+  const labelStyle = useAnimatedStyle(() => ({ opacity: 0.8 + lift.value * 0.2 }));
   const itemStyle = useAnimatedStyle(() => ({ opacity: Math.max(0, 1 - compact.value * (1 - lift.value)) }));
 
   return (
@@ -262,7 +269,7 @@ function TabItem({
         )}
       </Animated.View>
       <Animated.Text
-        style={[styles.label, { color: focused ? colors.text : colors.text3 }, labelStyle]}
+        style={[styles.label, { color: focused ? colors.text : colors.text2 }, labelStyle]}
         numberOfLines={1}
         maxFontSizeMultiplier={1.3}
       >

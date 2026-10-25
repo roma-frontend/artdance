@@ -1,4 +1,4 @@
-import { BlurView } from 'expo-blur';
+import { GlassBackdrop } from './glass-backdrop';
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Extrapolation, interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
@@ -30,7 +30,7 @@ export function CollapsingHeader({ scrollY, title, threshold = 60, left, right }
   return (
     <View style={[styles.wrap, { paddingTop: insets.top }]} pointerEvents="box-none">
       <Animated.View style={[StyleSheet.absoluteFill, glass]} pointerEvents="none">
-        <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+        <GlassBackdrop intensity={50} />
         <View style={styles.tint} />
         <View style={styles.hairline} />
       </Animated.View>

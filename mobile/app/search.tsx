@@ -139,7 +139,7 @@ export default function SearchScreen() {
       </Animated.View>
 
       {longEnough ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipStrip} contentContainerStyle={styles.chips}>
           {scopes.map((candidate) => {
             const active = candidate === activeScope;
             const label = scopeLabel(t.search, candidate);
@@ -185,7 +185,7 @@ export default function SearchScreen() {
             {shown.map((hit, index) => (
               <Animated.View
                 key={`${hit.scope}-${hit.id}`}
-                entering={FadeInDown.delay(index * 40).duration(350)}
+                entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(350)}
               >
                 <MediaCard
                   width={cardWidth}
@@ -207,6 +207,8 @@ export default function SearchScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
+  // Горизонтальный ScrollView иначе растягивается по высоте и съедает место результатов.
+  chipStrip: { flexGrow: 0, flexShrink: 0 },
   header: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.xl, paddingVertical: space.md },
   box: {
     flex: 1,

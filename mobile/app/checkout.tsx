@@ -23,6 +23,7 @@ import {
 import { catalogFor } from '@/i18n/catalog';
 import { plural, price, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { openPaymentUrl } from '@/lib/payment-url';
 import { serverMessageOf } from '@/lib/server-message';
 import { EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
@@ -95,6 +96,8 @@ export default function CheckoutScreen() {
   /** Заказ, уже созданный в этом сеансе. Повтор после ошибки оплаты платит именно его, а не создаёт второй. */
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Итог пересчитывается под доставку: пока ответа нет, платить по старой сумме нельзя. */
+  const [quoting, setQuoting] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
 
   const locked = placed !== null;
@@ -118,6 +121,7 @@ export default function CheckoutScreen() {
   /** Итог пересчитывается сервером под выбранную доставку. */
   useEffect(() => {
     let alive = true;
+    setQuoting(true);
     getCart(delivery)
       .then((snapshot) => {
         if (!alive) return;
@@ -126,6 +130,9 @@ export default function CheckoutScreen() {
       })
       .catch((error: unknown) => {
         if (alive) setLoadError(serverMessageOf(error) ?? m.catalogError);
+      })
+      .finally(() => {
+        if (alive) setQuoting(false);
       });
     return () => {
       alive = false;
@@ -148,7 +155,7 @@ export default function CheckoutScreen() {
   }
 
   async function submit() {
-    if (busy) return;
+    if (busy || (quoting && !placed)) return;
     const problem = validate();
     if (problem) {
       setFormError(problem);
@@ -173,7 +180,11 @@ export default function CheckoutScreen() {
         setPlaced(order);
       }
       const intent = await payMyOrder(order.id, method, locale);
-      if (intent.redirectUrl) await Linking.openURL(intent.redirectUrl).catch(() => undefined);
+      if (intent.redirectUrl && !(await openPaymentUrl(intent.redirectUrl))) {
+        // Заказ уже создан: остаёмся на экране, повтор оплатит его же.
+        setFormError(m.bookPayFailed);
+        return;
+      }
       router.replace({ pathname: '/account/orders/[orderNumber]', params: { orderNumber: intent.orderNumber || order.orderNumber } });
     } catch (error) {
       setFormError(serverMessageOf(error) ?? m.genericError);
@@ -214,7 +225,7 @@ export default function CheckoutScreen() {
   }
 
   const totals = cart?.totals;
-  const canSubmit = !busy && cart !== null && cart.items.some((item) => item.isActive && item.stock > 0);
+  const canSubmit = !busy && (placed !== null || !quoting) && cart !== null && cart.items.some((item) => item.isActive && item.stock > 0);
   const total = placed?.total ?? totals?.total ?? 0;
   const termsLinks = [
     { label: c.footer.terms, path: '/legal/terms' },
@@ -226,6 +237,7 @@ export default function CheckoutScreen() {
       {header}
       <ScrollView
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxxl }]}
       >
@@ -470,7 +482,7 @@ const styles = StyleSheet.create({
   terms: { flexDirection: 'row', alignItems: 'flex-start', gap: space.md },
   termsText: { flex: 1, gap: space.sm },
   termsLinks: { flexDirection: 'row', gap: space.lg },
-  termsLink: { fontSize: 13, fontWeight: '600', color: colors.accentBright, textDecorationLine: 'underline' },
+  termsLink: { fontSize: 13, fontWeight: '600', color: colors.accentText, textDecorationLine: 'underline' },
   errorBlock: { gap: space.xs },
   error: { fontSize: 13, color: colors.accentBright },
 });

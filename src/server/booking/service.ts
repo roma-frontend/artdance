@@ -3,6 +3,7 @@ import { booking } from '@/config/business';
 import { domainErrors } from '@/domain/errors';
 import { publicClassWhere } from '@/server/queries/classes';
 import { notTrashed } from '@/server/queries/relations';
+import { publicInstructorWhere } from '@/server/queries/instructors';
 import { slotBlockingBookingStatuses } from '@/domain/enums';
 import { isHoldExpired } from '@/domain/slot-hold';
 import { cancellationOutcome, refundAmountFor, rescheduleOutcome, type BookingSnapshot } from '@/domain/booking/policy';
@@ -16,6 +17,65 @@ import { creditWallet } from '@/server/wallet/service';
 import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 function isUniqueViolation(error: unknown): boolean { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'; }
 function refFromId(id: string): string { return 'BK-' + id.slice(-8).toUpperCase(); }
+
+/** B-10 динамическая цена: пиковые часы и выходные считаются по Asia/Yerevan, а не по UTC сервера. */
+async function dynamicPriceFor(basePrice: number, startsAt: Date): Promise<number> {
+  const { priceForSlot, isPeakHour, isWeekendDay } = await import('@/domain/dynamic-pricing');
+  const { zonedParts } = await import('@/lib/time/schedule');
+  const startHour = Math.floor(zonedParts(startsAt, site.timeZone).minutesOfDay / 60);
+  const yDay = new Intl.DateTimeFormat('en-US', { timeZone: site.timeZone, weekday: 'short' }).format(startsAt);
+  const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const startDow = dayMap[yDay] ?? startsAt.getDay();
+  return priceForSlot(basePrice, { isPeak: isPeakHour(startHour), isWeekend: isWeekendDay(startDow) });
+}
+
+export interface BookingQuoteInput { instructor: string; sessionId?: string | null; startsAt: Date; weeks?: number }
+export interface BookingQuote { perLesson: number; weeks: number; total: number; currencyCode: 'AMD'; freeCancellationHours: number }
+
+/**
+ * Цена слота до брони: та же база и та же динамика, что в createBookingFromHold.
+ * Занятия серии идут в тот же день недели и час, поэтому цена у всех одинаковая.
+ */
+export async function quoteBooking(input: BookingQuoteInput): Promise<BookingQuote> {
+  const weeks = Math.max(1, Math.min(input.weeks ?? 1, booking.recurring.maxWeeks));
+  const profile = await db.instructorProfile.findFirst({
+    where: { ...publicInstructorWhere, OR: [{ id: input.instructor }, { slug: input.instructor }] },
+    select: { id: true },
+  });
+  if (!profile) throw domainErrors.notFound();
+  let basePrice: number | null = null;
+  if (input.sessionId) {
+    const session = await db.classSession.findFirst({
+      where: { id: input.sessionId, ...notTrashed, isCancelled: false, danceClass: { ...notTrashed, ...publicClassWhere, instructorId: profile.id } },
+      select: { danceClass: { select: { price: true } } },
+    });
+    basePrice = session?.danceClass.price ?? null;
+  } else {
+    const cls = await db.danceClass.findFirst({ where: { instructorId: profile.id, isActive: true, deletedAt: null } as never, orderBy: { id: 'asc' }, select: { price: true } });
+    basePrice = (cls as { price: number } | null)?.price ?? null;
+  }
+  if (basePrice == null) throw domainErrors.notFound();
+  const perLesson = await dynamicPriceFor(basePrice, input.startsAt);
+  return { perLesson, weeks, total: perLesson * weeks, currencyCode: 'AMD', freeCancellationHours: booking.freeCancellationHours };
+}
+
+export type CancellationQuote =
+  | { kind: 'free'; fee: 0; refund: number }
+  | { kind: 'fee'; rate: number; fee: number; refund: number }
+  | { kind: 'forbidden'; reason: string };
+
+/** Что будет при отмене сейчас: то же правило и тот же расчёт возврата, что в cancelBooking, без записи. */
+export async function quoteCancellation(input: { bookingId: string; userId: string; now: Date }): Promise<CancellationQuote> {
+  const b = await db.booking.findUnique({ where: { id: input.bookingId }, include: { payments: { where: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, select: { paidAmount: true, refunds: { where: { status: { in: ['PENDING', 'PAID', 'REFUNDED'] } }, select: { amount: true } } } } } });
+  if (!b) throw domainErrors.notFound();
+  if (b.customerId !== input.userId) throw domainErrors.forbidden();
+  const outcome = cancellationOutcome({ startsAt: b.startsAt, status: b.status as BookingSnapshot['status'], totalPrice: b.totalPrice, cancellationWindowHours: b.cancellationWindowHours, lateCancellationRate: Number(b.lateCancellationRate), rescheduleWindowHours: b.rescheduleWindowHours, rescheduleCount: b.rescheduleCount, maxReschedules: b.maxReschedules }, input.now);
+  if (outcome.kind === 'forbidden') return { kind: 'forbidden', reason: outcome.reason };
+  const paid = b.payments.reduce((sum, payment) => sum + Math.max(0, payment.paidAmount - payment.refunds.reduce((total, refund) => total + refund.amount, 0)), 0);
+  const refund = refundAmountFor(outcome, paid);
+  if (outcome.kind === 'free') return { kind: 'free', fee: 0, refund };
+  return { kind: 'fee', rate: outcome.rate, fee: outcome.amount, refund };
+}
 export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; partnerName?: string | null; useClassPass?: boolean; now: Date; }
 export async function createBookingFromHold(input: CreateBookingInput) {
   const { holdId, userId, anonymousId, now } = input;
@@ -50,16 +110,7 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   }
   if (basePrice == null) { if (danceClass) basePrice = danceClass.price; else throw domainErrors.notFound(); }
   const locationOption = (input.locationOption ?? 'STUDIO') as 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE';
-  // B-10 динамическая цена: пиковые/выходные по Asia/Yerevan, не по серверному UTC
-  const { priceForSlot, isPeakHour, isWeekendDay } = await import('@/domain/dynamic-pricing');
-  const { zonedParts } = await import('@/lib/time/schedule');
-  const zParts = zonedParts(hold.startsAt, site.timeZone);
-  const startHour = Math.floor(zParts.minutesOfDay / 60);
-  // zonedParts не暴露 weekday; вычисляем через fromZonedParts-совместимый day, либо используем UTC-для-недели fallback на Yerevan через offset — берём getDay в Yerevan через Intl
-  const yDay = new Intl.DateTimeFormat('en-US', { timeZone: site.timeZone, weekday: 'short' }).format(hold.startsAt);
-  const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  const startDow = dayMap[yDay] ?? hold.startsAt.getDay();
-  const dynamicPrice = priceForSlot(basePrice, { isPeak: isPeakHour(startHour), isWeekend: isWeekendDay(startDow) });
+  const dynamicPrice = await dynamicPriceFor(basePrice, hold.startsAt);
   const travelFee = locationOption === 'CUSTOMER_LOCATION' ? booking.travelFee : 0;
   const totalPrice = dynamicPrice + travelFee;
   const cancellationWindowHours = booking.freeCancellationHours;
@@ -226,6 +277,8 @@ export async function rescheduleBooking(input: RescheduleBookingInput) {
   const b = await db.booking.findUnique({ where: { id: input.bookingId } });
   if (!b) throw domainErrors.notFound();
   if (b.customerId !== input.userId) throw domainErrors.forbidden();
+  // Перенос сохраняет длительность оплаченного занятия; конец с клиента не доверяем.
+  input = { ...input, newEndsAt: new Date(input.newStartsAt.getTime() + (b.endsAt.getTime() - b.startsAt.getTime())) };
   const snapshot: BookingSnapshot = { startsAt: b.startsAt, status: b.status as BookingSnapshot['status'], totalPrice: b.totalPrice, cancellationWindowHours: b.cancellationWindowHours, lateCancellationRate: Number(b.lateCancellationRate), rescheduleWindowHours: b.rescheduleWindowHours, rescheduleCount: b.rescheduleCount, maxReschedules: b.maxReschedules };
   // newPrice с клиента игнорируем — цену считаем серверно по тарифу инструктора + пиковый мультипликатор Asia/Yerevan
   const target = { start: input.newStartsAt, end: input.newEndsAt, price: b.totalPrice };

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   FadeIn,
   FadeOut,
@@ -12,6 +13,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { catalogFor } from '@/i18n/catalog';
+import { deviceLocale } from '@/lib/i18n';
 import { getHintSeen, setHintSeen } from '@/lib/session';
 import { colors, radius } from '@/theme';
 
@@ -49,6 +52,7 @@ export function GestureHint({ text }: Props) {
       ),
       -1,
     );
+    return () => cancelAnimation(tap);
   }, [visible, tap]);
 
   const hand = useAnimatedStyle(() => ({
@@ -61,6 +65,9 @@ export function GestureHint({ text }: Props) {
     <Animated.View entering={FadeIn.delay(600)} exiting={FadeOut}>
       <Pressable
         style={styles.row}
+        accessibilityRole="button"
+        accessibilityLabel={text}
+        accessibilityHint={catalogFor(deviceLocale(undefined)).common.actions.close}
         onPress={() => {
           setVisible(false);
           setHintSeen().catch(() => undefined);
@@ -83,6 +90,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     gap: 8,
     marginTop: 10,
+    minHeight: 44,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: radius.pill,

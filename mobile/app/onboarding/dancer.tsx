@@ -55,7 +55,12 @@ export default function DancerOnboardingScreen() {
           <ActivityIndicator color={colors.accentBright} />
         </View>
       ) : (
-        <DancerTour mode="onboarding" initial={profile} onDone={() => router.replace('/(tabs)/account')} />
+        <DancerTour
+          mode="onboarding"
+          initial={profile}
+          onDone={() => router.replace('/(tabs)/account')}
+          onLater={() => router.replace('/(tabs)')}
+        />
       )}
     </View>
   );

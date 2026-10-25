@@ -97,5 +97,5 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: space.xl, paddingBottom: 60, gap: space.md },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: space.lg },
   card: { padding: space.lg, borderRadius: radius.md, backgroundColor: 'rgba(245,241,234,0.06)', gap: space.sm },
-  cta: { color: colors.accentBright, marginTop: space.xs },
+  cta: { color: colors.accentText, marginTop: space.xs },
 });

@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -11,6 +12,8 @@ import {
   Text,
   TextInput,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   type ScrollViewInstance,
   type StyleProp,
   type TextStyle,
@@ -51,9 +54,13 @@ export default function AssistantScreen() {
   const [messages, setMessages] = useState<ChatItem[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
-  const [focused, setFocused] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
   const seq = useRef(0);
+  /** Очистка и уход с экрана меняют поколение: опоздавший ответ старого диалога отбрасывается. */
+  const generation = useRef(0);
+  /** Читатель у нижнего края: только тогда новый текст прокручивает ленту. */
+  const nearBottom = useRef(true);
 
   useEffect(() => {
     let alive = true;
@@ -70,8 +77,24 @@ export default function AssistantScreen() {
   }, []);
 
   // Клавиатура прячет плавающую панель; уход с экрана возвращает её в исходное состояние.
-  useEffect(() => () => {
-    tabBarHidden.value = 0;
+  // На Android клавиатура закрывается без blur, поэтому ориентир — события клавиатуры, а не фокус.
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvent, () => {
+      setKeyboardOpen(true);
+      tabBarHidden.value = 1;
+    });
+    const hide = Keyboard.addListener(hideEvent, () => {
+      setKeyboardOpen(false);
+      tabBarHidden.value = 0;
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+      tabBarHidden.value = 0;
+      generation.current += 1;
+    };
   }, []);
 
   const nextId = () => {
@@ -85,6 +108,8 @@ export default function AssistantScreen() {
     const content = (text ?? draft).trim();
     if (!content || busy) return;
     const next: ChatItem[] = [...messages, { id: nextId(), role: 'user', content }];
+    const gen = generation.current;
+    nearBottom.current = true;
     setMessages(next);
     setDraft('');
     setBusy(true);
@@ -95,9 +120,11 @@ export default function AssistantScreen() {
       .map((item) => ({ role: item.role, content: item.content }));
     try {
       const reply = await askAssistant(history);
+      if (gen !== generation.current) return;
       setMessages((list) => [...list, { id: nextId(), role: 'assistant', content: reply }]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
     } catch (error) {
+      if (gen !== generation.current) return;
       const rateLimited = error instanceof AssistantError && error.code === 'rate_limited';
       setMessages((list) => [
         ...list,
@@ -105,13 +132,20 @@ export default function AssistantScreen() {
       ]);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => undefined);
     } finally {
-      setBusy(false);
+      if (gen === generation.current) setBusy(false);
     }
   };
 
   const clear = () => {
+    generation.current += 1;
     setMessages([]);
+    setBusy(false);
     Haptics.selectionAsync().catch(() => undefined);
+  };
+
+  const onScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    nearBottom.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 80;
   };
 
   if (user === undefined) return <View style={styles.screen} />;
@@ -135,7 +169,7 @@ export default function AssistantScreen() {
 
   const firstName = user.name.split(' ')[0];
   const bottomInset = Math.max(insets.bottom, 12);
-  const composerBottom = focused ? bottomInset : bottomInset + TAB_BAR_CLEARANCE;
+  const composerBottom = keyboardOpen ? bottomInset : bottomInset + TAB_BAR_CLEARANCE;
 
   return (
     <View style={styles.screen}>
@@ -168,7 +202,11 @@ export default function AssistantScreen() {
           style={styles.flex}
           contentContainerStyle={[styles.content, messages.length === 0 && styles.contentEmpty]}
           keyboardShouldPersistTaps="handled"
-          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+          onScroll={onScroll}
+          scrollEventThrottle={64}
+          onContentSizeChange={() => {
+            if (nearBottom.current) scrollRef.current?.scrollToEnd({ animated: true });
+          }}
         >
           {messages.length === 0 ? (
             <View style={styles.hero}>
@@ -206,14 +244,6 @@ export default function AssistantScreen() {
               multiline
               maxLength={2000}
               accessibilityLabel={t.aiPlaceholder}
-              onFocus={() => {
-                setFocused(true);
-                tabBarHidden.value = 1;
-              }}
-              onBlur={() => {
-                setFocused(false);
-                tabBarHidden.value = 0;
-              }}
             />
           </View>
           <PressableScale
@@ -483,7 +513,7 @@ const styles = StyleSheet.create({
   },
   bubbleFailed: { borderColor: 'rgba(255,107,122,0.4)' },
   textAssistant: { color: colors.text, fontSize: 15, lineHeight: 21 },
-  link: { color: colors.accentBright, textDecorationLine: 'underline' },
+  link: { color: colors.accentText, textDecorationLine: 'underline' },
   textFailed: { color: colors.danger },
   dots: { flexDirection: 'row', gap: 5, paddingVertical: 14 },
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.metal },

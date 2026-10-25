@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
@@ -21,13 +21,17 @@ import {
   getMyBooking,
   isCancelledBooking,
   payBooking,
+  quoteCancellation,
   type BookingPass,
   type ClientBookingDetail,
 } from '@/lib/bookings';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
+import { openPaymentUrl } from '@/lib/payment-url';
 import { serverMessageOf } from '@/lib/server-message';
+import { useAppActive } from '@/lib/use-app-active';
+import { useBrightnessBoost } from '@/lib/use-brightness-boost';
 import { colors, radius, space, type } from '@/theme';
 
 export default function BookingPassScreen() {
@@ -46,7 +50,7 @@ export default function BookingPassScreen() {
 
   const load = useCallback(async () => {
     try {
-      const [nextPass, nextBooking] = await Promise.all([getBookingPass(id), getMyBooking(id).catch(() => null)]);
+      const [nextPass, nextBooking] = await Promise.all([getBookingPass(id), getMyBooking(id)]);
       setPass(nextPass);
       setBooking(nextBooking);
       setFailed(null);
@@ -60,6 +64,8 @@ export default function BookingPassScreen() {
       load();
     }, [load]),
   );
+  useAppActive(load);
+  useBrightnessBoost(pass !== null && (booking?.status === 'PENDING' || booking?.status === 'CONFIRMED'));
 
   async function runCancel() {
     setCancelling(true);
@@ -76,11 +82,11 @@ export default function BookingPassScreen() {
   }
 
   async function onPay() {
+    if (paying) return;
     setPaying(true);
     try {
       const { redirectUrl } = await payBooking(id, 'CARD');
-      if (redirectUrl) await Linking.openURL(redirectUrl);
-      else Alert.alert(t.bookPayFailed);
+      if (!(await openPaymentUrl(redirectUrl))) Alert.alert(t.bookPayFailed);
     } catch (error) {
       Alert.alert(serverMessageOf(error) ?? t.bookPayFailed);
     } finally {
@@ -88,8 +94,30 @@ export default function BookingPassScreen() {
     }
   }
 
-  function confirmCancel() {
-    Alert.alert(c.booking.cancelTitle, undefined, [
+  /** Перед отменой сервер считает штраф и возврат: человек соглашается с цифрами, а не узнаёт их после. */
+  async function confirmCancel() {
+    if (cancelling) return;
+    setCancelling(true);
+    let message: string | undefined;
+    try {
+      const quote = await quoteCancellation(id);
+      if (quote.kind === 'forbidden') {
+        Alert.alert(c.booking.cancelForbidden);
+        return;
+      }
+      const lines =
+        quote.kind === 'fee'
+          ? [c.booking.cancelLate.replace('{rate}', `${Math.round(quote.rate * 100)}%`), t.cancelWithheld.replace('{amount}', price(quote.fee, locale))]
+          : [c.booking.cancelFree];
+      if (quote.refund > 0) lines.push(t.cancelRefund.replace('{amount}', price(quote.refund, locale)));
+      message = lines.join('\n');
+    } catch (error) {
+      Alert.alert(serverMessageOf(error) ?? t.catalogError);
+      return;
+    } finally {
+      setCancelling(false);
+    }
+    Alert.alert(c.booking.cancelTitle, message, [
       { text: c.common.actions.back, style: 'cancel' },
       { text: c.common.actions.cancel, style: 'destructive', onPress: runCancel },
     ]);
@@ -97,19 +125,19 @@ export default function BookingPassScreen() {
 
   const header = (
     <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
-      <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+      <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t.catalogBack}>
         <Ionicons name="chevron-back" size={26} color={colors.text} />
       </PressableScale>
       <Text style={type.h2}>{f.passTitle}</Text>
     </Animated.View>
   );
 
-  if (!pass) {
+  if (!pass || !booking) {
     return (
       <View style={[styles.screen, { paddingTop: insets.top }]}>
         {header}
         {failed !== null ? (
-          <EmptyState icon="alert-circle-outline" title={failed} />
+          <EmptyState icon="alert-circle-outline" title={failed} actionLabel={c.common.actions.retry} onAction={load} />
         ) : (
           <View style={styles.center}>
             <ActivityIndicator color={colors.accentBright} />
@@ -119,11 +147,13 @@ export default function BookingPassScreen() {
     );
   }
 
-  const cancelled = booking ? isCancelledBooking(booking.status) : false;
-  const canCancel = booking ? canCancelBooking(booking) : false;
-  const canReschedule = booking ? canRescheduleBooking(booking) : false;
-  const canPay = booking ? canPayBooking(booking) : false;
-  const canReview = booking ? canReviewBooking(booking) : false;
+  const cancelled = isCancelledBooking(booking.status);
+  // QR только для активной брони: истёкшая или завершённая не должна выглядеть как пропуск.
+  const passActive = booking.status === 'PENDING' || booking.status === 'CONFIRMED';
+  const canCancel = canCancelBooking(booking);
+  const canReschedule = canRescheduleBooking(booking);
+  const canPay = canPayBooking(booking);
+  const canReview = canReviewBooking(booking);
   const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' };
 
   return (
@@ -182,14 +212,14 @@ export default function BookingPassScreen() {
 
         {cancelled ? (
           <Text style={type.body}>{f.qrCancelledHint}</Text>
-        ) : (
+        ) : passActive ? (
           <>
             <Animated.View entering={ZoomIn.delay(160).duration(420).easing(EASE_OUT)} style={styles.qrFrame}>
               <QRCode value={pass.qrData} size={220} color="#000000" backgroundColor="#FFFFFF" />
             </Animated.View>
             <Text style={styles.tip}>{f.passFooterTip}</Text>
           </>
-        )}
+        ) : null}
       </ScrollView>
     </View>
   );

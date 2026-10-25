@@ -1,15 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { type DancerLevel, type DancerProfile, saveDancerProfile } from '@/lib/dancer-profile';
 import { levelLabel, plural, styleLabel } from '@/lib/format';
+import { hapticError, hapticSuccess } from '@/lib/haptics';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
+import { clearOnboardingProgress, loadOnboardingStep, saveOnboardingStep, snoozeOnboarding } from '@/lib/onboarding-progress';
 import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
@@ -37,6 +40,8 @@ type Props = {
   initial: DancerProfile | null;
   /** Вызывается после финального сохранения. */
   onDone: () => void;
+  /** «Позже» в туре: ответы и шаг сохранены, тур отложен. */
+  onLater?: () => void;
 };
 
 /**
@@ -45,11 +50,12 @@ type Props = {
  * Ответы сохраняются на каждом шаге, как и на вебе: прерванный тур продолжается
  * с того места, где остановился, а не начинается заново.
  */
-export function DancerTour({ mode, initial, onDone }: Props) {
+export function DancerTour({ mode, initial, onDone, onLater }: Props) {
   const locale = deviceLocale(undefined);
   const t = messagesFor(locale);
   const c = catalogFor(locale);
   const d = c.onboarding.dancer;
+  const insets = useSafeAreaInsets();
 
   const [stepIndex, setStepIndex] = useState(0);
   const [level, setLevel] = useState<DancerLevel | null>(initial?.level ?? null);
@@ -60,7 +66,25 @@ export function DancerTour({ mode, initial, onDone }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const step: Step = STEPS[stepIndex];
-  const progress = ((stepIndex + 1) / STEPS.length) * 100;
+  const progress = useSharedValue((1 / STEPS.length) * 100);
+
+  // Прерванный тур продолжается с того же шага; без выбранного уровня — всегда с первого.
+  useEffect(() => {
+    if (mode !== 'onboarding' || !initial?.level) return;
+    let alive = true;
+    loadOnboardingStep().then((saved) => {
+      if (alive && saved !== null) setStepIndex(Math.min(saved, STEPS.length - 1));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [mode, initial?.level]);
+
+  useEffect(() => {
+    progress.value = withTiming(((stepIndex + 1) / STEPS.length) * 100, { duration: 360, easing: EASE_OUT });
+  }, [stepIndex, progress]);
+
+  const fillStyle = useAnimatedStyle(() => ({ width: `${progress.value}%` }));
 
   function toggleStyle(style: string) {
     setPicked((prev) => (prev.includes(style) ? prev.filter((item) => item !== style) : [...prev, style]));
@@ -79,6 +103,7 @@ export function DancerTour({ mode, initial, onDone }: Props) {
       await saveDancerProfile({ level, styles: picked, goal, note, completed });
       return true;
     } catch (failure) {
+      hapticError();
       setError(serverMessageOf(failure) ?? t.catalogError);
       return false;
     } finally {
@@ -88,11 +113,46 @@ export function DancerTour({ mode, initial, onDone }: Props) {
 
   async function onNext() {
     // в режиме правки анкета уже засчитана — не сбрасываем «тур пройден» на промежуточном шаге
-    if (await persist(mode === 'edit')) setStepIndex((index) => Math.min(index + 1, STEPS.length - 1));
+    if (!(await persist(mode === 'edit'))) return;
+    const next = Math.min(stepIndex + 1, STEPS.length - 1);
+    setStepIndex(next);
+    if (mode === 'onboarding') void saveOnboardingStep(next);
   }
 
   async function onFinish() {
-    if (await persist(true)) onDone();
+    if (!(await persist(true))) return;
+    hapticSuccess();
+    void clearOnboardingProgress();
+    onDone();
+  }
+
+  /** Необязательный шаг пропускается с пустыми ответами, ранее введённое на нём не сохраняется. */
+  async function onSkip() {
+    if (step === 'styles') {
+      setPicked([]);
+      if (!level) return;
+      setSaving(true);
+      try {
+        await saveDancerProfile({ level, styles: [], goal, note, completed: mode === 'edit' });
+        setStepIndex(STEPS.length - 1);
+        if (mode === 'onboarding') void saveOnboardingStep(STEPS.length - 1);
+      } catch (failure) {
+        setError(serverMessageOf(failure) ?? t.catalogError);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    if (step === 'goal') await onFinish();
+  }
+
+  async function onLaterPress() {
+    if (saving || !onLater) return;
+    // Уровень обязателен: без него сохранять нечего, тур просто откладывается.
+    if (level && !(await persist(false))) return;
+    await saveOnboardingStep(stepIndex);
+    await snoozeOnboarding();
+    onLater();
   }
 
   const stepTitle =
@@ -109,7 +169,17 @@ export function DancerTour({ mode, initial, onDone }: Props) {
           <Text style={type.eyebrow}>
             {d.step.replace('{current}', String(stepIndex + 1)).replace('{total}', String(STEPS.length))}
           </Text>
-          <Text style={styles.progressLabel}>{d.progressLabel}</Text>
+          {step !== 'level' ? (
+            <Pressable onPress={onSkip} disabled={saving} hitSlop={12} accessibilityRole="button" style={styles.topAction}>
+              <Text style={styles.topActionText}>{t.onboardingSkip}</Text>
+            </Pressable>
+          ) : mode === 'onboarding' && onLater ? (
+            <Pressable onPress={onLaterPress} disabled={saving} hitSlop={12} accessibilityRole="button" style={styles.topAction}>
+              <Text style={styles.topActionText}>{t.onboardingLater}</Text>
+            </Pressable>
+          ) : (
+            <Text style={styles.progressLabel}>{d.progressLabel}</Text>
+          )}
         </View>
         <View
           style={styles.track}
@@ -117,25 +187,26 @@ export function DancerTour({ mode, initial, onDone }: Props) {
           accessibilityLabel={d.progressLabel}
           accessibilityValue={{ min: 1, max: STEPS.length, now: stepIndex + 1 }}
         >
-          <View style={[styles.fill, { width: `${progress}%` }]} />
+          <Animated.View style={[styles.fill, fillStyle]} />
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <Animated.View key={step} entering={FadeIn.duration(280).easing(EASE_OUT)} style={styles.stepBody}>
           <Text style={type.h2}>{stepTitle}</Text>
           <Text style={styles.hint}>{stepHint}</Text>
 
           {step === 'level' ? (
-            <View style={styles.stack}>
+            <View style={styles.stack} accessibilityRole="radiogroup" accessibilityLabel={stepTitle}>
               {LEVELS.map((item, index) => {
                 const active = level === item;
                 return (
                   <Animated.View key={item} entering={enterItem(index)}>
                     <PressableScale
                       onPress={() => setLevel(item)}
+                      disabled={saving}
                       accessibilityRole="radio"
-                      accessibilityState={{ selected: active }}
+                      accessibilityState={{ checked: active, disabled: saving }}
                       accessibilityLabel={levelLabel(item, c)}
                       style={[styles.card, active && styles.cardActive]}
                     >
@@ -165,8 +236,9 @@ export function DancerTour({ mode, initial, onDone }: Props) {
                     <Animated.View key={style} entering={enterItem(index)}>
                       <PressableScale
                         onPress={() => toggleStyle(style)}
+                        disabled={saving}
                         accessibilityRole="checkbox"
-                        accessibilityState={{ checked: selected }}
+                        accessibilityState={{ checked: selected, disabled: saving }}
                         accessibilityLabel={styleLabel(style, c)}
                         style={[styles.chip, selected && styles.chipActive]}
                       >
@@ -186,6 +258,8 @@ export function DancerTour({ mode, initial, onDone }: Props) {
               <TextInput
                 value={goal}
                 onChangeText={setGoal}
+                editable={!saving}
+                accessibilityLabel={d.goal.goalLabel}
                 placeholder={d.goal.goalPlaceholder}
                 placeholderTextColor={colors.text3}
                 multiline
@@ -197,6 +271,8 @@ export function DancerTour({ mode, initial, onDone }: Props) {
               <TextInput
                 value={note}
                 onChangeText={setNote}
+                editable={!saving}
+                accessibilityLabel={d.goal.noteLabel}
                 placeholder={d.goal.notePlaceholder}
                 placeholderTextColor={colors.text3}
                 multiline
@@ -216,7 +292,7 @@ export function DancerTour({ mode, initial, onDone }: Props) {
         ) : null}
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, space.lg) + space.sm }]}>
         {stepIndex > 0 ? (
           <Button
             label={d.back}
@@ -248,6 +324,8 @@ const styles = StyleSheet.create({
   progressBlock: { paddingHorizontal: space.xl, paddingTop: space.md, gap: space.sm },
   progressTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   progressLabel: { fontSize: 12, color: colors.text3 },
+  topAction: { minHeight: 32, justifyContent: 'center' },
+  topActionText: { fontSize: 14, fontWeight: '700', color: colors.accentText },
   track: { height: 6, borderRadius: 3, backgroundColor: colors.surface, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 3, backgroundColor: colors.accentBright },
   body: { paddingHorizontal: space.xl, paddingTop: space.xl, paddingBottom: space.xl, gap: space.lg },
@@ -269,7 +347,9 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1, gap: space.xs },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
   chip: {
-    paddingHorizontal: space.md,
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: space.lg,
     paddingVertical: space.sm,
     borderRadius: radius.pill,
     borderWidth: 1,

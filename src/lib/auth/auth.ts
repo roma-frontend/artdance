@@ -71,22 +71,39 @@ const env = getServerEnv();
  */
 const devWebOrigins = env.NODE_ENV === 'production' ? [] : ['http://localhost:8081', 'http://localhost:8082'];
 
+const appleEnabled = Boolean(env.APPLE_CLIENT_ID && env.APPLE_CLIENT_SECRET);
+
 const trustedOrigins = [
   clientEnv.NEXT_PUBLIC_APP_URL,
   ...(env.AUTH_TRUSTED_ORIGINS?.split(',').map((origin) => origin.trim()).filter(Boolean) ?? []),
   ...devWebOrigins,
+  // Apple возвращает ответ POST-формой со своего домена.
+  ...(appleEnabled ? ['https://appleid.apple.com'] : []),
 ];
 
 /**
- * Google подключается только когда задана пара ключей.
+ * Google и Apple подключаются только когда заданы все ключи.
  *
  * Половина конфигурации хуже, чем её отсутствие: библиотека объявила бы провайдера
  * и отдала кнопку «Войти через Google», которая ведёт на ошибку обмена токена.
  */
-const socialProviders =
-  env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+const socialProviders = {
+  ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
     ? { google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } }
-    : {};
+    : {}),
+  ...(appleEnabled
+    ? {
+        apple: {
+          clientId: env.APPLE_CLIENT_ID as string,
+          clientSecret: env.APPLE_CLIENT_SECRET as string,
+          ...(env.APPLE_APP_BUNDLE_IDENTIFIER ? { appBundleIdentifier: env.APPLE_APP_BUNDLE_IDENTIFIER } : {}),
+        },
+      }
+    : {}),
+};
+
+/** Какие социальные входы настроены: приложение показывает только рабочие кнопки. */
+export const socialProviderFlags = { google: 'google' in socialProviders, apple: 'apple' in socialProviders } as const;
 
 /**
  * Пути, на которых применяются наши ограничители частоты.

@@ -7,6 +7,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { getAbout, type AboutContent } from '@/lib/content';
 import { webUrl } from '@/lib/format';
@@ -52,7 +53,7 @@ export default function AboutScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
-        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+        <PressableScale onPress={() => goBack()} accessibilityRole="button" accessibilityLabel={backLabel()}>
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.footer.about}</Text>

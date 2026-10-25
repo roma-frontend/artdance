@@ -255,6 +255,7 @@ export default function InstructorApplyScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.body}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
       >
         <Animated.View key={step} entering={FadeIn.duration(280).easing(EASE_OUT)} style={styles.stepBody}>
           <Text style={type.h2}>{a.steps[STEP_KEYS[step]]}</Text>

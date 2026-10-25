@@ -1,13 +1,14 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View, type TextInputInstance } from 'react-native';
 import Animated, { FadeInDown, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 import { AuthLayout } from '@/components/auth/auth-layout';
 import { FloatingInput } from '@/components/auth/floating-input';
+import { SocialSignIn } from '@/components/auth/social-sign-in';
 import { Button } from '@/components/ui/button';
 import { AuthError, signIn } from '@/lib/auth';
+import { hapticError, hapticSuccess } from '@/lib/haptics';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors } from '@/theme';
 
@@ -18,17 +19,21 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
+  const passwordRef = useRef<TextInputInstance>(null);
   const shake = useSharedValue(0);
 
   async function submit() {
+    if (inFlight.current || !email.trim() || !password) return;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     try {
       await signIn(email.trim(), password);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      hapticSuccess();
       router.replace('/');
     } catch (e) {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      hapticError();
       shake.value = withSequence(
         withTiming(-10, { duration: 60 }),
         withTiming(10, { duration: 60 }),
@@ -41,6 +46,7 @@ export default function SignInScreen() {
       else if (code === 'INVALID_EMAIL_OR_PASSWORD' || status === 401) setError(t.invalidCredentials);
       else setError(t.genericError);
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }
@@ -65,8 +71,11 @@ export default function SignInScreen() {
         keyboardType="email-address"
         textContentType="emailAddress"
         returnKeyType="next"
+        submitBehavior="submit"
+        onSubmitEditing={() => passwordRef.current?.focus()}
       />
       <FloatingInput
+        ref={passwordRef}
         label={t.password}
         icon="lock-closed-outline"
         value={password}
@@ -88,6 +97,7 @@ export default function SignInScreen() {
       <View style={styles.action}>
         <Button label={t.signInAction} onPress={submit} busy={busy} disabled={!email || !password} />
       </View>
+      <SocialSignIn disabled={busy} onError={setError} />
     </AuthLayout>
   );
 }
@@ -95,5 +105,5 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   error: { color: colors.danger, fontSize: 13, fontWeight: '600' },
   action: { marginTop: 4 },
-  link: { alignSelf: 'flex-end', color: colors.accentBright, fontSize: 13, fontWeight: '600' },
+  link: { alignSelf: 'flex-end', color: colors.accentText, fontSize: 13, fontWeight: '600' },
 });

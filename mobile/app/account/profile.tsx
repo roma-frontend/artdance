@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -26,6 +25,7 @@ import {
 import { chooseLocale, useLocale } from '@/lib/app-locale';
 import { AuthError, changePassword, getCurrentUser, updateName, type User } from '@/lib/auth';
 import { initials } from '@/lib/format';
+import { hapticError, hapticSuccess } from '@/lib/haptics';
 import { messagesFor, type Locale } from '@/lib/i18n';
 import { EASE_OUT } from '@/lib/motion';
 import { colors, gradients, radius, space, type } from '@/theme';
@@ -150,11 +150,11 @@ export default function ProfileScreen() {
       const saved = await uploadAvatar(cropImage, crop);
       setProfile(saved);
       setCropImage(null);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      hapticSuccess();
       setAvatarNotice({ ok: true, text: t.profilePhotoSaved });
     } catch (error: unknown) {
       if (__DEV__) console.warn('[avatar] upload failed', error);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      hapticError();
       setAvatarNotice({ ok: false, text: avatarFailure(error) });
     } finally {
       setAvatarBusy(false);
@@ -202,15 +202,18 @@ export default function ProfileScreen() {
   }
 
   async function saveName() {
+    if (nameBusy) return;
     setNameBusy(true);
     setNameNotice(null);
     try {
       await updateName(trimmedName);
       setUser((prev) => (prev ? { ...prev, name: trimmedName } : prev));
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Свежий профиль рассылается подписчикам: вкладки сразу показывают новое имя.
+      loadAccountProfile().catch(() => undefined);
+      hapticSuccess();
       setNameNotice({ ok: true, text: t.profileSaved });
     } catch {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      hapticError();
       setNameNotice({ ok: false, text: t.genericError });
     } finally {
       setNameBusy(false);
@@ -218,16 +221,17 @@ export default function ProfileScreen() {
   }
 
   async function savePassword() {
+    if (passwordBusy) return;
     setPasswordBusy(true);
     setPasswordNotice(null);
     try {
       await changePassword(current, next);
       setCurrent('');
       setNext('');
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      hapticSuccess();
       setPasswordNotice({ ok: true, text: t.profilePasswordChanged });
     } catch (error: unknown) {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      hapticError();
       const code = error instanceof AuthError ? error.message : '';
       setPasswordNotice({ ok: false, text: code === 'INVALID_PASSWORD' ? t.profileWrongPassword : t.genericError });
     } finally {
@@ -250,6 +254,7 @@ export default function ProfileScreen() {
         <ScrollView
           ref={scroll}
           keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + space.xxl }]}
         >

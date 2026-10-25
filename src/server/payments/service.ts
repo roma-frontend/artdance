@@ -117,10 +117,10 @@ export interface BookingPaymentResult {
 }
 
 /**
- * Создаёт (или возвращает уже созданный) платёж за бронь, ожидающую оплаты.
+ * Создаёт (или возвращает уже созданный) платёж за неоплаченную бронь.
  *
- * Бронь с ценой создаётся в `PENDING`; вебхук переводит её в `CONFIRMED`, когда
- * провайдер подтвердит оплату. Здесь бронь не меняется: redirect не доказательство.
+ * Бронь создаётся `CONFIRMED` (оплата на месте или заранее), поэтому принимаются
+ * активные `PENDING`/`CONFIRMED` без зачисленного платежа. Redirect не доказательство.
  */
 export async function createBookingPayment(input: CreateBookingPaymentInput): Promise<BookingPaymentResult> {
   const booking = await db.booking.findUnique({
@@ -133,11 +133,13 @@ export async function createBookingPayment(input: CreateBookingPaymentInput): Pr
       totalPrice: true,
       subject: true,
       customer: { select: { email: true, phone: true, name: true } },
+      payments: { where: { status: { in: ['AUTHORIZED', 'PAID', 'PARTIALLY_REFUNDED'] } }, select: { id: true }, take: 1 },
     },
   });
   if (!booking) throw domainErrors.notFound();
   if (booking.customerId !== input.userId) throw domainErrors.forbidden();
-  if (booking.status !== 'PENDING') throw domainErrors.validationFailed('status');
+  if (booking.status !== 'PENDING' && booking.status !== 'CONFIRMED') throw domainErrors.validationFailed('status');
+  if (booking.payments.length > 0) throw domainErrors.validationFailed('status');
 
   const amount = booking.totalPrice;
   if (amount <= 0) throw domainErrors.validationFailed('totalPrice');

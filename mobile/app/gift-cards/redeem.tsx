@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { GiftCardRedeemError, redeemGiftCard } from '@/lib/gift-cards';
-import { price } from '@/lib/format';
+import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
@@ -49,11 +49,14 @@ export default function GiftCardRedeemScreen() {
   }
 
   async function onSubmit() {
+    if (!canSubmit) return;
     setSending(true);
     setNotice(null);
     try {
       const card = await redeemGiftCard(code);
-      setNotice({ tone: 'success', text: c.footer.redeemSuccess.replace('{balance}', price(card.balance, locale)) });
+      const balance = c.footer.redeemSuccess.replace('{balance}', price(card.balance, locale));
+      const until = card.expiresAt ? ` · ${dateLabel(card.expiresAt, locale, { day: 'numeric', month: 'long', year: 'numeric' })}` : '';
+      setNotice({ tone: 'success', text: balance + until });
     } catch (error) {
       setNotice({ tone: 'error', text: failureText(error) });
     } finally {
@@ -64,13 +67,13 @@ export default function GiftCardRedeemScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
-        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t.catalogBack}>
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.footer.redeemGiftCard}</Text>
       </Animated.View>
 
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}>
         <Animated.View entering={enterItem(0)} style={styles.section}>
           <Text style={type.bodySm}>{c.footer.activateHint}</Text>
           <Text style={type.eyebrow}>{c.footer.giftCardCode}</Text>
@@ -84,6 +87,8 @@ export default function GiftCardRedeemScreen() {
             autoComplete="off"
             maxLength={MAX_LENGTH}
             editable={!sending}
+            returnKeyType="done"
+            onSubmitEditing={onSubmit}
             style={styles.input}
           />
         </Animated.View>

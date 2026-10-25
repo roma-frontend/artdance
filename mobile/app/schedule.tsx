@@ -13,6 +13,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { listCatalog, type CatalogItem } from '@/lib/catalog';
 import { cardView } from '@/lib/catalog-view';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { goBack } from '@/lib/navigation';
 import { useScrollChrome } from '@/lib/use-scroll-chrome';
 import { colors, space, type } from '@/theme';
 
@@ -65,7 +66,7 @@ export default function ScheduleScreen() {
         scrollY={scrollY}
         title={title}
         threshold={70}
-        left={<GlassButton icon="chevron-back" label={m.catalogBack} onPress={() => router.back()} />}
+        left={<GlassButton icon="chevron-back" label={m.catalogBack} onPress={() => goBack('/classes')} />}
       />
 
       <Animated.FlatList

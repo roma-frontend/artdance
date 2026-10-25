@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { GlassBackdrop } from '@/components/ui/glass-backdrop';
 import * as Haptics from 'expo-haptics';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, LinearTransition, SlideInDown, ZoomIn } from 'react-native-reanimated';
@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { catalogFor } from '@/i18n/catalog';
+import { deviceLocale } from '@/lib/i18n';
 import { colors, fill, fonts, radius, space, type } from '@/theme';
 
 export type FilterOption = { key: string; label: string };
@@ -37,8 +39,13 @@ export function FiltersSheet(props: Props) {
   return (
     <Modal visible={props.visible} animationType="fade" transparent onRequestClose={props.onClose} statusBarTranslucent>
       <View style={sheet.root}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={props.onClose} accessibilityLabel="close">
-          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={props.onClose}
+          accessibilityRole="button"
+          accessibilityLabel={catalogFor(deviceLocale(undefined)).common.actions.close}
+        >
+          <GlassBackdrop intensity={25} />
           <View style={sheet.backdrop} />
         </Pressable>
 
@@ -47,7 +54,7 @@ export function FiltersSheet(props: Props) {
           <View style={sheet.topRow}>
             <Text style={sheet.title}>{props.title}</Text>
             {active > 0 ? (
-              <Pressable onPress={props.onReset} hitSlop={10}>
+              <Pressable onPress={props.onReset} hitSlop={12} accessibilityRole="button">
                 <Animated.Text entering={FadeIn} style={sheet.reset}>
                   {props.resetLabel}
                 </Animated.Text>
@@ -128,7 +135,7 @@ const sheet = StyleSheet.create({
   handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3, backgroundColor: colors.lineStrong },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontFamily: fonts.display, fontSize: 28, color: colors.text },
-  reset: { fontSize: 14, fontWeight: '700', color: colors.accentBright },
+  reset: { fontSize: 14, fontWeight: '700', color: colors.accentText },
   body: { gap: space.md, paddingBottom: space.sm },
   sectionGap: { marginTop: space.lg },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

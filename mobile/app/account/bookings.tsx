@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Linking, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
@@ -11,6 +11,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { bookingStatusLabel, canPayBooking, listMyBookings, payBooking, type ClientBooking } from '@/lib/bookings';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { openPaymentUrl } from '@/lib/payment-url';
 import { serverMessageOf } from '@/lib/server-message';
 import { useAppActive } from '@/lib/use-app-active';
 import { enterItem, EASE_OUT } from '@/lib/motion';
@@ -50,11 +51,11 @@ export default function MyBookingsScreen() {
   }
 
   async function onPay(bookingId: string) {
+    if (payingId) return;
     setPayingId(bookingId);
     try {
       const { redirectUrl } = await payBooking(bookingId, 'CARD');
-      if (redirectUrl) await Linking.openURL(redirectUrl);
-      else Alert.alert(t.bookPayFailed);
+      if (!(await openPaymentUrl(redirectUrl))) Alert.alert(t.bookPayFailed);
     } catch (error) {
       Alert.alert(serverMessageOf(error) ?? t.bookPayFailed);
     } finally {
@@ -73,7 +74,7 @@ export default function MyBookingsScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
-        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t.catalogBack}>
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.account.bookings.title}</Text>

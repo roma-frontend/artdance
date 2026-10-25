@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
@@ -70,13 +70,20 @@ export default function CartScreen() {
   const [busy, setBusy] = useState(false);
   const [promo, setPromo] = useState('');
   const [promoError, setPromoError] = useState<string | null>(null);
+  /** Показывается только ответ на последний запрос: старое чтение не перетирает результат изменения. */
+  const revision = useRef(0);
+  const mutating = useRef(false);
 
   const load = useCallback(async () => {
+    if (mutating.current) return;
+    const rev = ++revision.current;
     try {
-      setCart(await getCart());
+      const next = await getCart();
+      if (rev !== revision.current) return;
+      setCart(next);
       setFailed(null);
     } catch (error) {
-      setFailed(serverMessageOf(error) ?? m.catalogError);
+      if (rev === revision.current) setFailed(serverMessageOf(error) ?? m.catalogError);
     }
   }, []);
 
@@ -85,33 +92,42 @@ export default function CartScreen() {
   }, [load]);
   useAppActive(load);
 
-  /** Каждая операция возвращает свежий снимок корзины: его и показываем. */
+  /** Каждая операция возвращает свежий снимок корзины: его и показываем. Операции идут по одной. */
   async function run(action: () => Promise<CartSnapshot>): Promise<boolean> {
+    if (mutating.current) return false;
+    mutating.current = true;
+    const rev = ++revision.current;
     setBusy(true);
     try {
-      setCart(await action());
+      const next = await action();
+      if (rev === revision.current) setCart(next);
       return true;
     } catch (e) {
       Alert.alert(serverMessageOf(e) ?? m.genericError);
       return false;
     } finally {
+      mutating.current = false;
       setBusy(false);
     }
   }
 
   async function applyPromo() {
     const code = promo.trim();
-    if (!code) return;
+    if (!code || mutating.current) return;
+    mutating.current = true;
+    const rev = ++revision.current;
     setBusy(true);
     setPromoError(null);
     try {
-      setCart(await applyPromoCode(code));
+      const next = await applyPromoCode(code);
+      if (rev === revision.current) setCart(next);
       setPromo('');
     } catch (e) {
       // Неверный/истёкший/исчерпанный код сервер отдаёт как 422 (VALIDATION_FAILED).
       if (e instanceof CartError && e.status === 422) setPromoError(c.cart.promoInvalid);
       else Alert.alert(serverMessageOf(e) ?? m.genericError);
     } finally {
+      mutating.current = false;
       setBusy(false);
     }
   }
@@ -147,7 +163,12 @@ export default function CartScreen() {
       ) : items.length === 0 ? (
         <EmptyState icon="cart-outline" title={c.cart.empty} body={c.cart.emptyHint} />
       ) : (
-        <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + space.xxxl }]} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[styles.scroll, { paddingBottom: space.xxxl }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
+        >
           {items.map((item, index) => (
             <Animated.View
               key={item.id}
@@ -213,16 +234,27 @@ export default function CartScreen() {
               <SummaryRow label={c.common.labels.total} value={price(totals.total, locale)} strong />
             </View>
           ) : null}
+        </ScrollView>
+      )}
 
+      {/* Кнопка оформления всегда под рукой, как нижняя панель экрана брони. */}
+      {items.length > 0 ? (
+        <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
+          <View style={styles.barTotal}>
+            <Text style={type.caption}>{c.common.labels.total}</Text>
+            <Text style={styles.totalValue} numberOfLines={1}>
+              {totals ? price(totals.total, locale) : '—'}
+            </Text>
+          </View>
           <Button
             label={c.common.actions.checkout}
-            icon="open-outline"
+            icon="arrow-forward"
             onPress={openCheckout}
             disabled={busy || !canCheckout}
             style={styles.checkout}
           />
-        </ScrollView>
-      )}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -358,5 +390,16 @@ const styles = StyleSheet.create({
   summaryValue: { ...type.label },
   totalValue: { ...type.h3, color: colors.metal },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.lineStrong },
-  checkout: { marginTop: space.sm },
+  checkout: { flexShrink: 0 },
+  bar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.lg,
+    paddingTop: 14,
+    paddingHorizontal: space.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.lineStrong,
+    backgroundColor: colors.surface,
+  },
+  barTotal: { flex: 1, gap: 2 },
 });

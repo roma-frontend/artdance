@@ -8,6 +8,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { canReviewBooking, getMyBooking, submitBookingReview, type ClientBookingDetail } from '@/lib/bookings';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
@@ -66,7 +67,7 @@ export default function BookingReviewScreen() {
 
   const header = (
     <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
-      <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+      <PressableScale onPress={() => goBack('/account/bookings')} accessibilityRole="button" accessibilityLabel={backLabel()}>
         <Ionicons name="chevron-back" size={26} color={colors.text} />
       </PressableScale>
       <Text style={type.h2}>{r.writeTitle}</Text>
@@ -109,7 +110,7 @@ export default function BookingReviewScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {header}
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <Animated.View entering={enterItem(0)} style={styles.card}>
           <Text style={type.h3}>{booking.classTitle ?? booking.reference}</Text>
           {booking.instructorName ? <Text style={type.bodySm}>{booking.instructorName}</Text> : null}

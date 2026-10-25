@@ -63,8 +63,19 @@ export function weekdayShort(weekday: number, locale: Locale): string {
   return new Intl.DateTimeFormat(localeMeta[locale].bcp47, { weekday: 'short', timeZone: 'UTC' }).format(date);
 }
 
+/** Пояс студий: даты и время занятий показываются по нему, как и `startTime` с сервера. */
+export const STUDIO_TIME_ZONE = 'Asia/Yerevan';
+/** Ереван без перехода на летнее время: UTC+4 круглый год. */
+const STUDIO_OFFSET_MS = 4 * 60 * 60 * 1000;
+
+/** Ключ календарного дня по часам студии, а не по поясу телефона. */
+export function studioDayKey(iso: string): string {
+  const d = new Date(Date.parse(iso) + STUDIO_OFFSET_MS);
+  return `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+}
+
 export function dateLabel(iso: string, locale: Locale, options: Intl.DateTimeFormatOptions): string {
-  return new Intl.DateTimeFormat(localeMeta[locale].bcp47, options).format(new Date(iso));
+  return new Intl.DateTimeFormat(localeMeta[locale].bcp47, { timeZone: STUDIO_TIME_ZONE, ...options }).format(new Date(iso));
 }
 
 export function initials(name: string): string {

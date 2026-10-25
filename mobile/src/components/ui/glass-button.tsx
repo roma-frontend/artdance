@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { GlassBackdrop } from './glass-backdrop';
 import type { ComponentProps } from 'react';
 import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -25,7 +25,7 @@ export function GlassButton({ icon, onPress, label, size = 40, style }: Props) {
       pressedScale={0.88}
       style={[styles.button, { width: size, height: size, borderRadius: size / 2 }, style]}
     >
-      <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+      <GlassBackdrop intensity={40} />
       <Ionicons name={icon} size={size * 0.5} color={colors.text} />
     </PressableScale>
   );

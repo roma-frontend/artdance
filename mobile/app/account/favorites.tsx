@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
@@ -39,14 +39,23 @@ export default function MyFavoritesScreen() {
     load();
   }, [load]);
 
+  const pending = useRef(new Set<string>());
+
   async function unfavorite(item: FavoriteItem) {
+    const key = `${item.kind}:${item.slug}`;
+    if (pending.current.has(key)) return;
+    pending.current.add(key);
+    setItems((prev) => prev?.filter((i) => !(i.kind === item.kind && i.slug === item.slug)) ?? null);
     try {
-      // Сервер переключает состояние: если запись уже была убрана на другом устройстве, он вернёт `true`.
-      const saved = await toggleMyFavorite(item.kind, item.slug);
+      let saved = await toggleMyFavorite(item.kind, item.slug);
+      // Запись уже убрали на другом устройстве: тумблер её вернул, убираем ещё раз.
+      if (saved) saved = await toggleMyFavorite(item.kind, item.slug);
       if (saved) await load();
-      else setItems((prev) => prev?.filter((i) => !(i.kind === item.kind && i.slug === item.slug)) ?? null);
     } catch (error) {
+      await load();
       Alert.alert(serverMessageOf(error) ?? t.catalogError);
+    } finally {
+      pending.current.delete(key);
     }
   }
 
@@ -67,7 +76,7 @@ export default function MyFavoritesScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
-        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t.catalogBack}>
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.favorites.title}</Text>
@@ -81,7 +90,7 @@ export default function MyFavoritesScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentBright} />}
         ListEmptyComponent={
           failed !== null ? (
-            <EmptyState icon="alert-circle-outline" title={failed} />
+            <EmptyState icon="alert-circle-outline" title={failed} actionLabel={c.common.actions.retry} onAction={load} />
           ) : (
             <EmptyState icon="heart-outline" title={c.favorites.empty} body={c.favorites.emptyHint} />
           )

@@ -109,6 +109,10 @@ export async function createOrder(input: CreateOrderInput) {
 
   // Транзакция: создать Order + OrderItem + инкремент usageCount + списание stock (4.7)
   const created = await db.$transaction(async (tx) => {
+    // Позиции корзины забираются первым шагом: повторная отправка ждёт блокировку и не создаёт второй заказ.
+    const claimedItems = await tx.cartItem.deleteMany({ where: { cartId: cart.id, id: { in: activeItems.map((it) => it.id) } } });
+    if (claimedItems.count !== activeItems.length) throw domainErrors.validationFailed('cart');
+
     // Промокод — атомарно: только если usageCount < usageLimit
     if (promo && cart.promoCodeId) {
       const pr = await tx.promoCode.findUnique({ where: { id: cart.promoCodeId } });

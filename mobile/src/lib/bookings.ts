@@ -13,6 +13,8 @@ export type ClientBooking = {
   endsAt: string;
   totalPrice: number;
   currencyCode: string;
+  /** Есть зачисленный платёж; старый сервер поле не отдаёт. */
+  paid?: boolean;
   classTitle: string | null;
   instructorName: string | null;
   instructorSlug: string | null;
@@ -97,9 +99,10 @@ export function canRescheduleBooking(booking: ClientBooking, now = Date.now()): 
   return booking.canReschedule && booking.instructorSlug !== null && canCancelBooking(booking, now);
 }
 
-/** Бронь с ценой, ожидающая оплаты: её можно оплатить из списка. */
-export function canPayBooking(booking: ClientBooking): boolean {
-  return booking.status === 'PENDING' && booking.totalPrice > 0;
+/** Активная бронь с ценой без зачисленной оплаты: её можно оплатить заранее. */
+export function canPayBooking(booking: ClientBooking, now = Date.now()): boolean {
+  if (booking.paid === undefined) return booking.status === 'PENDING' && booking.totalPrice > 0;
+  return !booking.paid && booking.totalPrice > 0 && canCancelBooking(booking, now);
 }
 
 /** Отзыв по завершённой брони, по которой ещё нет отзыва. Статус и окно окончательно проверяет сервер. */
@@ -190,6 +193,8 @@ export type RecurringSeries = { seriesId: string; bookings: { id: string; starts
 /** Серия еженедельных броней у инструктора. Занятия, которые не удалось забронировать, сервер пропускает. */
 export function createRecurringSeries(input: {
   instructorId: string;
+  /** Первое занятие серии: выбранный слот, а не ближайший такой же день недели. */
+  startsAt: string;
   weekday: number;
   startTime: string;
   durationMinutes: number;
@@ -225,6 +230,34 @@ export type CancelResult = {
   credited: boolean;
   booking: { totalPrice: number };
 };
+
+export type BookingQuote = { perLesson: number; weeks: number; total: number; currencyCode: string; freeCancellationHours: number };
+
+/** Цена слота до брони; ничего не удерживает. */
+export async function quoteBooking(input: { instructor: string; startsAt: string; sessionId?: string; weeks?: number }, signal?: AbortSignal): Promise<BookingQuote> {
+  const query = new URLSearchParams({ instructor: input.instructor, startsAt: input.startsAt });
+  if (input.sessionId) query.set('sessionId', input.sessionId);
+  if (input.weeks && input.weeks > 1) query.set('weeks', String(input.weeks));
+  const response = await fetch(`${API_URL}/api/booking/quote?${query.toString()}`, { headers: { Accept: 'application/json' }, signal });
+  if (!response.ok) throw await failureFor(response);
+  return ((await response.json()) as { quote: BookingQuote }).quote;
+}
+
+export type CancellationQuote =
+  | { kind: 'free'; fee: 0; refund: number }
+  | { kind: 'fee'; rate: number; fee: number; refund: number }
+  | { kind: 'forbidden'; reason: string };
+
+/** Что будет при отмене сейчас: штраф и возврат. Бронь не меняется. */
+export async function quoteCancellation(bookingId: string): Promise<CancellationQuote> {
+  const token = await getSessionToken();
+  if (!token) throw new BookingsError('UNAUTHORIZED', 401);
+  const response = await fetch(`${API_URL}/api/booking/${encodeURIComponent(bookingId)}/cancel-quote`, {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw await failureFor(response);
+  return ((await response.json()) as { quote: CancellationQuote }).quote;
+}
 
 /** Отмена брони владельцем. Ошибки окна отмены приходят с переведённым текстом. */
 export async function cancelMyBooking(bookingId: string): Promise<CancelResult> {

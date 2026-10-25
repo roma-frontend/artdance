@@ -15,6 +15,8 @@ export const colors = {
   accent: '#8B1A2B',
   accentBright: '#C93B52',
   accentSoft: 'rgba(201,59,82,0.16)',
+  /** Акцент для мелкого текста и ссылок: accentBright на тёмном фоне ниже 4.5:1. */
+  accentText: '#F08A9B',
   metal: '#C9A96A',
   success: '#3FB984',
   danger: '#FF6B7A',

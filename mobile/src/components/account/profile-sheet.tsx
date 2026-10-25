@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { GlassBackdrop } from '@/components/ui/glass-backdrop';
 import type { ComponentProps } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, SlideInDown } from 'react-native-reanimated';
@@ -38,7 +38,7 @@ export function ProfileSheet({ visible, onClose, onPick }: Props) {
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose} statusBarTranslucent>
       <View style={styles.root}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={t.accountCancel}>
-          <BlurView intensity={25} tint="dark" style={StyleSheet.absoluteFill} />
+          <GlassBackdrop intensity={25} />
           <View style={styles.backdrop} />
         </Pressable>
 

@@ -5,7 +5,7 @@ const mocks = vi.hoisted(() => ({
     slotHold: { findUnique: vi.fn(), findMany: vi.fn(), delete: vi.fn(), deleteMany: vi.fn() },
     danceClass: { findFirst: vi.fn(), findUnique: vi.fn() },
     classSession: { findFirst: vi.fn(), updateMany: vi.fn() },
-    instructorProfile: { findUnique: vi.fn() },
+    instructorProfile: { findUnique: vi.fn(), findFirst: vi.fn() },
     classPass: { findFirst: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
     classPassRedemption: { create: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
     waitlistEntry: { findFirst: vi.fn(), update: vi.fn() },
@@ -27,7 +27,7 @@ vi.mock('@/server/booking/notify', () => ({
 vi.mock('@/server/wallet/service', () => ({ creditWallet: vi.fn() }));
 
 import { booking } from '@/config/business';
-import { cancelBooking, createBookingFromHold, expireUnpaidBookings, rescheduleBooking } from './service';
+import { cancelBooking, createBookingFromHold, expireUnpaidBookings, quoteBooking, quoteCancellation, rescheduleBooking } from './service';
 
 const now = new Date('2026-10-01T08:00:00Z');
 const startsAt = new Date('2026-10-03T14:00:00Z');
@@ -284,6 +284,7 @@ describe('перенос: расписание только из БД', () => {
       customerId: hold.userId,
       instructorId: hold.instructorId,
       startsAt,
+      endsAt: new Date(startsAt.getTime() + 60 * 60_000),
       status: 'CONFIRMED',
       totalPrice: 17_000,
       basePrice: 17_000,
@@ -335,6 +336,24 @@ describe('перенос: расписание только из БД', () => {
     }));
   });
 
+  it('сохраняет длительность исходного занятия, а не конец с клиента', async () => {
+    mocks.db.instructorProfile.findUnique.mockResolvedValue({ id: hold.instructorId });
+    mocks.db.availabilityRule.findMany.mockResolvedValue([
+      { weekday: 2, startTime: '16:00', endTime: '18:00', isActive: true },
+    ]);
+    mocks.db.availabilityException.findMany.mockResolvedValue([]);
+
+    await rescheduleBooking({
+      ...input,
+      newStartsAt: new Date('2026-10-06T12:00:00Z'),
+      newEndsAt: new Date('2026-10-06T13:30:00Z'),
+    });
+
+    expect(mocks.db.booking.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ endsAt: new Date('2026-10-06T13:00:00Z') }),
+    }));
+  });
+
   it('отказывает при пустом расписании существующего профиля', async () => {
     mocks.db.instructorProfile.findUnique.mockResolvedValue({ id: hold.instructorId });
     mocks.db.availabilityRule.findMany.mockResolvedValue([]);
@@ -345,5 +364,42 @@ describe('перенос: расписание только из БД', () => {
     expect(mocks.db.availabilityRule.findMany).toHaveBeenCalledWith(expect.objectContaining({
       where: { instructorId: hold.instructorId, isActive: true },
     }));
+  });
+});
+
+describe('предварительные расчёты', () => {
+  it('цена слота совпадает с ценой, которую фиксирует бронь', async () => {
+    mocks.db.instructorProfile.findFirst.mockResolvedValue({ id: hold.instructorId });
+    mocks.db.danceClass.findFirst.mockResolvedValue({ id: 'class-1', price: 10_000, venueId: null, lessonType: 'PRIVATE' });
+
+    const quote = await quoteBooking({ instructor: 'anna', startsAt, weeks: 3 });
+    await createBookingFromHold({ holdId: hold.id, userId: hold.userId, now });
+
+    const created = mocks.db.booking.create.mock.calls[0]?.[0].data as { totalPrice: number };
+    expect(quote.perLesson).toBe(created.totalPrice);
+    expect(quote.total).toBe(quote.perLesson * 3);
+  });
+
+  it('неизвестный инструктор — NOT_FOUND', async () => {
+    mocks.db.instructorProfile.findFirst.mockResolvedValue(null);
+    await expect(quoteBooking({ instructor: 'nobody', startsAt })).rejects.toMatchObject({ code: 'NOT_FOUND' });
+  });
+
+  it('поздняя отмена показывает удержание и возврат, ничего не меняя', async () => {
+    mocks.db.booking.findUnique.mockResolvedValue({
+      id: 'booking-1', customerId: hold.userId, startsAt, status: 'CONFIRMED', totalPrice: 20_000,
+      cancellationWindowHours: 24, lateCancellationRate: 0.5, rescheduleWindowHours: 24, rescheduleCount: 0, maxReschedules: 2,
+      payments: [{ paidAmount: 20_000, refunds: [] }],
+    });
+
+    const quote = await quoteCancellation({ bookingId: 'booking-1', userId: hold.userId, now: new Date(startsAt.getTime() - 60 * 60_000) });
+
+    expect(quote).toEqual({ kind: 'fee', rate: 0.5, fee: 10_000, refund: 10_000 });
+    expect(mocks.db.booking.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('чужая бронь — FORBIDDEN', async () => {
+    mocks.db.booking.findUnique.mockResolvedValue({ id: 'booking-1', customerId: 'someone', payments: [] });
+    await expect(quoteCancellation({ bookingId: 'booking-1', userId: hold.userId, now })).rejects.toMatchObject({ code: 'FORBIDDEN' });
   });
 });

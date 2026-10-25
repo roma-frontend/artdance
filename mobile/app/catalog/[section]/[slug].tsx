@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { GlassBackdrop } from '@/components/ui/glass-backdrop';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -28,6 +28,8 @@ import { Button } from '@/components/ui/button';
 import { CollapsingHeader } from '@/components/ui/collapsing-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FadeImage } from '@/components/ui/fade-image';
+import { ImageGallery } from '@/components/ui/image-gallery';
+import { ImageViewer } from '@/components/ui/image-viewer';
 import { GlassButton } from '@/components/ui/glass-button';
 import { MediaCard } from '@/components/ui/media-card';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -117,6 +119,7 @@ function CatalogDetailBody() {
   const [variantSku, setVariantSku] = useState<string | null>(null);
   const [inCart, setInCart] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
@@ -198,6 +201,9 @@ function CatalogDetailBody() {
   const selectedVariant = variants.find((v) => v.sku === variantSku) ?? variants.find((v) => v.stock > 0) ?? null;
   const about = str(detail.description) ?? str(detail.bio) ?? str(detail.headline);
   const heroKey = keyOf(detail.heroImage) ?? keyOf(detail.image);
+  // У товара сервер отдаёт всю галерею; у остальных разделов — один кадр.
+  const galleryKeys = arr<unknown>(detail.gallery).map(keyOf).filter((key): key is string => key !== null);
+  const galleryUris = (galleryKeys.length > 0 ? galleryKeys : heroKey ? [heroKey] : []).map((key) => mediaUri(key));
   const rating = (detail.rating as { average?: number; count?: number } | undefined) ?? {
     average: num(detail.ratingAverage) ?? 0,
     count: num(detail.ratingCount) ?? 0,
@@ -384,10 +390,12 @@ function CatalogDetailBody() {
       <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <Animated.View style={[{ height: heroHeight }, styles.hero, heroStyle]}>
           <LinearGradient colors={['#3A1520', '#140C0F']} style={StyleSheet.absoluteFill} />
-          {heroKey ? <FadeImage uri={mediaUri(heroKey)} /> : null}
-          <LinearGradient colors={['rgba(11,8,9,0.55)', 'rgba(11,8,9,0)']} style={styles.heroTopShade} />
-          <LinearGradient colors={gradients.heroShade} locations={[0.5, 0.75, 1]} style={StyleSheet.absoluteFill} />
-          <Animated.View style={[StyleSheet.absoluteFill, styles.heroDim, heroFade]} />
+          {galleryUris.length > 0 ? (
+            <ImageGallery uris={galleryUris} width={width} height={heroHeight} onOpen={setViewerIndex} openLabel={title} />
+          ) : null}
+          <LinearGradient colors={['rgba(11,8,9,0.55)', 'rgba(11,8,9,0)']} style={styles.heroTopShade} pointerEvents="none" />
+          <LinearGradient colors={gradients.heroShade} locations={[0.5, 0.75, 1]} style={StyleSheet.absoluteFill} pointerEvents="none" />
+          <Animated.View style={[StyleSheet.absoluteFill, styles.heroDim, heroFade]} pointerEvents="none" />
         </Animated.View>
 
         <View style={styles.sheet}>
@@ -653,7 +661,7 @@ function CatalogDetailBody() {
       ) : null}
 
       <Animated.View entering={FadeIn.delay(250)} style={[styles.ctaBar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
+        <GlassBackdrop intensity={60} />
         <View style={styles.ctaTint} />
         <View style={styles.flex}>
           {amount !== null ? (
@@ -693,6 +701,8 @@ function CatalogDetailBody() {
           style={styles.ctaButton}
         />
       </Animated.View>
+
+      <ImageViewer uris={galleryUris} index={viewerIndex} onClose={() => setViewerIndex(null)} />
     </View>
   );
 }

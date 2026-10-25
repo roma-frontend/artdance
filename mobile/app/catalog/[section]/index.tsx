@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, type AlertButton, Pressable, RefreshControl, Share, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { Redirect, useLocalSearchParams, useRouter, useScrollToTop } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, type AlertButton, FlatList, Pressable, RefreshControl, Share, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import Animated, { Extrapolation, FadeInDown, interpolate, useAnimatedStyle } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -23,6 +23,7 @@ import { CatalogError, listCatalog, type CatalogItem, type Section } from '@/lib
 import { cardView } from '@/lib/catalog-view';
 import { plural, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { goBack } from '@/lib/navigation';
 import { useEntitlements } from '@/lib/entitlements';
 import { FAVORITE_KIND, FavoritesError, listMyFavorites, toggleMyFavorite, type FavoriteKind } from '@/lib/favorites';
 import { serverMessageOf } from '@/lib/server-message';
@@ -31,8 +32,9 @@ import { colors, fonts, gradients, radius, space, type } from '@/theme';
 
 const sections: readonly Section[] = ['classes', 'instructors', 'studios', 'events', 'shop'];
 
-/** Подсказка жеста над списком; для армянского пока используется английский текст. */
+/** Подсказка жеста над списком. */
 const HINTS: Record<string, string> = {
+  hy: 'Հպեք՝ բացելու համար, պահեք՝ արագ գործողությունների համար',
   ru: 'Нажмите — открыть, удержите — быстрые действия',
   en: 'Tap to open, hold for quick actions',
 };
@@ -82,6 +84,10 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
   const [reloadKey, setReloadKey] = useState(0);
   const [query, setQuery] = useState('');
   const [term, setTerm] = useState('');
+  /** К какому запросу относятся показанные карточки: старые результаты не выдаются за новые. */
+  const itemsKey = useRef<string | null>(null);
+  const listRef = useRef<FlatList<CatalogItem>>(null);
+  useScrollToTop(listRef);
 
   // Запрос уходит на сервер с задержкой; новый запрос всегда начинается с первой страницы.
   useEffect(() => {
@@ -95,6 +101,8 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
   useEffect(() => {
     if (!valid) return;
     let alive = true;
+    const key = `${valid}|${term}|${styleSlug ?? ''}`;
+    if (page === 1 && itemsKey.current !== key) setItems([]);
     setLoading(true);
     setError(null);
     listCatalog(valid, {
@@ -105,6 +113,7 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
     })
       .then((result) => {
         if (!alive) return;
+        itemsKey.current = key;
         setItems((prev) => (page === 1 ? result.items : [...prev, ...result.items]));
         setPageCount(result.pageCount);
         setTotal(result.total);
@@ -126,6 +135,8 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
     setPage(1);
     setReloadKey((k) => k + 1);
   }, []);
+  /** Повтор страницы, которая не загрузилась, без сброса уже показанных. */
+  const retryPage = useCallback(() => setReloadKey((k) => k + 1), []);
 
   const largeTitle = useAnimatedStyle(() => ({
     opacity: interpolate(scrollY.value, [0, 70], [1, 0], Extrapolation.CLAMP),
@@ -138,7 +149,7 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
   if (!valid) {
     return (
       <View style={[styles.screen, { paddingTop: insets.top + 60 }]}>
-        <EmptyState icon="compass-outline" title={m.catalogNotFound} actionLabel={m.catalogBack} onAction={() => router.back()} />
+        <EmptyState icon="compass-outline" title={m.catalogNotFound} actionLabel={m.catalogBack} onAction={() => goBack()} />
       </View>
     );
   }
@@ -182,7 +193,7 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
     Haptics.selectionAsync().catch(() => undefined);
     Alert.alert(view.title, undefined, buttons);
   };
-  const backButton = pushed ? <GlassButton icon="chevron-back" label={m.catalogBack} onPress={() => router.back()} /> : null;
+  const backButton = pushed ? <GlassButton icon="chevron-back" label={m.catalogBack} onPress={() => goBack()} /> : null;
 
   const header = (
     <View>
@@ -253,6 +264,7 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
       <CollapsingHeader scrollY={scrollY} title={title} threshold={70} left={backButton} />
 
       <Animated.FlatList
+        ref={listRef}
         data={items.slice(1)}
         keyExtractor={(item) => item.slug}
         numColumns={2}
@@ -297,14 +309,18 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
         }}
         onEndReachedThreshold={0.6}
         ListFooterComponent={
-          loading && items.length > 0 ? <ActivityIndicator color={colors.text2} style={styles.loader} /> : undefined
+          loading && items.length > 0 ? (
+            <ActivityIndicator color={colors.text2} style={styles.loader} />
+          ) : error && items.length > 0 ? (
+            <EmptyState icon="cloud-offline-outline" title={m.catalogError} actionLabel={t.common.actions.retry} onAction={retryPage} />
+          ) : undefined
         }
         ListEmptyComponent={
           loading ? (
             <View style={styles.padded}>
               <ListSkeleton />
             </View>
-          ) : error ? (
+          ) : error && items.length === 0 ? (
             <EmptyState icon="cloud-offline-outline" title={m.catalogError} actionLabel={t.common.actions.retry} onAction={reload} />
           ) : items.length === 0 ? (
             term ? (

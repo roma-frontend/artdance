@@ -124,6 +124,10 @@ const serverSchema = z.object({
   AUTH_TRUSTED_ORIGINS: optionalString,
   GOOGLE_CLIENT_ID: optionalString,
   GOOGLE_CLIENT_SECRET: optionalString,
+  /** Sign in with Apple: Services ID, JWT-секрет и bundle id iOS-приложения для нативного входа. */
+  APPLE_CLIENT_ID: optionalString,
+  APPLE_CLIENT_SECRET: optionalString,
+  APPLE_APP_BUNDLE_IDENTIFIER: optionalString,
 
   /* ИИ-ассистент: ключ Gemini и модель. Без ключа ассистент отвечает 503, а не падает. */
   GOOGLE_GENERATIVE_AI_API_KEY: optionalString,

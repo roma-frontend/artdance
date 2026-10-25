@@ -7,6 +7,7 @@ import { site } from '@/config/site';
 import { db } from '@/lib/db';
 import { createBookingFromHold, type CreateBookingInput } from '@/server/booking/service';
 import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
+import { publicInstructorWhere } from '@/server/queries/instructors';
 
 async function assertRecurringEnabled(): Promise<void> {
   await assertEntitlementOrThrow('recurring');
@@ -21,14 +22,28 @@ export interface CreateRecurringSeriesInput {
   weeks: number;
   locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE';
   customerAddress?: string | null;
+  /** Первое занятие серии, выбранное клиентом; без него серия начинается с ближайшей даты. */
+  firstStartsAt?: Date | null;
   now: Date;
 }
 
 export async function createRecurringSeries(input: CreateRecurringSeriesInput) {
   await assertRecurringEnabled();
-  const { customerId, instructorId, weekday, startTime, durationMinutes, weeks, now } = input;
-  if (!instructorId) throw domainErrors.validationFailed('instructorId');
-  const occurrences = nextOccurrences({ weekday, startTime, durationMinutes }, now, weeks, site.timeZone);
+  const { customerId, weekday, startTime, durationMinutes, weeks, now } = input;
+  if (!input.instructorId) throw domainErrors.validationFailed('instructorId');
+  // Приложение передаёт публичный slug, сайт — id.
+  const profile = await db.instructorProfile.findFirst({
+    where: { ...publicInstructorWhere, OR: [{ id: input.instructorId }, { slug: input.instructorId }] },
+    select: { id: true },
+  });
+  if (!profile) throw domainErrors.notFound();
+  const instructorId = profile.id;
+  if (input.firstStartsAt && input.firstStartsAt.getTime() <= now.getTime()) throw domainErrors.validationFailed('startsAt');
+  const from = input.firstStartsAt ?? now;
+  const occurrences = nextOccurrences({ weekday, startTime, durationMinutes }, from, weeks, site.timeZone);
+  if (input.firstStartsAt && occurrences[0]?.startsAt.getTime() !== input.firstStartsAt.getTime()) {
+    throw domainErrors.validationFailed('startsAt');
+  }
 
   // Создаём серию
   const series = await db.recurringSeries.create({

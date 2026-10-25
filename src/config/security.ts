@@ -140,8 +140,11 @@ export const baseSecurityHeaders: ReadonlyArray<readonly [string, string]> = [
  */
 export const mutatingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'] as const;
 
-/** Пути, где проверка Origin отключена: подпись сама себе аутентификация. */
-export const originExemptPathPrefixes = ['/api/webhooks/'] as const;
+/**
+ * Пути, где проверка Origin отключена: подпись сама себе аутентификация.
+ * Apple возвращает OAuth POST-формой со своего домена; запрос защищён state-cookie библиотеки.
+ */
+export const originExemptPathPrefixes = ['/api/webhooks/', '/api/auth/callback/apple'] as const;
 
 /* ───────────────────────────── Загрузки ───────────────────────────── */
 

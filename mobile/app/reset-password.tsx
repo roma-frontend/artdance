@@ -1,7 +1,6 @@
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { StyleSheet, View, type TextInputInstance } from 'react-native';
 import Animated, { FadeInDown, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 import { AuthLayout } from '@/components/auth/auth-layout';
@@ -9,6 +8,7 @@ import { FloatingInput } from '@/components/auth/floating-input';
 import { Button } from '@/components/ui/button';
 import { catalogFor } from '@/i18n/catalog';
 import { AuthError, resetPassword } from '@/lib/auth';
+import { hapticError, hapticSuccess } from '@/lib/haptics';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors } from '@/theme';
 
@@ -25,10 +25,12 @@ export default function ResetPasswordScreen() {
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
+  const confirmRef = useRef<TextInputInstance>(null);
   const shake = useSharedValue(0);
 
-  async function fail(message: string) {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  function fail(message: string) {
+    hapticError();
     shake.value = withSequence(
       withTiming(-10, { duration: 60 }),
       withTiming(10, { duration: 60 }),
@@ -39,20 +41,23 @@ export default function ResetPasswordScreen() {
   }
 
   async function submit() {
+    if (inFlight.current || !password || !confirmPassword) return;
     setError(null);
     if (password !== confirmPassword) {
-      await fail(c.validation.passwordsDoNotMatch);
+      fail(c.validation.passwordsDoNotMatch);
       return;
     }
+    inFlight.current = true;
     setBusy(true);
     try {
       await resetPassword({ token, password, confirmPassword }, c);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      hapticSuccess();
       setDone(true);
     } catch (e: unknown) {
       // Сообщение сервера уже переведено; пустое означает, что перевода нет.
-      await fail(e instanceof AuthError && e.message ? e.message : t.genericError);
+      fail(e instanceof AuthError && e.message ? e.message : t.genericError);
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }
@@ -95,8 +100,12 @@ export default function ResetPasswordScreen() {
             secureTextEntry
             autoComplete="new-password"
             textContentType="newPassword"
+            returnKeyType="next"
+            submitBehavior="submit"
+            onSubmitEditing={() => confirmRef.current?.focus()}
           />
           <FloatingInput
+            ref={confirmRef}
             label={c.auth.resetPassword.confirmPassword}
             icon="lock-closed-outline"
             value={confirmPassword}

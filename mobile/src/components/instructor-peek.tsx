@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { GlassBackdrop } from '@/components/ui/glass-backdrop';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
@@ -112,7 +112,7 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(200)} style={StyleSheet.absoluteFill}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityRole="button" accessibilityLabel={c.common.actions.close}>
-          <BlurView intensity={35} tint="dark" style={StyleSheet.absoluteFill} />
+          <GlassBackdrop intensity={35} />
           <View style={[StyleSheet.absoluteFill, styles.scrim]} />
         </Pressable>
       </Animated.View>

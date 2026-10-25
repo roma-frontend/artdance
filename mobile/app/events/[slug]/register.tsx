@@ -6,11 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
+import { DateTimeField } from '@/components/ui/date-time-field';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { getCatalogDetail } from '@/lib/catalog';
 import {
+  ageFitsCategory,
   isRegistrationOpen,
   isValidBirthDate,
   registerForCompetition,
@@ -60,7 +63,7 @@ export default function EventRegisterScreen() {
 
   const header = (
     <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
-      <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+      <PressableScale onPress={() => goBack()} accessibilityRole="button" accessibilityLabel={backLabel()}>
         <Ionicons name="chevron-back" size={26} color={colors.text} />
       </PressableScale>
       <Text style={type.h2}>{c.events.registerCta}</Text>
@@ -103,7 +106,11 @@ export default function EventRegisterScreen() {
 
   const birthDateComplete = birthDate.length === 10;
   const birthDateValid = isValidBirthDate(birthDate);
-  const canSubmit = categoryId !== null && birthDateValid && !sending;
+  // Возраст считается на дату события, как на сервере; до ввода даты ограничений нет.
+  const fitsAge = (category: CompetitionCategory) => !birthDateValid || ageFitsCategory(birthDate, detail.startsAt, category);
+  const selectedCategory = categories.find((category) => category.id === categoryId) ?? null;
+  const ageMismatch = selectedCategory !== null && !fitsAge(selectedCategory);
+  const canSubmit = categoryId !== null && birthDateValid && !ageMismatch && !sending;
 
   async function onSubmit() {
     if (!detail || !categoryId || !canSubmit) return;
@@ -126,7 +133,7 @@ export default function EventRegisterScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {header}
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets showsVerticalScrollIndicator={false}>
         <Animated.View entering={enterItem(0)} style={styles.card}>
           <Text style={type.h3}>{detail.title}</Text>
           {detail.locationName ? <Text style={type.bodySm}>{detail.locationName}</Text> : null}
@@ -136,14 +143,14 @@ export default function EventRegisterScreen() {
           <Text style={type.eyebrow}>{c.events.categoryLabel}</Text>
           {categories.map((category) => {
             const selected = category.id === categoryId;
-            const selectable = isSelectable(category);
+            const selectable = isSelectable(category) && fitsAge(category);
             return (
               <PressableScale
                 key={category.id}
                 disabled={!selectable || sending}
                 onPress={() => setCategoryId(category.id)}
-                accessibilityRole="button"
-                accessibilityState={{ selected, disabled: !selectable }}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected, disabled: !selectable }}
                 accessibilityLabel={category.name}
               >
                 <View style={[styles.category, selected && styles.categorySelected, !selectable && styles.categoryDisabled]}>
@@ -169,19 +176,16 @@ export default function EventRegisterScreen() {
         </Animated.View>
 
         <Animated.View entering={enterItem(2)} style={styles.section}>
-          <Text style={type.eyebrow}>{c.events.athleteBirthDate}</Text>
-          <TextInput
+          <DateTimeField
+            mode="date"
+            label={c.events.athleteBirthDate}
             value={birthDate}
-            onChangeText={(next) => setBirthDate(next.replace(/[^\d-]/g, '').slice(0, 10))}
+            onChange={setBirthDate}
             placeholder={c.events.birthDatePlaceholder}
-            placeholderTextColor={colors.text3}
-            keyboardType="numbers-and-punctuation"
-            autoCorrect={false}
-            maxLength={10}
-            editable={!sending}
-            style={styles.input}
+            maximumDate={new Date()}
+            disabled={sending}
+            error={birthDateComplete && !birthDateValid ? c.events.invalidBirthDate : ageMismatch ? c.events.ageNotEligible : null}
           />
-          {birthDateComplete && !birthDateValid ? <Text style={[type.caption, styles.error]}>{c.events.invalidBirthDate}</Text> : null}
         </Animated.View>
 
         <Animated.View entering={enterItem(3)} style={styles.section}>
@@ -189,6 +193,7 @@ export default function EventRegisterScreen() {
           <TextInput
             value={partnerName}
             onChangeText={(next) => setPartnerName(next.slice(0, 160))}
+            accessibilityLabel={c.events.partnerName}
             placeholderTextColor={colors.text3}
             editable={!sending}
             style={styles.input}
@@ -198,7 +203,7 @@ export default function EventRegisterScreen() {
         <Button label={c.events.submitRegistration} onPress={onSubmit} busy={sending} disabled={!canSubmit} />
 
         {notice ? (
-          <Animated.View entering={enterItem(4)} style={styles.noticeCard}>
+          <Animated.View entering={enterItem(4)} style={styles.noticeCard} accessibilityLiveRegion="polite">
             <Text style={[type.bodySm, styles.error]}>{notice}</Text>
           </Animated.View>
         ) : null}

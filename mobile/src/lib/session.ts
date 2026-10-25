@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 const TOKEN_KEY = 'artdance.session_token';
+const USER_KEY = 'artdance.session_user';
 const HINT_KEY = 'artdance.hint.catalog_seen';
 
 /*
@@ -39,7 +40,23 @@ export async function setHintSeen(): Promise<void> {
 export async function clearSessionToken(): Promise<void> {
   if (isWeb) {
     globalThis.localStorage?.removeItem(TOKEN_KEY);
+    globalThis.localStorage?.removeItem(USER_KEY);
     return;
   }
   await SecureStore.deleteItemAsync(TOKEN_KEY);
+  await SecureStore.deleteItemAsync(USER_KEY);
+}
+
+/** Последний подтверждённый пользователь: без сети приложение не выкидывает на вход. */
+export async function getCachedUserJson(): Promise<string | null> {
+  if (isWeb) return globalThis.localStorage?.getItem(USER_KEY) ?? null;
+  return SecureStore.getItemAsync(USER_KEY);
+}
+
+export async function setCachedUserJson(json: string): Promise<void> {
+  if (isWeb) {
+    globalThis.localStorage?.setItem(USER_KEY, json);
+    return;
+  }
+  await SecureStore.setItemAsync(USER_KEY, json);
 }

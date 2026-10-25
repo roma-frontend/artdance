@@ -1,10 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { GlassBackdrop } from '@/components/ui/glass-backdrop';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState, type ComponentProps } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, LinearTransition, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,12 +16,13 @@ import { GlassButton } from '@/components/ui/glass-button';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { getCurrentUser } from '@/lib/auth';
-import { claimWaitlistHold, createRecurringSeries, joinClassWaitlist, listClassSessions } from '@/lib/bookings';
+import { claimWaitlistHold, createRecurringSeries, joinClassWaitlist, listClassSessions, quoteBooking, type BookingQuote } from '@/lib/bookings';
 import { getCatalogDetail, mediaUri } from '@/lib/catalog';
 import { API_URL } from '@/lib/config';
 import { useEntitlements } from '@/lib/entitlements';
-import { dateLabel, initials, plural } from '@/lib/format';
+import { dateLabel, initials, plural, price, studioDayKey } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { openPaymentUrl } from '@/lib/payment-url';
 import { resolveServerMessage, serverMessageOf } from '@/lib/server-message';
 import { getSessionToken } from '@/lib/session';
 import { colors, fill, fonts, gradients, radius, space, type } from '@/theme';
@@ -38,20 +39,20 @@ type Slot = {
 };
 type Availability = { instructorSlug: string; slots: Slot[] };
 type Failure = { error?: string; messageKey?: string; params?: Record<string, string | number> };
-type PayMethod = 'CARD' | 'ARCA' | 'IDRAM' | 'TELCELL' | 'ARCA_QR';
+type PayMethod = 'CARD' | 'ARCA' | 'IDRAM' | 'TELCELL';
 type IconName = ComponentProps<typeof Ionicons>['name'];
 type Instructor = { name?: string; headline?: string; image?: { key?: string }; ratingAverage?: number };
 
+// ARCA_QR не предлагается: приложение пока не умеет показать qrPayload провайдера.
 const payMethods: {
   id: PayMethod;
   icon: IconName;
-  labelKey: 'payMethodCard' | 'payMethodArca' | 'payMethodIdram' | 'payMethodTelcell' | 'payMethodQr';
+  labelKey: 'payMethodCard' | 'payMethodArca' | 'payMethodIdram' | 'payMethodTelcell';
 }[] = [
   { id: 'CARD', icon: 'card-outline', labelKey: 'payMethodCard' },
   { id: 'ARCA', icon: 'card', labelKey: 'payMethodArca' },
   { id: 'IDRAM', icon: 'wallet-outline', labelKey: 'payMethodIdram' },
   { id: 'TELCELL', icon: 'phone-portrait-outline', labelKey: 'payMethodTelcell' },
-  { id: 'ARCA_QR', icon: 'qr-code-outline', labelKey: 'payMethodQr' },
 ];
 
 class BookingError extends Error {
@@ -82,10 +83,10 @@ async function readJson<T>(response: Response): Promise<T> {
   return body;
 }
 
-const dayKey = (iso: string) => {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-};
+/** Ереван без перехода на летнее время: UTC+4 круглый год. */
+const YEREVAN_OFFSET_MS = 4 * 60 * 60 * 1000;
+
+const dayKey = studioDayKey;
 
 /** Заполненное проведение группы: мест нет, бронь возможна только через лист ожидания. */
 const isFull = (slot: Slot) => slot.sessionId !== undefined && (slot.spotsLeft ?? 0) <= 0;
@@ -93,8 +94,6 @@ const isWaitlistSlot = (slot: Slot) => isFull(slot) && !slot.waitlist?.claimable
 
 /** Максимум недель в серии, как `recurring.maxWeeks` в `src/config/business.ts`; 1 неделя — обычная бронь. */
 const RECURRING_MAX_WEEKS = 12;
-/** Ереван без перехода на летнее время: UTC+4 круглый год. */
-const YEREVAN_OFFSET_MS = 4 * 60 * 60 * 1000;
 
 /** День недели в Ереване в формате `Date.getDay()`: 0 — воскресенье. */
 const yerevanWeekday = (iso: string) => new Date(Date.parse(iso) + YEREVAN_OFFSET_MS).getUTCDay();
@@ -117,6 +116,7 @@ export default function BookScreen() {
   const [payMethod, setPayMethod] = useState<PayMethod>('CARD');
   const [pairOnly, setPairOnly] = useState(false);
   const [weeks, setWeeks] = useState(1);
+  const [quote, setQuote] = useState<BookingQuote | null>(null);
   const entitlements = useEntitlements();
   const recurringEnabled = entitlements?.recurring === true;
 
@@ -148,6 +148,20 @@ export default function BookScreen() {
     };
   }, [instructor, classSlug]);
 
+  // Цена выбранного слота до подтверждения: сервер считает её так же, как при брони.
+  useEffect(() => {
+    setQuote(null);
+    if (!selected || isWaitlistSlot(selected)) return;
+    const controller = new AbortController();
+    quoteBooking(
+      { instructor, startsAt: selected.startIso, sessionId: selected.sessionId, weeks: recurringEnabled && !classSlug ? weeks : 1 },
+      controller.signal,
+    )
+      .then(setQuote)
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [selected, weeks, instructor, classSlug, recurringEnabled]);
+
   const days = useMemo(() => {
     const map = new Map<string, Slot[]>();
     for (const slot of slots ?? []) {
@@ -174,7 +188,14 @@ export default function BookScreen() {
     return refreshed.slots;
   }
 
-  /** Открывает оплату брони: страница провайдера откроется во внешнем браузере. */
+  /** Обновление слотов после брони — фоновое: его ошибка не должна выглядеть как неудачная бронь. */
+  function refreshSlotsInBackground() {
+    refreshSlots()
+      .then(setSlots)
+      .catch(() => undefined);
+  }
+
+  /** Открывает оплату уже созданной брони. Бронь действительна и без предоплаты. */
   async function startPayment(bookingId: string) {
     try {
       const payResponse = await authed(`/api/booking/${bookingId}/pay`, {
@@ -182,15 +203,14 @@ export default function BookScreen() {
         body: JSON.stringify({ method: payMethod, locale, fromApp: true }),
       });
       const payment = await readJson<{ redirectUrl: string | null }>(payResponse);
-      if (payment.redirectUrl) {
-        await Linking.openURL(payment.redirectUrl);
+      if (await openPaymentUrl(payment.redirectUrl)) {
         setResult({ kind: 'success', text: t.bookPayStarted, paying: true });
-      } else {
-        setResult({ kind: 'error', text: t.bookPayFailed });
+        return;
       }
-    } catch (payErr: unknown) {
-      setResult({ kind: 'error', text: serverMessageOf(payErr) ?? t.bookPayFailed });
+    } catch {
+      // Неудачный старт оплаты не отменяет бронь: оплатить можно из «Моих записей».
     }
+    setResult({ kind: 'success', text: `${t.bookPayFailed}. ${t.bookPayLater}`, paying: true });
   }
 
   async function confirm() {
@@ -214,13 +234,14 @@ export default function BookScreen() {
         // Серия создаётся сразу, без удержания: сервер бронирует каждую дату. Оплачиваем первую бронь, как на сайте.
         const series = await createRecurringSeries({
           instructorId: instructor,
+          startsAt: selected.startIso,
           weekday: yerevanWeekday(selected.startIso),
           startTime: selected.startTime,
           durationMinutes: Math.round((Date.parse(selected.endIso) - Date.parse(selected.startIso)) / 60000),
           weeks,
         });
         setSelected(null);
-        setSlots(await refreshSlots());
+        refreshSlotsInBackground();
         const first = series.bookings[0];
         if (first) await startPayment(first.id);
         else setResult({ kind: 'error', text: t.bookSlotTaken });
@@ -247,11 +268,9 @@ export default function BookScreen() {
       const bookingResponse = await authed('/api/booking', { method: 'POST', body: JSON.stringify({ holdId }) });
       const { booking } = await readJson<{ booking: { id: string; totalPrice: number } }>(bookingResponse);
       setSelected(null);
-      setSlots(null);
-      setSlots(await refreshSlots());
+      refreshSlotsInBackground();
 
       if (booking.totalPrice > 0) {
-        // Бронь с ценой ждёт оплаты (PENDING): открываем страницу провайдера.
         await startPayment(booking.id);
       } else {
         setResult({ kind: 'success', text: t.bookDone });
@@ -485,6 +504,12 @@ export default function BookScreen() {
           </Animated.View>
         ) : null}
 
+        {selected && quote ? (
+          <Animated.Text entering={FadeIn.duration(250)} style={[type.caption, styles.padded]}>
+            {c.booking.cancellationNote.replace('{hours}', plural(c.common.units.hours, quote.freeCancellationHours, locale))}
+          </Animated.Text>
+        ) : null}
+
         {result?.kind === 'error' ? (
           <Animated.View entering={FadeInDown} style={[styles.errorBanner, styles.paddedMargin]}>
             <Ionicons name="alert-circle" size={18} color={colors.danger} />
@@ -494,13 +519,20 @@ export default function BookScreen() {
       </ScrollView>
 
       <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 14) }]}>
-        <BlurView intensity={60} tint="dark" style={StyleSheet.absoluteFill} />
+        <GlassBackdrop intensity={60} />
         <View style={styles.barTint} />
         <View style={styles.flex}>
           <Text style={type.caption}>{c.common.labels.time}</Text>
           <Text style={styles.barValue} numberOfLines={1}>
             {selected ? `${dateLabel(selected.startIso, locale, { weekday: 'short', day: 'numeric', month: 'short' })} · ${selected.startTime}` : '—'}
           </Text>
+          {selected && quote ? (
+            <Animated.Text key={quote.total} entering={FadeIn.duration(200)} style={styles.barPrice} numberOfLines={1}>
+              {quote.weeks > 1
+                ? `${price(quote.total, locale)} · ${quote.weeks} × ${price(quote.perLesson, locale)}`
+                : price(quote.total, locale)}
+            </Animated.Text>
+          ) : null}
         </View>
         <Button label={barLabel} onPress={confirm} busy={busy} disabled={!selected} style={styles.barButton} />
       </View>
@@ -634,6 +666,7 @@ const styles = StyleSheet.create({
   },
   barTint: { ...fill, backgroundColor: 'rgba(11,8,9,0.6)' },
   barValue: { fontSize: 15, fontWeight: '700', color: colors.text },
+  barPrice: { fontSize: 13, fontWeight: '700', color: colors.metal, marginTop: 2 },
   barButton: { minWidth: 170 },
   successScreen: { alignItems: 'center', justifyContent: 'center', padding: space.xxl, gap: space.lg },
   successGlow: { position: 'absolute', top: 0, left: 0, right: 0, height: 420 },

@@ -8,16 +8,13 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
-import { listAvailableSlots, rescheduleMyBooking, type Slot } from '@/lib/bookings';
-import { dateLabel } from '@/lib/format';
+import { getMyBooking, listAvailableSlots, rescheduleMyBooking, type Slot } from '@/lib/bookings';
+import { dateLabel, studioDayKey } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { serverMessageOf } from '@/lib/server-message';
 import { colors, radius, space, type } from '@/theme';
 
-const dayKey = (iso: string) => {
-  const d = new Date(iso);
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
-};
+const dayKey = studioDayKey;
 
 const dayOptions: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
 const whenOptions: Intl.DateTimeFormatOptions = { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' };
@@ -34,12 +31,17 @@ export default function RescheduleScreen() {
   const [day, setDay] = useState<string | null>(null);
   const [selected, setSelected] = useState<Slot | null>(null);
   const [busy, setBusy] = useState(false);
+  const [durationMs, setDurationMs] = useState<number | null>(null);
 
   useEffect(() => {
     let alive = true;
-    listAvailableSlots(instructor)
-      .then((list) => {
-        if (alive) setSlots(list);
+    // Слоты берутся у инструктора самой брони, длительность — как у исходного занятия.
+    getMyBooking(id)
+      .then(async (booking) => {
+        const list = await listAvailableSlots(booking.instructorSlug ?? instructor);
+        if (!alive) return;
+        setDurationMs(Date.parse(booking.endsAt) - Date.parse(booking.startsAt));
+        setSlots(list);
       })
       .catch(() => {
         if (alive) setLoadFailed(true);
@@ -47,7 +49,7 @@ export default function RescheduleScreen() {
     return () => {
       alive = false;
     };
-  }, [instructor]);
+  }, [id, instructor]);
 
   const days = useMemo(() => {
     const map = new Map<string, Slot[]>();
@@ -61,10 +63,11 @@ export default function RescheduleScreen() {
   const activeDay = days.find((d) => d.key === day) ?? days[0];
 
   async function confirm() {
-    if (!selected || busy) return;
+    if (!selected || busy || durationMs === null) return;
     setBusy(true);
     try {
-      await rescheduleMyBooking(id, { newStartsAt: selected.startIso, newEndsAt: selected.endIso });
+      const newEndsAt = new Date(Date.parse(selected.startIso) + durationMs).toISOString();
+      await rescheduleMyBooking(id, { newStartsAt: selected.startIso, newEndsAt });
       Alert.alert(c.booking.confirmedTitle, c.booking.confirmedSubtitle.replace('{when}', dateLabel(selected.startIso, locale, whenOptions)), [
         { text: c.common.actions.continue, onPress: () => router.back() },
       ]);

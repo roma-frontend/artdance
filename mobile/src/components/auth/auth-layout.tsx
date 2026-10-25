@@ -1,4 +1,4 @@
-import { BlurView } from 'expo-blur';
+import { GlassBackdrop } from '@/components/ui/glass-backdrop';
 import { Link } from 'expo-router';
 import type { ReactNode } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -53,7 +53,7 @@ export function AuthLayout({ mode, title, signInLabel, signUpLabel, switchHref, 
 
           <Animated.View entering={FadeInDown.delay(220).duration(700)}>
             <Animated.View style={[styles.card, cardStyle]}>
-              <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+              <GlassBackdrop intensity={40} />
               <View style={styles.cardInner}>{children}</View>
             </Animated.View>
           </Animated.View>

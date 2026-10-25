@@ -51,6 +51,16 @@ export function isValidBirthDate(value: string, now: number = Date.now()): boole
   return new Date(time).toISOString().slice(0, 10) === value;
 }
 
+/** Зеркало `ageFitsCategory` из `src/domain/competition.ts`: возраст на дату события, границы включительно. */
+export function ageFitsCategory(birthDate: string, eventStartsAt: string, category: Pick<CompetitionCategory, 'minAge' | 'maxAge'>): boolean {
+  const birth = new Date(`${birthDate}T00:00:00.000Z`);
+  const event = new Date(eventStartsAt);
+  let age = event.getUTCFullYear() - birth.getUTCFullYear();
+  const month = event.getUTCMonth() - birth.getUTCMonth();
+  if (month < 0 || (month === 0 && event.getUTCDate() < birth.getUTCDate())) age -= 1;
+  return (category.minAge === undefined || age >= category.minAge) && (category.maxAge === undefined || age <= category.maxAge);
+}
+
 /** Ошибка регистрации. `serverMessage` уже переведён через словарь приложения, если сервер прислал ключ. */
 export class EventsError extends Error {
   readonly status: number;

@@ -30,6 +30,7 @@ export function Button({ label, onPress, busy, disabled, icon, variant = 'primar
       disabled={inactive}
       haptic={!primary}
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: !!inactive, busy: !!busy }}
       style={[styles.base, primary ? accentGlow : styles.ghost, disabled && styles.disabled, style]}
     >
@@ -43,7 +44,7 @@ export function Button({ label, onPress, busy, disabled, icon, variant = 'primar
       ) : (
         <View style={styles.row}>
           {icon ? <Ionicons name={icon} size={18} color={primary ? colors.white : colors.text} /> : null}
-          <Text style={[type.button, !primary && { color: colors.text }]} numberOfLines={1}>
+          <Text style={[type.button, styles.label, !primary && { color: colors.text }]} numberOfLines={2}>
             {label}
           </Text>
         </View>
@@ -54,7 +55,8 @@ export function Button({ label, onPress, busy, disabled, icon, variant = 'primar
 
 const styles = StyleSheet.create({
   base: {
-    height: 54,
+    minHeight: 54,
+    paddingVertical: 12,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
@@ -63,5 +65,6 @@ const styles = StyleSheet.create({
   clip: { ...fill, borderRadius: radius.md, overflow: 'hidden' },
   ghost: { backgroundColor: 'rgba(245,241,234,0.08)', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.lineStrong },
   disabled: { opacity: 0.45 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
+  label: { textAlign: 'center', flexShrink: 1 },
 });

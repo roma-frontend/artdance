@@ -13,6 +13,7 @@ const schema = z.object({
   durationMinutes: z.number().int().refine((n) => [45, 60, 90, 120].includes(n)),
   weeks: z.number().int().min(2).max(12),
   instructorId: z.string().min(1),
+  startsAt: z.string().datetime().optional(),
   locationOption: z.enum(['STUDIO', 'CUSTOMER_LOCATION', 'ONLINE']).optional(),
 });
 
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
       durationMinutes: parsed.data.durationMinutes,
       weeks: parsed.data.weeks,
       locationOption: parsed.data.locationOption,
+      firstStartsAt: parsed.data.startsAt ? new Date(parsed.data.startsAt) : null,
       now: new Date(),
     });
     return json(result, 201);

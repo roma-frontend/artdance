@@ -39,8 +39,18 @@ const dictionary: Dictionary = {
     bookDone: 'Դուք գրանցված եք',
     bookSlotTaken: 'Այս ժամը արդեն զբաղված է',
     bookFailed: 'Չհաջողվեց գրանցվել',
-    bookPayStarted: 'Անցեք վճարման էջ՝ բրոնը հաստատելու համար',
+    bookPayStarted: 'Գրանցումը հաստատված է։ Ավարտեք վճարումը բացված էջում',
     bookPayFailed: 'Չհաջողվեց սկսել վճարումը',
+    bookPayLater: 'Գրանցումը հաստատված է։ Վճարել կարող եք ավելի ուշ՝ «Իմ գրանցումները» բաժնում կամ տեղում։',
+    showPassword: 'Ցույց տալ գաղտնաբառը',
+    cancelWithheld: 'Պահվում է՝ {amount}',
+    onboardingSkip: 'Բաց թողնել',
+    appleCta: 'Մուտք Apple-ով',
+    timeRangeInvalid: 'Ավարտը պետք է լինի սկզբից հետո',
+    confirmDelete: 'Ջնջե՞լ',
+    onboardingLater: 'Ավելի ուշ',
+    cancelRefund: 'Վերադարձ՝ {amount}',
+    hidePassword: 'Թաքցնել գաղտնաբառը',
     payMethodTitle: 'Վճարման եղանակ',
     payMethodCard: 'Բանկային քարտ',
     payMethodArca: 'ArCa',
@@ -161,8 +171,18 @@ const dictionary: Dictionary = {
     bookDone: 'Вы записаны',
     bookSlotTaken: 'Это время уже занято',
     bookFailed: 'Не удалось записаться',
-    bookPayStarted: 'Перейдите к оплате, чтобы подтвердить запись',
+    bookPayStarted: 'Запись подтверждена. Завершите оплату на открывшейся странице',
     bookPayFailed: 'Не удалось начать оплату',
+    bookPayLater: 'Запись подтверждена. Оплатить можно позже в «Моих записях» или на месте.',
+    showPassword: 'Показать пароль',
+    cancelWithheld: 'Удержим: {amount}',
+    onboardingSkip: 'Пропустить',
+    appleCta: 'Войти через Apple',
+    timeRangeInvalid: 'Конец должен быть позже начала',
+    confirmDelete: 'Удалить?',
+    onboardingLater: 'Позже',
+    cancelRefund: 'Вернём: {amount}',
+    hidePassword: 'Скрыть пароль',
     payMethodTitle: 'Способ оплаты',
     payMethodCard: 'Банковская карта',
     payMethodArca: 'ArCa',
@@ -283,8 +303,18 @@ const dictionary: Dictionary = {
     bookDone: 'You are booked',
     bookSlotTaken: 'That time is already taken',
     bookFailed: 'Could not book',
-    bookPayStarted: 'Continue to payment to confirm your booking',
+    bookPayStarted: 'Booking confirmed. Finish payment on the page that opened',
     bookPayFailed: 'Could not start payment',
+    bookPayLater: 'Booking confirmed. You can pay later in My bookings or at the studio.',
+    showPassword: 'Show password',
+    cancelWithheld: 'Withheld: {amount}',
+    onboardingSkip: 'Skip',
+    appleCta: 'Continue with Apple',
+    timeRangeInvalid: 'End must be after start',
+    confirmDelete: 'Delete?',
+    onboardingLater: 'Later',
+    cancelRefund: 'Refund: {amount}',
+    hidePassword: 'Hide password',
     payMethodTitle: 'Payment method',
     payMethodCard: 'Bank card',
     payMethodArca: 'ArCa',
@@ -409,6 +439,16 @@ export type MessageKey =
   | 'bookFailed'
   | 'bookPayStarted'
   | 'bookPayFailed'
+  | 'bookPayLater'
+  | 'showPassword'
+  | 'cancelWithheld'
+  | 'onboardingSkip'
+  | 'appleCta'
+  | 'timeRangeInvalid'
+  | 'confirmDelete'
+  | 'onboardingLater'
+  | 'cancelRefund'
+  | 'hidePassword'
   | 'payMethodTitle'
   | 'payMethodCard'
   | 'payMethodArca'

@@ -8,6 +8,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { ContactError, getContact, sendContact, type ContactContent } from '@/lib/content';
 import { webUrl } from '@/lib/format';
@@ -99,7 +100,7 @@ export default function ContactScreen() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
-        <PressableScale onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back">
+        <PressableScale onPress={() => goBack()} accessibilityRole="button" accessibilityLabel={backLabel()}>
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </PressableScale>
         <Text style={type.h2}>{c.footer.contact}</Text>
@@ -108,7 +109,7 @@ export default function ContactScreen() {
       {content === null ? (
         <EmptyState icon="alert-circle-outline" title={t.catalogError} />
       ) : (
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
           <Text style={type.bodySm}>{content.subtitle}</Text>
           <Text style={type.caption}>{content.responseTime}</Text>
 
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: space.xl, paddingBottom: 60, gap: space.md },
   card: { padding: space.lg, borderRadius: radius.md, backgroundColor: 'rgba(245,241,234,0.06)', gap: space.sm },
   channel: { gap: space.xs, paddingTop: space.sm },
-  link: { color: colors.accentBright },
+  link: { color: colors.accentText },
   field: { gap: space.xs },
   input: {
     paddingHorizontal: space.md,

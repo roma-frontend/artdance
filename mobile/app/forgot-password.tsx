@@ -1,6 +1,5 @@
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
@@ -9,6 +8,7 @@ import { FloatingInput } from '@/components/auth/floating-input';
 import { Button } from '@/components/ui/button';
 import { AuthError, requestPasswordReset } from '@/lib/auth';
 import { webUrl } from '@/lib/format';
+import { hapticError, hapticSuccess } from '@/lib/haptics';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors } from '@/theme';
 
@@ -21,18 +21,21 @@ export default function ForgotPasswordScreen() {
   const [error, setError] = useState<string | null>(null);
   const [captchaFailed, setCaptchaFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const inFlight = useRef(false);
   const shake = useSharedValue(0);
 
   async function submit() {
+    if (inFlight.current || !email.trim()) return;
+    inFlight.current = true;
     setBusy(true);
     setError(null);
     setCaptchaFailed(false);
     try {
       await requestPasswordReset(email.trim());
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      hapticSuccess();
       setSent(true);
     } catch (e) {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      hapticError();
       shake.value = withSequence(
         withTiming(-10, { duration: 60 }),
         withTiming(10, { duration: 60 }),
@@ -44,6 +47,7 @@ export default function ForgotPasswordScreen() {
       setCaptchaFailed(captcha);
       setError(captcha ? t.forgotCaptcha : t.genericError);
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   }

@@ -1,12 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+import { GlassBackdrop } from '@/components/ui/glass-backdrop';
 import Constants from 'expo-constants';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useEffect, useState, type ComponentProps } from 'react';
-import { Alert, Image, Linking, StyleSheet, Text, View } from 'react-native';
+import { useRouter, useScrollToTop } from 'expo-router';
+import { useEffect, useRef, useState, type ComponentProps } from 'react';
+import { Alert, Image, Linking, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 import Animated, {
   Extrapolation,
   FadeInDown,
@@ -29,6 +29,7 @@ import { chooseLocale } from '@/lib/app-locale';
 import { loadAccountProfile, onProfileChange } from '@/lib/account-profile';
 import { getCurrentUser, signOut, type User } from '@/lib/auth';
 import { loadDancerProfile } from '@/lib/dancer-profile';
+import { isOnboardingSnoozed } from '@/lib/onboarding-progress';
 import { initials, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor, type Locale } from '@/lib/i18n';
 import { animateNextLayout, enterCard3D, openTiming } from '@/lib/motion';
@@ -83,8 +84,17 @@ export default function AccountScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileSheet, setProfileSheet] = useState(false);
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  useScrollToTop(scrollRef);
 
-  useEffect(() => onProfileChange((p) => setAvatarUrl(p.avatarUrl)), []);
+  useEffect(
+    () =>
+      onProfileChange((p) => {
+        setAvatarUrl(p.avatarUrl);
+        setUser((prev) => (prev && prev.name !== p.name ? { ...prev, name: p.name } : prev));
+      }),
+    [],
+  );
 
   useEffect(() => {
     let alive = true;
@@ -102,9 +112,9 @@ export default function AccountScreen() {
         }
         // Как на вебе: танцору без пройденной анкеты сначала предлагаем тур.
         if (u && DANCER_ROLES.has(u.role)) {
-          loadDancerProfile()
-            .then((profile) => {
-              if (alive && !profile?.onboardingCompleted) router.replace('/onboarding/dancer');
+          Promise.all([loadDancerProfile(), isOnboardingSnoozed()])
+            .then(([profile, snoozed]) => {
+              if (alive && !snoozed && !profile?.onboardingCompleted) router.replace('/onboarding/dancer');
             })
             .catch(() => undefined);
         }
@@ -243,6 +253,7 @@ export default function AccountScreen() {
       <CollapsingHeader scrollY={scrollY} title={c.account.title} threshold={60} />
 
       <Animated.ScrollView
+        ref={scrollRef}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
@@ -266,7 +277,7 @@ export default function AccountScreen() {
             {liquidGlass ? (
               <GlassView glassEffectStyle="regular" style={StyleSheet.absoluteFill} />
             ) : (
-              <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+              <GlassBackdrop intensity={50} />
             )}
             <LinearGradient colors={['rgba(201,59,82,0.28)', 'rgba(11,8,9,0)']} style={StyleSheet.absoluteFill} pointerEvents="none" />
             <Animated.View style={[styles.ringGlow, avatarStyle]}>

@@ -1,16 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Image,
-  Modal,
-  PanResponder,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-  type PanResponderGestureState,
-} from 'react-native';
+import { useEffect, useState } from 'react';
+import { Image, Modal, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { GestureDetector, GestureHandlerRootView, usePanGesture, usePinchGesture, useSimultaneousGestures } from 'react-native-gesture-handler';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -23,7 +17,6 @@ const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.25;
 
 type Size = { width: number; height: number };
-type Point = { x: number; y: number };
 
 type Props = {
   image: PickedImage | null;
@@ -34,6 +27,7 @@ type Props = {
 };
 
 function clamp(value: number, min: number, max: number): number {
+  'worklet';
   return Math.min(max, Math.max(min, value));
 }
 
@@ -42,41 +36,44 @@ function clamp(value: number, min: number, max: number): number {
  * (cover), zoom увеличивает его поверх. Совпадает с расчётом серверного кропа.
  */
 function geometryFor(size: Size, frame: number, zoom: number) {
-  const scale = (Math.max(frame / size.width, frame / size.height)) * zoom;
+  'worklet';
+  const scale = Math.max(frame / size.width, frame / size.height) * zoom;
   const dw = size.width * scale;
   const dh = size.height * scale;
   return { scale, dw, dh, maxX: Math.max(0, (dw - frame) / 2), maxY: Math.max(0, (dh - frame) / 2) };
 }
 
-/** Модалка кадрирования аватара: перетаскивание, щипок и кнопки масштаба. */
+/** Модалка кадрирования аватара: перетаскивание и щипок на UI-потоке, кнопки масштаба. */
 export function AvatarCropModal({ image, busy = false, notice, onCancel, onConfirm }: Props) {
   const t = messagesFor(deviceLocale(undefined));
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
-  const frame = Math.min(screenWidth - space.xl * 2, 320);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  // Рамка ограничена и шириной, и высотой: на низком экране и крупном шрифте кнопки остаются видны.
+  const frame = Math.max(160, Math.min(screenWidth - space.xl * 2, screenHeight * 0.42, 320));
 
   const [size, setSize] = useState<Size | null>(null);
   const [failed, setFailed] = useState(false);
-  const [zoom, setZoom] = useState(MIN_ZOOM);
-  const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
+  const [zoomLabel, setZoomLabel] = useState(MIN_ZOOM);
 
-  // Жесты читают значения через ref, чтобы обработчики не пересоздавались.
-  const latest = useRef({ size: null as Size | null, frame, zoom: MIN_ZOOM, pan: { x: 0, y: 0 } });
-  const gesture = useRef({ pan: { x: 0, y: 0 }, zoom: MIN_ZOOM, distance: null as number | null, dx: 0, dy: 0 });
+  const zoom = useSharedValue(MIN_ZOOM);
+  const startZoom = useSharedValue(MIN_ZOOM);
+  const panX = useSharedValue(0);
+  const panY = useSharedValue(0);
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
 
   useEffect(() => {
     if (!image) return;
     let alive = true;
     setSize(null);
     setFailed(false);
-    setZoom(MIN_ZOOM);
-    setPan({ x: 0, y: 0 });
+    setZoomLabel(MIN_ZOOM);
+    zoom.value = MIN_ZOOM;
+    panX.value = 0;
+    panY.value = 0;
     Image.getSize(image.uri)
       .then(({ width, height }) => {
-        if (!alive) return;
-        const loaded = { width, height };
-        latest.current = { size: loaded, frame, zoom: MIN_ZOOM, pan: { x: 0, y: 0 } };
-        setSize(loaded);
+        if (alive) setSize({ width, height });
       })
       .catch(() => {
         if (alive) setFailed(true);
@@ -84,69 +81,68 @@ export function AvatarCropModal({ image, busy = false, notice, onCancel, onConfi
     return () => {
       alive = false;
     };
-  }, [image, frame]);
+  }, [image, panX, panY, zoom]);
 
-  const responder = useMemo(() => {
-    // Применяет масштаб и сдвиг с ограничением, чтобы рамка всегда была закрыта фото.
-    const apply = (nextZoom: number, nextPan: Point) => {
-      const current = latest.current;
-      if (!current.size) return;
-      const z = clamp(nextZoom, MIN_ZOOM, MAX_ZOOM);
-      const g = geometryFor(current.size, current.frame, z);
-      const p = { x: clamp(nextPan.x, -g.maxX, g.maxX), y: clamp(nextPan.y, -g.maxY, g.maxY) };
-      latest.current = { ...current, zoom: z, pan: p };
-      setZoom(z);
-      setPan(p);
-    };
+  const base = size ? geometryFor(size, frame, MIN_ZOOM) : null;
 
-    const rebase = (state: PanResponderGestureState, distance: number | null) => {
-      gesture.current = {
-        pan: latest.current.pan,
-        zoom: latest.current.zoom,
-        distance,
-        dx: state.dx,
-        dy: state.dy,
-      };
-    };
+  // Масштаб и сдвиг ограничены так, чтобы рамка всегда была закрыта фото.
+  const clampPan = () => {
+    'worklet';
+    if (!size) return;
+    const g = geometryFor(size, frame, zoom.value);
+    panX.value = clamp(panX.value, -g.maxX, g.maxX);
+    panY.value = clamp(panY.value, -g.maxY, g.maxY);
+  };
 
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (_event, state) => rebase(state, null),
-      onPanResponderMove: (event, state) => {
-        const touches = event.nativeEvent.touches;
-        if (touches.length >= 2) {
-          const [a, b] = touches;
-          const distance = Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY);
-          if (gesture.current.distance === null) rebase(state, distance);
-          const start = gesture.current;
-          apply(start.zoom * (distance / (start.distance ?? distance)), start.pan);
-          return;
-        }
-        if (gesture.current.distance !== null) rebase(state, null);
-        const start = gesture.current;
-        apply(latest.current.zoom, { x: start.pan.x + state.dx - start.dx, y: start.pan.y + state.dy - start.dy });
-      },
-    });
-  }, []);
+  const pinch = usePinchGesture({
+    enabled: size !== null && !busy,
+    onBegin: () => {
+      startZoom.value = zoom.value;
+    },
+    onUpdate: (event) => {
+      zoom.value = clamp(startZoom.value * event.scale, MIN_ZOOM, MAX_ZOOM);
+      clampPan();
+    },
+    onDeactivate: () => {
+      scheduleOnRN(setZoomLabel, zoom.value);
+    },
+  });
+
+  const pan = usePanGesture({
+    enabled: size !== null && !busy,
+    onBegin: () => {
+      startX.value = panX.value;
+      startY.value = panY.value;
+    },
+    onUpdate: (event) => {
+      panX.value = startX.value + event.translationX;
+      panY.value = startY.value + event.translationY;
+      clampPan();
+    },
+  });
+
+  const gesture = useSimultaneousGestures(pinch, pan);
+
+  const imageStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: panX.value }, { translateY: panY.value }, { scale: zoom.value }],
+  }));
 
   function changeZoom(delta: number) {
-    const current = latest.current;
-    if (!current.size) return;
-    const z = clamp(current.zoom + delta, MIN_ZOOM, MAX_ZOOM);
-    const g = geometryFor(current.size, current.frame, z);
-    const p = { x: clamp(current.pan.x, -g.maxX, g.maxX), y: clamp(current.pan.y, -g.maxY, g.maxY) };
-    latest.current = { ...current, zoom: z, pan: p };
-    setZoom(z);
-    setPan(p);
+    if (!size) return;
+    const next = clamp(zoom.value + delta, MIN_ZOOM, MAX_ZOOM);
+    const g = geometryFor(size, frame, next);
+    zoom.value = withTiming(next, { duration: 180 });
+    panX.value = withTiming(clamp(panX.value, -g.maxX, g.maxX), { duration: 180 });
+    panY.value = withTiming(clamp(panY.value, -g.maxY, g.maxY), { duration: 180 });
+    setZoomLabel(next);
   }
 
   /** Квадрат кадрирования в долях исходного изображения, как ждёт сервер. */
   function cropRect(): AvatarCropRect | null {
     if (!size) return null;
-    const { scale, dw, dh } = geometryFor(size, frame, zoom);
-    const left = (frame - dw) / 2 + pan.x;
-    const top = (frame - dh) / 2 + pan.y;
+    const { scale, dw, dh } = geometryFor(size, frame, zoom.value);
+    const left = (frame - dw) / 2 + panX.value;
+    const top = (frame - dh) / 2 + panY.value;
     const side = frame / scale;
     const w = clamp(side / size.width, 0, 1);
     const h = clamp(side / size.height, 0, 1);
@@ -158,34 +154,32 @@ export function AvatarCropModal({ image, busy = false, notice, onCancel, onConfi
     };
   }
 
-  const geometry = size ? geometryFor(size, frame, zoom) : null;
-
   return (
     <Modal visible={image !== null} animationType="slide" onRequestClose={onCancel} statusBarTranslucent>
-      <View style={[styles.root, { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + space.xl }]}>
+      {/* Modal на Android рисуется в отдельном корне: жестам нужен свой GestureHandlerRootView. */}
+      <GestureHandlerRootView style={[styles.root, { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + space.xl }]}>
         <Text style={type.h2}>{t.profileAvatarCropTitle}</Text>
         <Text style={styles.hint}>{t.profileAvatarCropHint}</Text>
 
-        <View
-          style={[styles.frame, { width: frame, height: frame }]}
-          {...responder.panHandlers}
-          accessibilityRole="adjustable"
-          accessibilityLabel={t.profileAvatarCropTitle}
-        >
-          {image && size && geometry ? (
-            <Image
-              source={{ uri: image.uri }}
-              style={{
-                position: 'absolute',
-                width: geometry.dw,
-                height: geometry.dh,
-                left: (frame - geometry.dw) / 2 + pan.x,
-                top: (frame - geometry.dh) / 2 + pan.y,
-              }}
-            />
-          ) : null}
-          <View pointerEvents="none" style={styles.outline} />
-        </View>
+        <GestureDetector gesture={gesture}>
+          <View
+            style={[styles.frame, { width: frame, height: frame }]}
+            accessibilityRole="adjustable"
+            accessibilityLabel={t.profileAvatarCropTitle}
+          >
+            {image && base ? (
+              <Animated.View
+                style={[
+                  { position: 'absolute', width: base.dw, height: base.dh, left: (frame - base.dw) / 2, top: (frame - base.dh) / 2 },
+                  imageStyle,
+                ]}
+              >
+                <Image source={{ uri: image.uri }} style={StyleSheet.absoluteFill} />
+              </Animated.View>
+            ) : null}
+            <View pointerEvents="none" style={styles.outline} />
+          </View>
+        </GestureDetector>
 
         {failed ? <Text style={styles.error}>{t.profileAvatarUnreadable}</Text> : null}
         {notice ? <Text style={styles.error}>{notice}</Text> : null}
@@ -193,17 +187,17 @@ export function AvatarCropModal({ image, busy = false, notice, onCancel, onConfi
         <View style={styles.zoomRow}>
           <PressableScale
             onPress={() => changeZoom(-ZOOM_STEP)}
-            disabled={busy || zoom <= MIN_ZOOM}
+            disabled={busy || zoomLabel <= MIN_ZOOM}
             accessibilityRole="button"
             accessibilityLabel={t.profileAvatarZoomOut}
             style={styles.zoomButton}
           >
             <Ionicons name="remove" size={22} color={colors.text} />
           </PressableScale>
-          <Text style={styles.zoomText}>{Math.round(zoom * 100)}%</Text>
+          <Text style={styles.zoomText}>{Math.round(zoomLabel * 100)}%</Text>
           <PressableScale
             onPress={() => changeZoom(ZOOM_STEP)}
-            disabled={busy || zoom >= MAX_ZOOM}
+            disabled={busy || zoomLabel >= MAX_ZOOM}
             accessibilityRole="button"
             accessibilityLabel={t.profileAvatarZoomIn}
             style={styles.zoomButton}
@@ -226,7 +220,7 @@ export function AvatarCropModal({ image, busy = false, notice, onCancel, onConfi
             <Text style={styles.cancelText}>{t.accountCancel}</Text>
           </PressableScale>
         </View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -247,7 +241,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(245,241,234,0.5)',
   },
-  error: { fontSize: 13, color: colors.accentBright, textAlign: 'center' },
+  error: { fontSize: 13, color: colors.danger, textAlign: 'center' },
   zoomRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
   zoomButton: {
     width: 44,

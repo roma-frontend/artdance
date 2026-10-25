@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
-import { useEffect, useState, type ComponentProps } from 'react';
+import { useRouter, useScrollToTop } from 'expo-router';
+import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -13,6 +13,7 @@ import {
   TextInput,
   View,
   useWindowDimensions,
+  type ScrollViewInstance,
 } from 'react-native';
 import Animated, {
   Extrapolation,
@@ -73,6 +74,8 @@ const STYLE_KEYS = [
 
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 250;
+/** Под строкой поиска — только первые совпадения; всё остальное на экране поиска. */
+const INLINE_HITS = 8;
 const SECTIONS: readonly Section[] = ['classes', 'instructors', 'studios', 'events', 'shop'];
 const TAB_SECTIONS: Partial<Record<Section, '/classes' | '/shop'>> = {
   classes: '/classes',
@@ -106,6 +109,8 @@ export default function HomeScreen() {
   const [instructors, setInstructors] = useState<InstructorCard[] | null>(null);
   const [mood, setMood] = useState<MoodKey>('energy');
   const [moodClasses, setMoodClasses] = useState<ClassCard[] | null>(null);
+  const [moodFailed, setMoodFailed] = useState(false);
+  const [moodRetry, setMoodRetry] = useState(0);
   const [filtered, setFiltered] = useState<ClassCard[] | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [styleFilter, setStyleFilter] = useState<string | null>(null);
@@ -116,6 +121,18 @@ export default function HomeScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const entitlements = useEntitlements();
   const eventsOn = entitlements?.events === true;
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  useScrollToTop(scrollRef);
+
+  /** Индикатор обновления гаснет, когда завершились все запросы экрана, а не первый из них. */
+  const pending = useRef(0);
+  const track = useCallback(<T,>(work: Promise<T>): Promise<T> => {
+    pending.current += 1;
+    return work.finally(() => {
+      pending.current -= 1;
+      if (pending.current === 0) setRefreshing(false);
+    });
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -128,45 +145,57 @@ export default function HomeScreen() {
     };
   }, [user]);
 
-  useEffect(() => onProfileChange((p) => setAvatarUrl(p.avatarUrl)), []);
+  useEffect(
+    () =>
+      onProfileChange((p) => {
+        setAvatarUrl(p.avatarUrl);
+        setUser((prev) => (prev && prev.name !== p.name ? { ...prev, name: p.name } : prev));
+      }),
+    [],
+  );
 
   useEffect(() => {
     let alive = true;
     getCurrentUser()
       .catch(() => null)
       .then((u) => alive && setUser(u));
-    listCatalog('instructors', { page: '1', pageSize: '12' })
+    // При ошибке обновления остаётся уже показанный список, а не пустая секция.
+    track(listCatalog('instructors', { page: '1', pageSize: '12' }))
       .then((r) => alive && setInstructors(r.items as InstructorCard[]))
-      .catch(() => alive && setInstructors([]))
-      .finally(() => alive && setRefreshing(false));
+      .catch(() => alive && setInstructors((prev) => prev ?? []));
     return () => {
       alive = false;
     };
-  }, [refreshKey]);
+  }, [refreshKey, track]);
 
   useEffect(() => {
     if (!eventsOn) return;
     let alive = true;
-    listCatalog('events', { page: '1', pageSize: '5' })
+    track(listCatalog('events', { page: '1', pageSize: '5' }))
       .then((r) => alive && setEvents(r.items as EventCard[]))
-      .catch(() => alive && setEvents([]));
+      .catch(() => alive && setEvents((prev) => prev ?? []));
     return () => {
       alive = false;
     };
-  }, [refreshKey, eventsOn]);
+  }, [refreshKey, eventsOn, track]);
 
   useEffect(() => {
     let alive = true;
     const chosen = MOODS.find((x) => x.key === mood);
     if (!chosen) return;
     setMoodClasses(null);
-    Promise.all(chosen.styles.map((style) => listCatalog('classes', { style, pageSize: '3' })))
+    setMoodFailed(false);
+    track(Promise.all(chosen.styles.map((style) => listCatalog('classes', { style, pageSize: '3' }))))
       .then((results) => alive && setMoodClasses(results.flatMap((r) => r.items as ClassCard[]).slice(0, 8)))
-      .catch(() => alive && setMoodClasses([]));
+      .catch(() => {
+        if (!alive) return;
+        setMoodClasses([]);
+        setMoodFailed(true);
+      });
     return () => {
       alive = false;
     };
-  }, [mood, refreshKey]);
+  }, [mood, refreshKey, moodRetry, track]);
 
   const term = query.trim();
   const isSearch = term.length >= MIN_QUERY_LENGTH;
@@ -179,10 +208,12 @@ export default function HomeScreen() {
       setSearching(false);
       return;
     }
+    // Новый текст сразу переводит в загрузку: без ложного «ничего не найдено» и чужих совпадений.
+    setSearching(true);
+    setFailed(false);
+    setHits([]);
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      setSearching(true);
-      setFailed(false);
       const params = new URLSearchParams({ q: term, locale, scope: 'all' });
       fetch(`${API_URL}/api/search?${params.toString()}`, { signal: controller.signal })
         .then((response) => {
@@ -225,6 +256,9 @@ export default function HomeScreen() {
     };
   }, [isSearch, styleFilter, levelFilter, refreshKey]);
 
+  // Во время поиска фильтры не применяются, поэтому и счётчик на кнопке не показывается.
+  const filterBadge = isSearch ? 0 : (styleFilter ? 1 : 0) + (levelFilter ? 1 : 0);
+
   const openSection = (section: Section) => {
     const tab = TAB_SECTIONS[section];
     if (tab) router.navigate(tab);
@@ -266,6 +300,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       <Animated.ScrollView
+        ref={scrollRef}
         onScroll={onScroll}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
@@ -301,7 +336,7 @@ export default function HomeScreen() {
             <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             <View style={styles.avatar}>
               {avatarUrl ? (
-                <FadeImage uri={avatarUrl} />
+                <FadeImage uri={avatarUrl} onError={() => setAvatarUrl(null)} />
               ) : (
                 <Text style={styles.avatarText}>{initials(user?.name ?? 'A D')}</Text>
               )}
@@ -321,14 +356,14 @@ export default function HomeScreen() {
             clearLabel={t.common.actions.clear}
           />
           <PressableScale
-            style={[styles.filterButton, filtersActive > 0 && styles.filterButtonActive]}
+            style={[styles.filterButton, filterBadge > 0 && styles.filterButtonActive]}
             onPress={() => setFiltersOpen(true)}
             accessibilityLabel={t.catalog.filters.title}
           >
             <Ionicons name="options-outline" size={21} color={colors.text} />
-            {filtersActive > 0 ? (
+            {filterBadge > 0 ? (
               <Animated.View entering={FadeIn} style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{filtersActive}</Text>
+                <Text style={styles.filterBadgeText}>{filterBadge}</Text>
               </Animated.View>
             ) : null}
           </PressableScale>
@@ -345,7 +380,7 @@ export default function HomeScreen() {
                 <Text style={type.bodySm}>{t.search.noResultsHint}</Text>
               </Animated.View>
             ) : null}
-            {hits.map((hit, index) => (
+            {hits.slice(0, INLINE_HITS).map((hit, index) => (
               <Animated.View key={`${hit.scope}-${hit.id}`} entering={FadeInDown.delay(index * 40).duration(350)}>
                 <PressableScale
                   pressedScale={0.98}
@@ -438,8 +473,35 @@ export default function HomeScreen() {
               </Animated.Text>
               {moodClasses === null ? (
                 <PosterRowSkeleton />
+              ) : moodFailed ? (
+                <Pressable onPress={() => setMoodRetry((k) => k + 1)} accessibilityRole="button" style={styles.retryRow}>
+                  <Ionicons name="refresh" size={16} color={colors.text2} />
+                  <Text style={styles.notice}>
+                    {m.catalogError} · {t.common.actions.retry}
+                  </Text>
+                </Pressable>
               ) : moodClasses.length === 0 ? (
                 <Text style={styles.notice}>{t.home.finder.empty}</Text>
+              ) : moodClasses.length < 3 ? (
+                // Одна-две карточки в карусели оставляют пустой край, поэтому они идут сеткой.
+                <View style={[styles.grid, styles.moodGrid]}>
+                  {moodClasses.map((item, index) => {
+                    const view = cardView(item, t, locale);
+                    return (
+                      <Animated.View key={item.slug} entering={FadeInDown.delay(index * 60).duration(450)}>
+                        <MediaCard
+                          width={gridCardWidth}
+                          uri={view.uri}
+                          title={view.title}
+                          meta={view.meta}
+                          badge={view.badge}
+                          price={view.price}
+                          onPress={() => openDetail('classes', item.slug)}
+                        />
+                      </Animated.View>
+                    );
+                  })}
+                </View>
               ) : (
                 <FlatList
                   horizontal
@@ -884,8 +946,10 @@ const styles = StyleSheet.create({
   filterBadgeText: { fontSize: 11, fontWeight: '800', color: colors.white },
   results: { paddingHorizontal: space.xl, paddingTop: space.lg, gap: 8 },
   filterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  resetText: { fontSize: 14, fontWeight: '700', color: colors.accentBright },
+  resetText: { fontSize: 14, fontWeight: '700', color: colors.accentText },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
+  moodGrid: { paddingHorizontal: space.xl },
+  retryRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 44, paddingLeft: space.xl },
   loader: { marginVertical: space.lg },
   notice: { ...type.bodySm, paddingHorizontal: space.xl },
   noResults: { alignItems: 'center', gap: 8, paddingVertical: 40 },
@@ -910,7 +974,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.sm,
     paddingHorizontal: space.md,
   },
-  viewAllText: { fontSize: 14, fontWeight: '700', color: colors.accentBright },
+  viewAllText: { fontSize: 14, fontWeight: '700', color: colors.accentText },
   spotlightWrap: { marginTop: space.xxl },
   spotlight: { borderRadius: radius.xl, overflow: 'hidden', backgroundColor: colors.surface2 },
   spotlightTop: { position: 'absolute', top: 16, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

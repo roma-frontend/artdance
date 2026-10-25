@@ -1,10 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useRef, useState, type ReactNode } from 'react';
-import { PanResponder, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { GestureDetector, usePanGesture } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { colors, fill, radius, springs } from '@/theme';
+import { catalogFor } from '@/i18n/catalog';
+import { deviceLocale } from '@/lib/i18n';
 
 const ACTION_WIDTH = 96;
 
@@ -24,47 +28,51 @@ type Props = {
  */
 export function SwipeActionRow({ children, actionLabel, onAction, disabled, style }: Props) {
   const x = useSharedValue(0);
+  const startX = useSharedValue(0);
   const reduceMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
-  const openRef = useRef(false);
-  const startX = useRef(0);
+
+  const commit = (next: boolean, wasOpen: boolean) => {
+    if (next && !wasOpen) Haptics.selectionAsync().catch(() => undefined);
+    setOpen(next);
+  };
 
   const settle = (next: boolean) => {
-    openRef.current = next;
     setOpen(next);
     const target = next ? -ACTION_WIDTH : 0;
     x.value = reduceMotion ? target : withSpring(target, springs.snappy);
   };
 
-  const pan = PanResponder.create({
-    onMoveShouldSetPanResponderCapture: (_, g) =>
-      !disabled &&
-      Math.abs(g.dx) > 8 &&
-      Math.abs(g.dx) > Math.abs(g.dy) * 1.5 &&
-      (g.dx < 0 || openRef.current),
-    onPanResponderTerminationRequest: () => false,
-    onPanResponderGrant: () => {
-      startX.current = x.value;
+  // Жест ведётся на UI-потоке; вертикальное движение сразу отдаёт его прокрутке списка.
+  const pan = usePanGesture({
+    enabled: !disabled,
+    activeOffsetX: [-10, open ? 10 : 9999],
+    failOffsetY: [-10, 10],
+    onBegin: () => {
+      startX.value = x.value;
     },
-    onPanResponderMove: (_, g) => {
-      x.value = Math.max(-ACTION_WIDTH, Math.min(0, startX.current + g.dx));
+    onUpdate: (event) => {
+      x.value = Math.max(-ACTION_WIDTH, Math.min(0, startX.value + event.translationX));
     },
-    onPanResponderRelease: (_, g) => release(g.dx, g.vx),
-    onPanResponderTerminate: (_, g) => release(g.dx, g.vx),
+    onDeactivate: (event) => {
+      const wasOpen = startX.value < -ACTION_WIDTH / 2;
+      const next = event.velocityX < -500 ? true : event.velocityX > 500 ? false : x.value < -ACTION_WIDTH / 2;
+      const target = next ? -ACTION_WIDTH : 0;
+      x.value = reduceMotion ? target : withSpring(target, springs.snappy);
+      scheduleOnRN(commit, next, wasOpen);
+    },
   });
-
-  const release = (dx: number, vx: number) => {
-    const position = startX.current + dx;
-    const next = vx < -0.5 ? true : vx > 0.5 ? false : position < -ACTION_WIDTH / 2;
-    if (next && !openRef.current) Haptics.selectionAsync().catch(() => undefined);
-    settle(next);
-  };
 
   const frontStyle = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
 
   return (
     <View style={[styles.wrap, style]}>
-      <View style={styles.actionArea}>
+      {/* Закрытая кнопка не видна диктору; действие доступно через accessibilityActions строки. */}
+      <View
+        style={styles.actionArea}
+        accessibilityElementsHidden={!open}
+        importantForAccessibility={open ? 'auto' : 'no-hide-descendants'}
+      >
         <Pressable
           onPress={() => {
             settle(false);
@@ -79,10 +87,25 @@ export function SwipeActionRow({ children, actionLabel, onAction, disabled, styl
           <Text style={styles.actionText}>{actionLabel}</Text>
         </Pressable>
       </View>
-      <Animated.View style={[styles.front, frontStyle]} {...pan.panHandlers}>
-        {children}
-        {open ? <Pressable style={fill} accessibilityLabel={actionLabel} onPress={() => settle(false)} /> : null}
-      </Animated.View>
+      <GestureDetector gesture={pan}>
+        <Animated.View
+          style={[styles.front, frontStyle]}
+          accessibilityActions={disabled ? undefined : [{ name: 'delete', label: actionLabel }]}
+          onAccessibilityAction={(event) => {
+            if (event.nativeEvent.actionName === 'delete') onAction();
+          }}
+        >
+          {children}
+          {open ? (
+            <Pressable
+              style={fill}
+              accessibilityRole="button"
+              accessibilityLabel={catalogFor(deviceLocale(undefined)).common.actions.close}
+              onPress={() => settle(false)}
+            />
+          ) : null}
+        </Animated.View>
+      </GestureDetector>
     </View>
   );
 }

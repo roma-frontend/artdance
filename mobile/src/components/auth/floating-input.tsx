@@ -1,10 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import type { ComponentProps } from 'react';
+import type { ComponentProps, Ref } from 'react';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View, type TextInputInstance } from 'react-native';
 import Animated, { interpolate, interpolateColor, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
+import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors, radius, springs } from '@/theme';
 
 /** Поле с «всплывающей» подписью, подсветкой фокуса и показом пароля по глазу. */
@@ -14,13 +15,19 @@ export function FloatingInput({
   value,
   onChangeText,
   secureTextEntry,
+  onFocus,
+  onBlur,
+  style,
+  ref,
   ...rest
 }: {
   label: string;
   icon: ComponentProps<typeof Ionicons>['name'];
   value: string;
   onChangeText: (text: string) => void;
-} & Omit<ComponentProps<typeof TextInput>, 'value' | 'onChangeText' | 'placeholder'>) {
+  ref?: Ref<TextInputInstance>;
+} & Omit<ComponentProps<typeof TextInput>, 'value' | 'onChangeText' | 'placeholder' | 'ref'>) {
+  const t = messagesFor(deviceLocale(undefined));
   const [focused, setFocused] = useState(false);
   const [hidden, setHidden] = useState(!!secureTextEntry);
   const lift = useSharedValue(value.length > 0 ? 1 : 0);
@@ -47,28 +54,37 @@ export function FloatingInput({
           {label}
         </Animated.Text>
         <TextInput
-          style={styles.input}
+          {...rest}
+          ref={ref}
+          style={[styles.input, style]}
           value={value}
           onChangeText={onChangeText}
-          onFocus={() => {
+          onFocus={(event) => {
             setFocused(true);
             glow.value = withTiming(1, { duration: 200 });
             Haptics.selectionAsync().catch(() => undefined);
+            onFocus?.(event);
           }}
-          onBlur={() => {
+          onBlur={(event) => {
             setFocused(false);
             glow.value = withTiming(0, { duration: 200 });
+            onBlur?.(event);
           }}
           secureTextEntry={hidden}
           placeholderTextColor="transparent"
           selectionColor={colors.accentBright}
           accessibilityLabel={label}
-          {...rest}
         />
       </View>
       {secureTextEntry ? (
-        <Pressable onPress={() => setHidden((v) => !v)} hitSlop={10} accessibilityRole="button">
-          <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={19} color={colors.text3} />
+        <Pressable
+          onPress={() => setHidden((v) => !v)}
+          hitSlop={12}
+          style={styles.eye}
+          accessibilityRole="button"
+          accessibilityLabel={hidden ? t.showPassword : t.hidePassword}
+        >
+          <Ionicons name={hidden ? 'eye-outline' : 'eye-off-outline'} size={20} color={colors.text3} />
         </Pressable>
       ) : null}
     </Animated.View>
@@ -77,7 +93,7 @@ export function FloatingInput({
 
 const styles = StyleSheet.create({
   field: {
-    height: 60,
+    minHeight: 60,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -85,7 +101,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: 16,
   },
-  body: { flex: 1, justifyContent: 'center', height: '100%' },
+  body: { flex: 1, justifyContent: 'center', alignSelf: 'stretch' },
   label: { position: 'absolute', left: 0, fontSize: 16, transformOrigin: 'left center' },
-  input: { fontSize: 16, color: colors.text, paddingTop: 16, paddingBottom: 0, height: '100%' },
+  input: { fontSize: 16, color: colors.text, paddingTop: 22, paddingBottom: 8, minHeight: 58 },
+  eye: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
 });

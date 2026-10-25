@@ -1,6 +1,6 @@
 import { API_URL } from './config';
 import { readServerMessage } from './server-message';
-import { clearSessionToken, getSessionToken, setSessionToken } from './session';
+import { clearSessionToken, getCachedUserJson, getSessionToken, setCachedUserJson, setSessionToken } from './session';
 
 export type User = {
   id: string;
@@ -60,14 +60,41 @@ async function storeTokenFrom(response: Response): Promise<void> {
   notifySessionChange();
 }
 
+/** Токен сессии, полученный социальным входом: дальше всё как после входа по паролю. */
+export async function adoptSessionToken(token: string): Promise<void> {
+  await setSessionToken(token);
+  notifySessionChange();
+}
+
+/** Вход по identity token Apple с устройства: сервер сам проверяет подпись токена у Apple. */
+export async function signInWithAppleIdToken(input: { token: string; firstName?: string | null; lastName?: string | null; email?: string | null }): Promise<void> {
+  const response = await request('/sign-in/social', {
+    method: 'POST',
+    body: JSON.stringify({
+      provider: 'apple',
+      idToken: {
+        token: input.token,
+        user: {
+          ...(input.email ? { email: input.email } : {}),
+          name: { firstName: input.firstName ?? undefined, lastName: input.lastName ?? undefined },
+        },
+      },
+    }),
+  });
+  if (!response.ok) throw await readError(response);
+  await storeTokenFrom(response);
+}
+
 export async function signIn(email: string, password: string): Promise<User> {
   const response = await request('/sign-in/email', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
   if (!response.ok) throw await readError(response);
+  const { user } = (await response.json()) as { user: User };
+  await setCachedUserJson(JSON.stringify(user)).catch(() => undefined);
   await storeTokenFrom(response);
-  return ((await response.json()) as { user: User }).user;
+  return user;
 }
 
 export async function signUp(name: string, email: string, password: string): Promise<User> {
@@ -76,8 +103,10 @@ export async function signUp(name: string, email: string, password: string): Pro
     body: JSON.stringify({ name, email, password }),
   });
   if (!response.ok) throw await readError(response);
+  const { user } = (await response.json()) as { user: User };
+  await setCachedUserJson(JSON.stringify(user)).catch(() => undefined);
   await storeTokenFrom(response);
-  return ((await response.json()) as { user: User }).user;
+  return user;
 }
 
 /** Запрос ссылки для сброса. Ответ одинаковый для любого адреса, поэтому наличие аккаунта не раскрывается. */
@@ -112,14 +141,47 @@ export async function resetPassword(
   }
 }
 
-/** Текущий пользователь или null, если сессии нет или она истекла. */
+/** Сервер недоступен, а подтверждённого пользователя ещё нет: это не выход, а повод повторить. */
+export class SessionUnavailableError extends Error {
+  constructor() {
+    super('SESSION_UNAVAILABLE');
+  }
+}
+
+async function cachedUser(): Promise<User | null> {
+  try {
+    const json = await getCachedUserJson();
+    return json ? (JSON.parse(json) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Текущий пользователь или null, если сессии нет или она истекла. Без сети и при 5xx
+ * возвращается последний подтверждённый пользователь, а без него — SessionUnavailableError.
+ */
 export async function getCurrentUser(): Promise<User | null> {
   const token = await getSessionToken();
   if (!token) return null;
-  const response = await request('/get-session');
-  if (!response.ok) return null;
-  const body = (await response.json()) as { user?: User } | null;
-  return body?.user ?? null;
+  let response: Response;
+  try {
+    response = await request('/get-session');
+  } catch {
+    const known = await cachedUser();
+    if (known) return known;
+    throw new SessionUnavailableError();
+  }
+  if (response.status === 401 || response.status === 403) return null;
+  if (!response.ok) {
+    const known = await cachedUser();
+    if (known) return known;
+    throw new SessionUnavailableError();
+  }
+  const body = (await response.json().catch(() => null)) as { user?: User } | null;
+  const user = body?.user ?? null;
+  if (user) await setCachedUserJson(JSON.stringify(user)).catch(() => undefined);
+  return user;
 }
 
 /** Смена имени в профиле (адрес и роль здесь не меняются). */
@@ -138,8 +200,19 @@ export async function changePassword(currentPassword: string, newPassword: strin
 }
 
 export async function signOut(): Promise<void> {
-  // Ошибка сети не должна мешать локальному выходу: токен всё равно стирается.
-  await request('/sign-out', { method: 'POST', body: '{}' }).catch(() => undefined);
+  // Локальный выход не ждёт сеть: серверный отзыв токена идёт в фоне с лимитом времени.
+  const token = await getSessionToken();
   await clearSessionToken();
   notifySessionChange();
+  if (!token) return;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  fetch(`${API_URL}/api/auth/sign-out`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: '{}',
+    signal: controller.signal,
+  })
+    .catch(() => undefined)
+    .finally(() => clearTimeout(timer));
 }
