@@ -1,6 +1,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
 import { SiteFooter } from '@/components/layout/site-footer';
+import { SessionRoomSelect } from '@/components/venue/session-room-select';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Price } from '@/components/ui/price';
@@ -11,6 +12,7 @@ import { getCaller } from '@/lib/auth/guards';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 import { getVenueDashboard } from '@/server/venue/dashboard';
+import { getVenueUpcomingSessions } from '@/server/venue/room-assignment';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -28,6 +30,7 @@ export default async function VenuePage({ params }: { params: Promise<{ locale: 
     return null;
   }
   const { venues, bookings } = await getVenueDashboard(caller.id);
+  const sessionsByVenue = await Promise.all(venues.map((venue) => getVenueUpcomingSessions(venue.id)));
   const tFooter = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
   const tAdmin = await getTranslations({ locale: locale as Locale, namespace: 'admin' });
   const format = await getFormatter({ locale: locale as Locale });
@@ -40,8 +43,10 @@ export default async function VenuePage({ params }: { params: Promise<{ locale: 
           <EmptyState title={tFooter('venueDashboardEmpty')} />
         </div>
       ) : (
-        venues.map((venue) => {
+        venues.map((venue, index) => {
           const venueBookings = bookings.filter((booking) => booking.venueId === venue.id);
+          const venueSessions = sessionsByVenue[index] ?? [];
+          const activeRooms = venue.rooms.filter((room) => room.isActive).map(({ id, name }) => ({ id, name }));
           return (
             <section key={venue.id} className="mt-10">
               <h2 className="text-heading-3">{venue.name}</h2>
@@ -84,6 +89,34 @@ export default async function VenuePage({ params }: { params: Promise<{ locale: 
                         {format.dateTime(booking.endsAt, { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <span className="text-body-sm font-mono text-content-tertiary">{booking.reference}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <h3 className="text-card-title mt-8">{tFooter('venueDashboardSessions')}</h3>
+              <p className="text-body-sm mt-1 text-content-tertiary">{tFooter('venueDashboardSessionsHint')}</p>
+              {venueSessions.length === 0 ? (
+                <p className="text-body mt-2 text-content-secondary">{tFooter('venueDashboardNoSessions')}</p>
+              ) : (
+                <ul className="mt-3 divide-y divide-border-default">
+                  {venueSessions.map((session) => (
+                    <li key={session.id} className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 py-3">
+                      <div className="flex flex-col">
+                        <span className="text-body text-content-primary">{session.danceClass.title}</span>
+                        <span className="text-body-sm text-content-tertiary tabular-nums">
+                          {format.dateTime(session.startsAt, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          {' – '}
+                          {format.dateTime(session.endsAt, { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <SessionRoomSelect
+                        sessionId={session.id}
+                        roomId={session.roomId}
+                        rooms={activeRooms}
+                        noRoomLabel={tFooter('venueDashboardNoRoom')}
+                        label={tFooter('venueDashboardRoomLabel')}
+                      />
                     </li>
                   ))}
                 </ul>

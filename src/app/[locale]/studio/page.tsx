@@ -29,6 +29,7 @@ export default async function StudioPage({ params }: { params: Promise<{ locale:
       <h1 className="text-heading-2">{tFooter('studioDashboardTitle')}</h1>
       <div className="mt-6 flex flex-wrap gap-3">
         <Button asChild variant="outline"><Link href={routes.instructorAvailability()}>{tFooter('studioDashboardAvailability')}</Link></Button>
+        <Button asChild variant="outline"><Link href={routes.instructorClasses()}>{tFooter('studioDashboardClasses')}</Link></Button>
         <Button asChild variant="outline"><Link href={routes.instructorCheckIn()}>{tFooter('studioCheckInTitle')}</Link></Button>
         <Button asChild variant="outline"><Link href={routes.account()}>{tCommon('actions.continue')}</Link></Button>
       </div>

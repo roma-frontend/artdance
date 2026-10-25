@@ -7,20 +7,28 @@ import en from '../src/i18n/messages/en';
 const instructor = demoInstructors[0]!;
 const venue = demoVenues[0]!;
 
-const dashboards = [
+type DashboardSection = { role: 'link' | 'heading'; name: string };
+
+const dashboards: Array<{
+  path: string;
+  email: string;
+  name: string;
+  title: string;
+  sections: DashboardSection[];
+}> = [
   {
     path: routes.instructorDashboard(),
     email: instructor.email,
     name: instructor.name,
     title: en.footer.studioDashboardTitle,
-    unavailable: [en.footer.studioDashboardRequests],
+    sections: [{ role: 'link', name: en.footer.studioCheckInTitle }],
   },
   {
     path: routes.venueDashboard(),
     email: demoVenueOwnerEmail(venue.slug),
     name: `${venue.name} Owner`,
     title: en.footer.venueDashboardTitle,
-    unavailable: [en.footer.venueDashboardRooms],
+    sections: [{ role: 'heading', name: en.footer.venueDashboardRooms }],
   },
 ];
 
@@ -44,8 +52,11 @@ for (const dashboard of dashboards) {
     await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
     await page.getByRole('button', { name: en.auth.signIn.submit }).click();
     await expect(page.getByRole('heading', { level: 1, name: dashboard.title, exact: true })).toBeVisible({ timeout: 30_000 });
-    for (const name of dashboard.unavailable) {
-      await expect(page.getByRole('button', { name, exact: true })).toBeDisabled();
+    for (const section of dashboard.sections) {
+      const locator = section.role === 'heading'
+        ? page.getByRole('heading', { level: 3, name: section.name, exact: true }).first()
+        : page.getByRole('link', { name: section.name, exact: true });
+      await expect(locator).toBeVisible();
     }
     await page.getByRole('link', { name: en.common.actions.continue, exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: dashboard.name, exact: true })).toBeVisible();
