@@ -3,11 +3,12 @@ import type { Metadata } from 'next';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SessionRoomSelect } from '@/components/venue/session-room-select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Price } from '@/components/ui/price';
 import { routes, site } from '@/config';
 import type { Locale } from '@/i18n/config';
-import { redirect } from '@/i18n/routing';
+import { Link, redirect } from '@/i18n/routing';
 import { getCaller } from '@/lib/auth/guards';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
@@ -33,6 +34,7 @@ export default async function VenuePage({ params }: { params: Promise<{ locale: 
   const sessionsByVenue = await Promise.all(venues.map((venue) => getVenueUpcomingSessions(venue.id)));
   const tFooter = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
   const tAdmin = await getTranslations({ locale: locale as Locale, namespace: 'admin' });
+  const tCommon = await getTranslations({ locale: locale as Locale, namespace: 'common' });
   const format = await getFormatter({ locale: locale as Locale });
   return (
     <main id={site.mainContentId} className="page-container inner-page">
@@ -125,6 +127,9 @@ export default async function VenuePage({ params }: { params: Promise<{ locale: 
           );
         })
       )}
+      <div className="mt-10 flex flex-wrap gap-3">
+        <Button asChild variant="outline"><Link href={routes.account()}>{tCommon('actions.continue')}</Link></Button>
+      </div>
       <SiteFooter />
     </main>
   );
