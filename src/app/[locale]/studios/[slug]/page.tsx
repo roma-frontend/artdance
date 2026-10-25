@@ -3,13 +3,11 @@
  *
  * Что решено осознанно.
  *
- * **Главное действие здесь — не аренда.** Аренда зала (`/studios/[slug]/book`,
- * `venue.minRentalMinutes`) приходит вместе с движком доступности — это фаза 3
- * плана. Ссылка на несуществующий маршрут была бы 404 в каталоге, а кнопка,
- * которая ничего не делает, хуже её отсутствия. Поэтому первичное действие —
- * «занятия здесь»: они бронируются уже сегодня, через инструктора. Аренда стоит
- * рядом ценой и выключенной кнопкой с объяснением (`common.states.comingSoon`) —
- * тем же приёмом, что недоступный способ оплаты на оформлении заказа.
+ * **Главное действие здесь — занятия.** Они бронируются через инструктора.
+ * Аренда зала (`/studios/[slug]/book`) открыта, когда включена функция `events`.
+ * Если она выключена, рядом стоит выключенная кнопка с объяснением
+ * (`common.states.comingSoon`) — тем же приёмом, что недоступный способ оплаты
+ * на оформлении заказа.
  *
  * **Залов внутри площадки нет.** Инвентарь экранов обещает «залы», но в данных
  * заказчика у площадки одна площадь и одна вместимость. Придумать три зала ради
@@ -262,29 +260,35 @@ export default async function StudioDetailPage({ params }: PageProps) {
                 </Link>
               </Button>
 
-              {/*
-                Аренда объявлена, но недоступна. Кнопка выключена и объяснена
-                рядом, а не спрятана: цена зала — половина причины, по которой на
-                эту страницу заходят, и умолчание о самой аренде выглядело бы как
-                недоделка, а не как решение.
-              */}
-              <Button
-                block
-                variant="outline"
-                size="lg"
-                disabled
-                aria-describedby="rent-unavailable"
-                className="mt-3"
-              >
-                {t('bookCta')}
-              </Button>
+              {eventsEnabled ? (
+                <Button asChild block variant="outline" size="lg" className="mt-3">
+                  <Link href={routes.studioBooking(item.slug)}>{t('bookCta')}</Link>
+                </Button>
+              ) : (
+                <>
+                  {/*
+                    Аренда выключена на уровне тарифа. Кнопка видна и объяснена,
+                    а не спрятана: цена зала — половина причины зайти на страницу.
+                  */}
+                  <Button
+                    block
+                    variant="outline"
+                    size="lg"
+                    disabled
+                    aria-describedby="rent-unavailable"
+                    className="mt-3"
+                  >
+                    {t('bookCta')}
+                  </Button>
 
-              <p
-                id="rent-unavailable"
-                className="text-caption mt-3 rounded-md bg-accent-soft px-4 py-3 text-content-secondary"
-              >
-                {tCommon('states.comingSoon')}
-              </p>
+                  <p
+                    id="rent-unavailable"
+                    className="text-caption mt-3 rounded-md bg-accent-soft px-4 py-3 text-content-secondary"
+                  >
+                    {tCommon('states.comingSoon')}
+                  </p>
+                </>
+              )}
             </div>
           </aside>
         </div>

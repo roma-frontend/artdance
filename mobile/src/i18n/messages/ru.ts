@@ -1631,7 +1631,6 @@ const ru: Messages = {
     studioDashboardAvailability: 'Доступность',
     studioDashboardRequests: 'Заявки',
     notificationsTitle: 'Уведомления',
-    notificationsHint: 'Настройки каналов — скоро.',
     cityCoordinates: 'Координаты: {coords}',
     cityDistricts: '· районов: {count}',
     verifyEmailTitle: 'Подтвердите почту',

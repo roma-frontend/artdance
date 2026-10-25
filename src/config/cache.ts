@@ -115,6 +115,8 @@ export const privatePaths = [
    * ПОСЛЕДНИМИ — см. `buildCacheHeaderRules`.
    */
   '/instructors/:slug/book',
+  /* Аренда зала: та же схема, что и бронирование у инструктора — свободные часы и вход по сессии. */
+  '/studios/:slug/book',
   '/account',
   '/account/:path*',
   /* Онбординг зависит от сессии: у вошедшего и гостя — разные экраны. */

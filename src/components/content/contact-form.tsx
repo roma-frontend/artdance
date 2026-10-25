@@ -38,9 +38,11 @@ import { sendContactMessage } from '@/server/actions/contact';
 interface ContactFormProps {
   locale: Locale;
   className?: string;
+  /** Тема, выбранная при открытии формы (например, корпоративная страница). */
+  defaultTopic?: ContactTopic;
 }
 
-export function ContactForm({ locale, className }: ContactFormProps) {
+export function ContactForm({ locale, className, defaultTopic = 'booking' }: ContactFormProps) {
   const t = useTranslations('contact.form');
   const tRoot = useTranslations();
   const tCommon = useTranslations('common');
@@ -53,7 +55,7 @@ export function ContactForm({ locale, className }: ContactFormProps) {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [topic, setTopic] = useState<ContactTopic>('booking');
+  const [topic, setTopic] = useState<ContactTopic>(defaultTopic);
   const [message, setMessage] = useState('');
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 

@@ -226,6 +226,38 @@ export const getVenueDetail = defineQuery({
   },
 });
 
+export interface RentableRoom {
+  id: string;
+  name: string;
+  capacity: number;
+  areaSqm: number | null;
+  pricePerHour: number;
+}
+
+export interface RentableVenue {
+  slug: string;
+  name: string;
+  rooms: RentableRoom[];
+}
+
+/** Залы для формы аренды. Без кэша: состояние зала и его ставка нужны свежими на момент брони. */
+export async function getRentableRooms(slug: string): Promise<RentableVenue | null> {
+  const row = await db.venue.findFirst({
+    where: { slug, ...publicVenueWhere },
+    select: {
+      slug: true,
+      name: true,
+      rooms: {
+        where: { ...notTrashed, isActive: true },
+        orderBy: { name: 'asc' },
+        select: { id: true, name: true, capacity: true, areaSqm: true, pricePerHour: true },
+      },
+    },
+  });
+  if (!row) return null;
+  return { slug: row.slug, name: row.name, rooms: row.rooms };
+}
+
 export const getVenueFacets = defineQuery({
   name: 'venueFacets',
   tags: () => [cacheTags.venues(), cacheTags.catalogStats()],

@@ -12,14 +12,14 @@ import { colors, radius, space, type } from '@/theme';
 export type ProfileField = 'name' | 'password' | 'photo' | 'email';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
-type Item = { key: ProfileField; icon: IconName; title: string; hint: string; editable: boolean; soon: boolean };
+type Item = { key: ProfileField; icon: IconName; title: string; hint: string; editable: boolean };
 
 function itemsFor(t: Messages): Item[] {
   return [
-    { key: 'name', icon: 'person-outline', title: t.name, hint: t.profileNameHint, editable: true, soon: false },
-    { key: 'password', icon: 'lock-closed-outline', title: t.profilePasswordTitle, hint: t.profilePasswordHint, editable: true, soon: false },
-    { key: 'photo', icon: 'camera-outline', title: t.profilePhotoTitle, hint: t.profilePhotoHint, editable: true, soon: false },
-    { key: 'email', icon: 'mail-outline', title: t.email, hint: t.profileEmailHint, editable: false, soon: false },
+    { key: 'name', icon: 'person-outline', title: t.name, hint: t.profileNameHint, editable: true },
+    { key: 'password', icon: 'lock-closed-outline', title: t.profilePasswordTitle, hint: t.profilePasswordHint, editable: true },
+    { key: 'photo', icon: 'camera-outline', title: t.profilePhotoTitle, hint: t.profilePhotoHint, editable: true },
+    { key: 'email', icon: 'mail-outline', title: t.email, hint: t.profileEmailHint, editable: false },
   ];
 }
 
@@ -67,7 +67,7 @@ export function ProfileSheet({ visible, onClose, onPick }: Props) {
                 <View style={[styles.badge, item.editable ? styles.badgeOn : styles.badgeOff]}>
                   <Ionicons name={item.editable ? 'checkmark' : 'lock-closed'} size={11} color={item.editable ? colors.metal : colors.text3} />
                   <Text style={[styles.badgeText, { color: item.editable ? colors.metal : colors.text3 }]}>
-                    {item.editable ? t.profileEditable : item.soon ? t.profileSoon : t.profileLocked}
+                    {item.editable ? t.profileEditable : t.profileLocked}
                   </Text>
                 </View>
               </PressableScale>

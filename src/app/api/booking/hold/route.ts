@@ -6,6 +6,7 @@ import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
 import { checkRateLimit, clientIdentifier, rateLimitHeaders } from '@/lib/security/rate-limit';
 import { createSlotHold, extendSlotHold, releaseSlotHold } from '@/server/hold/service';
+import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 import { booking } from '@/config/business';
 import { publicInstructorWhere } from '@/server/queries/instructors';
 import { publicClassWhere } from '@/server/queries/classes';
@@ -48,7 +49,7 @@ async function loadAvailabilityForInstructor(instructorId: string) {
 }
 
 async function loadAvailabilityForRoom(roomId: string) {
-  const room = await db.room.findUnique({ where: { id: roomId }, select: { id: true } });
+  const room = await db.room.findFirst({ where: { id: roomId, isActive: true, deletedAt: null }, select: { id: true } });
   if (!room) return null;
   const rules = await db.availabilityRule.findMany({ where: { roomId, isActive: true }, select: { weekday: true, startTime: true, endTime: true, validFrom: true, validUntil: true, isActive: true } });
   const exceptions = await db.availabilityException.findMany({ where: { roomId }, select: { startsAt: true, endsAt: true, isAvailable: true } });
@@ -108,6 +109,9 @@ export async function POST(request: Request) {
     capacity = { booked: session.bookedCount, requested: 1, total: session.capacity };
   }
   if (!resolvedInstructorId && !resolvedRoomId) return json({ error: 'VALIDATION_FAILED', messageKey: 'validation.required', field: 'instructorId' }, 400);
+  if (resolvedRoomId && !resolvedInstructorId) {
+    try { await assertEntitlementOrThrow('events'); } catch (error) { return errorFromDomain(error); }
+  }
   const availability = resolvedInstructorId ? await loadAvailabilityForInstructor(resolvedInstructorId) : await loadAvailabilityForRoom(resolvedRoomId!);
   if (!availability) return json({ error: 'NOT_FOUND', messageKey: 'errors.notFound.description' }, 404);
   if ('instructorId' in availability && typeof availability.instructorId === 'string') {

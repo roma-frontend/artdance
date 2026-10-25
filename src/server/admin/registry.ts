@@ -45,6 +45,7 @@ import { money } from '@/domain/money';
 import { notTrashed } from '@/domain/trash';
 import { danceSportDisciplineMeta, type DisciplineId } from '@/domain/dancesport';
 import { db } from '@/lib/db';
+import { assertSessionRoomFree } from '@/server/booking/room-conflict';
 
 /* ─────────────────────────────── Общие типы ─────────────────────────────── */
 
@@ -1192,6 +1193,10 @@ function toPrismaData(spec: AdminResourceSpec, values: AdminFormValues): Record<
   return data;
 }
 
+function sessionRoomFields(data: Record<string, unknown>) {
+  return { roomId: data.roomId, startsAt: data.startsAt, endsAt: data.endsAt, isCancelled: data.isCancelled };
+}
+
 /**
  * Обязательные поля не могут уехать в БД как `null`: схема это уже проверила, но
  * `toPrismaData` приводит пустое к `null` единообразно, и обязательное поле с
@@ -1281,6 +1286,7 @@ export async function createResource(resource: AdminResource, values: AdminFormV
    */
   return db.$transaction(async (tx) => {
     const client = tx as unknown as WriteClient;
+    if (resource === 'sessions') await assertSessionRoomFree(tx, sessionRoomFields(data));
     const created = await writeDelegate(resource, client).create({ data, select: { id: true } });
     await writeTranslations(resource, created.id, spec, values, client);
 
@@ -1306,6 +1312,7 @@ export async function updateResource(
 
   await db.$transaction(async (tx) => {
     const client = tx as unknown as WriteClient;
+    if (resource === 'sessions') await assertSessionRoomFree(tx, sessionRoomFields(data), id);
     await writeDelegate(resource, client).update({ where: { id }, data, select: { id: true } });
     await writeTranslations(resource, id, spec, values, client);
   });

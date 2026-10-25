@@ -1654,7 +1654,6 @@ const en = {
     studioDashboardAvailability: 'Availability',
     studioDashboardRequests: 'Requests',
     notificationsTitle: 'Notifications',
-    notificationsHint: 'Channel settings — coming soon.',
     cityCoordinates: 'Coordinates: {coords}',
     cityDistricts: '· {count} districts',
     verifyEmailTitle: 'Verify email',

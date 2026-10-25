@@ -1,6 +1,7 @@
 import 'server-only';
-import { booking } from '@/config/business';
+import { booking, venue } from '@/config/business';
 import { domainErrors } from '@/domain/errors';
+import { assertRentalDuration, isRentalHold, rentalMinutes } from '@/domain/rental';
 import { assertValidSlotHoldInput, isHoldExpired, slotHoldExpiresAt } from '@/domain/slot-hold';
 import { assertInsideAvailability, assertNoConflict, assertWithinPolicy } from '@/domain/availability/conflicts';
 import { expandRules, type AvailabilityRule } from '@/domain/availability/compute';
@@ -45,7 +46,9 @@ export async function createSlotHold(request: HoldRequest): Promise<HoldResult> 
   const ttl = booking.holdTtlMinutes;
   const expiresAt = slotHoldExpiresAt(now, ttl);
   assertValidSlotHoldInput({ instructorId: request.instructorId ?? null, roomId: request.roomId ?? null, startsAt: request.startsAt, endsAt: request.endsAt, userId: request.userId ?? null, anonymousId: request.anonymousId ?? null, expiresAt });
-  assertWithinPolicy(candidate, { minLeadMinutes: booking.minLeadTimeMinutes, maxAdvanceDays: booking.maxAdvanceDays, allowedDurationsMinutes: booking.durationsMinutes, granularityMinutes: booking.slotGranularityMinutes, timeZone: site.timeZone }, now);
+  const rental = isRentalHold({ roomId: request.roomId ?? null, instructorId: request.instructorId ?? null, sessionId: request.sessionId ?? null });
+  assertWithinPolicy(candidate, { minLeadMinutes: booking.minLeadTimeMinutes, maxAdvanceDays: booking.maxAdvanceDays, allowedDurationsMinutes: rental ? [] : booking.durationsMinutes, granularityMinutes: booking.slotGranularityMinutes, timeZone: site.timeZone }, now);
+  if (rental) assertRentalDuration(rentalMinutes(request.startsAt, request.endsAt), { minMinutes: venue.minRentalMinutes, maxMinutes: venue.maxRentalMinutes, granularityMinutes: venue.rentalGranularityMinutes });
   if (request.capacity) {
     const { booked, requested, total } = request.capacity;
     if (booked + requested > total) throw domainErrors.capacityExceeded(Math.max(0, total - booked));
@@ -80,7 +83,8 @@ export async function extendSlotHold(holdId: string, owner: { userId?: string | 
   // Продление не может увести слот за maxAdvanceDays
   // eslint-disable-next-line @typescript-eslint/consistent-type-imports -- type-only inside function scope intentional for hold expiry path
   const candidate: import('@/lib/time/interval').Interval = { start: existing.startsAt, end: existing.endsAt };
-  assertWithinPolicy(candidate, { minLeadMinutes: booking.minLeadTimeMinutes, maxAdvanceDays: booking.maxAdvanceDays, allowedDurationsMinutes: booking.durationsMinutes, granularityMinutes: booking.slotGranularityMinutes, timeZone: site.timeZone }, now);
+  const rental = isRentalHold(existing);
+  assertWithinPolicy(candidate, { minLeadMinutes: booking.minLeadTimeMinutes, maxAdvanceDays: booking.maxAdvanceDays, allowedDurationsMinutes: rental ? [] : booking.durationsMinutes, granularityMinutes: booking.slotGranularityMinutes, timeZone: site.timeZone }, now);
   const nextExpiresAt = slotHoldExpiresAt(now, booking.holdTtlMinutes);
   const updated = await db.slotHold.update({ where: { id: holdId }, data: { expiresAt: nextExpiresAt, extensions: { increment: 1 } }, select: { id: true, startsAt: true, endsAt: true, expiresAt: true, extensions: true } });
   return updated;

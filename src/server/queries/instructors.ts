@@ -54,7 +54,7 @@ import { db } from '@/lib/db';
 import { defineQuery } from '@/server/query';
 
 import { classCardsBy } from './classes';
-import { ratingFrom, reviewSelect, type ReviewRow } from './reviews';
+import { approvedReviewsWhere, ratingFrom, reviewSelect, toReview, type ReviewRow } from './reviews';
 import { firstMediaRef, heroMediaRef, type MediaRow } from './media';
 import { mediaRelation, notTrashed } from './relations';
 export const instructorSelect = {
@@ -333,6 +333,41 @@ export const getInstructorDetail = defineQuery({
     };
   },
 });
+
+/**
+ * Все одобренные отзывы инструктора, постранично, для `/instructors/[slug]/reviews`.
+ *
+ * Не кешируется: номер страницы приходит из запроса, а отзыв, одобренный модерацией,
+ * должен появиться сразу. Видимость задаёт только `approvedReviewsWhere`.
+ * Возвращает `null`, если инструктор не публичен.
+ */
+export async function getInstructorReviewsPage(input: { slug: string; page: number; pageSize: number }) {
+  const profile = await db.instructorProfile.findFirst({
+    where: { slug: input.slug, ...publicInstructorWhere },
+    select: { id: true, ratingAverage: true, ratingCount: true },
+  });
+  if (!profile) return null;
+
+  const where = { instructorId: profile.id, ...approvedReviewsWhere };
+  const [rows, total] = await Promise.all([
+    db.review.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (input.page - 1) * input.pageSize,
+      take: input.pageSize,
+      select: reviewSelect,
+    }),
+    db.review.count({ where }),
+  ]);
+
+  return {
+    rating: { average: ratingNumber(profile.ratingAverage), count: profile.ratingCount },
+    items: (rows as unknown as ReviewRow[]).map(toReview),
+    total,
+    page: input.page,
+    pageSize: input.pageSize,
+  };
+}
 
 export const getInstructorFacets = defineQuery({
   name: 'instructorFacets',

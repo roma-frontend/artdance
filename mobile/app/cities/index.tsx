@@ -23,7 +23,7 @@ export default function CitiesIndexScreen() {
   const { state, reload } = useCities();
 
   const back = () => (router.canGoBack() ? router.back() : router.replace('/'));
-  const openCity = (city: string) => router.push({ pathname: '/cities/[city]/index', params: { city } });
+  const openCity = (city: string) => router.push({ pathname: '/cities/[city]', params: { city } });
   const openDistrict = (city: string, district: string) =>
     router.push({ pathname: '/cities/[city]/[district]', params: { city, district } });
 

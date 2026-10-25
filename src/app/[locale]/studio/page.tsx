@@ -27,19 +27,10 @@ export default async function StudioPage({ params }: { params: Promise<{ locale:
   return (
     <main id={site.mainContentId} className="page-container inner-page">
       <h1 className="text-heading-2">{tFooter('studioDashboardTitle')}</h1>
-      <p className="text-body mt-2 text-content-secondary">{tCommon('states.comingSoon')} — {tFooter('applyHint')}</p>
       <div className="mt-6 flex flex-wrap gap-3">
         <Button asChild variant="outline"><Link href={routes.instructorAvailability()}>{tFooter('studioDashboardAvailability')}</Link></Button>
-        <Button disabled variant="outline">{tFooter('studioDashboardRequests')}</Button>
+        <Button asChild variant="outline"><Link href={routes.instructorCheckIn()}>{tFooter('studioCheckInTitle')}</Link></Button>
         <Button asChild variant="outline"><Link href={routes.account()}>{tCommon('actions.continue')}</Link></Button>
-      </div>
-      <div className="my-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {[routes.instructorSchedule(), routes.instructorAvailability(), routes.instructorClasses(), routes.instructorRequests(), routes.instructorEarnings(), routes.instructorProfile()].map((href) => (
-          <div key={href} className="rounded-xl border border-border-default bg-surface-card p-5">
-            <span className="font-mono text-sm">{href}</span>
-            <span className="text-caption mt-1 block text-content-tertiary">{tCommon('states.comingSoon')}</span>
-          </div>
-        ))}
       </div>
       <SiteFooter />
     </main>

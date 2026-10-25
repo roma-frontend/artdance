@@ -196,7 +196,7 @@ function toTemplate(path: string): string {
  * означало бы приглашение проиндексировать чужой заказ.
  */
 // Search is a redirect, not a second indexable page.
-const NOT_IN_SITEMAP = ['/search', '/cart', '/checkout', '/checkout/[step]', '/booking', '/booking/[holdId]/confirm', '/instructors/[slug]/book'];
+const NOT_IN_SITEMAP = ['/search', '/cart', '/checkout', '/checkout/[step]', '/booking', '/booking/[holdId]/confirm', '/instructors/[slug]/book', '/studios/[slug]/book'];
 
 /**
  * Закрыт ли маршрут от индексации.

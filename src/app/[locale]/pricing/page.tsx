@@ -103,11 +103,7 @@ export default async function PricingPage({ params }: PageProps) {
             <ul className="grid gap-6 lg:grid-cols-3">
               {orderedSubscriptionPlans.map((plan) => (
                 <li key={plan.id} className="flex">
-                  <PlanCard
-                    plan={plan}
-                    comingSoonLabel={t('comingSoon.title' as never) as unknown as string}
-                    signedIn={Boolean(caller)}
-                  />
+                  <PlanCard plan={plan} signedIn={Boolean(caller)} />
                 </li>
               ))}
             </ul>
@@ -171,13 +167,9 @@ export default async function PricingPage({ params }: PageProps) {
  */
 function PlanCard({
   plan,
-  disabled = false,
-  comingSoonLabel = 'Coming soon',
   signedIn = false,
 }: {
   plan: SubscriptionPlan;
-  disabled?: boolean;
-  comingSoonLabel?: string;
   signedIn?: boolean;
 }) {
   const t = useTranslations('pricing');
@@ -186,27 +178,19 @@ function PlanCard({
 
   return (
     <article
-      data-disabled={disabled || undefined}
       className={cn(
         'flex h-full flex-col rounded-xl p-8 transition',
-        disabled && 'grayscale-[0.15]',
         plan.highlighted
           ? 'border-2 border-accent bg-surface-card shadow-lg'
           : 'border border-border-default bg-surface-card',
       )}
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        {disabled ? (
-          <Badge variant="warning">{comingSoonLabel}</Badge>
-        ) : (
-          <>
-            {plan.highlighted && <Badge variant="accent">{t('mostPopular')}</Badge>}
-            {plan.trialDays > 0 && (
-              <Badge variant="metal">
-                {t('trialBadge', { days: tRoot('common.units.days', { count: plan.trialDays }) })}
-              </Badge>
-            )}
-          </>
+        {plan.highlighted && <Badge variant="accent">{t('mostPopular')}</Badge>}
+        {plan.trialDays > 0 && (
+          <Badge variant="metal">
+            {t('trialBadge', { days: tRoot('common.units.days', { count: plan.trialDays }) })}
+          </Badge>
         )}
       </div>
 
@@ -236,25 +220,19 @@ function PlanCard({
         ))}
       </ul>
 
-      {disabled ? (
-        <Button block className="mt-8" variant="outline" disabled aria-disabled>
-          {t('selectCta', { plan: tRoot(subscriptionPlanNameKey(plan.id)) })}
-        </Button>
-      ) : (
-        /*
-         * Кнопка покупает, а не звонит. Раньше она вела на `/contact`: витрина
-         * была, а покупки нет. Гость получает ссылку на вход — подписка
-         * привязана к аккаунту.
-         */
-        <SubscribeButton
-          planId={plan.id}
-          interval="MONTHLY"
-          planName={tRoot(subscriptionPlanNameKey(plan.id))}
-          label={t('selectCta', { plan: tRoot(subscriptionPlanNameKey(plan.id)) })}
-          variant={plan.highlighted ? 'accent' : 'outline'}
-          signedIn={signedIn}
-        />
-      )}
+      {/*
+       * Кнопка покупает, а не звонит. Раньше она вела на `/contact`: витрина
+       * была, а покупки нет. Гость получает ссылку на вход — подписка
+       * привязана к аккаунту.
+       */}
+      <SubscribeButton
+        planId={plan.id}
+        interval="MONTHLY"
+        planName={tRoot(subscriptionPlanNameKey(plan.id))}
+        label={t('selectCta', { plan: tRoot(subscriptionPlanNameKey(plan.id)) })}
+        variant={plan.highlighted ? 'accent' : 'outline'}
+        signedIn={signedIn}
+      />
     </article>
   );
 }

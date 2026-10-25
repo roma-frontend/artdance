@@ -6,6 +6,7 @@ import { getCaller } from '@/lib/auth/guards';
 import { Price } from '@/components/ui/price';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/data/status-badge';
+import { BookingPayPanel } from '@/components/booking/booking-pay-panel';
 import { CancelBookingButton } from '@/components/booking/cancel-booking-button';
 import { RescheduleBookingButton } from '@/components/booking/reschedule-booking-button';
 import { routes, site } from '@/config';
@@ -13,6 +14,7 @@ import { bookingStatuses, type BookingStatus } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
 import { Link, redirect } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
+import { availablePaymentMethodsWithGlobal } from '@/lib/payments';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 export const runtime = 'nodejs';
@@ -131,6 +133,13 @@ export default async function BookingConfirmPage({ params }: PageProps) {
             <CancelBookingButton bookingId={resolved.id} />
             {canReschedule && <RescheduleBookingButton bookingId={resolved.id} />}
           </div>
+        )}
+        {isOwner && resolved.status === 'PENDING' && (
+          <section className="mt-6 grid min-w-0 gap-3 border-t border-border-default pt-6">
+            <h2 className="text-card-title">{tBooking('payTitle')}</h2>
+            <p className="text-body-sm text-content-secondary">{tBooking('payHint')}</p>
+            <BookingPayPanel bookingId={resolved.id} methods={availablePaymentMethodsWithGlobal()} />
+          </section>
         )}
         <div className="mt-6 flex flex-wrap gap-3">
           <Button asChild variant="outline" className="max-w-full break-words"><Link href={routes.bookingPass(resolved.id)}>{tBooking('summaryTitle')}</Link></Button>

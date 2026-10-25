@@ -18,7 +18,7 @@ import type { MessageKey } from '@/i18n/types';
  * Порядок значим: он определяет порядок в списке. Первая тема выбрана по
  * умолчанию — это самое частое обращение (вопрос по брони), а не «другое».
  */
-export const contactTopics = ['booking', 'order', 'instructor', 'press', 'other'] as const;
+export const contactTopics = ['booking', 'order', 'instructor', 'corporate', 'press', 'other'] as const;
 
 export type ContactTopic = (typeof contactTopics)[number];
 

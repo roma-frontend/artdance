@@ -208,6 +208,7 @@ export const routes = {
   instructorRequests: () => '/studio/requests',
   instructorEarnings: () => '/studio/earnings',
   instructorProfile: () => '/studio/profile',
+  instructorCheckIn: () => '/studio/check-in',
 
   /* Кабинет владельца площадки */
   venueDashboard: () => '/venue',
@@ -307,6 +308,8 @@ export const apiRoutes = {
   search: () => '/api/search',
   availability: () => '/api/availability',
   slotHold: () => '/api/booking/hold',
+  booking: () => '/api/booking',
+  bookingPay: (bookingId: string) => `/api/booking/${encodeURIComponent(bookingId)}/pay`,
   paymentIntent: () => '/api/payments/intent',
   paymentWebhook: (provider: string) => `/api/webhooks/payments/${provider}`,
   emailWebhook: () => '/api/webhooks/email',

@@ -1637,7 +1637,6 @@ const hy: Messages = {
     studioDashboardAvailability: "Հասանելիություն",
     studioDashboardRequests: "Հայտեր",
     notificationsTitle: "Ծանուցումներ",
-    notificationsHint: "Ալիքների կարգավորումները՝ շուտով։",
     cityCoordinates: "Կոորդինատներ՝ {coords}",
     cityDistricts: "· {count} շրջան",
     verifyEmailTitle: "Հաստատել էլ. փոստը",

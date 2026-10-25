@@ -1,6 +1,7 @@
 import 'server-only';
-import { booking } from '@/config/business';
+import { booking, venue } from '@/config/business';
 import { domainErrors } from '@/domain/errors';
+import { assertRentalDuration, isRentalHold, rentalMinutes, rentalPrice, type RentalRules } from '@/domain/rental';
 import { publicClassWhere } from '@/server/queries/classes';
 import { notTrashed } from '@/server/queries/relations';
 import { publicInstructorWhere } from '@/server/queries/instructors';
@@ -76,6 +77,56 @@ export async function quoteCancellation(input: { bookingId: string; userId: stri
   if (outcome.kind === 'free') return { kind: 'free', fee: 0, refund };
   return { kind: 'fee', rate: outcome.rate, fee: outcome.amount, refund };
 }
+/** Правила аренды из конфига; домен получает их аргументом и не читает конфиг сам. */
+function rentalRules(): RentalRules {
+  return { minMinutes: venue.minRentalMinutes, maxMinutes: venue.maxRentalMinutes, granularityMinutes: venue.rentalGranularityMinutes };
+}
+
+/**
+ * Аренда зала: предоплата обязательна, поэтому бронь создаётся PENDING и становится CONFIRMED при оплате.
+ * Уведомление о подтверждении не шлём: до оплаты бронь не подтверждена.
+ */
+async function createRentalFromHold(input: { holdId: string; roomId: string; startsAt: Date; endsAt: Date; userId: string | null; now: Date; useClassPass?: boolean; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE' }) {
+  const { holdId, roomId, startsAt, endsAt, userId, now } = input;
+  if (!userId) throw domainErrors.unauthorized();
+  if (input.useClassPass) throw domainErrors.validationFailed('classPass');
+  if (input.locationOption && input.locationOption !== 'STUDIO') throw domainErrors.validationFailed('locationOption');
+  if (startsAt <= now) throw domainErrors.slotUnavailable();
+  await assertEntitlementOrThrow('events');
+  const room = await db.room.findFirst({ where: { id: roomId, isActive: true, deletedAt: null }, select: { id: true, venueId: true, pricePerHour: true } });
+  if (!room) throw domainErrors.notFound();
+  assertRentalDuration(rentalMinutes(startsAt, endsAt), rentalRules());
+  const totalPrice = rentalPrice(room.pricePerHour, rentalMinutes(startsAt, endsAt));
+  const bufMs = booking.bufferBetweenBookingsMinutes * 60_000;
+  try {
+    return await db.$transaction(async (tx) => {
+      const consumed = await tx.slotHold.deleteMany({ where: { id: holdId, expiresAt: { gt: now } } });
+      if (consumed.count !== 1) throw domainErrors.holdExpired();
+      const conflict = await tx.booking.findFirst({
+        where: { roomId: room.id, status: { in: [...slotBlockingBookingStatuses] }, startsAt: { lt: new Date(endsAt.getTime() + bufMs) }, endsAt: { gt: new Date(startsAt.getTime() - bufMs) } },
+      });
+      if (conflict) throw domainErrors.slotConflict();
+      // Занятие, закреплённое за залом, блокирует аренду даже до появления брони на него.
+      const classConflict = await tx.classSession.findFirst({
+        where: { roomId: room.id, ...notTrashed, isCancelled: false, startsAt: { lt: new Date(endsAt.getTime() + bufMs) }, endsAt: { gt: new Date(startsAt.getTime() - bufMs) } },
+        select: { id: true },
+      });
+      if (classConflict) throw domainErrors.slotConflict();
+      const created = await tx.booking.create({
+        data: {
+          reference: 'tmp-' + holdId.slice(-6), subject: 'STUDIO_RENTAL', lessonType: 'PRIVATE', status: 'PENDING', customerId: userId,
+          instructorId: null, venueId: room.venueId, roomId: room.id, sessionId: null, startsAt, endsAt, participants: 1, partnerName: null,
+          locationOption: 'STUDIO', customerAddress: null, basePrice: room.pricePerHour, travelFee: 0, discountAmount: 0, totalPrice,
+          cancellationWindowHours: venue.freeCancellationHours, lateCancellationRate: booking.lateCancellationFeeRate,
+          rescheduleWindowHours: booking.freeRescheduleHours, maxReschedules: booking.maxReschedulesPerBooking,
+        },
+        select: { id: true },
+      });
+      return tx.booking.update({ where: { id: created.id }, data: { reference: refFromId(created.id) }, select: { id: true, reference: true, totalPrice: true, startsAt: true, endsAt: true } });
+    });
+  } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; }
+}
+
 export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; partnerName?: string | null; useClassPass?: boolean; now: Date; }
 export async function createBookingFromHold(input: CreateBookingInput) {
   const { holdId, userId, anonymousId, now } = input;
@@ -85,6 +136,9 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   const owned = (userId && hold.userId === userId) || (anonymousId && hold.anonymousId === anonymousId);
   if (!owned) throw domainErrors.forbidden();
   if (isHoldExpired(hold, now)) throw domainErrors.holdExpired();
+  if (isRentalHold(hold) && hold.roomId) {
+    return createRentalFromHold({ holdId: hold.id, roomId: hold.roomId, startsAt: hold.startsAt, endsAt: hold.endsAt, userId: userId ?? null, now, useClassPass: input.useClassPass, locationOption: input.locationOption });
+  }
   let basePrice: number | null = null;
   let danceClass: { id: string; price: number; venueId: string | null; lessonType: 'GROUP' | 'PRIVATE' | 'PAIR' } | null = null;
   let session: { id: string; capacity: number; bookedCount: number } | null = null;
