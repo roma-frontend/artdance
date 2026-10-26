@@ -591,13 +591,17 @@ export const auth = betterAuth({
           /*
            * В production без провайдера письмо не уходит, а код остаётся в базе.
            * Молчаливый успех оставлял бы человека на шаге кода без единого символа —
-           * поэтому ошибка видна в интерфейсе. В разработке код читается из базы.
+           * поэтому ошибка видна в интерфейсе. В базе лежит только хеш кода.
            */
           if (!delivery.delivered && env.NODE_ENV === 'production') {
             throw new APIError('SERVICE_UNAVAILABLE', {
               code: 'TWO_FACTOR_DELIVERY_FAILED',
               message: 'Two-factor code could not be delivered',
             });
+          }
+          if (!delivery.delivered && env.NODE_ENV === 'development') {
+            // Только локально: без RESEND_API_KEY код иначе нигде не виден.
+            console.info('[2fa] провайдер не настроен, код для', user.email, 'это', otp);
           }
         },
       },

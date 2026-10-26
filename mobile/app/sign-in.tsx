@@ -8,7 +8,7 @@ import { FloatingInput } from '@/components/auth/floating-input';
 import { OtpInput } from '@/components/auth/otp-input';
 import { SocialSignIn } from '@/components/auth/social-sign-in';
 import { Button } from '@/components/ui/button';
-import { AuthError, cancelTwoFactor, sendTwoFactorCode, signIn, verifyTwoFactorCode } from '@/lib/auth';
+import { AuthError, cancelTwoFactor, sendTwoFactorCode, signIn, verifyBackupCode, verifyTwoFactorCode } from '@/lib/auth';
 import { hapticError, hapticSuccess } from '@/lib/haptics';
 import { deviceLocale, messagesFor, type Messages } from '@/lib/i18n';
 import { colors } from '@/theme';
@@ -18,6 +18,12 @@ const CODE_LENGTH = 6;
 const RESEND_SECONDS = 30;
 
 type Step = 'credentials' | 'code';
+
+/** Первая буква и домен: код сейчас всегда уходит на почту, SMS не подключён. */
+function maskEmail(email: string): string {
+  const [local = '', domain = ''] = email.split('@');
+  return `${local.slice(0, 1)}***@${domain}`;
+}
 
 /** Текст ошибки по коду сервера. Неверную пару отличаем по коду или статусу 401. */
 function errorText(e: unknown, t: Messages): string {
@@ -38,6 +44,9 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
+  const [target, setTarget] = useState('');
+  const [usingBackup, setUsingBackup] = useState(false);
+  const [backupCode, setBackupCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
@@ -89,6 +98,7 @@ export default function SignInScreen() {
         return;
       }
       setCode('');
+      setTarget(maskEmail(email.trim()));
       setStep('code');
       await sendCode();
     });
@@ -108,6 +118,26 @@ export default function SignInScreen() {
     });
   }
 
+  function submitBackup() {
+    const value = backupCode.trim();
+    if (value.length < 8) return;
+    void run(async () => {
+      try {
+        await verifyBackupCode(value);
+      } catch (e) {
+        setBackupCode('');
+        throw e;
+      }
+      hapticSuccess();
+      router.replace('/');
+    });
+  }
+
+  function toggleBackup() {
+    setUsingBackup((value) => !value);
+    setError(null);
+  }
+
   function resendCode() {
     if (cooldown > 0) return;
     void run(async () => {
@@ -119,6 +149,8 @@ export default function SignInScreen() {
   function backToCredentials() {
     cancelTwoFactor();
     setCode('');
+    setBackupCode('');
+    setUsingBackup(false);
     setError(null);
     setStep('credentials');
   }
@@ -141,28 +173,55 @@ export default function SignInScreen() {
     >
       {step === 'code' ? (
         <Animated.View entering={FadeInDown.duration(350)} style={styles.stack}>
-          <Text style={styles.subtitle}>{t.otpSubtitle.replace('{length}', String(CODE_LENGTH))}</Text>
-          <OtpInput
-            value={code}
-            onChange={setCode}
-            onComplete={submitCode}
-            length={CODE_LENGTH}
-            disabled={busy}
-            autoFocus
-            accessibilityLabel={t.otpTitle}
-          />
+          <Text style={styles.subtitle}>
+            {usingBackup ? t.backupHint : t.otpSubtitle.replace('{length}', String(CODE_LENGTH)).replace('{target}', target)}
+          </Text>
+          {usingBackup ? (
+            <FloatingInput
+              label={t.backupLabel}
+              icon="key-outline"
+              value={backupCode}
+              onChangeText={setBackupCode}
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={32}
+              editable={!busy}
+              returnKeyType="go"
+              onSubmitEditing={submitBackup}
+            />
+          ) : (
+            <OtpInput
+              value={code}
+              onChange={setCode}
+              onComplete={submitCode}
+              length={CODE_LENGTH}
+              disabled={busy}
+              autoFocus
+              accessibilityLabel={t.otpTitle}
+            />
+          )}
           {errorNode}
-          <Button label={t.otpVerify} onPress={() => submitCode(code)} busy={busy} disabled={code.length !== CODE_LENGTH} />
+          <Button
+            label={t.otpVerify}
+            onPress={usingBackup ? submitBackup : () => submitCode(code)}
+            busy={busy}
+            disabled={usingBackup ? backupCode.trim().length < 8 : code.length !== CODE_LENGTH}
+          />
           <View style={styles.row}>
             <Pressable onPress={backToCredentials} accessibilityRole="link" hitSlop={8}>
               <Text style={styles.link}>{t.otpBack}</Text>
             </Pressable>
-            <Pressable onPress={resendCode} disabled={cooldown > 0 || busy} accessibilityRole="button" hitSlop={8}>
-              <Text style={[styles.link, cooldown > 0 && styles.muted]}>
-                {cooldown > 0 ? t.otpResendIn.replace('{seconds}', String(cooldown)) : t.otpResend}
-              </Text>
-            </Pressable>
+            {!usingBackup && (
+              <Pressable onPress={resendCode} disabled={cooldown > 0 || busy} accessibilityRole="button" hitSlop={8}>
+                <Text style={[styles.link, cooldown > 0 && styles.muted]}>
+                  {cooldown > 0 ? t.otpResendIn.replace('{seconds}', String(cooldown)) : t.otpResend}
+                </Text>
+              </Pressable>
+            )}
           </View>
+          <Pressable onPress={toggleBackup} accessibilityRole="button" hitSlop={8}>
+            <Text style={styles.link}>{usingBackup ? t.useEmailCode : t.useBackup}</Text>
+          </Pressable>
         </Animated.View>
       ) : (
         <>

@@ -152,7 +152,16 @@ export async function sendTwoFactorCode(): Promise<void> {
 
 /** Проверка кода. Устройство становится доверенным, поэтому следующие входы с него не просят код. */
 export async function verifyTwoFactorCode(code: string): Promise<User> {
-  const response = await request('/two-factor/verify-otp', {
+  return completeTwoFactor('/two-factor/verify-otp', code);
+}
+
+/** Резервный код вместо письма: при успехе тот же результат, что и у кода из письма. */
+export async function verifyBackupCode(code: string): Promise<User> {
+  return completeTwoFactor('/two-factor/verify-backup-code', code);
+}
+
+async function completeTwoFactor(path: string, code: string): Promise<User> {
+  const response = await request(path, {
     method: 'POST',
     body: JSON.stringify({ code, trustDevice: true }),
     headers: challengeHeaders(),

@@ -7,10 +7,15 @@ type Dictionary = Record<Locale, Record<MessageKey, string>>;
 const dictionary: Dictionary = {
   hy: {
     otpTitle: 'Մուտքագրեք կոդը',
-    otpSubtitle: '{length}-նշանանոց կոդն ուղարկեցինք ձեզ։ Այն գործում է մի քանի րոպե։',
+    otpSubtitle: '{length}-նաշանունանի կոդն ուղարկեցինք {target}-ին։ Այն գործում է մի քանի րոպե։',
     otpVerify: 'Հաստատել',
     otpBack: 'Վերադառնալ մուտքին',
     otpResend: 'Ուղարկել կոդը կրկին',
+    useBackup: 'Օգտագործել պահուստային կոդ',
+    useEmailCode: 'Օգտագործել էլ. փոստով ստացված կոդը',
+    backupLabel: 'Պահուստային կոդ',
+    backupPlaceholder: 'Պահուստային կոդ',
+    backupHint: 'Մուտքագրեք պահած պահուստային կոդերից մեկը։ Յուրաքանչյուր կոդ աշխատում է մեկ անգամ։',
     otpResendIn: 'Կրկին ուղարկելը հասանելի է {seconds} հետո',
     otpInvalid: 'Կոդը սխալ է։',
     otpExpired: 'Կոդի ժամկետն անցել է։ Խնդրեք նորը։',
@@ -158,10 +163,15 @@ const dictionary: Dictionary = {
   },
   ru: {
     otpTitle: 'Введите код',
-    otpSubtitle: 'Отправили {length}-значный код. Он действует несколько минут.',
+    otpSubtitle: 'Отправили {length}-значный код на {target}. Он действует несколько минут.',
     otpVerify: 'Подтвердить',
     otpBack: 'Назад ко входу',
     otpResend: 'Отправить код снова',
+    useBackup: 'Ввести резервный код',
+    useEmailCode: 'Ввести код из письма',
+    backupLabel: 'Резервный код',
+    backupPlaceholder: 'Резервный код',
+    backupHint: 'Введите один из сохранённых резервных кодов. Каждый код работает один раз.',
     otpResendIn: 'Повторная отправка через {seconds}',
     otpInvalid: 'Код неверный.',
     otpExpired: 'Код истёк. Запросите новый.',
@@ -309,10 +319,15 @@ const dictionary: Dictionary = {
   },
   en: {
     otpTitle: 'Enter the code',
-    otpSubtitle: 'We sent a {length}-digit code. It is valid for a few minutes.',
+    otpSubtitle: 'We sent a {length}-digit code to {target}. It is valid for a few minutes.',
     otpVerify: 'Confirm',
     otpBack: 'Back to sign-in',
     otpResend: 'Resend code',
+    useBackup: 'Use a backup code',
+    useEmailCode: 'Use the code from email instead',
+    backupLabel: 'Backup code',
+    backupPlaceholder: 'Backup code',
+    backupHint: 'Enter one of the backup codes you saved. Each code works once.',
     otpResendIn: 'Resend available in {seconds}',
     otpInvalid: 'That code is not correct.',
     otpExpired: 'The code has expired. Request a new one.',
@@ -480,6 +495,11 @@ export type MessageKey =
   | 'otpVerify'
   | 'otpBack'
   | 'otpResend'
+  | 'useBackup'
+  | 'useEmailCode'
+  | 'backupLabel'
+  | 'backupPlaceholder'
+  | 'backupHint'
   | 'otpResendIn'
   | 'otpInvalid'
   | 'otpExpired'
