@@ -29,6 +29,7 @@ import { instructorPeekVideoUri, mediaUri, type InstructorCard } from '@/lib/cat
 import { FavoritesError, listMyFavorites, toggleMyFavorite } from '@/lib/favorites';
 import { dateLabel, initials } from '@/lib/format';
 import { deviceLocale } from '@/lib/i18n';
+import { EASE_OUT } from '@/lib/motion';
 import { colors, gradients, radius, shadow, space, type } from '@/theme';
 
 type Props = {
@@ -43,7 +44,7 @@ type NextSlot = Slot | null | undefined;
 const FRAME_MAX_WIDTH = 232;
 
 /**
- * Превью инструктора по долгому нажатию на «сторис»: ореол дышит, ближайший слот
+ * Превью инструктора по долгому нажатию на «сторис»: ближайший слот
  * подгружается на лету, избранное переключается без перехода в профиль.
  */
 export function InstructorPeek({ instructor, onClose, onBook }: Props) {
@@ -54,7 +55,6 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
   const [nextSlot, setNextSlot] = useState<NextSlot>(undefined);
   // `null` — статус ещё не известен (список избранного грузится), `false` — не сохранено или не вошёл.
   const [saved, setSaved] = useState<boolean | null>(null);
-  const pulse = useSharedValue(0);
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -79,22 +79,11 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
     return () => subscription.remove();
   }, [onClose]);
 
-  // Медленное дыхание ореола; при «уменьшить движение» остаётся статичным.
-  useEffect(() => {
-    if (reduceMotion) return;
-    pulse.value = withRepeat(withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.ease) }), -1, true);
-  }, [pulse, reduceMotion]);
-
   // Длительность совпадает с роликом (8 с).
   useEffect(() => {
     if (reduceMotion) return;
     progress.value = withRepeat(withTiming(1, { duration: 8000, easing: Easing.linear }), -1, false);
   }, [progress, reduceMotion]);
-
-  const halo = useAnimatedStyle(() => ({
-    opacity: 0.22 + pulse.value * 0.5,
-    transform: [{ scale: 1 + pulse.value * 0.035 }],
-  }));
 
   const progressStyle = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
 
@@ -115,7 +104,7 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
       ? dateLabel(nextSlot.startIso, locale, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
       : null;
   const frameWidth = Math.min(width - space.xl * 4, FRAME_MAX_WIDTH);
-  const enter = reduceMotion ? FadeIn.duration(160) : ZoomIn.springify().damping(16).stiffness(190);
+  const enter = reduceMotion ? FadeIn.duration(160) : ZoomIn.duration(320).easing(EASE_OUT);
   const exit = reduceMotion ? FadeOut.duration(120) : ZoomOut.duration(180);
 
   return (
@@ -130,7 +119,7 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
       <View style={styles.center} pointerEvents="box-none">
         <Animated.View entering={enter} exiting={exit} style={[styles.card, shadow]}>
           <View style={{ width: frameWidth }}>
-            <Animated.View style={[styles.halo, halo]} pointerEvents="none">
+            <Animated.View style={[styles.halo, { opacity: 0.5 }]} pointerEvents="none">
               <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
             </Animated.View>
             <View style={styles.frame}>

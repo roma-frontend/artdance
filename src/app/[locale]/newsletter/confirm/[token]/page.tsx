@@ -26,12 +26,11 @@ export default async function NewsletterConfirmPage({ params }: PageProps) {
   const { locale, token } = await params;
   setRequestLocale(locale as Locale);
   const tN = await getTranslations({ locale: locale as Locale, namespace: 'home.newsletter' });
-  const tFooter = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
   const ok = await confirmNewsletterSubscription(token);
   return (
     <main id={site.mainContentId} className="page-container inner-page">
-      <h1 className="text-heading-2">{ok ? tN('success') : tFooter('linkExpired')}</h1>
-      <p className="text-body mt-3 text-content-secondary">{ok ? tN('success') : tFooter('linkExpiredHint')}</p>
+      <h1 className="text-heading-2">{ok ? tN('success') : tN('linkExpired')}</h1>
+      <p className="text-body mt-3 text-content-secondary">{ok ? tN('success') : tN('linkExpiredHint')}</p>
       <div className="mt-6">
         <Button asChild variant="accent"><Link href={routes.home()}>{(await getTranslations({ locale: locale as Locale, namespace: 'common.actions' }))('back' as never)}</Link></Button>
       </div>

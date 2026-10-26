@@ -370,6 +370,8 @@ export const rateLimits = {
   availability: { requests: 60, windowSeconds: 300 },
   paymentIntent: { requests: 10, windowSeconds: 600 },
   reviewSubmit: { requests: 5, windowSeconds: 3_600 },
+  /** Подтверждение и отписка по токену из письма: публичные, лимит против перебора и спама. */
+  newsletterToken: { requests: 10, windowSeconds: 600 },
   contactForm: { requests: 3, windowSeconds: 3_600 },
   search: { requests: 120, windowSeconds: 60 },
   /** Переключение канала уведомлений в кабинете: человек щёлкает несколько раз, но не сотни. */

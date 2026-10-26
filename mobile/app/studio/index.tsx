@@ -10,6 +10,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { getCurrentUser, type User } from '@/lib/auth';
+import { useEntitlements } from '@/lib/entitlements';
 import { deviceLocale } from '@/lib/i18n';
 import { EASE_OUT, enterItem } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
@@ -24,6 +25,7 @@ export default function StudioDashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<User | null | undefined>(undefined);
+  const eventsOn = useEntitlements()?.events === true;
 
   useEffect(() => {
     let alive = true;
@@ -79,6 +81,18 @@ export default function StudioDashboardScreen() {
               </View>
             </PressableScale>
           </Animated.View>
+
+          {eventsOn ? (
+            <Animated.View entering={enterItem(2)}>
+              <PressableScale onPress={() => router.push('/studio/check-in')} accessibilityRole="button">
+                <View style={styles.card}>
+                  <Ionicons name="qr-code-outline" size={22} color={colors.accentBright} />
+                  <Text style={type.h3}>{c.footer.studioCheckInTitle}</Text>
+                  <Text style={type.bodySm}>{c.footer.studioCheckInHint}</Text>
+                </View>
+              </PressableScale>
+            </Animated.View>
+          ) : null}
         </ScrollView>
       )}
     </View>

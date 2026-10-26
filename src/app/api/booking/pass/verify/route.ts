@@ -12,6 +12,8 @@ import { NextResponse } from 'next/server';
 
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
+import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
+import { httpStatusFor, isDomainError } from '@/domain/errors';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,6 +25,13 @@ export async function POST(req: Request) {
   if (!caller) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
   const isStaff = caller.role === 'ADMIN' || caller.role === 'SUPPORT' || caller.role === 'INSTRUCTOR' || caller.role === 'VENUE_OWNER';
   if (!isStaff) return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+
+  try {
+    await assertEntitlementOrThrow('events');
+  } catch (error) {
+    if (isDomainError(error)) return NextResponse.json({ error: error.code }, { status: httpStatusFor(error.code) });
+    throw error;
+  }
 
   let body: Body;
   try {

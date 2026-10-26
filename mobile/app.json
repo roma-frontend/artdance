@@ -44,6 +44,11 @@
               "scheme": "https",
               "host": "artdance.am",
               "pathPrefix": "/verify-email"
+            },
+            {
+              "scheme": "https",
+              "host": "artdance.am",
+              "pathPrefix": "/newsletter"
             }
           ]
         }
@@ -73,6 +78,14 @@
       "expo-calendar",
       "expo-notifications",
       "expo-sharing",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "ArtDance использует камеру, чтобы сканировать QR-пропуск клиента на входе.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
       [
         "expo-image-picker",
         {

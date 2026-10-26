@@ -31,8 +31,8 @@ export default async function NewsletterUnsubscribePage({ params }: PageProps) {
   const ok = await unsubscribeFromNewsletter(token);
   return (
     <main id={site.mainContentId} className="page-container inner-page">
-      <h1 className="text-heading-2">{ok ? tN('unsubscribed') : tFooter('linkExpired')}</h1>
-      <p className="text-body mt-3 text-content-secondary">{ok ? tN('unsubscribedHint') : tFooter('linkExpiredHint')}</p>
+      <h1 className="text-heading-2">{ok ? tN('unsubscribed') : tN('linkExpired')}</h1>
+      <p className="text-body mt-3 text-content-secondary">{ok ? tN('unsubscribedHint') : tN('linkExpiredHint')}</p>
       <div className="mt-6 flex flex-wrap gap-3">
         {ok ? (
           <>

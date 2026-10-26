@@ -384,6 +384,8 @@ const en = {
       unsubscribed: 'You have been unsubscribed',
       unsubscribedHint: 'You will no longer receive marketing emails. You can resubscribe anytime on the homepage.',
       resubscribeCta: 'Resubscribe',
+      linkExpired: 'This link has expired',
+      linkExpiredHint: 'Subscribe again on the home page to get a new confirmation email.',
     },
     finalCta: {
       title: 'Ready to move?',

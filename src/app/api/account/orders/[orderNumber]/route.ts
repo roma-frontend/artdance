@@ -37,7 +37,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ ord
       total: true,
       userId: true,
       items: { select: { titleSnapshot: true, quantity: true, lineTotal: true } },
-      payments: { select: { status: true, amount: true }, orderBy: { createdAt: 'desc' } },
+      payments: { select: { id: true, status: true, amount: true }, orderBy: { createdAt: 'desc' } },
     },
   });
 
@@ -57,7 +57,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ ord
         deliveryFee: order.deliveryFee,
         total: order.total,
         items: order.items.map((i) => ({ title: i.titleSnapshot, quantity: i.quantity, lineTotal: i.lineTotal })),
-        payments: order.payments.map((p) => ({ status: p.status, amount: p.amount })),
+        payments: order.payments.map((p) => ({ id: p.id, status: p.status, amount: p.amount })),
       },
     },
     200,

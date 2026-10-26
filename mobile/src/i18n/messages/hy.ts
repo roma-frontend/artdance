@@ -384,6 +384,11 @@ const hy: Messages = {
       unsubscribed: "Դուք ապաբաժանորդագրվել եք",
       unsubscribedHint: "Մարքեթինգային նամակներ այլևս չեն գա։ Ցանկացած պահի կարող եք նորից բաժանորդագրվել գլխավորում։",
       resubscribeCta: "Բաժանորդագրվել նորից",
+      confirmedTitle: "Դուք բաժանորդագրված եք",
+      confirmedHint: "Նոր դասերի և նորությունների նամակները կգան ձեր փոստին։ Ցանկացած նամակից կարող եք դուրս գալ։",
+      linkExpired: "Հղման ժամկետը սպառվել է",
+      linkExpiredHint: "Նորից բաժանորդագրվեք գլխավոր էջում՝ նոր հաստատման նամակ ստանալու համար։",
+      homeCta: "Գլխավոր էջ",
     },
     finalCta: {
       title: "Պատրա՞ստ եք շարժվել",
@@ -528,6 +533,7 @@ const hy: Messages = {
 
   instructor: {
     verifiedBadge: "Հաստատված",
+    reviewsAll: "Բոլոր կարծիքները",
     aboutTitle: "{name}-ի մասին",
     stylesTitle: "Ուղղություններ",
     specializationsTitle: "Մասնագիտացումներ",
@@ -1625,6 +1631,9 @@ const hy: Messages = {
     citiesTitle: "Քաղաքներ",
     districtHint: "Ստուդիաներ և դասեր թաղամասում՝ շուտով",
     instructorReviewsTitle: "Կարծիքներ — {slug}",
+    reviewsPage: "Էջ {page} / {total}",
+    reviewsPrev: "Նախորդ",
+    reviewsNext: "Հաջորդ",
     studioCheckInTitle: "Մուտքի նշում",
     studioCheckInHint: "QR անցագրի սկաներ՝ ներկայության փաստ վճարումների/վեճերի համար",
     orderInvoiceTitle: "Հաշիվ {number}",

@@ -592,6 +592,20 @@ function CatalogDetailBody() {
             </Block>
           ) : null}
 
+          {valid === 'instructors' && (rating.count ?? 0) > 0 ? (
+            <View style={styles.padded}>
+              <PressableScale
+                onPress={() => router.push({ pathname: '/instructors/[slug]/reviews', params: { slug } })}
+                style={styles.person}
+                pressedScale={0.98}
+                accessibilityRole="link"
+              >
+                <Text style={[type.body, styles.flex]}>{t.instructor.reviewsAll}</Text>
+                <Ionicons name="chevron-forward" size={18} color={colors.text3} />
+              </PressableScale>
+            </View>
+          ) : null}
+
           {variants.length > 0 ? (
             <Block title={t.shop.variantTitle} flush>
               <View style={[styles.variantRow, styles.padded]}>

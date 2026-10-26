@@ -16,6 +16,7 @@ import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
 import { clientEnv } from '@/config/env';
 import { signPassToken, verifyPassToken } from '@/server/booking/pass-token';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 import { qrSvgString } from '@/lib/qr/render';
 
 interface PageProps {
@@ -101,6 +102,7 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function BookingPassPage({ params }: PageProps) {
   const { locale, id } = await params;
   setRequestLocale(locale as Locale);
+  await assertEntitlementOrNotFound('events');
   const t = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
   const tAccount = await getTranslations({ locale: locale as Locale, namespace: 'account' });
   const tCommon = await getTranslations({ locale: locale as Locale, namespace: 'common' });

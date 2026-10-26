@@ -80,7 +80,7 @@ export default function RootLayout() {
           const inAuth = ['sign-in', 'sign-up', 'forgot-password'].includes(segment);
           // Ссылки из письма открываются и без сессии: сброс пароля и подтверждение почты.
           // Справочные страницы публичные: условия нужно прочитать до регистрации.
-          const openLink = ['reset-password', 'verify-email', 'accessibility', 'legal', 'faq', 'help', 'about', 'blog'].includes(segment);
+          const openLink = ['reset-password', 'verify-email', 'newsletter', 'accessibility', 'legal', 'faq', 'help', 'about', 'blog'].includes(segment);
           if (!u && !inAuth && !openLink) router.replace('/sign-in');
           if (u && inAuth) router.replace('/');
         })
@@ -171,6 +171,8 @@ export default function RootLayout() {
       <Stack.Screen name="become-instructor/apply" options={{ animation: 'default' }} />
       <Stack.Screen name="reset-password" options={{ animation: 'default' }} />
       <Stack.Screen name="verify-email/[token]" options={{ animation: 'default' }} />
+      <Stack.Screen name="newsletter/confirm/[token]" options={{ animation: 'default' }} />
+      <Stack.Screen name="newsletter/unsubscribe/[token]" options={{ animation: 'default' }} />
       <Stack.Screen name="list-your-studio" options={{ animation: 'default' }} />
       <Stack.Screen name="blog" options={{ animation: 'default' }} />
       <Stack.Screen name="schedule" options={{ animation: 'default' }} />

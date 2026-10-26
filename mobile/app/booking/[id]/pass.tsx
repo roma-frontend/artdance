@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
@@ -25,6 +25,7 @@ import {
   type BookingPass,
   type ClientBookingDetail,
 } from '@/lib/bookings';
+import { useEntitlements } from '@/lib/entitlements';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
@@ -34,7 +35,15 @@ import { useAppActive } from '@/lib/use-app-active';
 import { useBrightnessBoost } from '@/lib/use-brightness-boost';
 import { colors, radius, space, type } from '@/theme';
 
+/** Пропуск на занятие. Выключен тумблером `events` — экран недоступен, QR не запрашивается. */
 export default function BookingPassScreen() {
+  const entitlements = useEntitlements();
+  if (entitlements === null) return null;
+  if (entitlements.events !== true) return <Redirect href="/account/bookings" />;
+  return <BookingPassContent />;
+}
+
+function BookingPassContent() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const locale = deviceLocale(undefined);
   const t = messagesFor(locale);

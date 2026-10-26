@@ -29,6 +29,7 @@ import { chooseLocale } from '@/lib/app-locale';
 import { loadAccountProfile, onProfileChange } from '@/lib/account-profile';
 import { getCurrentUser, signOut, type User } from '@/lib/auth';
 import { loadDancerProfile } from '@/lib/dancer-profile';
+import { useEntitlements } from '@/lib/entitlements';
 import { isOnboardingSnoozed } from '@/lib/onboarding-progress';
 import { initials } from '@/lib/format';
 import { openLandingWebPath } from '@/lib/web-links';
@@ -38,7 +39,8 @@ import { useScrollChrome } from '@/lib/use-scroll-chrome';
 import { colors, fonts, gradients, radius, space, type } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
-type Row = { icon: IconName; label: string; path: string; tint: string };
+/** `feature` — ключ тумблера из `/api/entitlements`: раздел скрыт, когда support его выключил. */
+type Row = { icon: IconName; label: string; path: string; tint: string; feature?: string };
 type SectionDef = { key: string; title: string; rows: Row[]; open: boolean };
 
 const liquidGlass = isLiquidGlassAvailable();
@@ -58,6 +60,7 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/account/notifications',
   '/account/dancer-profile',
   '/cart',
+  '/courses',
   '/faq',
   '/help',
   '/about',
@@ -168,13 +171,16 @@ export default function AccountScreen() {
   const isInstructor = user?.role === 'INSTRUCTOR';
   const isVenueOwner = user?.role === 'VENUE_OWNER';
 
-  const quick: Row[] = [
-    { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52' },
-    { icon: 'receipt', label: c.account.nav.orders, path: '/account/orders', tint: '#C9A96A' },
-    { icon: 'wallet', label: c.account.nav.wallet, path: '/account/wallet', tint: '#3FB984' },
+  const entitlements = useEntitlements();
+  const rowVisible = (row: Row) => !row.feature || entitlements?.[row.feature] === true;
+
+  const allQuick: Row[] = [
+    { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52', feature: 'events' },
+    { icon: 'receipt', label: c.account.nav.orders, path: '/account/orders', tint: '#C9A96A', feature: 'shop' },
+    { icon: 'wallet', label: c.account.nav.wallet, path: '/account/wallet', tint: '#3FB984', feature: 'wallet' },
     { icon: 'heart', label: c.account.nav.favorites, path: '/account/favorites', tint: '#E0607E' },
   ];
-  const sections: SectionDef[] = [
+  const allSections: SectionDef[] = [
     {
       key: 'mine',
       title: t.accountSectionMine,
@@ -190,9 +196,10 @@ export default function AccountScreen() {
         ...(isVenueOwner
           ? [{ icon: 'storefront' as IconName, label: c.footer.venueDashboardTitle, path: '/venue', tint: '#C9A96A' }]
           : []),
-        { icon: 'ribbon', label: c.account.nav.subscription, path: '/account/subscription', tint: '#8E7CC3' },
-        { icon: 'people', label: c.account.nav.referrals, path: '/account/referrals', tint: '#5AA9E6' },
-        { icon: 'cart', label: c.cart.title, path: '/cart', tint: '#C9A96A' },
+        { icon: 'ribbon', label: c.account.nav.subscription, path: '/account/subscription', tint: '#8E7CC3', feature: 'subscriptions' },
+        { icon: 'people', label: c.account.nav.referrals, path: '/account/referrals', tint: '#5AA9E6', feature: 'referrals' },
+        { icon: 'school', label: c.courses.title, path: '/courses', tint: '#3FB984', feature: 'courses' },
+        { icon: 'cart', label: c.cart.title, path: '/cart', tint: '#C9A96A', feature: 'shop' },
         { icon: 'folder-open', label: c.account.nav.data, path: '/account/data', tint: '#7A8BA6' },
       ],
     },
@@ -245,6 +252,11 @@ export default function AccountScreen() {
       ],
     },
   ];
+
+  const quick = allQuick.filter(rowVisible);
+  const sections = allSections
+    .map((section) => ({ ...section, rows: section.rows.filter(rowVisible) }))
+    .filter((section) => section.rows.length > 0);
 
   const avatarStyle = useAnimatedStyle(() => ({
     transform: [{ scale: interpolate(scrollY.value, [-120, 0, 120], [1.15, 1, 0.85], Extrapolation.CLAMP) }],

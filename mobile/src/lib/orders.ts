@@ -53,7 +53,7 @@ export type ClientOrderDetail = {
   deliveryFee: number;
   total: number;
   items: { title: string; quantity: number; lineTotal: number }[];
-  payments: { status: string; amount: number }[];
+  payments: { id: string; status: string; amount: number }[];
 };
 
 /** Заказ текущего клиента по номеру. Чужой заказ сервер отдаёт как 404. */
@@ -66,6 +66,23 @@ export async function getMyOrder(orderNumber: string): Promise<ClientOrderDetail
   if (!response.ok) throw await failureFor(response);
   const body = (await response.json()) as { order: ClientOrderDetail };
   return body.order;
+}
+
+/**
+ * Сверка платежа с провайдером. Сервер сам проверяет владельца платежа; возвращает статус платежа.
+ * Вызывать для PENDING и AUTHORIZED, не по таймеру: каждый вызов — запрос к эквайреру.
+ */
+export async function reconcileMyPayment(paymentId: string): Promise<string> {
+  const token = await getSessionToken();
+  if (!token) throw new OrdersError('UNAUTHORIZED', 401);
+  const response = await fetch(`${API_URL}/api/payments/reconcile`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ paymentId }),
+  });
+  if (!response.ok) throw await failureFor(response);
+  const body = (await response.json()) as { status: string };
+  return body.status;
 }
 
 export function orderStatusLabel(status: string, c: ReturnType<typeof catalogFor>): string {

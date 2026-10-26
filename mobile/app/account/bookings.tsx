@@ -10,6 +10,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { bookingStatusLabel, canCancelBooking, canPayBooking, listMyBookings, payBooking, type ClientBooking } from '@/lib/bookings';
 import { dateLabel, price } from '@/lib/format';
+import { useEntitlements } from '@/lib/entitlements';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { openPaymentUrl } from '@/lib/payment-url';
 import { syncBookingReminders } from '@/lib/reminders';
@@ -28,6 +29,7 @@ export default function MyBookingsScreen() {
   const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
+  const passEnabled = useEntitlements()?.events === true;
 
   const load = useCallback(async () => {
     try {
@@ -107,7 +109,9 @@ export default function MyBookingsScreen() {
         renderItem={({ item, index }) => (
           <Animated.View entering={enterItem(index)} layout={LinearTransition.springify().damping(18)}>
             <PressableScale
-              onPress={() => router.push({ pathname: '/booking/[id]/pass', params: { id: item.id } })}
+              onPress={() => {
+                if (passEnabled) router.push({ pathname: '/booking/[id]/pass', params: { id: item.id } });
+              }}
               accessibilityRole="button"
               style={styles.card}
             >
@@ -127,10 +131,12 @@ export default function MyBookingsScreen() {
                   <Text style={styles.payText}>{t.payBookingCta}</Text>
                 </PressableScale>
               ) : null}
-              <View style={styles.openRow}>
-                <Ionicons name="qr-code-outline" size={14} color={colors.metal} />
-                <Text style={styles.openText}>{c.footer.passTitle}</Text>
-              </View>
+              {passEnabled ? (
+                <View style={styles.openRow}>
+                  <Ionicons name="qr-code-outline" size={14} color={colors.metal} />
+                  <Text style={styles.openText}>{c.footer.passTitle}</Text>
+                </View>
+              ) : null}
             </PressableScale>
           </Animated.View>
         )}

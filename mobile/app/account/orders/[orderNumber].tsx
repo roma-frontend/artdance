@@ -1,18 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
+import { useEntitlements } from '@/lib/entitlements';
 import { dateLabel, price } from '@/lib/format';
+import { buildInvoiceText } from '@/lib/invoice';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
-import { getMyOrder, orderStatusLabel, paymentStatusLabel, type ClientOrderDetail } from '@/lib/orders';
+import { getMyOrder, orderStatusLabel, paymentStatusLabel, reconcileMyPayment, type ClientOrderDetail } from '@/lib/orders';
 import { serverMessageOf } from '@/lib/server-message';
+import { shareTextFile } from '@/lib/share-file';
 import { EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
@@ -25,6 +29,8 @@ export default function OrderDetailScreen() {
   const insets = useSafeAreaInsets();
   const [order, setOrder] = useState<ClientOrderDetail | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const shopOn = useEntitlements()?.shop === true;
 
   const load = useCallback(async () => {
     try {
@@ -38,6 +44,34 @@ export default function OrderDetailScreen() {
   useEffect(() => {
     load();
   }, [load]);
+
+  /* Сверка один раз на платёж, как на вебе: провайдер может редиректить раньше webhook. */
+  const reconciled = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!order || !shopOn) return;
+    const pending = order.payments.find(
+      (p) => (p.status === 'PENDING' || p.status === 'AUTHORIZED') && !reconciled.current.has(p.id),
+    );
+    if (!pending) return;
+    reconciled.current.add(pending.id);
+    reconcileMyPayment(pending.id)
+      .then((status) => {
+        if (status !== pending.status) void load();
+      })
+      .catch(() => undefined);
+  }, [order, shopOn, load]);
+
+  async function onInvoice() {
+    if (!order) return;
+    setSharing(true);
+    try {
+      await shareTextFile(`invoice-${order.orderNumber}.txt`, buildInvoiceText(order, locale), 'text/plain');
+    } catch {
+      Alert.alert(t.catalogError);
+    } finally {
+      setSharing(false);
+    }
+  }
 
   const header = (
     <Animated.View entering={FadeInDown.duration(420).easing(EASE_OUT)} style={styles.header}>
@@ -111,6 +145,8 @@ export default function OrderDetailScreen() {
             ))}
           </View>
         ) : null}
+
+        {shopOn ? <Button label={c.account.orders.invoiceCta} onPress={() => void onInvoice()} busy={sharing} variant="ghost" /> : null}
       </ScrollView>
     </View>
   );

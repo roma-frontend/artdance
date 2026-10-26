@@ -11,6 +11,7 @@ import { routes, site } from '@/config';
 import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { getCaller } from '@/lib/auth/guards';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
@@ -28,6 +29,7 @@ export default async function StudioCheckInPage({ params, searchParams }: PagePr
   const sp = await searchParams;
   const token = typeof sp.token === 'string' ? sp.token : Array.isArray(sp.token) ? sp.token[0] : null;
   setRequestLocale(locale as Locale);
+  await assertEntitlementOrNotFound('events');
   const t = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
   const caller = await getCaller();
   if (!caller) {

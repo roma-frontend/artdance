@@ -8,5 +8,5 @@ export const appLinks = {
   host: 'artdance.am',
   bundleId: 'am.artdance.app',
   /** Префиксы путей, которые открываются в приложении. */
-  prefixes: ['/reset-password', '/verify-email'],
+  prefixes: ['/reset-password', '/verify-email', '/newsletter'],
 } as const;

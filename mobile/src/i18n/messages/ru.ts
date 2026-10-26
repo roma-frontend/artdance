@@ -383,6 +383,11 @@ const ru: Messages = {
       unsubscribed: 'Вы отписаны от рассылки',
       unsubscribedHint: 'Маркетинговые письма больше не придут. В любой момент можно подписаться снова на главной.',
       resubscribeCta: 'Подписаться снова',
+      confirmedTitle: 'Подписка подтверждена',
+      confirmedHint: 'Новые занятия и новости будут приходить на почту. Отписаться можно из любого письма.',
+      linkExpired: 'Ссылка устарела',
+      linkExpiredHint: 'Подпишитесь снова на главной странице, чтобы получить новое письмо для подтверждения.',
+      homeCta: 'На главную',
     },
     finalCta: {
       title: 'Готовы двигаться?',
@@ -523,6 +528,7 @@ const ru: Messages = {
 
   instructor: {
     verifiedBadge: 'Проверен',
+    reviewsAll: 'Все отзывы',
     aboutTitle: 'Об инструкторе: {name}',
     stylesTitle: 'Направления',
     specializationsTitle: 'Специализации',
@@ -1619,6 +1625,9 @@ const ru: Messages = {
     citiesTitle: 'Города',
     districtHint: 'Студии и занятия в районе — скоро',
     instructorReviewsTitle: 'Отзывы — {slug}',
+    reviewsPage: 'Страница {page} из {total}',
+    reviewsPrev: 'Назад',
+    reviewsNext: 'Дальше',
     studioCheckInTitle: 'Отметка посещений',
     studioCheckInHint: 'Сканер QR пропуска — факт посещения для выплат и споров',
     orderInvoiceTitle: 'Счёт {number}',

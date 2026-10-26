@@ -384,6 +384,11 @@ const en = {
       unsubscribed: 'You have been unsubscribed',
       unsubscribedHint: 'You will no longer receive marketing emails. You can resubscribe anytime on the homepage.',
       resubscribeCta: 'Resubscribe',
+      confirmedTitle: 'You’re subscribed',
+      confirmedHint: 'New classes and news will reach your inbox. You can unsubscribe from any email.',
+      linkExpired: 'This link has expired',
+      linkExpiredHint: 'Subscribe again on the home page to get a new confirmation email.',
+      homeCta: 'Back to home',
     },
     finalCta: {
       title: 'Ready to move?',
@@ -528,6 +533,7 @@ const en = {
 
   instructor: {
     verifiedBadge: 'Verified',
+    reviewsAll: 'All reviews',
     aboutTitle: 'About {name}',
     stylesTitle: 'Styles',
     specializationsTitle: 'Specializations',
@@ -1642,6 +1648,9 @@ const en = {
     citiesTitle: 'Cities',
      districtHint: 'Studios and classes for this district appear here.',
     instructorReviewsTitle: 'Reviews — {slug}',
+    reviewsPage: 'Page {page} of {total}',
+    reviewsPrev: 'Previous',
+    reviewsNext: 'Next',
     studioCheckInTitle: 'Check-in',
     studioCheckInHint: 'QR pass scanner — attendance fact for payouts/disputes',
     orderInvoiceTitle: 'Invoice {number}',

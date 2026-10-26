@@ -12,6 +12,7 @@ import type { Locale } from '@/i18n/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 
 interface PageProps { params: Promise<{ locale: string; orderNumber: string }>; }
 
@@ -24,6 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function OrderInvoicePage({ params }: PageProps) {
   const { locale, orderNumber } = await params;
   setRequestLocale(locale as Locale);
+  await assertEntitlementOrNotFound('shop');
   const tF = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
   const caller = await getCaller();
   if (!caller) {
