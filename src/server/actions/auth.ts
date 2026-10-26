@@ -56,11 +56,59 @@ import {
   resetPasswordSchema,
   signInSchema,
   signUpSchema,
+  twoFactorCodeSchema,
 } from '@/domain/auth';
 import { auth } from '@/lib/auth/auth';
 import { lockoutState } from '@/lib/auth/lockout';
 import { auditPasswordReset, userIdForResetToken } from '@/lib/auth/password-reset-audit';
+import {
+  maskedTwoFactorTarget,
+  twoFactorChannel,
+  type TwoFactorChannel,
+} from '@/lib/auth/two-factor-otp';
+import { db } from '@/lib/db';
 import { assertCaptcha, publicAction } from '@/server/safe-action';
+
+/** Что показать на втором шаге входа: куда ушёл код и каким путём. */
+export interface TwoFactorChallenge {
+  target: string;
+  channel: TwoFactorChannel;
+}
+
+/** Библиотека отвечает `twoFactorRedirect` вместо сессии, когда нужен второй фактор. */
+function isTwoFactorChallenge(value: unknown): boolean {
+  return typeof value === 'object' && value !== null && (value as { twoFactorRedirect?: unknown }).twoFactorRedirect === true;
+}
+
+/**
+ * Подпись под полем кода. Читаем пользователя только здесь, на успешном пароле:
+ * до этого ни адрес, ни телефон наружу не уходят.
+ */
+async function challengeFor(email: string): Promise<TwoFactorChallenge | undefined> {
+  const user = await db.user.findUnique({
+    where: { email: email.toLowerCase() },
+    select: { email: true, locale: true, phone: true, phoneVerified: true },
+  });
+  if (!user) return undefined;
+  return { target: maskedTwoFactorTarget(user), channel: twoFactorChannel(user) };
+}
+
+/**
+ * Ошибки плагина в ключи нашего словаря. Код берём из тела ошибки, а не из текста:
+ * текст библиотеки на английском и меняется от версии к версии.
+ */
+function twoFactorFailure(code: unknown) {
+  switch (code) {
+    case 'TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE':
+    case 'ACCOUNT_TEMPORARILY_LOCKED':
+      return domainErrors.twoFactorTooMany();
+    case 'OTP_HAS_EXPIRED':
+    case 'INVALID_TWO_FACTOR_COOKIE':
+      return domainErrors.twoFactorExpired();
+    default:
+      return domainErrors.twoFactorInvalid();
+  }
+}
 
 /**
  * Остаток блокировки из тела ошибки библиотеки.
@@ -110,8 +158,9 @@ export const signInAction = publicAction
 
     await assertCaptcha(parsedInput.captchaToken, ctx.identifier);
 
+    let result: unknown;
     try {
-      await auth.api.signInEmail({
+      result = await auth.api.signInEmail({
         body: { email: parsedInput.email, password: parsedInput.password },
         headers: await headers(),
       });
@@ -135,6 +184,54 @@ export const signInAction = publicAction
         if (after.locked) throw domainErrors.tooManyAttempts(after.remainingMinutes);
         throw domainErrors.invalidCredentials();
       }
+      throw error;
+    }
+
+    /*
+     * Пароль верный, но сессии ещё нет: библиотека выдала челлендж и отправила код.
+     * Клиент показывает поле кода; cookie challenge уже установлен `nextCookies`.
+     */
+    if (isTwoFactorChallenge(result)) {
+      return {
+        redirectTo: safeRedirect(parsedInput.redirectTo),
+        twoFactor: await challengeFor(parsedInput.email),
+      };
+    }
+
+    return { redirectTo: safeRedirect(parsedInput.redirectTo), twoFactor: undefined };
+  });
+
+/**
+ * Повторная отправка кода. Работает по cookie челленджа, поэтому адрес не передаём:
+ * отправить код можно только тому, кто только что ввёл верный пароль.
+ */
+export const sendTwoFactorCodeAction = publicAction
+  .metadata({ rateLimit: 'signIn', audit: 'auth.twoFactorSend' })
+  .action(async () => {
+    try {
+      await auth.api.sendTwoFactorOTP({ body: {}, headers: await headers() });
+    } catch (error) {
+      if (error instanceof APIError) throw twoFactorFailure(error.body?.code);
+      throw error;
+    }
+    return { sent: true };
+  });
+
+/**
+ * Проверка кода второго фактора. При успехе библиотека создаёт сессию и доверие
+ * устройству; `nextCookies` ставит оба cookie в ответ действия.
+ */
+export const verifyTwoFactorCodeAction = publicAction
+  .metadata({ rateLimit: 'signIn', audit: 'auth.twoFactorVerify' })
+  .inputSchema(twoFactorCodeSchema)
+  .action(async ({ parsedInput }) => {
+    try {
+      await auth.api.verifyTwoFactorOTP({
+        body: { code: parsedInput.code, trustDevice: true },
+        headers: await headers(),
+      });
+    } catch (error) {
+      if (error instanceof APIError) throw twoFactorFailure(error.body?.code);
       throw error;
     }
 

@@ -4,6 +4,7 @@ import { PrismaClient } from '../src/generated/prisma/client';
 import { randomUUID } from 'node:crypto';
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
+import { completeTwoFactor } from './support/two-factor';
 
 for (const locale of ['en', 'ru', 'hy']) {
   /*
@@ -51,6 +52,7 @@ test('pair booking requires partner, stores two participants and cancels once', 
     await page.getByLabel(en.auth.signIn.emailLabel).fill(customer.email);
     await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
     await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+    await completeTwoFactor(page);
     await page.waitForURL(/\/account$/);
     const holdResponse = page.waitForResponse(response => response.url().includes('/api/booking/hold') && response.request().method() === 'POST');
     await page.goto(`/en/instructors/${key}/book?class=${key}`);

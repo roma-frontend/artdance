@@ -16,6 +16,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 
 import en from '../src/i18n/messages/en';
+import { completeTwoFactor } from './support/two-factor';
 import ru from '../src/i18n/messages/ru';
 import hy from '../src/i18n/messages/hy';
 import AxeBuilder from '@axe-core/playwright';
@@ -86,6 +87,7 @@ test.describe('Бронирование', () => {
       await page.getByLabel(en.auth.signIn.emailLabel).fill(customer.email);
       await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
       await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+      await completeTwoFactor(page);
       await page.waitForURL(/\/account$/);
       await page.goto(`/en/classes/${danceClass.slug}`);
       const holdResponse = page.waitForResponse(response =>

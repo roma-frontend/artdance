@@ -43,6 +43,8 @@ interface SendEmailInput {
   /** Абзацы основного текста. Каждый — отдельный `<p>`. */
   paragraphs: readonly string[];
   action?: { label: string; href: string };
+  /** Одноразовый код крупным шрифтом. Только для писем с кодом входа. */
+  code?: string;
   /** Мелкий текст под кнопкой: условия, срок действия ссылки. */
   footnote?: string;
   locale: Locale;
@@ -171,6 +173,12 @@ async function renderEmail(input: SendEmailInput): Promise<string> {
        </table>`
     : '';
 
+  const code = input.code
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 24px">
+         <tr><td style="padding:14px 22px;border-radius:12px;background:${bg};font-family:'Courier New',Courier,monospace;font-size:28px;font-weight:700;letter-spacing:.3em;color:${text}">${escapeHtml(input.code)}</td></tr>
+       </table>`
+    : '';
+
   const footnote = input.footnote
     ? `<p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:${muted}">${escapeHtml(input.footnote)}</p>`
     : '';
@@ -209,6 +217,7 @@ async function renderEmail(input: SendEmailInput): Promise<string> {
                   ${escapeHtml(input.heading)}
                 </h1>
                 ${paragraphs}
+                ${code}
                 ${button}
                 ${footnote}
                 <p style="margin:24px 0 0;font-size:14px;color:${muted}">

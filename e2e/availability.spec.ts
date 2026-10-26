@@ -6,6 +6,7 @@ import { createLocalAccountIssuer } from '@better-auth/core/db';
 import { hashPassword } from 'better-auth/crypto';
 import { demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
+import { completeTwoFactor } from './support/two-factor';
 
 const CREDENTIAL_PROVIDER = 'credential';
 const CREDENTIAL_ISSUER = createLocalAccountIssuer(CREDENTIAL_PROVIDER);
@@ -45,6 +46,7 @@ test('instructor edits availability: rule saved, exception saved, other rows unt
     await page.getByLabel(en.auth.signIn.emailLabel).fill(owner.email);
     await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
     await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+    await completeTwoFactor(page);
     await page.waitForURL(/\/account$/);
 
     // В кабинете инструктора теперь есть вход в студию (кнопка ведёт на /studio).

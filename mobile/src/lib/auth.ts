@@ -1,6 +1,14 @@
 import { API_URL } from './config';
 import { readServerMessage } from './server-message';
-import { clearSessionToken, getCachedUserJson, getSessionToken, setCachedUserJson, setSessionToken } from './session';
+import {
+  clearSessionToken,
+  getCachedUserJson,
+  getSessionToken,
+  getTrustedDeviceCookie,
+  setCachedUserJson,
+  setSessionToken,
+  setTrustedDeviceCookie,
+} from './session';
 
 export type User = {
   id: string;
@@ -85,16 +93,86 @@ export async function signInWithAppleIdToken(input: { token: string; firstName?:
   await storeTokenFrom(response);
 }
 
-export async function signIn(email: string, password: string): Promise<User> {
+/** Имя cookie шага кода (`artdance.two_factor`) и доверенного устройства (`…trust_device`): сервер задаёт их через Set-Cookie. */
+const CHALLENGE_COOKIE_SUFFIX = 'two_factor';
+const TRUST_COOKIE_SUFFIX = 'trust_device';
+
+/** Challenge короткоживущий и нужен только до ввода кода, поэтому хранится в памяти, а не в SecureStore. */
+let challengeCookie: string | null = null;
+
+/**
+ * Значение cookie (`name=value`) из заголовка Set-Cookie. Заголовок может склеивать несколько cookie через запятую,
+ * поэтому делим только по запятой перед `name=`, чтобы не порвать дату в Expires.
+ */
+function cookieFrom(response: Response, nameSuffix: string): string | null {
+  const header = response.headers.get('set-cookie');
+  if (!header) return null;
+  for (const part of header.split(/,\s*(?=[^;,=\s]+=)/)) {
+    const pair = part.split(';')[0]?.trim() ?? '';
+    const eq = pair.indexOf('=');
+    if (eq > 0 && pair.length > eq + 1 && pair.slice(0, eq).endsWith(nameSuffix)) return pair;
+  }
+  return null;
+}
+
+function challengeHeaders(): HeadersInit | undefined {
+  return challengeCookie ? { Cookie: challengeCookie } : undefined;
+}
+
+export type SignInResult = { status: 'signed-in'; user: User } | { status: 'code-required' };
+
+/**
+ * Вход по паролю. Если сервер требует второй шаг, возвращается `code-required`: код отправит `sendTwoFactorCode`.
+ * Доверенное устройство передаёт сохранённую cookie, и тогда второй шаг пропускается.
+ */
+export async function signIn(email: string, password: string): Promise<SignInResult> {
+  const trusted = await getTrustedDeviceCookie();
   const response = await request('/sign-in/email', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
+    headers: trusted ? { Cookie: trusted } : undefined,
   });
   if (!response.ok) throw await readError(response);
-  const { user } = (await response.json()) as { user: User };
-  await setCachedUserJson(JSON.stringify(user)).catch(() => undefined);
+  const body = (await response.json()) as { user?: User; twoFactorRedirect?: boolean };
+  if (body.twoFactorRedirect) {
+    challengeCookie = cookieFrom(response, CHALLENGE_COOKIE_SUFFIX);
+    return { status: 'code-required' };
+  }
+  if (!body.user) throw new AuthError('Сервер не вернул пользователя', response.status);
+  await setCachedUserJson(JSON.stringify(body.user)).catch(() => undefined);
   await storeTokenFrom(response);
-  return user;
+  return { status: 'signed-in', user: body.user };
+}
+
+/** Отправка кода или повторная отправка. Канал выбирает сервер: SMS, если телефон подтверждён, иначе письмо на языке пользователя. */
+export async function sendTwoFactorCode(): Promise<void> {
+  const response = await request('/two-factor/send-otp', { method: 'POST', body: '{}', headers: challengeHeaders() });
+  if (!response.ok) throw await readError(response);
+}
+
+/** Проверка кода. Устройство становится доверенным, поэтому следующие входы с него не просят код. */
+export async function verifyTwoFactorCode(code: string): Promise<User> {
+  const response = await request('/two-factor/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify({ code, trustDevice: true }),
+    headers: challengeHeaders(),
+  });
+  if (!response.ok) throw await readError(response);
+  const trusted = cookieFrom(response, TRUST_COOKIE_SUFFIX);
+  if (trusted) await setTrustedDeviceCookie(trusted).catch(() => undefined);
+  const body = (await response.json()) as { token?: string; user?: User };
+  const token = body.token ?? response.headers.get('set-auth-token');
+  if (!token || !body.user) throw new AuthError('Сервер не вернул токен сессии', response.status);
+  challengeCookie = null;
+  await setCachedUserJson(JSON.stringify(body.user)).catch(() => undefined);
+  await setSessionToken(token);
+  notifySessionChange();
+  return body.user;
+}
+
+/** Пользователь вернулся к паролю: challenge больше не нужен. */
+export function cancelTwoFactor(): void {
+  challengeCookie = null;
 }
 
 export async function signUp(name: string, email: string, password: string): Promise<User> {

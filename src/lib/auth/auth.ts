@@ -47,7 +47,7 @@ import { betterAuth } from 'better-auth';
 import { APIError, createAuthMiddleware, isAPIError } from 'better-auth/api';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
-import { bearer } from 'better-auth/plugins';
+import { bearer, twoFactor } from 'better-auth/plugins';
 
 import { security, type RateLimitKey } from '@/config/business';
 import { clientEnv, getServerEnv } from '@/config/env';
@@ -56,9 +56,20 @@ import { locales } from '@/i18n/config';
 import { db } from '@/lib/db';
 import { userRoles } from '@/domain/enums';
 import { clearFailures, lockoutState, recordFailure } from '@/lib/auth/lockout';
+import { deliverTwoFactorCode, TWO_FACTOR_CODE_MINUTES } from '@/lib/auth/two-factor-otp';
 import { checkRateLimit, clientIdentifier } from '@/lib/security/rate-limit';
 
 const SECONDS_PER_DAY = 60 * 60 * 24;
+
+/**
+ * Сколько дней браузер помнит устройство. Cookie доверия живёт до этого срока,
+ * но браузер удаляет его при очистке cookie и данных сайта: поэтому «до очистки
+ * кеша» — это фактическое поведение, а не обещание на 400 дней.
+ */
+const TRUST_DEVICE_DAYS = 400;
+
+/** Путь библиотеки, который принимает код из письма или SMS. */
+const TWO_FACTOR_VERIFY_PATH = '/two-factor/verify-otp';
 
 const env = getServerEnv();
 
@@ -127,6 +138,26 @@ function bodyEmail(body: unknown): string | null {
   if (typeof body !== 'object' || body === null) return null;
   const value = (body as { email?: unknown }).email;
   return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+/**
+ * Вливает корзину гостя в аккаунт. Вызывается после успешного входа и после
+ * подтверждения кода: без второго случая гость, войдя с двухфакторкой, терял бы
+ * корзину молча. Ошибка не блокирует вход — корзина вторична.
+ */
+async function mergeGuestCartFor(headers: Headers, userId: string): Promise<void> {
+  const anonymousId = headers.get('x-anonymous-id') ?? headers.get('X-Anonymous-Id');
+  if (!anonymousId || anonymousId.length < 8) return;
+  try {
+    const { mergeGuestCart } = await import('@/server/cart/service');
+    await mergeGuestCart({ userId, anonymousId });
+  } catch {}
+}
+
+/** Id пользователя из успешного ответа библиотеки, если он есть. */
+function userIdOf(returned: unknown): string | null {
+  const userId = (returned as { user?: { id?: unknown } } | null)?.user?.id;
+  return typeof userId === 'string' ? userId : null;
 }
 
 export const auth = betterAuth({
@@ -295,6 +326,17 @@ export const auth = betterAuth({
     }),
 
     after: createAuthMiddleware(async (ctx) => {
+      /*
+       * Код подтверждён: сессия только что создана, корзину вливаем сюда. Ошибка
+       * кода сюда не попадает по смыслу — счётчик попыток ведёт сам плагин.
+       */
+      if (ctx.path === TWO_FACTOR_VERIFY_PATH) {
+        if (isAPIError(ctx.context.returned)) return;
+        const userId = userIdOf(ctx.context.returned);
+        if (userId) await mergeGuestCartFor(ctx.headers ?? new Headers(), userId);
+        return;
+      }
+
       if (ctx.path !== SIGN_IN_EMAIL_PATH) return;
 
       const email = bodyEmail(ctx.body);
@@ -310,21 +352,19 @@ export const auth = betterAuth({
         return;
       }
 
-      /* Успех — обнуляем lockout и вливаем корзину гостя. Не блокирует ответ. */
+      /*
+       * Пароль верный. Счётчик неудач обнуляем уже здесь: двухфакторка имеет свой
+       * счётчик (`accountLockout` плагина), и пароль, угаданный злоумышленником,
+       * не должен сбрасывать его за кодом.
+       */
       await clearFailures(email);
-      // Мерж корзины гостя: anonymousId из cookie/headers → userId из сессии
-      try {
-        const headers = ctx.headers ?? new Headers();
-        const anon = headers.get('x-anonymous-id') ?? headers.get('X-Anonymous-Id');
-        if (anon && anon.length >= 8) {
-          const session = ctx.context.returned as { user?: { id?: string } } | null;
-          const userId = (session as { user?: { id?: string } } | null)?.user?.id;
-          if (userId) {
-            const { mergeGuestCart } = await import('@/server/cart/service');
-            await mergeGuestCart({ userId, anonymousId: anon });
-          }
-        }
-      } catch {}
+
+      /*
+       * Ответ с вызовом второго фактора не содержит пользователя — корзину вольём
+       * после кода, а не здесь.
+       */
+      const userId = userIdOf(ctx.context.returned);
+      if (userId) await mergeGuestCartFor(ctx.headers ?? new Headers(), userId);
     }),
   },
 
@@ -361,7 +401,36 @@ export const auth = betterAuth({
    * Плагин обязан быть последним в списке: он перехватывает ответ после всех
    * остальных хуков.
    */
-  plugins: [bearer(), nextCookies()],
+  plugins: [
+    bearer(),
+    /*
+     * ДВУХФАКТОРНАЯ ЗАЩИТА. Каждый вход требует код из письма (или SMS, когда он
+     * будет настроен). Код выбирает плагин; доставку делает `deliverTwoFactorCode`.
+     *
+     * Хеш кода в базе, а не открытый текст: утечка таблицы `VerificationToken` не
+     * даёт готовых кодов. Срок и число попыток — дефолты плагина: 3 минуты и
+     * блокировка на 15 минут после 10 неверных кодов (`accountLockout`).
+     *
+     * Доверие устройству: после подтверждения браузер не спрашивает код, пока не
+     * очищены cookie. Мобильное приложение хранит cookie в защищённом хранилище.
+     */
+    twoFactor({
+      otpOptions: {
+        period: TWO_FACTOR_CODE_MINUTES,
+        digits: 6,
+        storeOTP: 'hashed',
+        sendOTP: async ({ user, otp }) => {
+          await deliverTwoFactorCode(user, otp);
+        },
+      },
+      trustDeviceMaxAge: TRUST_DEVICE_DAYS * SECONDS_PER_DAY,
+    }),
+    /*
+     * `nextCookies` обязан быть последним: он перехватывает ответ после всех
+     * остальных плагинов и хуков.
+     */
+    nextCookies(),
+  ],
 });
 
 export type Auth = typeof auth;

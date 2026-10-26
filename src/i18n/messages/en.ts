@@ -940,6 +940,9 @@ const en = {
       resendIn: 'Resend available in {seconds}',
       invalid: 'That code is not correct.',
       expired: 'The code has expired. Request a new one.',
+      tooMany: 'Too many wrong codes. Request a new one.',
+      smsBody: 'Your {brand} sign-in code: {code}. Valid for {minutes} minutes. Do not share it.',
+      back: 'Back to sign-in',
     },
     roles: {
       customer: 'Dancer',
@@ -2165,6 +2168,12 @@ const en = {
       body: 'Confirm this address to start getting new classes and news once a week.',
       cta: 'Confirm subscription',
       footnote: 'If you did not request this, ignore the email — nothing will be sent.',
+    },
+    twoFactor: {
+      subject: 'Your {brand} sign-in code',
+      heading: 'Your sign-in code',
+      body: 'Enter this code to finish signing in. It is valid for {minutes} minutes and works once.',
+      footnote: 'If you did not try to sign in, change your password right away and do not share this code with anyone.',
     },
   },
 

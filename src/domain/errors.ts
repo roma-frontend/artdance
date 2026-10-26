@@ -112,6 +112,18 @@ export const domainErrors = {
   captchaFailed: () =>
     new DomainError({ code: 'CAPTCHA_FAILED', messageKey: 'validation.captchaRequired' }),
 
+  /** Код второго фактора неверен. Текст тот же, что у пароля: не раскрываем, какой шаг ошибся. */
+  twoFactorInvalid: () =>
+    new DomainError({ code: 'UNAUTHORIZED', messageKey: 'auth.otp.invalid' }),
+
+  /** Код истёк или запрос входа устарел — нужно начать вход заново или запросить код. */
+  twoFactorExpired: () =>
+    new DomainError({ code: 'UNAUTHORIZED', messageKey: 'auth.otp.expired' }),
+
+  /** Серия неверных кодов: плагин закрыл попытки до нового кода. */
+  twoFactorTooMany: () =>
+    new DomainError({ code: 'RATE_LIMITED', messageKey: 'auth.otp.tooMany' }),
+
   /**
    * Неверная пара адрес/пароль.
    *

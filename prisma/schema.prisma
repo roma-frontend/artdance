@@ -342,6 +342,10 @@ model User {
   referredById        String?
   reliabilityScore    Int                      @default(100)
   marketingConsentAt  DateTime?
+  // Двухфакторная защита включена для всех. Значение по умолчанию задано в базе,
+  // поэтому существующие строки получают его миграцией без отдельного бэкфилла.
+  twoFactorEnabled    Boolean                  @default(true)
+  twoFactor           TwoFactor?
   athleteProfile      AthleteProfile?
   dancerProfile       DancerProfile?
   blogPosts           BlogPost[]
@@ -464,6 +468,22 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+// Секрет двухфакторной защиты (TOTP и резервные коды). Код по почте или SMS
+// хранится не здесь, а в `VerificationToken`: он одноразовый и короткоживущий.
+model TwoFactor {
+  id                      String    @id @default(cuid())
+  secret                  String
+  backupCodes             String
+  userId                  String    @unique
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([secret])
 }
 
 // Способ входа: пароль или внешний провайдер. Имена полей — как их ждёт Better

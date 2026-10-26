@@ -91,6 +91,15 @@ export const signInSchema = z.object({
     ),
 });
 
+/**
+ * Код второго фактора: ровно шесть цифр. Проверка формы до похода в библиотеку —
+ * чтобы опечатка не расходовала попытку из пяти.
+ */
+export const twoFactorCodeSchema = z.object({
+  code: z.string().regex(/^\d{6}$/, 'validation.required'),
+  redirectTo: signInSchema.shape.redirectTo,
+});
+
 export const signUpSchema = z.object({
   name: z.string().trim().min(1, 'validation.required').max(limits.text.nameMax, 'validation.maxLength'),
   email,

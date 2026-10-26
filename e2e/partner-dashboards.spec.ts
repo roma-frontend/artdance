@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { demoInstructors, demoPassword, demoVenueOwnerEmail, demoVenues } from '../prisma/fixtures/demo';
 import { routes } from '../src/config/routes';
 import en from '../src/i18n/messages/en';
+import { completeTwoFactor } from './support/two-factor';
 
 const instructor = demoInstructors[0]!;
 const venue = demoVenues[0]!;
@@ -51,6 +52,7 @@ for (const dashboard of dashboards) {
     await page.getByLabel(en.auth.signIn.emailLabel).fill(dashboard.email);
     await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
     await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+    await completeTwoFactor(page);
     await expect(page.getByRole('heading', { level: 1, name: dashboard.title, exact: true })).toBeVisible({ timeout: 30_000 });
     for (const section of dashboard.sections) {
       const locator = section.role === 'heading'

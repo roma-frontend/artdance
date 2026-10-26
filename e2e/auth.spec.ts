@@ -18,6 +18,7 @@ import { demoAccounts, demoPassword, demoThrowawayEmail } from '../prisma/fixtur
 import { routes } from '../src/config/routes';
 import { security } from '../src/config/business';
 import en from '../src/i18n/messages/en';
+import { completeTwoFactor, currentCode } from './support/two-factor';
 
 const LOCALE = 'en';
 const localized = (path: string): string => `/${LOCALE}${path}`;
@@ -73,10 +74,35 @@ test.describe('Вход', () => {
   test('верные данные пускают в кабинет', async ({ page }) => {
     await page.goto(localized(routes.signIn()));
     await signIn(page, client.email, demoPassword);
+    await completeTwoFactor(page);
 
     await page.waitForURL(new RegExp(`${routes.account()}$`));
     await expect(page.getByRole('heading', { level: 1, name: client.name })).toBeVisible();
     await expect(page.getByText(client.email)).toBeVisible();
+  });
+
+  test('после пароля просит код из письма, а неверный код не пускает', async ({ page }) => {
+    await page.goto(localized(routes.signIn()));
+    await signIn(page, client.email, demoPassword);
+
+    await expect(page.getByRole('heading', { level: 2, name: en.auth.otp.title })).toBeVisible();
+    await expect.poll(() => currentCode(page)).toMatch(/^\d{6}$/);
+    const real = await currentCode(page);
+    await page.getByLabel(en.auth.otp.title).fill(real === '000000' ? '111111' : '000000');
+
+    await expect(formAlert(page)).toHaveText(en.auth.otp.invalid);
+    await expect(page.getByRole('heading', { level: 2, name: en.auth.otp.title })).toBeVisible();
+    expect(page.url()).toContain(routes.signIn());
+  });
+
+  test('на шаге кода можно вернуться к паролю', async ({ page }) => {
+    await page.goto(localized(routes.signIn()));
+    await signIn(page, client.email, demoPassword);
+
+    await expect(page.getByRole('heading', { level: 2, name: en.auth.otp.title })).toBeVisible();
+    await page.getByRole('button', { name: en.auth.otp.back }).click();
+
+    await expect(page.getByLabel(en.auth.signIn.emailLabel)).toBeVisible();
   });
 
   test('неверный пароль показывает причину и оставляет на экране входа', async ({ page }) => {
@@ -129,6 +155,7 @@ test.describe('Защита приватного раздела', () => {
     await page.waitForURL(new RegExp('/sign-in'));
 
     await signIn(page, client.email, demoPassword);
+    await completeTwoFactor(page);
 
     await page.waitForURL(new RegExp(`${routes.account()}$`));
     await expect(page.getByRole('heading', { level: 1, name: client.name })).toBeVisible();
@@ -137,6 +164,7 @@ test.describe('Защита приватного раздела', () => {
   test('выход возвращает на главную и закрывает кабинет', async ({ page }) => {
     await page.goto(localized(routes.signIn()));
     await signIn(page, client.email, demoPassword);
+    await completeTwoFactor(page);
     await page.waitForURL(new RegExp(`${routes.account()}$`));
 
     await page.getByRole('button', { name: en.common.actions.signOut }).click();
@@ -193,6 +221,7 @@ test.describe('Вошедший не видит форм входа', () => {
   test('экран входа перенаправляет в кабинет', async ({ page }) => {
     await page.goto(localized(routes.signIn()));
     await signIn(page, client.email, demoPassword);
+    await completeTwoFactor(page);
     await page.waitForURL(new RegExp(`${routes.account()}$`));
 
     await page.goto(localized(routes.signIn()));

@@ -6,6 +6,15 @@ type Dictionary = Record<Locale, Record<MessageKey, string>>;
 
 const dictionary: Dictionary = {
   hy: {
+    otpTitle: 'Մուտքագրեք կոդը',
+    otpSubtitle: '{length}-նշանանոց կոդն ուղարկեցինք ձեզ։ Այն գործում է մի քանի րոպե։',
+    otpVerify: 'Հաստատել',
+    otpBack: 'Վերադառնալ մուտքին',
+    otpResend: 'Ուղարկել կոդը կրկին',
+    otpResendIn: 'Կրկին ուղարկելը հասանելի է {seconds} հետո',
+    otpInvalid: 'Կոդը սխալ է։',
+    otpExpired: 'Կոդի ժամկետն անցել է։ Խնդրեք նորը։',
+    otpTooMany: 'Սխալ կոդերի քանակը չափազանց մեծ է։ Խնդրեք նորը։',
     signInTitle: 'Մուտք',
     signUpTitle: 'Գրանցում',
     name: 'Անուն',
@@ -148,6 +157,15 @@ const dictionary: Dictionary = {
     profileEmailHint: 'Էլ. հասցեն փոխվում է աջակցության միջոցով',
   },
   ru: {
+    otpTitle: 'Введите код',
+    otpSubtitle: 'Отправили {length}-значный код. Он действует несколько минут.',
+    otpVerify: 'Подтвердить',
+    otpBack: 'Назад ко входу',
+    otpResend: 'Отправить код снова',
+    otpResendIn: 'Повторная отправка через {seconds}',
+    otpInvalid: 'Код неверный.',
+    otpExpired: 'Код истёк. Запросите новый.',
+    otpTooMany: 'Слишком много неверных кодов. Запросите новый.',
     signInTitle: 'Вход',
     signUpTitle: 'Регистрация',
     name: 'Имя',
@@ -290,6 +308,15 @@ const dictionary: Dictionary = {
     profileEmailHint: 'Адрес меняется через поддержку',
   },
   en: {
+    otpTitle: 'Enter the code',
+    otpSubtitle: 'We sent a {length}-digit code. It is valid for a few minutes.',
+    otpVerify: 'Confirm',
+    otpBack: 'Back to sign-in',
+    otpResend: 'Resend code',
+    otpResendIn: 'Resend available in {seconds}',
+    otpInvalid: 'That code is not correct.',
+    otpExpired: 'The code has expired. Request a new one.',
+    otpTooMany: 'Too many wrong codes. Request a new one.',
     signInTitle: 'Sign in',
     signUpTitle: 'Sign up',
     name: 'Name',
@@ -448,6 +475,15 @@ export type MessageKey =
   | 'locked'
   | 'invalidCredentials'
   | 'forgotLink'
+  | 'otpTitle'
+  | 'otpSubtitle'
+  | 'otpVerify'
+  | 'otpBack'
+  | 'otpResend'
+  | 'otpResendIn'
+  | 'otpInvalid'
+  | 'otpExpired'
+  | 'otpTooMany'
   | 'forgotTitle'
   | 'forgotSubmit'
   | 'forgotSent'

@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
+import { completeTwoFactor } from './support/two-factor';
 
 const admin = demoAccounts.find(account => account.role === 'ADMIN')!;
 
@@ -16,6 +17,7 @@ test('админка: нижний пункт сайдбара остаётся 
   await page.getByLabel(en.auth.signIn.emailLabel).fill(admin.email);
   await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
   await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+  await completeTwoFactor(page);
   await expect(page.locator('.admin-shell')).toBeVisible({ timeout: 30_000 });
 
   const panel = page.locator('.admin-sidebar-panel');

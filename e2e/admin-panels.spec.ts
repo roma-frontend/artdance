@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
+import { completeTwoFactor } from './support/two-factor';
 
 const admin = demoAccounts.find(account => account.role === 'ADMIN')!;
 const supportOperator = demoAccounts.find(account => account.email === 'support@demo.artdance.am')!;
@@ -35,6 +36,7 @@ test('админка: общий скролл и правая sticky-колон�
   await page.getByLabel(en.auth.signIn.emailLabel).fill(admin.email);
   await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
   await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+  await completeTwoFactor(page);
   await expect(page.locator('.admin-shell')).toBeVisible({ timeout: 30_000 });
   const content = page.locator('.admin-content-panel');
   const sidebar = page.locator('.admin-sidebar-panel');
@@ -107,6 +109,7 @@ test('support command center: доступ только allowlisted operator и 
   await page.getByLabel(en.auth.signIn.emailLabel).fill(supportOperator.email);
   await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
   await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+  await completeTwoFactor(page);
   /* The first Supabase connection can cold-start above the global 10s assertion budget. */
   await expect(page.getByRole('heading', { name: 'Support command center', exact: true }).first()).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('[role="tabpanel"][data-state="active"]')).toBeVisible({ timeout: 30_000 });
@@ -153,6 +156,7 @@ test('админка: индикатор перехода не сдвигает 
   await page.getByLabel(en.auth.signIn.emailLabel).fill(admin.email);
   await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
   await page.getByRole('button', { name: en.auth.signIn.submit }).click();
+  await completeTwoFactor(page);
   await expect(page.locator('.admin-shell')).toBeVisible({ timeout: 30_000 });
 
   const trash = page.locator('.admin-sidebar-panel a[href$="/admin/trash"]');
