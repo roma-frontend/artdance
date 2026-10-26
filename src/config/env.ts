@@ -175,6 +175,7 @@ const serverSchema = z.object({
   RESEND_API_KEY: optionalString,
   EMAIL_FROM: optionalEmail,
   EMAIL_REPLY_TO: optionalEmail,
+  DEV_TWO_FACTOR_TEST_CODE: optionalString,
   SMS_PROVIDER: z.enum(['twilio', 'local-aggregator', 'mock']).default('mock'),
   SMS_API_KEY: optionalString,
   SMS_API_SECRET: optionalString,

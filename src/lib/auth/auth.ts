@@ -80,6 +80,9 @@ const TRUST_DEVICE_DAYS = 400;
 /** Путь библиотеки, который принимает код из письма или SMS. */
 const TWO_FACTOR_VERIFY_PATHS = new Set(['/two-factor/verify-otp', '/two-factor/verify-backup-code']);
 
+/** Последний код, отправленный в dev. Нужен только для тестового кода; в production не заполняется. */
+let lastDevOtp: string | null = null;
+
 /** Срок челленджа в секундах: совпадает с дефолтом плагина (`twoFactorCookieMaxAge`). */
 const TWO_FACTOR_CHALLENGE_SECONDS = 600;
 
@@ -453,6 +456,16 @@ export const auth = betterAuth({
         }
       }
 
+      if (
+        env.NODE_ENV === 'development' &&
+        env.DEV_TWO_FACTOR_TEST_CODE &&
+        lastDevOtp &&
+        ctx.path === '/two-factor/verify-otp' &&
+        (ctx.body as { code?: unknown } | undefined)?.code === env.DEV_TWO_FACTOR_TEST_CODE
+      ) {
+        return { context: { body: { ...ctx.body, code: lastDevOtp } } };
+      }
+
       if (ctx.path !== SIGN_IN_EMAIL_PATH) return;
 
       const email = bodyEmail(ctx.body);
@@ -588,6 +601,7 @@ export const auth = betterAuth({
         storeOTP: 'hashed',
         sendOTP: async ({ user, otp }) => {
           const delivery = await deliverTwoFactorCode(user, otp);
+          if (env.NODE_ENV === 'development') lastDevOtp = otp;
           /*
            * В production без провайдера письмо не уходит, а код остаётся в базе.
            * Молчаливый успех оставлял бы человека на шаге кода без единого символа —
