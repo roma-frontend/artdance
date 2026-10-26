@@ -4,10 +4,8 @@ import {
   clearSessionToken,
   getCachedUserJson,
   getSessionToken,
-  getTrustedDeviceCookie,
   setCachedUserJson,
   setSessionToken,
-  setTrustedDeviceCookie,
 } from './session';
 
 export type User = {
@@ -93,36 +91,16 @@ export async function signInWithAppleIdToken(input: { token: string; firstName?:
   await storeTokenFrom(response);
 }
 
-/** Имя cookie доверенного устройства (`…trust_device`): сервер задаёт его через Set-Cookie. */
-const TRUST_COOKIE_SUFFIX = 'trust_device';
-
-/**
- * Значение cookie (`name=value`) из заголовка Set-Cookie. Заголовок может склеивать несколько cookie через запятую,
- * поэтому делим только по запятой перед `name=`, чтобы не порвать дату в Expires.
- */
-function cookieFrom(response: Response, nameSuffix: string): string | null {
-  const header = response.headers.get('set-cookie');
-  if (!header) return null;
-  for (const part of header.split(/,\s*(?=[^;,=\s]+=)/)) {
-    const pair = part.split(';')[0]?.trim() ?? '';
-    const eq = pair.indexOf('=');
-    if (eq > 0 && pair.length > eq + 1 && pair.slice(0, eq).endsWith(nameSuffix)) return pair;
-  }
-  return null;
-}
-
 export type SignInResult = { status: 'signed-in'; user: User } | { status: 'code-required' };
 
 /**
  * Вход по паролю. Если сервер требует второй шаг, возвращается `code-required`: код отправит `sendTwoFactorCode`.
- * Доверенное устройство передаёт сохранённую cookie, и тогда второй шаг пропускается.
+ * Доверенное устройство держит cookie в хранилище iOS, и тогда второй шаг пропускается.
  */
 export async function signIn(email: string, password: string): Promise<SignInResult> {
-  const trusted = await getTrustedDeviceCookie();
   const response = await request('/sign-in/email', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
-    headers: trusted ? { Cookie: trusted } : undefined,
   });
   if (!response.ok) throw await readError(response);
   const body = (await response.json()) as { user?: User; twoFactorRedirect?: boolean };
@@ -155,8 +133,6 @@ async function completeTwoFactor(path: string, code: string): Promise<User> {
     body: JSON.stringify({ code, trustDevice: true }),
   });
   if (!response.ok) throw await readError(response);
-  const trusted = cookieFrom(response, TRUST_COOKIE_SUFFIX);
-  if (trusted) await setTrustedDeviceCookie(trusted).catch(() => undefined);
   const body = (await response.json()) as { token?: string; user?: User };
   const token = body.token ?? response.headers.get('set-auth-token');
   if (!token || !body.user) throw new AuthError('Сервер не вернул токен сессии', response.status);

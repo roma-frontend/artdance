@@ -24,24 +24,6 @@ export async function setSessionToken(token: string): Promise<void> {
   await SecureStore.setItemAsync(TOKEN_KEY, token);
 }
 
-const TRUST_KEY = 'artdance.two_factor_trust';
-
-/*
- * Cookie доверенного устройства (`name=value`). Не удаляется при выходе: устройство остаётся доверенным,
- * пока не очищены данные приложения. Как и в вебе, срок задаёт сервер (до 400 дней).
- */
-export async function getTrustedDeviceCookie(): Promise<string | null> {
-  if (isWeb) return globalThis.localStorage?.getItem(TRUST_KEY) ?? null;
-  return SecureStore.getItemAsync(TRUST_KEY);
-}
-
-export async function setTrustedDeviceCookie(cookie: string): Promise<void> {
-  if (isWeb) {
-    globalThis.localStorage?.setItem(TRUST_KEY, cookie);
-    return;
-  }
-  await SecureStore.setItemAsync(TRUST_KEY, cookie);
-}
 
 export async function getHintSeen(): Promise<boolean> {
   if (isWeb) return globalThis.localStorage?.getItem(HINT_KEY) === '1';
