@@ -29,7 +29,7 @@ import { Button } from '@/components/ui/button';
 import { userRoleLabelKey, userRoles, type UserRole } from '@/domain/enums';
 import { useRouter } from '@/i18n/routing';
 import type { Translate } from '@/i18n/translate';
-import { changeUserRole, setUserActive } from '@/server/actions/admin/people';
+import { changeUserRole, resetUserTwoFactor, setUserActive } from '@/server/actions/admin/people';
 
 interface UserAccessActionsProps {
   id: string;
@@ -58,6 +58,7 @@ export function UserAccessActions({
 
   const [role, setRole] = useState<UserRole>(currentRole);
   const [confirmSuspend, setConfirmSuspend] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const roleAction = useAction(changeUserRole, { onSuccess: () => router.refresh() });
   const activeAction = useAction(setUserActive, {
@@ -66,8 +67,17 @@ export function UserAccessActions({
       router.refresh();
     },
   });
+  const resetAction = useAction(resetUserTwoFactor, {
+    onSuccess: () => {
+      setConfirmReset(false);
+      router.refresh();
+    },
+  });
 
-  const busy = roleAction.status === 'executing' || activeAction.status === 'executing';
+  const busy =
+    roleAction.status === 'executing' ||
+    activeAction.status === 'executing' ||
+    resetAction.status === 'executing';
 
   if (isSelf) {
     return <p className="text-body-sm text-content-tertiary">{t('selfNotice')}</p>;
@@ -137,8 +147,40 @@ export function UserAccessActions({
           )}
 
           <ActionError error={activeAction.result.serverError} t={tRoot} />
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={busy}
+            onClick={() => setConfirmReset(true)}
+          >
+            {t('resetTwoFactorCta')}
+          </Button>
+          <ActionError error={resetAction.result.serverError} t={tRoot} />
         </div>
       ) : null}
+
+      <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('resetTwoFactorTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('resetTwoFactorBody')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>{tRoot('common.actions.cancel')}</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy}
+              onClick={(event) => {
+                event.preventDefault();
+                resetAction.execute({ id });
+              }}
+            >
+              {t('resetTwoFactorCta')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirmSuspend} onOpenChange={setConfirmSuspend}>
         <AlertDialogContent>

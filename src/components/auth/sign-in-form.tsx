@@ -33,7 +33,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useTranslations } from 'next-intl';
 import { useAction } from 'next-safe-action/hooks';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/ui/form-field';
@@ -51,12 +51,18 @@ import { formatEmailInput } from '@/lib/input-masks';
 import {
   sendTwoFactorCodeAction,
   signInAction,
+  verifyBackupCodeAction,
   verifyTwoFactorCodeAction,
 } from '@/server/actions/auth';
 
 interface SignInFormProps {
   /** Куда вернуть после входа. Уже относительный путь: проверено на сервере. */
   redirectTo?: string | undefined;
+  /**
+   * Вход через Google или Apple, которому нужен второй фактор. Сессия отложена
+   * сервером; форма открывает шаг кода и отправляет код. `target` — уже замаскированный адрес.
+   */
+  socialChallenge?: { target: string } | undefined;
 }
 
 /** Длина кода — совпадает с `digits` в конфигурации плагина двухфакторной защиты. */
@@ -73,7 +79,7 @@ const STEP_MOTION = {
 
 type Step = 'credentials' | 'code';
 
-export function SignInForm({ redirectTo }: SignInFormProps) {
+export function SignInForm({ redirectTo, socialChallenge }: SignInFormProps) {
   const t = useTranslations('auth.signIn');
   const tOtp = useTranslations('auth.otp');
   const tRoot = useTranslations();
@@ -81,13 +87,16 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
   const router = useRouter();
   const reduce = useReducedMotion();
 
-  const [step, setStep] = useState<Step>('credentials');
+  const [step, setStep] = useState<Step>(socialChallenge ? 'code' : 'credentials');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [target, setTarget] = useState('');
+  const [target, setTarget] = useState(socialChallenge?.target ?? '');
   const [code, setCode] = useState('');
+  const [useBackup, setUseBackup] = useState(false);
+  const [backupCode, setBackupCode] = useState('');
   const [cooldown, setCooldown] = useState(0);
+  const socialCodeRequested = useRef(false);
 
   // Порядок важен: обработчик входа вызывает отправку кода, поэтому она объявлена первой.
   const sendCode = useAction(sendTwoFactorCodeAction, {
@@ -100,6 +109,13 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
     },
     // Неверный или просроченный код: очищаем поле, чтобы человек сразу ввёл заново.
     onError: () => setCode(''),
+  });
+
+  const verifyBackup = useAction(verifyBackupCodeAction, {
+    onSuccess: ({ data }) => {
+      if (data?.redirectTo) router.push(data.redirectTo);
+    },
+    onError: () => setBackupCode(''),
   });
 
   const signIn = useAction(signInAction, {
@@ -120,11 +136,24 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
     return () => window.clearTimeout(id);
   }, [cooldown]);
 
-  const isVerifying = verify.status === 'executing' || verify.status === 'hasSucceeded';
+  // Социальный вход: код ещё не отправлен, отправляем один раз (защита от двойного вызова в StrictMode).
+  useEffect(() => {
+    if (!socialChallenge || socialCodeRequested.current) return;
+    socialCodeRequested.current = true;
+    sendCode.execute();
+  }, [socialChallenge, sendCode]);
+
+  const isVerifying =
+    verify.status === 'executing' ||
+    verify.status === 'hasSucceeded' ||
+    verifyBackup.status === 'executing' ||
+    verifyBackup.status === 'hasSucceeded';
   const isBusy = signIn.status === 'executing' || isVerifying;
   const serverError =
     step === 'code'
-      ? (verify.result.serverError ?? sendCode.result.serverError)
+      ? useBackup
+        ? verifyBackup.result.serverError
+        : (verify.result.serverError ?? sendCode.result.serverError)
       : signIn.result.serverError;
 
   const submitCode = (value: string) => {
@@ -132,15 +161,31 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
     verify.execute({ code: value, ...(redirectTo ? { redirectTo } : {}) });
   };
 
+  /* Резервный код: формат `xxxxx-xxxxx`, короче 8 символов сервер не примет. */
+  const submitBackupCode = () => {
+    const value = backupCode.trim();
+    if (value.length < 8 || isVerifying) return;
+    verifyBackup.execute({ code: value, ...(redirectTo ? { redirectTo } : {}) });
+  };
+
+  const toggleBackup = () => {
+    setUseBackup((on) => !on);
+    setCode('');
+    setBackupCode('');
+  };
+
   const backToCredentials = () => {
     setStep('credentials');
     setCode('');
+    setBackupCode('');
+    setUseBackup(false);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (step === 'code') {
-      submitCode(code);
+      if (useBackup) submitBackupCode();
+      else submitCode(code);
       return;
     }
     signIn.execute({
@@ -152,6 +197,7 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
   };
 
   const codeComplete = code.length === CODE_LENGTH;
+  const backupComplete = backupCode.trim().length >= 8;
 
   return (
     <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -217,10 +263,33 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
             <div className="flex flex-col items-center gap-2 text-center">
               <h2 className="text-body-lg font-semibold text-content-primary">{tOtp('title')}</h2>
               <p className="text-body-sm text-content-secondary">
-                {tOtp('subtitle', { length: CODE_LENGTH, target })}
+                {useBackup ? tOtp('backupHint') : tOtp('subtitle', { length: CODE_LENGTH, target })}
               </p>
             </div>
 
+            {useBackup ? (
+              <FormField name="backupCode" labelKey="auth.otp.backupLabel" required>
+                {(field) => (
+                  <input
+                    id={field.id}
+                    name={field.name}
+                    type="text"
+                    autoComplete="one-time-code"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    autoFocus
+                    maxLength={32}
+                    placeholder={tOtp('backupPlaceholder')}
+                    value={backupCode}
+                    onChange={(event) => setBackupCode(event.target.value.slice(0, 32))}
+                    aria-describedby={field.describedBy}
+                    disabled={isBusy}
+                    className="form-input text-center tracking-wider"
+                  />
+                )}
+              </FormField>
+            ) : (
             <InputOTP
               maxLength={CODE_LENGTH}
               value={code}
@@ -245,8 +314,9 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
                 <InputOTPSlot index={5} />
               </InputOTPGroup>
             </InputOTP>
+            )}
 
-            <div className="text-caption flex w-full items-center justify-between">
+            <div className="text-caption flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-2">
               <button
                 type="button"
                 onClick={backToCredentials}
@@ -257,12 +327,22 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
               </button>
               <button
                 type="button"
-                onClick={() => sendCode.execute()}
-                disabled={isBusy || cooldown > 0 || sendCode.status === 'executing'}
-                className="text-content-secondary underline hover:text-content-accent disabled:no-underline disabled:opacity-60"
+                onClick={toggleBackup}
+                disabled={isBusy}
+                className="text-content-secondary underline hover:text-content-accent"
               >
-                {cooldown > 0 ? tOtp('resendIn', { seconds: cooldown }) : tOtp('resend')}
+                {useBackup ? tOtp('useEmailCode') : tOtp('useBackup')}
               </button>
+              {!useBackup && (
+                <button
+                  type="button"
+                  onClick={() => sendCode.execute()}
+                  disabled={isBusy || cooldown > 0 || sendCode.status === 'executing'}
+                  className="text-content-secondary underline hover:text-content-accent disabled:no-underline disabled:opacity-60"
+                >
+                  {cooldown > 0 ? tOtp('resendIn', { seconds: cooldown }) : tOtp('resend')}
+                </button>
+              )}
             </div>
           </motion.div>
         )}
@@ -283,7 +363,7 @@ export function SignInForm({ redirectTo }: SignInFormProps) {
         variant="accent"
         size="lg"
         block
-        disabled={isBusy || (step === 'code' && !codeComplete)}
+        disabled={isBusy || (step === 'code' && (useBackup ? !backupComplete : !codeComplete))}
       >
         {isBusy ? tCommon('states.processing') : t('submit')}
       </Button>

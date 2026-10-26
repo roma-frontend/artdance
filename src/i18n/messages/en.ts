@@ -934,6 +934,11 @@ const en = {
       invalidToken: 'This reset link is invalid or has expired.',
     },
     otp: {
+      useBackup: 'Use a backup code',
+      useEmailCode: 'Use the code from email instead',
+      backupLabel: 'Backup code',
+      backupPlaceholder: 'xxxxx-xxxxx',
+      backupHint: 'Enter one of the backup codes you saved. Each code works once.',
       title: 'Enter the code',
       subtitle: 'We sent a {length}-digit code to {target}.',
       resend: 'Resend code',
@@ -943,6 +948,7 @@ const en = {
       tooMany: 'Too many wrong codes. Request a new one.',
       smsBody: 'Your {brand} sign-in code: {code}. Valid for {minutes} minutes. Do not share it.',
       back: 'Back to sign-in',
+      delivery: 'We could not send the code right now. Try again in a few minutes.',
     },
     roles: {
       customer: 'Dancer',
@@ -954,6 +960,22 @@ const en = {
   },
 
   account: {
+    security: {
+      title: 'Security',
+      hint: 'Signed-in devices and backup codes for your account.',
+      sessionsTitle: 'Signed-in devices',
+      sessionCurrent: 'This device',
+      sessionStarted: 'Signed in {date}',
+      sessionUnknown: 'Unknown device',
+      signOutOthers: 'Sign out other devices',
+      signOutOthersDone: 'Other devices were signed out.',
+      backupTitle: 'Backup codes',
+      backupHint: 'Use a backup code if the email code does not reach you. Each code works once. New codes replace the old ones.',
+      backupPassword: 'Current password',
+      backupGenerate: 'Generate new codes',
+      backupSaveNotice: 'Save these codes now. They will not be shown again.',
+      backupWrongPassword: 'Wrong password.',
+    },
     title: 'My account',
     /** Ссылка в админку. Видна только персоналу: у клиента её нет. */
     staffCta: 'Admin panel',
@@ -2174,6 +2196,12 @@ const en = {
       heading: 'Your sign-in code',
       body: 'Enter this code to finish signing in. It is valid for {minutes} minutes and works once.',
       footnote: 'If you did not try to sign in, change your password right away and do not share this code with anyone.',
+    },
+    newDevice: {
+      subject: 'New sign-in to your {brand} account',
+      heading: 'Signed in from a new device',
+      body: 'Your account was just signed in from a device we have not seen before. If this was you, no action is needed.',
+      footnote: 'If this was not you, change your password right away and sign out the other sessions in your account.',
     },
   },
 
@@ -3745,6 +3773,9 @@ const en = {
       roleWarning:
         'A role changes what the person can do across the whole platform. The change is recorded in the audit log.',
       suspendTitle: 'Suspend account?',
+      resetTwoFactorCta: 'Reset code lockout',
+      resetTwoFactorTitle: 'Reset the code lockout?',
+      resetTwoFactorBody: 'Clears the wrong-code lock and trusted devices, so the next sign-in asks for a code again. Passwords and sessions are not changed.',
       suspendBody: 'The person loses access immediately, including active sessions. Data is kept.',
       suspended: 'Account suspended',
       restored: 'Access restored',

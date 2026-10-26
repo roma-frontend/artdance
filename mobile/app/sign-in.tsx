@@ -208,7 +208,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   error: { color: colors.danger, fontSize: 13, fontWeight: '600' },
   action: { marginTop: 4 },
-  link: { alignSelf: 'flex-end', color: colors.accentText, fontSize: 13, fontWeight: '600' },
+  link: { alignSelf: 'flex-end', color: '#D9526A', fontSize: 13, fontWeight: '600' },
   muted: { color: colors.text3 },
   stack: { gap: 16 },
   subtitle: { color: colors.text2, fontSize: 14, lineHeight: 20 },

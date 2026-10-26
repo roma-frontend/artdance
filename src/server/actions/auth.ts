@@ -56,6 +56,7 @@ import {
   resetPasswordSchema,
   signInSchema,
   signUpSchema,
+  backupCodeSchema,
   twoFactorCodeSchema,
 } from '@/domain/auth';
 import { auth } from '@/lib/auth/auth';
@@ -105,6 +106,8 @@ function twoFactorFailure(code: unknown) {
     case 'OTP_HAS_EXPIRED':
     case 'INVALID_TWO_FACTOR_COOKIE':
       return domainErrors.twoFactorExpired();
+    case 'TWO_FACTOR_DELIVERY_FAILED':
+      return domainErrors.twoFactorDelivery();
     default:
       return domainErrors.twoFactorInvalid();
   }
@@ -227,6 +230,27 @@ export const verifyTwoFactorCodeAction = publicAction
   .action(async ({ parsedInput }) => {
     try {
       await auth.api.verifyTwoFactorOTP({
+        body: { code: parsedInput.code, trustDevice: true },
+        headers: await headers(),
+      });
+    } catch (error) {
+      if (error instanceof APIError) throw twoFactorFailure(error.body?.code);
+      throw error;
+    }
+
+    return { redirectTo: safeRedirect(parsedInput.redirectTo) };
+  });
+
+/**
+ * Вход резервным кодом вместо кода из письма. Библиотека проверяет код, помечает
+ * его использованным и, как и при обычном коде, создаёт сессию.
+ */
+export const verifyBackupCodeAction = publicAction
+  .metadata({ rateLimit: 'signIn', audit: 'auth.twoFactorVerify' })
+  .inputSchema(backupCodeSchema)
+  .action(async ({ parsedInput }) => {
+    try {
+      await auth.api.verifyBackupCode({
         body: { code: parsedInput.code, trustDevice: true },
         headers: await headers(),
       });

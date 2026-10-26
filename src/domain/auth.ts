@@ -100,6 +100,12 @@ export const twoFactorCodeSchema = z.object({
   redirectTo: signInSchema.shape.redirectTo,
 });
 
+/** Резервный код вида `xxxxx-xxxxx`; регистр и дефис не проверяем строже, чем нужно для ввода. */
+export const backupCodeSchema = z.object({
+  code: z.string().trim().regex(/^[A-Za-z0-9-]{8,32}$/, 'validation.required'),
+  redirectTo: signInSchema.shape.redirectTo,
+});
+
 export const signUpSchema = z.object({
   name: z.string().trim().min(1, 'validation.required').max(limits.text.nameMax, 'validation.maxLength'),
   email,

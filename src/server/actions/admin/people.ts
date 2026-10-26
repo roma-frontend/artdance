@@ -150,6 +150,47 @@ export const setUserActive = authedAction
     return { active: after.isActive };
   });
 
+/**
+ * Снятие блокировки второго фактора. Сбрасывает счётчик неверных кодов и
+ * `lockedUntil`, отзывает доверенные устройства и открытые челленджи: после этого
+ * следующий вход снова попросит код. Сессии не трогаем: пароль и вход остаются
+ * как были, меняется только защита второго шага.
+ */
+export const resetUserTwoFactor = authedAction
+  .metadata({ rateLimit: 'adminMutation', audit: 'admin.user.twoFactorReset' })
+  .inputSchema(z.object({ id: idSchema }))
+  .action(async ({ parsedInput, ctx }): Promise<{ reset: true }> => {
+    const caller = await requireCapability('users.edit');
+
+    if (parsedInput.id === caller.id) throw domainErrors.forbidden();
+
+    const target = await db.user.findUnique({ where: { id: parsedInput.id }, select: { id: true } });
+    if (!target) throw domainErrors.notFound();
+
+    await db.$transaction([
+      db.twoFactor.updateMany({
+        where: { userId: parsedInput.id },
+        data: { failedVerificationCount: 0, lockedUntil: null },
+      }),
+      db.verificationToken.deleteMany({
+        where: { value: parsedInput.id, identifier: { startsWith: 'trust-device-' } },
+      }),
+      db.verificationToken.deleteMany({
+        where: { value: parsedInput.id, identifier: { startsWith: '2fa-' } },
+      }),
+    ]);
+
+    await recordAudit({
+      actor: caller,
+      action: 'admin.user.twoFactorReset',
+      entityType: 'User',
+      entityId: parsedInput.id,
+      ipAddress: ctx.identifier,
+    });
+
+    return { reset: true };
+  });
+
 /* ─────────────────────────── Матрица и гранты ─────────────────────────── */
 
 export const setRoleCapability = authedAction

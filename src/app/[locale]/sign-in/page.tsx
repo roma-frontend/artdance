@@ -28,7 +28,11 @@ import { buildMetadata } from '@/lib/seo/metadata';
 
 interface PageProps {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ redirectTo?: string | string[] }>;
+  searchParams: Promise<{
+    redirectTo?: string | string[];
+    twoFactor?: string | string[];
+    target?: string | string[];
+  }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -51,11 +55,19 @@ function safeTarget(value: string | string[] | undefined): string | undefined {
   return target;
 }
 
+function firstParam(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function SignInPage({ params, searchParams }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
 
-  const redirectTo = safeTarget((await searchParams).redirectTo);
+  const query = await searchParams;
+  const redirectTo = safeTarget(query.redirectTo);
+  // Возврат из Google или Apple с незавершённым вторым фактором. Cookie челленджа уже стоит.
+  const socialChallenge =
+    firstParam(query.twoFactor) === '1' ? { target: firstParam(query.target) ?? '' } : undefined;
 
   const caller = await getCaller();
   if (caller) redirect({ href: redirectTo ?? routes.account(), locale: locale as Locale });
@@ -78,7 +90,7 @@ export default async function SignInPage({ params, searchParams }: PageProps) {
         </>
       }
     >
-      <SignInForm redirectTo={redirectTo} />
+      <SignInForm redirectTo={redirectTo} socialChallenge={socialChallenge} />
     </AuthShell>
   );
 }

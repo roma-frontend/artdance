@@ -188,6 +188,7 @@ export const routes = {
   accountWallet: () => '/account/wallet',
   accountReferrals: () => '/account/referrals',
   accountNotifications: () => '/account/notifications',
+  accountSecurity: () => '/account/security',
   accountSettings: () => '/account/settings',
   accountData: () => '/account/data',
   /** Анкета танцора: уровень, направления, цель. Правится в любой момент. */

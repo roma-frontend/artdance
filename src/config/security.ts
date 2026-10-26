@@ -243,6 +243,7 @@ export const criticalAuditActions = [
   'promoCode.created',
   'settings.changed',
   'session.revokedAll',
+  'admin.user.twoFactorReset',
 ] as const;
 
 export type CriticalAuditAction = (typeof criticalAuditActions)[number];

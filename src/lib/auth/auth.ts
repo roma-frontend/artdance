@@ -43,20 +43,29 @@
 
 import 'server-only';
 
+import { createHmac, randomBytes } from 'node:crypto';
+
 import { betterAuth } from 'better-auth';
 import { APIError, createAuthMiddleware, isAPIError } from 'better-auth/api';
+import { deleteSessionCookie } from 'better-auth/cookies';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { nextCookies } from 'better-auth/next-js';
 import { bearer, twoFactor } from 'better-auth/plugins';
 
 import { security, type RateLimitKey } from '@/config/business';
 import { clientEnv, getServerEnv } from '@/config/env';
+import { isSupportOperator } from '@/config/security';
 import { lockoutErrorCode } from '@/domain/auth';
-import { locales } from '@/i18n/config';
+import { defaultLocale, locales } from '@/i18n/config';
 import { db } from '@/lib/db';
 import { userRoles } from '@/domain/enums';
 import { clearFailures, lockoutState, recordFailure } from '@/lib/auth/lockout';
-import { deliverTwoFactorCode, TWO_FACTOR_CODE_MINUTES } from '@/lib/auth/two-factor-otp';
+import { notifyNewDevice } from '@/lib/auth/new-device';
+import {
+  deliverTwoFactorCode,
+  maskedTwoFactorTarget,
+  TWO_FACTOR_CODE_MINUTES,
+} from '@/lib/auth/two-factor-otp';
 import { checkRateLimit, clientIdentifier } from '@/lib/security/rate-limit';
 
 const SECONDS_PER_DAY = 60 * 60 * 24;
@@ -69,7 +78,47 @@ const SECONDS_PER_DAY = 60 * 60 * 24;
 const TRUST_DEVICE_DAYS = 400;
 
 /** Путь библиотеки, который принимает код из письма или SMS. */
-const TWO_FACTOR_VERIFY_PATH = '/two-factor/verify-otp';
+const TWO_FACTOR_VERIFY_PATHS = new Set(['/two-factor/verify-otp', '/two-factor/verify-backup-code']);
+
+/** Срок челленджа в секундах: совпадает с дефолтом плагина (`twoFactorCookieMaxAge`). */
+const TWO_FACTOR_CHALLENGE_SECONDS = 600;
+
+const TRUST_DEVICE_MAX_AGE_SECONDS = TRUST_DEVICE_DAYS * SECONDS_PER_DAY;
+
+/** Имена cookie плагина без префикса: `createAuthCookie` добавит префикс приложения. */
+const TWO_FACTOR_COOKIE = 'two_factor';
+const TRUST_DEVICE_COOKIE = 'trust_device';
+
+/**
+ * Роли, для которых второй фактор обязателен даже при выключенном флаге.
+ * Оператор, у которого флаг можно сбросить, — это оператор с одним паролем.
+ */
+export const secondFactorRequiredRoles: readonly string[] = ['ADMIN', 'SUPPORT'];
+
+interface SecondFactorSubject {
+  id: string;
+  email: string;
+  role?: string | null;
+  twoFactorEnabled?: boolean | null;
+}
+
+function isSecondFactorRequired(user: SecondFactorSubject): boolean {
+  if (user.twoFactorEnabled) return true;
+  return secondFactorRequiredRoles.includes(user.role ?? '') || isSupportOperator(user);
+}
+
+/** Пути социального входа: колбэк провайдера и вход по identity token с устройства. */
+function isSocialSignInPath(path: string): boolean {
+  return path.startsWith('/callback/') || path === '/sign-in/social';
+}
+
+/** Подпись trust-cookie: та же схема, что у плагина (HMAC-SHA256, base64url без паддинга). */
+function trustSignature(secret: string, message: string): string {
+  return createHmac('sha256', secret).update(message).digest('base64url');
+}
+
+/** Тип контекста хука: берём у библиотеки, а не дублируем руками. */
+type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 
 const env = getServerEnv();
 
@@ -158,6 +207,105 @@ async function mergeGuestCartFor(headers: Headers, userId: string): Promise<void
 function userIdOf(returned: unknown): string | null {
   const userId = (returned as { user?: { id?: unknown } } | null)?.user?.id;
   return typeof userId === 'string' ? userId : null;
+}
+
+/**
+ * Откладывает сессию до ввода кода. Повторяет то, что делает плагин при обычном
+ * входе по паролю: сессия удаляется, создаётся челлендж и подписанный cookie.
+ */
+async function openTwoFactorChallenge(ctx: HookContext, userId: string): Promise<void> {
+  const pending = ctx.context.newSession;
+  deleteSessionCookie(ctx, true);
+  if (pending) await ctx.context.internalAdapter.deleteSession(pending.session.token);
+  ctx.context.setNewSession(null);
+
+  const cookie = ctx.context.createAuthCookie(TWO_FACTOR_COOKIE, { maxAge: TWO_FACTOR_CHALLENGE_SECONDS });
+  const identifier = `2fa-${randomBytes(20).toString('base64url')}`;
+  const expiresAt = new Date(Date.now() + TWO_FACTOR_CHALLENGE_SECONDS * 1000);
+
+  await ctx.context.internalAdapter.createVerificationValue({ value: userId, identifier, expiresAt });
+  await ctx.context.internalAdapter.createVerificationValue({
+    value: '0',
+    identifier: `2fa-attempts-${identifier}`,
+    expiresAt,
+  });
+  await ctx.setSignedCookie(cookie.name, identifier, ctx.context.secret, cookie.attributes);
+}
+
+/**
+ * Доверенное устройство: та же проверка, что у плагина, и та же ротация токена
+ * после использования. Без ротации украденный cookie работал бы весь срок жизни.
+ */
+async function isTrustedDevice(ctx: HookContext, userId: string): Promise<boolean> {
+  const cookie = ctx.context.createAuthCookie(TRUST_DEVICE_COOKIE, { maxAge: TRUST_DEVICE_MAX_AGE_SECONDS });
+  const raw = await ctx.getSignedCookie(cookie.name, ctx.context.secret);
+  if (!raw) return false;
+
+  const [token, trustId] = raw.split('!');
+  if (!token || !trustId) return false;
+  if (token !== trustSignature(ctx.context.secret, `${userId}!${trustId}`)) return false;
+
+  const record = await ctx.context.internalAdapter.findVerificationValue(trustId);
+  if (!record || record.value !== userId || record.expiresAt <= new Date()) return false;
+
+  await ctx.context.internalAdapter.deleteVerificationByIdentifier(trustId);
+  const nextId = `trust-device-${randomBytes(24).toString('base64url')}`;
+  const nextToken = trustSignature(ctx.context.secret, `${userId}!${nextId}`);
+  await ctx.context.internalAdapter.createVerificationValue({
+    value: userId,
+    identifier: nextId,
+    expiresAt: new Date(Date.now() + TRUST_DEVICE_MAX_AGE_SECONDS * 1000),
+  });
+  await ctx.setSignedCookie(cookie.name, `${nextToken}!${nextId}`, ctx.context.secret, cookie.attributes);
+  return true;
+}
+
+/** true, если сессия отложена до кода. Доверенное устройство код не спрашивает. */
+async function holdForSecondFactor(ctx: HookContext, user: SecondFactorSubject): Promise<boolean> {
+  if (!isSecondFactorRequired(user)) return false;
+  if (await isTrustedDevice(ctx, user.id)) return false;
+  await openTwoFactorChallenge(ctx, user.id);
+  return true;
+}
+
+/** Письмо о новом устройстве — только для сессии, которая реально открыта. */
+async function alertIfNewDevice(ctx: HookContext): Promise<void> {
+  const session = ctx.context.newSession;
+  if (!session) return;
+  await notifyNewDevice({
+    userId: session.user.id,
+    sessionId: session.session.id,
+    userAgent: session.session.userAgent ?? null,
+  });
+}
+
+/**
+ * Социальный вход. Google и Apple не проходят через плагин: его хук смотрит только
+ * на вход по паролю, поэтому без этой проверки второй фактор обходился бы одной
+ * кнопкой «Войти через Google». Сессия откладывается так же, как при паролe.
+ */
+async function gateSocialSignIn(ctx: HookContext): Promise<unknown> {
+  const session = ctx.context.newSession;
+  if (!session) return undefined;
+
+  if (await holdForSecondFactor(ctx, session.user)) {
+    if (ctx.path.startsWith('/callback/')) {
+      const locale = session.user.locale && isLocaleCode(session.user.locale) ? session.user.locale : defaultLocale;
+      // Маска уже скрывает адрес или телефон; полный адрес в URL не попадает.
+      const full = await ctx.context.internalAdapter.findUserById(session.user.id);
+      const target = full ? maskedTwoFactorTarget(full) : '';
+      const query = new URLSearchParams({ twoFactor: '1', target });
+      throw ctx.redirect(`${clientEnv.NEXT_PUBLIC_APP_URL}/${locale}/sign-in?${query.toString()}`);
+    }
+    return ctx.json({ twoFactorRedirect: true, twoFactorMethods: ['otp'] });
+  }
+
+  await alertIfNewDevice(ctx);
+  return undefined;
+}
+
+function isLocaleCode(value: string): value is (typeof locales)[number] {
+  return (locales as readonly string[]).includes(value);
 }
 
 export const auth = betterAuth({
@@ -330,12 +478,15 @@ export const auth = betterAuth({
        * Код подтверждён: сессия только что создана, корзину вливаем сюда. Ошибка
        * кода сюда не попадает по смыслу — счётчик попыток ведёт сам плагин.
        */
-      if (ctx.path === TWO_FACTOR_VERIFY_PATH) {
+      if (TWO_FACTOR_VERIFY_PATHS.has(ctx.path)) {
         if (isAPIError(ctx.context.returned)) return;
         const userId = userIdOf(ctx.context.returned);
         if (userId) await mergeGuestCartFor(ctx.headers ?? new Headers(), userId);
+        await alertIfNewDevice(ctx);
         return;
       }
+
+      if (isSocialSignInPath(ctx.path)) return gateSocialSignIn(ctx);
 
       if (ctx.path !== SIGN_IN_EMAIL_PATH) return;
 
@@ -360,9 +511,25 @@ export const auth = betterAuth({
       await clearFailures(email);
 
       /*
-       * Ответ с вызовом второго фактора не содержит пользователя — корзину вольём
-       * после кода, а не здесь.
+       * Оператор с выключенным флагом проходит здесь: без этой ветки флаг стал бы
+       * обходом. Пользователям с флагом плагин откладывает сессию сам, но уже ПОСЛЕ
+       * этого хука. Поэтому сессия у них ещё есть, и выход ниже нужен явно: иначе
+       * корзина влилась бы в аккаунт до ввода кода. trust-cookie при этом не
+       * ротируется дважды, потому что `holdForSecondFactor` здесь не вызывается.
        */
+      const session = ctx.context.newSession;
+      if (session && !session.user.twoFactorEnabled) {
+        if (await holdForSecondFactor(ctx, session.user)) {
+          return ctx.json({ twoFactorRedirect: true, twoFactorMethods: ['otp'] });
+        }
+        await alertIfNewDevice(ctx);
+      }
+
+      /*
+       * Корзину вливаем только в завершённый вход. Для пользователя с фактором
+       * вход завершит подтверждение кода, там же будет и слияние.
+       */
+      if (!session || session.user.twoFactorEnabled) return;
       const userId = userIdOf(ctx.context.returned);
       if (userId) await mergeGuestCartFor(ctx.headers ?? new Headers(), userId);
     }),
@@ -420,7 +587,18 @@ export const auth = betterAuth({
         digits: 6,
         storeOTP: 'hashed',
         sendOTP: async ({ user, otp }) => {
-          await deliverTwoFactorCode(user, otp);
+          const delivery = await deliverTwoFactorCode(user, otp);
+          /*
+           * В production без провайдера письмо не уходит, а код остаётся в базе.
+           * Молчаливый успех оставлял бы человека на шаге кода без единого символа —
+           * поэтому ошибка видна в интерфейсе. В разработке код читается из базы.
+           */
+          if (!delivery.delivered && env.NODE_ENV === 'production') {
+            throw new APIError('SERVICE_UNAVAILABLE', {
+              code: 'TWO_FACTOR_DELIVERY_FAILED',
+              message: 'Two-factor code could not be delivered',
+            });
+          }
         },
       },
       trustDeviceMaxAge: TRUST_DEVICE_DAYS * SECONDS_PER_DAY,

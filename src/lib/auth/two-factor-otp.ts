@@ -63,25 +63,31 @@ function fill(template: string, values: Record<string, string>): string {
   return Object.entries(values).reduce((text, [key, value]) => text.replaceAll(`{${key}}`, value), template);
 }
 
+/** Итог отправки: по какому каналу пошло и дошло ли вообще. */
+export interface TwoFactorDelivery {
+  channel: TwoFactorChannel;
+  /** false — ни один провайдер не принял сообщение (нет ключей или сбой). */
+  delivered: boolean;
+}
+
 /**
- * Отправляет код. Возвращает канал, по которому ушло сообщение.
- *
- * Ошибка доставки не выбрасывается: плагин уже выдал код и ждёт ввода, а вызывающий
- * код не знает про письма. Причина попадает в лог внутри `sendEmail`/`sendSms`.
+ * Отправляет код и сообщает итог. Ошибку не выбрасывает: решение, что делать с
+ * недоставленным кодом, принимает вызывающий (в production это ошибка плагина,
+ * см. `sendOTP` в `lib/auth/auth.ts`). Причина сбоя уже в логе `sendEmail`/`sendSms`.
  */
-export async function deliverTwoFactorCode(recipient: TwoFactorRecipient, code: string): Promise<TwoFactorChannel> {
+export async function deliverTwoFactorCode(recipient: TwoFactorRecipient, code: string): Promise<TwoFactorDelivery> {
   const locale = localeOf(recipient);
   const messages = await loadMessages(locale);
   const values = { brand: messages.brand.name, minutes: String(TWO_FACTOR_CODE_MINUTES), code };
 
   if (twoFactorChannel(recipient) === 'sms' && recipient.phone) {
     const sms = await sendSms({ to: recipient.phone, text: fill(messages.auth.otp.smsBody, values) });
-    if (sms.delivered) return 'sms';
+    if (sms.delivered) return { channel: 'sms', delivered: true };
     // SMS не ушло — код всё равно должен дойти, и почта здесь страховка, а не ошибка.
   }
 
   const copy = messages.email.twoFactor;
-  await sendEmail({
+  const email = await sendEmail({
     to: recipient.email,
     locale,
     subject: fill(copy.subject, values),
@@ -90,5 +96,5 @@ export async function deliverTwoFactorCode(recipient: TwoFactorRecipient, code: 
     code,
     footnote: fill(copy.footnote, values),
   });
-  return 'email';
+  return { channel: 'email', delivered: email.delivered };
 }

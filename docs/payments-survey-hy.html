@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Վճարումների համակարգի հարցաշար</title>
+  <style>
+    :root {
+      --bg: #f5f3fb;
+      --card: #ffffff;
+      --ink: #1d1830;
+      --muted: #6b6485;
+      --accent: #7c3aed;
+      --accent-2: #ec4899;
+      --line: #e6e1f4;
+      --soft: #f7f4ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Noto Sans Armenian", "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #7c3aed 0%, #c026d3 55%, #ec4899 100%);
+      color: #fff;
+      padding: 56px 20px 90px;
+      text-align: center;
+      border-radius: 0 0 32px 32px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(26px, 4vw, 40px);
+      letter-spacing: -0.02em;
+    }
+
+    .hero p {
+      margin: 0 auto;
+      max-width: 620px;
+      opacity: 0.92;
+    }
+
+    main {
+      max-width: 880px;
+      margin: -56px auto 60px;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 24px;
+      margin: 16px 0;
+      box-shadow: 0 12px 32px rgba(40, 20, 80, 0.07);
+    }
+
+    .intro h2,
+    .section {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 36px 4px 4px;
+    }
+
+    .intro h2 { margin-top: 0; }
+
+    .intro ol,
+    .intro ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+    }
+
+    .glossary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .term {
+      background: var(--soft);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .term b { color: var(--accent); }
+
+    .q-head {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .q-num {
+      flex: 0 0 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    .q-head h3 {
+      margin: 4px 0 4px;
+      font-size: 17px;
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .opts {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .opt {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1.5px solid var(--line);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+
+    .opt:hover {
+      border-color: #c4b5fd;
+      background: #faf8ff;
+    }
+
+    .opt:has(input:checked) {
+      border-color: var(--accent);
+      background: #f3edff;
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+    }
+
+    .opt input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .note,
+    .field input,
+    textarea {
+      width: 100%;
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      font: inherit;
+      background: #fcfbff;
+      color: var(--ink);
+    }
+
+    .note:focus,
+    .field input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    }
+
+    .progress {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 16px;
+      margin: 0 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 14px;
+    }
+
+    .bar {
+      flex: 1;
+      height: 8px;
+      background: var(--line);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.3s;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .field label {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .field input {
+      margin-top: 6px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 24px 0 0;
+    }
+
+    button {
+      font: inherit;
+      border: none;
+      border-radius: 14px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      box-shadow: 0 8px 20px rgba(124, 58, 237, 0.25);
+    }
+
+    button.ghost {
+      background: #fff;
+      color: var(--accent);
+      border: 1.5px solid var(--line);
+      box-shadow: none;
+    }
+
+    #out {
+      min-height: 280px;
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 13px;
+      margin-top: 16px;
+      display: none;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 24px;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .progress, .actions, #out { display: none !important; }
+      .card { box-shadow: none; break-inside: avoid; }
+      .hero { border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <h1>Վճարումների համակարգի հարցաշար</h1>
+    <p>Ձեր պատասխանները կօգնեն մեզ ճիշտ կառուցել գումարների հոսքը՝ հաճախորդից մինչև սրահ և մարզիչ։</p>
+  </header>
+
+  <main>
+
+    <section class="card intro">
+      <h2>Ինչու է սա կարևոր</h2>
+      <p>Մենք պետք է իմանանք, թե ով ինչքան վճարում է, ով ինչքան ստանում է և երբ։ Յուրաքանչյուր հարցի տակ կան պատասխանի տարբերակներ։ Ընտրեք ամենամոտը, իսկ եթե տարբերակ չկա՝ գրեք ձերը։</p>
+
+      <h2>Ինչպես լրացնել</h2>
+      <ol>
+        <li>Կարդացեք հարցը և նրա հուշումը (մոխրագույն տեքստը)։</li>
+        <li>Ընտրեք տարբերակը։ Եթե հարցի կողքին գրված է «մի քանիսը», կարող եք ընտրել մի քանիսը։</li>
+        <li>Եթե ուզում եք մեկնաբանել, գրեք ներքևի տողում։ Դա պարտադիր չէ։</li>
+        <li>Վերջում սեղմեք «Ստեղծել ամփոփում» և ուղարկեք ստացված տեքստը։</li>
+      </ol>
+
+      <h2>Բառարան</h2>
+      <div class="glossary">
+        <div class="term"><b>Հարթակ</b> — մեր ծրագիրը և նրա ընկերությունը (ադմին պանելը)։</div>
+        <div class="term"><b>Սրահի սեփականատեր</b> — անձ, որ սրահը վարձով է տալիս։</div>
+        <div class="term"><b>Մարզիչ</b> — պարի ուսուցիչ, որ դասեր է տալիս։</div>
+        <div class="term"><b>Կոմիսիոն</b> — տոկոս, որ հարթակը պահում է յուրաքանչյուր գործարքից։</div>
+        <div class="term"><b>Վճարման պահում</b> — օրեր, որ գումարը սպասում է մինչև մասնակցին վճարելը։</div>
+        <div class="term"><b>Օրավարձ</b> — սրահը ամբողջ օրով վարձելը, ոչ թե ժամով։</div>
+      </div>
+    </section>
+
+    <div class="progress" aria-live="polite">
+      <span id="counter">0 / 0</span>
+      <div class="bar"><span id="fill"></span></div>
+    </div>
+
+    <section class="card">
+      <div class="grid-2">
+        <div class="field">
+          <label for="respName">Ձեր անունը</label>
+          <input id="respName" type="text" placeholder="Օրինակ՝ Անի" />
+        </div>
+        <div class="field">
+          <label for="respContact">Կոնտակտ (հեռախոս կամ էլ. փոստ)</label>
+          <input id="respContact" type="text" placeholder="Ըստ ցանկության" />
+        </div>
+      </div>
+    </section>
+
+    <div id="survey"></div>
+
+    <section class="card">
+      <div class="q-head">
+        <span class="q-num">+</span>
+        <div>
+          <h3>Լրացուցիչ մտքեր</h3>
+          <p class="hint">Ինչ որ չհարցրինք, բայց կարևոր է ձեզ համար։</p>
+        </div>
+      </div>
+      <textarea id="extra" rows="4" placeholder="Գրեք ձեր մտքերը..."></textarea>
+    </section>
+
+    <div class="actions">
+      <button id="build" type="button">Ստեղծել ամփոփում</button>
+      <button id="copy" type="button" class="ghost">Պատճենել</button>
+      <button id="print" type="button" class="ghost">Տպել / PDF</button>
+    </div>
+
+    <textarea id="out" readonly></textarea>
+
+    <p class="footer-note">Շնորհակալություն ձեր ժամանակի համար։</p>
+  </main>
+
+  <script>
+    const QUESTIONS = [
+      {
+        id: 'q1', section: '1. Ընդհանուր',
+        title: 'Ո՞վ է հաճախորդից վճարումը ստանում առաջին հերթին։',
+        hint: 'Օրինակ՝ հաճախորդը սրահի համար վճարում է 6 000 ֏։ Այդ գումարը նախ հարթակի հաշվին է մտնում, թե՞ ուղիղ սրահի սեփականատիրոջ հաշվին։',
+        type: 'radio',
+        options: [
+          'Նախ հարթակի հաշվին, հետո հարթակը վճարում է մասնակիցներին',
+          'Ուղիղ՝ վճարման պահին բաժանվում է (սեփականատիրոջը՝ իր մասը, հարթակին՝ կոմիսիոնը)',
+          'Կախված է տեսակից՝ սրահի վարձը ուղիղ, դասերը հարթակով',
+          'Խորհուրդ եմ խնդրում՝ ձեր կարծիքով ամենահուսալին'
+        ]
+      },
+      {
+        id: 'q2', section: '1. Ընդհանուր',
+        title: 'Ինչպե՞ս է վաճառվում սրահը։',
+        hint: 'Հիմա սրահը վաճառվում է միայն ժամով (օրինակ՝ 6 000 ֏ մեկ ժամ)։ Ընտրեք բոլոր տարբերակները, որ ցանկանում եք։',
+        type: 'checkbox',
+        options: [
+          'Ժամով',
+          'Օրով (ամբողջ օրվա գին)',
+          'Ամսով (երկարաժամկետ վարձ)',
+          'Գինը սահմանում է հարթակը, ոչ թե սեփականատերը'
+        ]
+      },
+      {
+        id: 'q3', section: '1. Ընդհանուր',
+        title: 'Օրավարձի համար քանի՞ ժամ է համարվում մեկ օր։',
+        hint: 'Սա անհրաժեշտ է օրավարձի գինը և ժամանակացույցը սահմանելու համար։',
+        type: 'radio',
+        options: [
+          '8 ժամ',
+          '10 ժամ',
+          '12 ժամ',
+          'Ամեն սրահի սեփականատերն ինքն է ընտրում',
+          'Օրավարձ պետք չէ'
+        ]
+      },
+      {
+        id: 'q4', section: '1. Ընդհանուր',
+        title: 'Ո՞վ է սահմանում սրահի ժամավճարը։',
+        hint: 'Օրինակ՝ սրահը կարող է ունենալ 6 000 ֏ ժամավճար։ Ո՞վ պետք է որոշի այդ թիվը։',
+        type: 'radio',
+        options: [
+          'Սրահի սեփականատերը, ինքը',
+          'Հարթակը (ադմինը)՝ բոլորի համար նույնը',
+          'Երկուսը միասին՝ հարթակը սահմանում է սահմանները, սեփականատերը՝ գինը',
+          'Գինը կախված է շրջանից կամ սրահի հատկանիշներից'
+        ]
+      },
+      {
+        id: 'q5', section: '2. Կոմիսիոն և գումարների բաշխում',
+        title: 'Ո՞վ և ինչպե՞ս պետք է փոխի կոմիսիոնի տոկոսները (հիմա՝ մարզիչ 15 %, սրահ 12 %)։',
+        hint: 'Կոմիսիոնը այն տոկոսն է, որ հարթակը պահում է յուրաքանչյուր գործարքից։',
+        type: 'radio',
+        options: [
+          'Ադմինը հարթակի պանելից, ցանկացած պահի',
+          'Ադմինը, բայց նոր տոկոսն ուժի մեջ է մտնում միայն նոր ամսից',
+          'Ֆիքսված է, փոխվում է միայն պայմանագրով',
+          'Յուրաքանչյուր մասնակցի հետ առանձին'
+        ]
+      },
+      {
+        id: 'q6', section: '2. Կոմիսիոն և գումարների բաշխում',
+        title: 'Արդյո՞ք կոմիսիոնը նույնն է բոլորի համար։',
+        hint: 'Օրինակ՝ նոր մարզիչը և փորձառու մարզիչը նույն տոկոսը կվճարե՞ն։',
+        type: 'radio',
+        options: [
+          'Այո, բոլորի համար նույնն է',
+          'Ոչ, կախված է բաժանորդագրության փաթեթից (անվճար կամ վճարովի)',
+          'Ոչ, կախված է մասնակցի ծավալից (քանի գործարք)',
+          'Ոչ, այլ կանոն (գրեք ձեր տարբերակը)'
+        ]
+      },
+      {
+        id: 'q7', section: '2. Կոմիսիոն և գումարների բաշխում',
+        title: 'Նվազագույն կոմիսիոն 300 ֏։ Պահե՞լ։',
+        hint: 'Եթե գործարքը փոքր է, տոկոսը 300 ֏-ից պակաս կլինի, և հարթակը միևնույնն է կստանա 300 ֏։',
+        type: 'radio',
+        options: [
+          'Այո, պահել',
+          'Ոչ, հանել',
+          'Պահել, բայց ավելի փոքր գումարով (գրեք գումարը)',
+          'Պահել միայն սրահների համար'
+        ]
+      },
+      {
+        id: 'q8', section: '2. Կոմիսիոն և գումարների բաշխում',
+        title: 'Քանի՞ օր գումարը պետք է սպասի, մինչև մասնակցին վճարելը։',
+        hint: 'Սա պաշտպանում է վերադարձներից և վեճերից։ Օրինակ՝ 7 օր նշանակում է, որ գումարը մեկ շաբաթ հետո է հասանելի։',
+        type: 'radio',
+        options: [
+          '0 օր (անմիջապես)',
+          '3 օր',
+          '7 օր',
+          '14 օր',
+          'Այլ (գրեք)'
+        ]
+      },
+      {
+        id: 'q9', section: '2. Կոմիսիոն և գումարների բաշխում',
+        title: 'Ինչ պարբերականությամբ վճարել մասնակիցներին։',
+        hint: 'Օրինակ՝ ամեն ամիս մեկ անգամ կամ ամեն շաբաթ։',
+        type: 'radio',
+        options: [
+          'Ամեն շաբաթ',
+          'Ամիսը մեկ անգամ',
+          'Ամիսը երկու անգամ (1-ին և 15-ին)',
+          'Երբ գումարը հասնում է որոշված շեմին',
+          'Ձեռքով, ադմինի որոշմամբ'
+        ]
+      },
+      {
+        id: 'q10', section: '3. Մարզիչներ և սրահներ',
+        title: 'Ուղևորման (выезд) վճարը՝ ով է սահմանում։',
+        hint: 'Հիմա այն 5 000 ֏ է և բոլորի համար նույնն է։ Ուղևորումը այն է, երբ մարզիչը գնում է հաճախորդի տուն կամ վայր։',
+        type: 'radio',
+        options: [
+          'Մարզիչը, ինքը իր գինը',
+          'Ադմինը, բոլորի համար նույնը',
+          'Հեռավորությամբ (օրինակ՝ յուրաքանչյուր կիլոմետրի համար)',
+          'Ուղևորում չպետք է լինի'
+        ]
+      },
+      {
+        id: 'q11', section: '3. Մարզիչներ և սրահներ',
+        title: 'Երբ մարզիչը դասը տալիս է սրահի սեփականատիրոջ սրահում, ի՞նչ է վճարում հաճախորդը։',
+        hint: 'Օրինակ՝ դասը 10 000 ֏ է։ Սրահի վարձը՝ ներառ՞ված է այդ գումարի մեջ։',
+        type: 'radio',
+        options: [
+          'Մեկ գումար, որը բաժանվում է երկու մասի՝ մարզիչ և սրահ',
+          'Երկու առանձին հաշիվ, յուրաքանչյուրը իր կոմիսիոնով',
+          'Միայն մարզչի գինը, սրահը առանձին չի վճարվում',
+          'Սրահի վարձը վճարում է մարզիչը իր գումարից'
+        ]
+      },
+      {
+        id: 'q12', section: '3. Մարզիչներ և սրահներ',
+        title: 'Սրահի սեփականատիրոջ սրահում դասի դեպքում, սրահի բաժինը ինչպե՞ս հաշվարկել։',
+        hint: 'Օրինակ՝ սրահը ստանում է իր մասը յուրաքանչյուր դասից։',
+        type: 'radio',
+        options: [
+          'Ֆիքսված գումար մեկ դասի համար',
+          'Տոկոս դասի գնից',
+          'Ժամավճար՝ դասի տևողությամբ',
+          'Հարթակը յուրաքանչյուր դեպքում որոշում է'
+        ]
+      },
+      {
+        id: 'q13', section: '3. Մարզիչներ և սրահներ',
+        title: 'Երբ մարզիչը սեփական սրահում է աշխատում (սեփականատիրոջ սրահում չէ), ի՞նչ է վճարում հաճախորդը։',
+        hint: 'Եթե մարզիչը սեփական սրահ ունի, պետք է իմանանք՝ դրա համար առանձին վճար կա՞, թե՞ ոչ։',
+        type: 'radio',
+        options: [
+          'Միայն մարզչի գինը',
+          'Մարզչի գինը և սրահի ժամավճար, որը սահմանում է մարզիչը',
+          'Սրահը ոչ մի առանձին վճար չի ստանում'
+        ]
+      },
+      {
+        id: 'q14', section: '4. Հարկեր և փաստաթղթեր',
+        title: 'ԱԱՀ (20 %)։ Գները ներառու՞մ են ԱԱՀ։',
+        hint: 'ԱԱՀ՝ ավելացված արժեքի հարկ։ Սա կարևոր է գները և հաշիվները ճիշտ ցույց տալու համար։',
+        type: 'radio',
+        options: [
+          'Այո, գները ներառում են ԱԱՀ',
+          'Ոչ, ԱԱՀ-ն գումարվում է վերջում',
+          'Դեռ պարզ չէ, խորհուրդ եմ խնդրում հաշվապահից'
+        ]
+      },
+      {
+        id: 'q15', section: '4. Հարկեր և փաստաթղթեր',
+        title: 'Ո՞վ է հաճախորդին տալիս հաշիվ (чек)։',
+        hint: 'Հաշիվը ապացույց է, որ վճարումը կատարվել է։',
+        type: 'radio',
+        options: [
+          'Հարթակը բոլոր գործարքների համար',
+          'Մասնակիցը՝ իր անունից',
+          'Երկուսն էլ՝ կախված տեսակից'
+        ]
+      },
+      {
+        id: 'q16', section: '4. Հարկեր և փաստաթղթեր',
+        title: 'Մասնակիցների իրավական կարգավիճակը։',
+        hint: 'Սրանից կախված է, թե ինչպես են նրանք հարկ վճարում և ինչ փաստաթուղթ ունեն։ Ընտրեք բոլոր համապատասխանները։',
+        type: 'checkbox',
+        options: [
+          'ԻՆ (անհատ ձեռնարկատեր)',
+          'ՍՊԸ կամ ՓԲԸ',
+          'Ֆիզիկական անձ՝ առանց կարգավիճակի',
+          'Երկուսն էլ՝ ըստ մասնակցի ընտրության'
+        ]
+      },
+      {
+        id: 'q17', section: '4. Հարկեր և փաստաթղթեր',
+        title: 'Հարթակն իրավականորեն ի՞նչ դեր ունի։',
+        hint: 'Սա որոշում է, թե հարթակը ում անունից է վաճառում ծառայությունը և ով է պատասխանատու։ Եթե պատասխանը չգիտեք, ընտրեք վերջին տարբերակը։',
+        type: 'radio',
+        options: [
+          'Միջնորդ՝ միացնում է վաճառողին և գնորդին',
+          'Վաճառող՝ հարթակն է վաճառում ծառայությունը',
+          'Չգիտեմ, իրավաբանը պետք է որոշի'
+        ]
+      },
+      {
+        id: 'q18', section: '5. Վճարումներ և ադմին',
+        title: 'Ո՞ր վճարման եղանակներն են անհրաժեշտ։',
+        hint: 'Ընտրեք բոլոր անհրաժեշտները։',
+        type: 'checkbox',
+        options: [
+          'Բանկային քարտ (առցանց)',
+          'Բանկային փոխանցում',
+          'Կանխիկ (սրահում)',
+          'Նախավճար կամ դրամապանակ հարթակի ներսում',
+          'Այլ (գրեք)'
+        ]
+      },
+      {
+        id: 'q19', section: '5. Վճարումներ և ադմին',
+        title: 'Զեղչերը (промокод) ո՞ր հաշվին են գալիս։',
+        hint: 'Օրինակ՝ 10 % զեղչի գումարը ո՞վ է կրում։',
+        type: 'radio',
+        options: [
+          'Հարթակի հաշվին',
+          'Մարզչի հաշվին',
+          'Սրահի սեփականատիրոջ հաշվին',
+          'Բաժանվում է երեք կողմերի միջև'
+        ]
+      },
+      {
+        id: 'q20', section: '5. Վճարումներ և ադմին',
+        title: 'Ադմին պանելից ի՞նչ պետք է կարողանաք փոխել՝ առանց ծրագրավորողի օգնության։',
+        hint: 'Ընտրեք բոլոր անհրաժեշտները։',
+        type: 'checkbox',
+        options: [
+          'Կոմիսիոնի տոկոսները',
+          'Սրահների և դասերի գները',
+          'Օրավարձի ժամերը',
+          'Վճարման պահման օրերը',
+          'Վճարման ժամանակացույցը',
+          'Վերադարձի (refund) կանոնները',
+          'Հարկային կարգավիճակը'
+        ]
+      },
+      {
+        id: 'q21', section: '5. Վճարումներ և ադմին',
+        title: 'Վերադարձը (refund) ո՞վ է հաստատում։',
+        hint: 'Օրինակ՝ հաճախորդը չեղարկել է դասը, և գումարը պետք է վերադարձվի։',
+        type: 'radio',
+        options: [
+          'Ադմինը ձեռքով',
+          'Ավտոմատ՝ կանոնների համաձայն',
+          'Սրահի սեփականատերը կամ մարզիչը կարող է հաստատել իր մասը'
+        ]
+      },
+      {
+        id: 'q22', section: '6. Չեղարկումներ',
+        title: 'Երբ սրահի սեփականատերը չեղարկում է ամրագրումը, ի՞նչ է լինում հաճախորդի գումարի հետ։',
+        hint: 'Օրինակ՝ սրահը փակվել է, և հաճախորդը պետք է ստանա իր փողը։',
+        type: 'radio',
+        options: [
+          'Հաճախորդը ստանում է ամբողջ գումարը',
+          'Հաճախորդը ստանում է ամբողջ գումարը, իսկ սեփականատիրոջից հանվում է տուգանք',
+          'Հաճախորդը ստանում է ամբողջ գումարը, կոմիսիոնը չի հանվում',
+          'Յուրաքանչյուր դեպքում ադմինն է որոշում'
+        ]
+      },
+      {
+        id: 'q23', section: '6. Չեղարկումներ',
+        title: 'Երբ հաճախորդը չեղարկում է ուշ, կամ չի գալիս, տուգանքը ո՞վ է ստանում։',
+        hint: 'Հիմա՝ ուշ չեղարկելու դեպքում 50 %, իսկ չգալու դեպքում՝ 100 % գումարը պահվում է։',
+        type: 'radio',
+        options: [
+          'Սրահի սեփականատերը կամ մարզիչը',
+          'Հարթակը',
+          'Կիսով չափ՝ երկուսը',
+          'Տոկոսը և ժամկետները սահմանում է ադմինը'
+        ]
+      }
+    ];
+
+    const survey = document.getElementById('survey');
+    const counter = document.getElementById('counter');
+    const fill = document.getElementById('fill');
+    const out = document.getElementById('out');
+
+    function render() {
+      let html = '';
+      let lastSection = '';
+
+      QUESTIONS.forEach((q, i) => {
+        if (q.section !== lastSection) {
+          html += `<h2 class="section">${q.section}</h2>`;
+          lastSection = q.section;
+        }
+
+        html += `
+          <article class="card" data-q="${q.id}">
+            <div class="q-head">
+              <span class="q-num">${i + 1}</span>
+              <div>
+                <h3>${q.title}</h3>
+                <p class="hint">${q.hint}</p>
+              </div>
+            </div>
+            <div class="opts">
+              ${q.options.map((opt, j) => `
+                <label class="opt">
+                  <input type="${q.type}" name="${q.id}" value="${j}" />
+                  <span>${opt}</span>
+                </label>`).join('')}
+            </div>
+            <input class="note" type="text" name="${q.id}_note" placeholder="Ձեր տարբերակը կամ մեկնաբանություն (ըստ ցանկության)" />
+          </article>`;
+      });
+
+      survey.innerHTML = html;
+      counter.textContent = `0 / ${QUESTIONS.length}`;
+    }
+
+    function isAnswered(q) {
+      const checked = document.querySelector(`input[name="${q.id}"]:checked`);
+      const note = document.querySelector(`input[name="${q.id}_note"]`).value.trim();
+      return Boolean(checked || note);
+    }
+
+    function updateProgress() {
+      const done = QUESTIONS.filter(isAnswered).length;
+      counter.textContent = `${done} / ${QUESTIONS.length}`;
+      fill.style.width = `${(done / QUESTIONS.length) * 100}%`;
+    }
+
+    function buildSummary() {
+      const lines = ['Վճարումների հարցաշարի պատասխաններ'];
+      const name = document.getElementById('respName').value.trim();
+      const contact = document.getElementById('respContact').value.trim();
+
+      lines.push(`Ամսաթիվ: ${new Date().toLocaleDateString('hy-AM')}`);
+      if (name) lines.push(`Անուն: ${name}`);
+      if (contact) lines.push(`Կոնտակտ: ${contact}`);
+
+      QUESTIONS.forEach((q, i) => {
+        const chosen = [...document.querySelectorAll(`input[name="${q.id}"]:checked`)]
+          .map(el => q.options[Number(el.value)]);
+        const note = document.querySelector(`input[name="${q.id}_note"]`).value.trim();
+
+        lines.push('');
+        lines.push(`${i + 1}. ${q.title}`);
+        lines.push(`   Պատասխան: ${chosen.length ? chosen.join('; ') : '—'}`);
+        if (note) lines.push(`   Մեկնաբանություն: ${note}`);
+      });
+
+      const extra = document.getElementById('extra').value.trim();
+      if (extra) lines.push('', `Լրացուցիչ մտքեր: ${extra}`);
+
+      return lines.join('\n');
+    }
+
+    survey.addEventListener('change', updateProgress);
+    survey.addEventListener('input', updateProgress);
+
+    document.getElementById('build').addEventListener('click', () => {
+      out.value = buildSummary();
+      out.style.display = 'block';
+      out.focus();
+    });
+
+    document.getElementById('copy').addEventListener('click', async () => {
+      if (!out.value) out.value = buildSummary();
+      out.style.display = 'block';
+      try {
+        await navigator.clipboard.writeText(out.value);
+        alert('Պատճենված է։');
+      } catch {
+        out.select();
+        document.execCommand('copy');
+      }
+    });
+
+    document.getElementById('print').addEventListener('click', () => window.print());
+
+    render();
+  </script>
+</body>
+</html>

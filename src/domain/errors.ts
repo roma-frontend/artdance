@@ -124,6 +124,10 @@ export const domainErrors = {
   twoFactorTooMany: () =>
     new DomainError({ code: 'RATE_LIMITED', messageKey: 'auth.otp.tooMany' }),
 
+  /** Код не ушёл ни по одному каналу: без этой ошибки человек ждал бы письма, которого нет. */
+  twoFactorDelivery: () =>
+    new DomainError({ code: 'INTERNAL', messageKey: 'auth.otp.delivery' }),
+
   /**
    * Неверная пара адрес/пароль.
    *

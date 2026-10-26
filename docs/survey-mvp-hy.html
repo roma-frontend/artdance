@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MVP փաթեթի հարցաշար</title>
+  <style>
+    :root { --bg:#f5f3fb; --card:#fff; --ink:#1d1830; --muted:#6b6485; --accent:#7c3aed; --accent-2:#ec4899; --line:#e6e1f4; --soft:#f7f4ff; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:"Noto Sans Armenian","Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--ink); line-height:1.55; }
+    .hero { background:linear-gradient(135deg,#7c3aed 0%,#c026d3 55%,#ec4899 100%); color:#fff; padding:56px 20px 90px; text-align:center; border-radius:0 0 32px 32px; }
+    .hero h1 { margin:0 0 10px; font-size:clamp(26px,4vw,40px); letter-spacing:-0.02em; }
+    .hero p { margin:0 auto; max-width:620px; opacity:.92; }
+    main { max-width:880px; margin:-56px auto 60px; padding:0 16px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:24px; margin:16px 0; box-shadow:0 12px 32px rgba(40,20,80,.07); }
+    .section { font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin:36px 4px 4px; }
+    .intro h2 { font-size:13px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin:24px 0 6px; }
+    .intro h2:first-child { margin-top:0; }
+    .intro ol { margin:8px 0 0; padding-left:20px; }
+    .glossary { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin-top:14px; }
+    .term { background:var(--soft); border-radius:14px; padding:12px 14px; }
+    .term b { color:var(--accent); }
+    .q-head { display:flex; gap:14px; align-items:flex-start; }
+    .q-num { flex:0 0 36px; height:36px; border-radius:12px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; display:grid; place-items:center; font-weight:700; }
+    .q-head h3 { margin:4px 0; font-size:17px; }
+    .hint { margin:0; color:var(--muted); font-size:14px; }
+    .opts { display:grid; gap:10px; margin-top:16px; }
+    .opt { display:flex; align-items:center; gap:12px; padding:12px 14px; border:1.5px solid var(--line); border-radius:14px; cursor:pointer; transition:border-color .2s,background .2s; }
+    .opt:hover { border-color:#c4b5fd; background:#faf8ff; }
+    .opt:has(input:checked) { border-color:var(--accent); background:#f3edff; box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+    .opt input { width:18px; height:18px; accent-color:var(--accent); flex:0 0 auto; }
+    .note, .field input { width:100%; margin-top:14px; padding:12px 14px; border:1.5px solid var(--line); border-radius:12px; font:inherit; background:#fcfbff; color:var(--ink); }
+    .note:focus, .field input:focus, textarea:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,58,237,.15); }
+    .progress { position:sticky; top:0; z-index:10; background:rgba(255,255,255,.92); border:1px solid var(--line); border-radius:16px; padding:12px 16px; margin:0 0 8px; display:flex; align-items:center; gap:14px; font-size:14px; }
+    .bar { flex:1; height:8px; background:var(--line); border-radius:99px; overflow:hidden; }
+    .bar span { display:block; height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent-2)); transition:width .3s; }
+    .grid-2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; }
+    .field label { font-size:14px; color:var(--muted); }
+    .field input { margin-top:6px; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin:24px 0 0; }
+    button { font:inherit; border:none; border-radius:14px; padding:12px 20px; cursor:pointer; font-weight:600; background:linear-gradient(135deg,var(--accent),var(--accent-2)); color:#fff; box-shadow:0 8px 20px rgba(124,58,237,.25); }
+    button.ghost { background:#fff; color:var(--accent); border:1.5px solid var(--line); box-shadow:none; }
+    textarea { width:100%; margin-top:14px; padding:12px 14px; border:1.5px solid var(--line); border-radius:12px; font:inherit; background:#fcfbff; color:var(--ink); }
+    #out { min-height:280px; font-family:ui-monospace,Consolas,monospace; font-size:13px; margin-top:16px; display:none; }
+    .footer-note { text-align:center; color:var(--muted); font-size:13px; margin-top:24px; }
+    @media print {
+      body { background:#fff; }
+      .progress, .actions, #out { display:none !important; }
+      .card { box-shadow:none; break-inside:avoid; }
+      .hero { border-radius:0; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <h1>MVP փաթեթի հարցաշար</h1>
+    <p>Վճարումներ, մարզիչներ, սրահներ, խանութ և ամրագրումներ՝ առաջին թողարկման համար (5 000 000 ֏)։</p>
+  </header>
+
+  <main>
+
+    <section class="card intro">
+      <h2>Ինչու է սա կարևոր</h2>
+      <p>Մենք պետք է իմանանք, թե ինչպես պետք է աշխատի համակարգը՝ որ գումարը որտեղ է մտնում, ով ինչ է ստանում, և ինչ կանոններով։ Յուրաքանչյուր հարցի տակ կան տարբերակներ։ Ընտրեք ամենամոտը, իսկ եթե տարբերակ չկա՝ գրեք ձերը։</p>
+      <p><b>Այս հարցաշարը MVP փաթեթի համար է։</b> FULL և PREMIUM փաթեթների հարցերը առանձին ֆայլերում են՝ survey-full-hy.html և survey-premium-hy.html։</p>
+
+      <h2>Ինչպես լրացնել</h2>
+      <ol>
+        <li>Կարդացեք հարցը և նրա հուշումը (մոխրագույն տեքստը)։</li>
+        <li>Ընտրեք տարբերակը։ Եթե հարցի կողքին գրված է «մի քանիսը», կարող եք ընտրել մի քանիսը։</li>
+        <li>Եթե ուզում եք մեկնաբանել, գրեք ներքևի տողում։ Դա պարտադիր չէ։</li>
+        <li>Վերջում սեղմեք «Ստեղծել ամփոփում» և ուղարկեք ստացված տեքստը։</li>
+      </ol>
+
+      <h2>Բառարան</h2>
+      <div class="glossary">
+        <div class="term"><b>Հարթակ</b> — մեր ծրագիրը և նրա ադմին պանելը։</div>
+        <div class="term"><b>Սրահի սեփականատեր</b> — անձ, որ սրահը վարձով է տալիս։</div>
+        <div class="term"><b>Մարզիչ</b> — պարի ուսուցիչ, որ դասեր է տալիս։</div>
+        <div class="term"><b>Կոմիսիոն</b> — տոկոս, որ հարթակը պահում է յուրաքանչյուր գործարքից։</div>
+        <div class="term"><b>Վճարման պահում</b> — օրեր, որ գումարը սպասում է մինչև մասնակցին վճարելը։</div>
+        <div class="term"><b>Օրավարձ</b> — սրահը ամբողջ օրով վարձելը, ոչ թե ժամով։</div>
+      </div>
+    </section>
+
+    <div class="progress" aria-live="polite">
+      <span id="counter">0 / 0</span>
+      <div class="bar"><span id="fill"></span></div>
+    </div>
+
+    <section class="card">
+      <div class="grid-2">
+        <div class="field">
+          <label for="respName">Ձեր անունը</label>
+          <input id="respName" type="text" placeholder="Օրինակ՝ Անի" />
+        </div>
+        <div class="field">
+          <label for="respContact">Կոնտակտ (հեռախոս կամ էլ. փոստ)</label>
+          <input id="respContact" type="text" placeholder="Ըստ ցանկության" />
+        </div>
+      </div>
+    </section>
+
+    <div id="survey"></div>
+
+    <section class="card">
+      <div class="q-head">
+        <span class="q-num">+</span>
+        <div>
+          <h3>Լրացուցիչ մտքեր</h3>
+          <p class="hint">Ինչ որ չհարցրինք, բայց կարևոր է ձեզ համար։</p>
+        </div>
+      </div>
+      <textarea id="extra" rows="4" placeholder="Գրեք ձեր մտքերը..."></textarea>
+    </section>
+
+    <div class="actions">
+      <button id="build" type="button">Ստեղծել ամփոփում</button>
+      <button id="copy" type="button" class="ghost">Պատճենել</button>
+      <button id="print" type="button" class="ghost">Տպել / PDF</button>
+    </div>
+
+    <textarea id="out" readonly></textarea>
+
+    <p class="footer-note">Շնորհակալություն ձեր ժամանակի համար։</p>
+  </main>
+
+  <script>
+    const PKG = { id: 'mvp', name: 'MVP', price: '5 000 000 ֏' };
+
+    const QUESTIONS = [
+      /* ───── Վճարումներ և կոմիսիոն (q1–q23 — բոլոր փաթեթների համար նույնն են) ───── */
+      {
+        id: 'q1', section: '1. Ընդհանուր',
+        title: 'Ո՞վ է հաճախորդից վճարումը ստանում առաջին հերթին։',
+        hint: 'Օրինակ՝ հաճախորդը սրահի համար վճարում է 6 000 ֏։ Այդ գումարը նախ հարթակի հաշվին է մտնում, թե՞ ուղիղ սրահի սեփականատիրոջ հաշվին։',
+        type: 'radio',
+        options: [
+          'Նախ հարթակի հաշվին, հետո հարթակը վճարում է մասնակիցներին',
+          'Ուղիղ՝ վճարման պահին բաժանվում է (սեփականատիրոջը՝ իր մասը, հարթակին՝ կոմիսիոնը)',
+          'Կախված է տեսակից՝ սրահի վարձը ուղիղ, դասերը հարթակով',
+          'Խորհուրդ եմ խնդրում՝ ձեր կարծիքով ամենահուսալին'
+        ],
+        code: 'src/server/payments/settle.ts (հոսքը, ով ում է վճարում)'
+      },
+      {
+        id: 'q2', section: '1. Ընդհանուր',
+        title: 'Ինչպե՞ս է վաճառվում սրահը։',
+        hint: 'Հիմա սրահը վաճառվում է միայն ժամով (օրինակ՝ 6 000 ֏ մեկ ժամ)։ Ընտրեք բոլոր տարբերակները, որ ցանկանում եք։',
+        type: 'checkbox',
+        options: [
+          'Ժամով',
+          'Օրով (ամբողջ օրվա գին)',
+          'Ամսով (երկարաժամկետ վարձ)',
+          'Գինը սահմանում է հարթակը, ոչ թե սեփականատերը'
+        ],
+        code: 'Room.pricePerHour; օրավարձի դաշտ չկա'
+      },
+      {
+        id: 'q3', section: '1. Ընդհանուր',
+        title: 'Օրավարձի համար քանի՞ ժամ է համարվում մեկ օր։',
+        hint: 'Սա անհրաժեշտ է օրավարձի գինը և ժամանակացույցը սահմանելու համար։',
+        type: 'radio',
+        options: [
+          '8 ժամ',
+          '10 ժամ',
+          '12 ժամ',
+          'Ամեն սրահի սեփականատերն ինքն է ընտրում',
+          'Օրավարձ պետք չէ'
+        ],
+        code: 'նոր դաշտ Room.dayHours (եթե օրավարձ լինի)'
+      },
+      {
+        id: 'q4', section: '1. Ընդհանուր',
+        title: 'Ո՞վ է սահմանում սրահի ժամավճարը։',
+        hint: 'Օրինակ՝ սրահը կարող է ունենալ 6 000 ֏ ժամավճար։ Ո՞վ պետք է որոշի այդ թիվը։',
+        type: 'radio',
+        options: [
+          'Սրահի սեփականատերը, ինքը',
+          'Հարթակը (ադմինը)՝ բոլորի համար նույնը',
+          'Երկուսը միասին՝ հարթակը սահմանում է սահմանները, սեփականատերը՝ գինը',
+          'Գինը կախված է շրջանից կամ սրահի հատկանիշներից'
+        ],
+        code: 'Room.pricePerHour; venue owner permissions'
+      },
+      {
+        id: 'q5', section: '2. Կոմիսիոն և գումարների բաշխում',
+        title: 'Ո՞վ և ինչպե՞ս պետք է փոխի կոմիսիոնի տոկոսները (հիմա՝ մարզիչ 15 %, սրահ 12 %)։',
+        hint: 'Կոմիսիոնը այն տոկոսն է, որ հարթակը պահում է յուրաքանչյուր գործարքից։',
+        type: 'radio',
+        options: [
+          'Ադմինը հարթակի պանելից, ցանկացած պահի',
+          'Ադմինը, բայց նոր տոկոսն ուժի մեջ է մտնում միայն նոր ամսից',
+          'Ֆիքսված է, փոխվում է միայն պայմանագրով',
+          'Յուրաքանչյուր մասնակցի հետ առանձին'
+        ],
+        code: 'src/config/business.ts › commission.instructorRate, venueRate'
+      },
+      {
+        id: 'q6', section: '2. Կոմիսիոն և գումարների բաշխում',
+        title: 'Արդյո՞ք կոմիսիոնը նույնն է բոլորի համար։',
+        hint: 'Օրինակ՝ նոր մարզիչը և փորձառու մարզիչը նույն տոկոսը կվճարե՞ն։',
+        type: 'radio',
+        options: [
+          'Այո, բոլորի համար նույնն է',
+          'Ոչ, կախված է բաժանորդագրության փաթեթից (անվճար կամ վճարովի)',
+          'Ոչ, կախված է մասնակցի ծավալից (քանի գործարք)',
+          'Ոչ, այլ կանոն (գրեք ձեր տարբերակը)'
+        ],
+        code: 'src/domain/money.ts › commissionRateFor'
+      },
+      {
+        id: 'q7', section: '2. Կոմիսիոն և գումարների բաշխում',
+        title: 'Նվազագույն կոմիսիոն 300 ֏։ Պահե՞լ։',
+        hint: 'Եթե գործարքը փոքր է, տոկոսը 300 ֏-ից պակաս կլինի, և հարթակը միևնույնն է կստանա 300 ֏։',
+        type: 'radio',
+        options: [
+          'Այո, պահել',
+          'Ոչ, հանել',
+          'Պահել, բայց ավելի փոքր գումարով (գրեք գումարը)',
+          'Պահել միայն սրահների համար'
+        ],
+        code: 'src/config/business.ts › commission.minimumFee'
+      },
+      {
+        id: 'q8', section: '2. Կոմիսիոն և գումարների բաշխում',
+        title: 'Քանի՞ օր գումարը պետք է սպասի, մինչև մասնակցին վճարելը։',
+        hint: 'Սա պաշտպանում է վերադարձներից և վեճերից։ Օրինակ՝ 7 օր նշանակում է, որ գումարը մեկ շաբաթ հետո է հասանելի։',
+        type: 'radio',
+        options: ['0 օր (անմիջապես)', '3 օր', '7 օր', '14 օր', 'Այլ (գրեք)'],
+        code: 'src/config/business.ts › payout.holdbackDays'
+      },
+      {
+        id: 'q9', section: '2. Կոմիսիոն և գումարների բաշխում',
+        title: 'Ինչ պարբերականությամբ վճարել մասնակիցներին։',
+        hint: 'Օրինակ՝ ամեն ամիս մեկ անգամ կամ ամեն շաբաթ։',
+        type: 'radio',
+        options: [
+          'Ամեն շաբաթ',
+          'Ամիսը մեկ անգամ',
+          'Ամիսը երկու անգամ (1-ին և 15-ին)',
+          'Երբ գումարը հասնում է որոշված շեմին',
+          'Ձեռքով, ադմինի որոշմամբ'
+        ],
+        code: 'Payout (ժամանակացույց, շեմ)'
+      },
+      {
+        id: 'q10', section: '3. Մարզիչներ և սրահներ',
+        title: 'Ուղևորման (выезд) վճարը՝ ով է սահմանում։',
+        hint: 'Հիմա այն 5 000 ֏ է և բոլորի համար նույնն է։ Ուղևորումը այն է, երբ մարզիչը գնում է հաճախորդի տուն կամ վայր։',
+        type: 'radio',
+        options: [
+          'Մարզիչը, ինքը իր գինը',
+          'Ադմինը, բոլորի համար նույնը',
+          'Հեռավորությամբ (օրինակ՝ յուրաքանչյուր կիլոմետրի համար)',
+          'Ուղևորում չպետք է լինի'
+        ],
+        code: 'src/config/business.ts › booking.travelFee'
+      },
+      {
+        id: 'q11', section: '3. Մարզիչներ և սրահներ',
+        title: 'Երբ մարզիչը դասը տալիս է սրահի սեփականատիրոջ սրահում, ի՞նչ է վճարում հաճախորդը։',
+        hint: 'Օրինակ՝ դասը 10 000 ֏ է։ Սրահի վարձը՝ ներառ՞ված է այդ գումարի մեջ։',
+        type: 'radio',
+        options: [
+          'Մեկ գումար, որը բաժանվում է երկու մասի՝ մարզիչ և սրահ',
+          'Երկու առանձին հաշիվ, յուրաքանչյուրը իր կոմիսիոնով',
+          'Միայն մարզչի գինը, սրահը առանձին չի վճարվում',
+          'Սրահի վարձը վճարում է մարզիչը իր գումարից'
+        ],
+        code: 'src/server/payments/settle.ts (lessonType, venueId)'
+      },
+      {
+        id: 'q12', section: '3. Մարզիչներ և սրահներ',
+        title: 'Սրահի սեփականատիրոջ սրահում դասի դեպքում, սրահի բաժինը ինչպե՞ս հաշվարկել։',
+        hint: 'Օրինակ՝ սրահը ստանում է իր մասը յուրաքանչյուր դասից։',
+        type: 'radio',
+        options: [
+          'Ֆիքսված գումար մեկ դասի համար',
+          'Տոկոս դասի գնից',
+          'Ժամավճար՝ դասի տևողությամբ',
+          'Հարթակը յուրաքանչյուր դեպքում որոշում է'
+        ],
+        code: 'src/domain/money.ts › splitCommission (venueRate)'
+      },
+      {
+        id: 'q13', section: '3. Մարզիչներ և սրահներ',
+        title: 'Երբ մարզիչը սեփական սրահում է աշխատում (սեփականատիրոջ սրահում չէ), ի՞նչ է վճարում հաճախորդը։',
+        hint: 'Եթե մարզիչը սեփական սրահ ունի, պետք է իմանանք՝ դրա համար առանձին վճար կա՞, թե՞ ոչ։',
+        type: 'radio',
+        options: [
+          'Միայն մարզչի գինը',
+          'Մարզչի գինը և սրահի ժամավճար, որը սահմանում է մարզիչը',
+          'Սրահը ոչ մի առանձին վճար չի ստանում'
+        ],
+        code: 'Venue ownership by instructor; pricing'
+      },
+      {
+        id: 'q14', section: '4. Հարկեր և փաստաթղթեր',
+        title: 'ԱԱՀ (20 %)։ Գները ներառու՞մ են ԱԱՀ։',
+        hint: 'ԱԱՀ՝ ավելացված արժեքի հարկ։ Սա կարևոր է գները և հաշիվները ճիշտ ցույց տալու համար։',
+        type: 'radio',
+        options: [
+          'Այո, գները ներառում են ԱԱՀ',
+          'Ոչ, ԱԱՀ-ն գումարվում է վերջում',
+          'Դեռ պարզ չէ, խորհուրդ եմ խնդրում հաշվապահից'
+        ],
+        code: 'src/config/business.ts › tax.pricesIncludeVat (@confirm)'
+      },
+      {
+        id: 'q15', section: '4. Հարկեր և փաստաթղթեր',
+        title: 'Ո՞վ է հաճախորդին տալիս հաշիվ (чек)։',
+        hint: 'Հաշիվը ապացույց է, որ վճարումը կատարվել է։',
+        type: 'radio',
+        options: [
+          'Հարթակը բոլոր գործարքների համար',
+          'Մասնակիցը՝ իր անունից',
+          'Երկուսն էլ՝ կախված տեսակից'
+        ],
+        code: 'Չեկի/հաշվի գեներացիա (դեռ չկա)'
+      },
+      {
+        id: 'q16', section: '4. Հարկեր և փաստաթղթեր',
+        title: 'Մասնակիցների իրավական կարգավիճակը։',
+        hint: 'Սրանից կախված է, թե ինչպես են նրանք հարկ վճարում և ինչ փաստաթուղթ ունեն։ Ընտրեք բոլոր համապատասխանները։',
+        type: 'checkbox',
+        options: [
+          'ԻՆ (անհատ ձեռնարկատեր)',
+          'ՍՊԸ կամ ՓԲԸ',
+          'Ֆիզիկական անձ՝ առանց կարգավիճակի',
+          'Երկուսն էլ՝ ըստ մասնակցի ընտրության'
+        ],
+        code: 'InstructorApplication; PayoutAccount'
+      },
+      {
+        id: 'q17', section: '4. Հարկեր և փաստաթղթեր',
+        title: 'Հարթակն իրավականորեն ի՞նչ դեր ունի։',
+        hint: 'Սա որոշում է, թե հարթակը ում անունից է վաճառում ծառայությունը և ով է պատասխանատու։ Եթե պատասխանը չգիտեք, ընտրեք վերջին տարբերակը։',
+        type: 'radio',
+        options: [
+          'Միջնորդ՝ միացնում է վաճառողին և գնորդին',
+          'Վաճառող՝ հարթակն է վաճառում ծառայությունը',
+          'Չգիտեմ, իրավաբանը պետք է որոշի'
+        ],
+        code: 'docs/launch/legal-brief.md (marketplace model)'
+      },
+      {
+        id: 'q18', section: '5. Վճարումներ և ադմին',
+        title: 'Ո՞ր վճարման եղանակներն են անհրաժեշտ։',
+        hint: 'Ընտրեք բոլոր անհրաժեշտները։',
+        type: 'checkbox',
+        options: [
+          'Բանկային քարտ (առցանց)',
+          'Բանկային փոխանցում',
+          'Կանխիկ (սրահում)',
+          'Նախավճար կամ դրամապանակ հարթակի ներսում',
+          'Այլ (գրեք)'
+        ],
+        code: 'src/domain/enums.ts › paymentMethods; PAYMENT_PROVIDER'
+      },
+      {
+        id: 'q19', section: '5. Վճարումներ և ադմին',
+        title: 'Զեղչերը (промокод) ո՞ր հաշվին են գալիս։',
+        hint: 'Օրինակ՝ 10 % զեղչի գումարը ո՞վ է կրում։',
+        type: 'radio',
+        options: [
+          'Հարթակի հաշվին',
+          'Մարզչի հաշվին',
+          'Սրահի սեփականատիրոջ հաշվին',
+          'Բաժանվում է երեք կողմերի միջև'
+        ],
+        code: 'Promo-code distribution (distributeProportionally)'
+      },
+      {
+        id: 'q20', section: '5. Վճարումներ և ադմին',
+        title: 'Ադմին պանելից ի՞նչ պետք է կարողանաք փոխել՝ առանց ծրագրավորողի օգնության։',
+        hint: 'Ընտրեք բոլոր անհրաժեշտները։',
+        type: 'checkbox',
+        options: [
+          'Կոմիսիոնի տոկոսները',
+          'Սրահների և դասերի գները',
+          'Օրավարձի ժամերը',
+          'Վճարման պահման օրերը',
+          'Վճարման ժամանակացույցը',
+          'Վերադարձի (refund) կանոնները',
+          'Հարկային կարգավիճակը'
+        ],
+        code: 'Admin settings (src/config/admin.ts)'
+      },
+      {
+        id: 'q21', section: '5. Վճարումներ և ադմին',
+        title: 'Վերադարձը (refund) ո՞վ է հաստատում։',
+        hint: 'Օրինակ՝ հաճախորդը չեղարկել է դասը, և գումարը պետք է վերադարձվի։',
+        type: 'radio',
+        options: [
+          'Ադմինը ձեռքով',
+          'Ավտոմատ՝ կանոնների համաձայն',
+          'Սրահի սեփականատերը կամ մարզիչը կարող է հաստատել իր մասը'
+        ],
+        code: 'Refund approval flow; security guardrails'
+      },
+      {
+        id: 'q22', section: '6. Չեղարկումներ',
+        title: 'Երբ սրահի սեփականատերը չեղարկում է ամրագրումը, ի՞նչ է լինում հաճախորդի գումարի հետ։',
+        hint: 'Օրինակ՝ սրահը փակվել է, և հաճախորդը պետք է ստանա իր փողը։',
+        type: 'radio',
+        options: [
+          'Հաճախորդը ստանում է ամբողջ գումարը',
+          'Հաճախորդը ստանում է ամբողջ գումարը, իսկ սեփականատիրոջից հանվում է տուգանք',
+          'Հաճախորդը ստանում է ամբողջ գումարը, կոմիսիոնը չի հանվում',
+          'Յուրաքանչյուր դեպքում ադմինն է որոշում'
+        ],
+        code: 'Venue cancellation → refund (booking cancel flow)'
+      },
+      {
+        id: 'q23', section: '6. Չեղարկումներ',
+        title: 'Երբ հաճախորդը չեղարկում է ուշ, կամ չի գալիս, տուգանքը ո՞վ է ստանում։',
+        hint: 'Հիմա՝ ուշ չեղարկելու դեպքում 50 %, իսկ չգալու դեպքում՝ 100 % գումարը պահվում է։',
+        type: 'radio',
+        options: [
+          'Սրահի սեփականատերը կամ մարզիչը',
+          'Հարթակը',
+          'Կիսով չափ՝ երկուսը',
+          'Տոկոսը և ժամկետները սահմանում է ադմինը'
+        ],
+        code: 'src/config/business.ts › booking.lateCancellationFeeRate, noShowFeeRate'
+      },
+
+      /* ───── Հարթակի կարգավորումներ ───── */
+      {
+        id: 'g1', section: '7. Հարթակի կարգավորումներ',
+        title: 'Ո՞ր լեզուներով պետք է աշխատի կայքը և հավելվածը։',
+        hint: 'Հայերենը հիմնականն է։ Ռուսերենը և անգլերենը՝ ըստ ցանկության։ Ընտրեք բոլորը, որ պետք են։',
+        type: 'checkbox',
+        options: ['Հայերեն', 'Ռուսերեն', 'Անգլերեն'],
+        code: 'src/i18n (hy, ru, en); mobile/src/i18n'
+      },
+      {
+        id: 'g2', section: '7. Հարթակի կարգավորումներ',
+        title: 'Ո՞ր արժույթով են ցուցադրվելու գները։',
+        hint: 'Միայն դրամը սովորական է ՀՀ-ում։ Եթե ավելացնում եք այլ արժույթ, փոխարկման կուրսը պետք է թարմացվի։',
+        type: 'radio',
+        options: [
+          'Միայն ՀՀ դրամ (֏)',
+          'Դրամ և ԱՄՆ դոլար ($)',
+          'Դրամ, դոլար և եվրո (€)',
+          'Այլ (գրեք ձեր տարբերակը)'
+        ],
+        code: 'src/config/business.ts › currency (decimals 0, AMD)'
+      },
+      {
+        id: 'g3', section: '7. Հարթակի կարգավորումներ',
+        title: 'Ինչպիսի՞ մոբայլ հավելված է պետք առաջին թողարկման ժամանակ։',
+        hint: 'Հավելվածը Expo-ով է պատրաստվում։ Ընտրեք մեկը։',
+        type: 'radio',
+        options: [
+          'Նույնը, ինչ կայքը (բոլոր գործառույթները)',
+          'Պարզեցված՝ դասերի ամրագրում, վճարում, իմ ամրագրումները',
+          'Միայն հաճախորդի համար, մարզիչները՝ միայն կայքում',
+          'Հավելված հիմա պետք չէ, միայն կայք'
+        ],
+        code: 'mobile/ (scope of screens; docs/mobile-integration-next-steps.md)'
+      },
+
+      /* ───── Դերեր, անվտանգություն, մարզիչներ ───── */
+      {
+        id: 'g4', section: '8. Դերեր, անվտանգություն և մարզիչներ',
+        title: 'Ո՞ր դերերն են պետք առաջին թողարկման ժամանակ։',
+        hint: 'Ընտրեք բոլորը, որ պետք են հիմա։ Ինչ չընտրեք՝ հետո առանձին կավելանա։',
+        type: 'checkbox',
+        options: [
+          'Հաճախորդ',
+          'Մարզիչ',
+          'Սրահի սեփականատեր',
+          'Ադմին',
+          'Սպասարկման աշխատակից (support)',
+          'Մարզիկ (DanceSport)'
+        ],
+        code: 'prisma/schema.prisma › enum UserRole'
+      },
+      {
+        id: 'g5', section: '8. Դերեր, անվտանգություն և մարզիչներ',
+        title: 'Ո՞վ է ստեղծում ադմինների և աշխատակիցների հաշիվները։',
+        hint: 'Ադմինը կարող է ունենալ լրիվ կամ սահմանափակ իրավունքներ։',
+        type: 'radio',
+        options: [
+          'Միայն գլխավոր ադմինը (ես)',
+          'Գլխավոր ադմինը կարող է ստեղծել ուրիշ ադմիններ',
+          'Ադմինների ստեղծումը պահանջում է հարթակի մշակողի հաստատումը'
+        ],
+        code: 'src/server/entitlements/service.ts; admin user management'
+      },
+      {
+        id: 'g6', section: '8. Դերեր, անվտանգություն և մարզիչներ',
+        title: 'Ի՞նչ կարող է անել սպասարկման աշխատակիցը (support)։',
+        hint: 'Ընտրեք բոլոր թույլատրելիները։',
+        type: 'checkbox',
+        options: [
+          'Տեսնել ամրագրումները',
+          'Փոխել ամրագրումը (перенос, չեղարկում)',
+          'Կատարել վերադարձ (սահմանաչափով)',
+          'Տեսնել վճարումները',
+          'Փոխել գները կամ կոմիսիոնը',
+          'Արգելափակել մասնակից'
+        ],
+        code: 'src/config/admin.ts; RBAC (src/server/auth)'
+      },
+      {
+        id: 'g7', section: '8. Դերեր, անվտանգություն և մարզիչներ',
+        title: 'Ո՞ր գործողությունները պետք է հաստատվեն երկրորդ ադմինի կողմից։',
+        hint: 'Հիմա՝ վերադարձ 200 000 ֏-ից ավելի, զեղչ 20 %-ից ավելի, և 100-ից ավելի տողով զանգվածային գործողություն։',
+        type: 'checkbox',
+        options: [
+          'Վերադարձ 200 000 ֏-ից ավելի',
+          'Զեղչ 20 %-ից ավելի',
+          'Կոմիսիոնի տոկոսի փոփոխություն',
+          'Մասնակցի արգելափակում',
+          'Վճարման տվյալների (հաշվի) փոփոխություն',
+          'Անձնական տվյալների ջնջում',
+          'Ոչ մի՝ բավական է մեկ ադմին'
+        ],
+        code: 'docs/04-security-and-infrastructure.md §5 (second-admin list)'
+      },
+      {
+        id: 'g8', section: '8. Դերեր, անվտանգություն և մարզիչներ',
+        title: 'Ադմինների համար երկփուլ մուտք (2FA) պետք է՞ լինի։',
+        hint: 'Երկփուլ մուտքը պաշտպանում է հաշիվը, եթե գաղտնաբառը գողանան։',
+        type: 'radio',
+        options: [
+          'Պարտադիր բոլոր ադմիններին',
+          'Պարտադիր միայն գլխավոր ադմինին',
+          'Ընտրովի',
+          'Հիմա պետք չէ'
+        ],
+        code: 'Better Auth 2FA plugin (admin routes)'
+      },
+      {
+        id: 'g9', section: '8. Դերեր, անվտանգություն և մարզիչներ',
+        title: 'Ո՞ր փաստաթղթերն են պահանջվում մարզիչից գրանցվելիս։',
+        hint: 'Ընտրեք բոլորը, որ պետք են։ Փաստաթղթերը պետք է պահվեն պաշտպանված։',
+        type: 'checkbox',
+        options: [
+          'Դիպլոմ կամ վկայական',
+          'Մասնագիտական սերտիֆիկատ',
+          'Անձնագիր կամ ID քարտ',
+          'ԻՆ/ՍՊԸ գրանցման տվյալներ',
+          'Ապահովագրություն',
+          'Ներկայացման լուսանկար և տեսանյութ'
+        ],
+        code: 'InstructorApplication (documents)'
+      },
+      {
+        id: 'g10', section: '8. Դերեր, անվտանգություն և մարզիչներ',
+        title: 'Ո՞վ և ինչպե՞ս է հաստատում նոր մարզիչին։',
+        hint: 'Մինչև հաստատումը մարզիչը չի երևում կատալոգում։',
+        type: 'radio',
+        options: [
+          'Ադմինը ձեռքով, յուրաքանչյուրին',
+          'Ավտոմատ՝ փաստաթղթերը ստուգելուց հետո',
+          'Ադմինը՝ 24 ժամվա ընթացքում'
+        ],
+        code: 'src/server/actions (instructor approval)'
+      },
+
+      /* ───── Ամրագրման կանոններ ───── */
+      {
+        id: 'r1', section: '9. Ամրագրման կանոններ',
+        title: 'Ո՞ր տևողություններով են լինում դասերը։',
+        hint: 'Հիմա՝ 45, 60, 90 և 120 րոպե։',
+        type: 'checkbox',
+        options: ['45 րոպե', '60 րոպե', '90 րոպե', '120 րոպե', 'Այլ (գրեք)'],
+        code: 'src/config/business.ts › booking.durationsMinutes'
+      },
+      {
+        id: 'r2', section: '9. Ամրագրման կանոններ',
+        title: 'Քանի՞ ժամ առաջ կարող է հաճախորդը չեղարկել առանց վճարի։',
+        hint: 'Հիմա՝ 24 ժամ։ Ուշ չեղարկելու դեպքում գումարի 50 % պահվում է։',
+        type: 'radio',
+        options: ['12 ժամ', '24 ժամ (հիմա)', '48 ժամ', 'Այլ (գրեք)'],
+        code: 'src/config/business.ts › booking.freeCancellationHours'
+      },
+      {
+        id: 'r3', section: '9. Ամրագրման կանոններ',
+        title: 'Վերադասավորումը (перенос) քանի՞ ժամ առաջ է անվճար, և քանի՞ անգամ։',
+        hint: 'Հիմա՝ 12 ժամ առաջ և առավելագույնը 2 անգամ։',
+        type: 'radio',
+        options: [
+          '12 ժամ առաջ, 2 անգամ (հիմա)',
+          '24 ժամ առաջ, 1 անգամ',
+          'Անսահմանափակ՝ մինչև 2 ժամ առաջ',
+          'Այլ (գրեք)'
+        ],
+        code: 'src/config/business.ts › booking.freeRescheduleHours, maxReschedulesPerBooking'
+      },
+      {
+        id: 'r4', section: '9. Ամրագրման կանոններ',
+        title: 'Ամրագրումը վճարելու համար քանի՞ րոպե պահվի, և չվճարվածը քանի՞ րոպեից չեղարկվի։',
+        hint: 'Հիմա՝ 15 րոպե պահում և 30 րոպե վերջնաժամկետ։ Չեղարկված տեղը նորից ազատ է դառնում։',
+        type: 'radio',
+        options: ['Համաձայն եմ (15 և 30 րոպե)', 'Այլ (գրեք)'],
+        code: 'src/config/business.ts › booking.holdTtlMinutes, unpaidExpiryMinutes'
+      },
+      {
+        id: 'r5', section: '9. Ամրագրման կանոններ',
+        title: 'Դասը ո՞րքան ժամ հետո համարվի ավարտված (ինքնաշխատ)։',
+        hint: 'Սա անհրաժեշտ է մարզիչի վճարի և գրառումների համար։ Հիմա՝ 12 ժամ։',
+        type: 'radio',
+        options: ['12 ժամ (հիմա)', '24 ժամ', 'Այլ (գրեք)'],
+        code: 'src/config/business.ts › booking.autoCompleteAfterHours'
+      },
+      {
+        id: 'r6', section: '9. Ամրագրման կանոններ',
+        title: 'Եթե տեղ ազատվի, ի՞նչ անել սպասող ցուցակի (waitlist) հետ։',
+        hint: 'Հիմա՝ մինչև 20 հոգի, հաստատելու համար՝ 120 րոպե։',
+        type: 'radio',
+        options: [
+          'Ավտոմատ՝ առաջինին առաջարկել, սահմանված ժամանակում հաստատելու համար',
+          'Սպասող ցուցակ պետք չէ',
+          'Այլ (գրեք)'
+        ],
+        code: 'src/config/business.ts › booking.waitlistMaxSize'
+      },
+      {
+        id: 'r7', section: '9. Ամրագրման կանոններ',
+        title: 'Մարզիչը հաճախորդի տուն ո՞րքան հեռավորության վրա կարող է գնալ։',
+        hint: 'Հիմա՝ 15 կմ։ Ուղևորման վճար՝ 5 000 ֏ (տես q10)։',
+        type: 'radio',
+        options: ['15 կմ (հիմա)', '10 կմ', '25 կմ', 'Սահմանափակում չկա'],
+        code: 'src/config/business.ts › booking.travelRadiusKm'
+      },
+      {
+        id: 'r8', section: '9. Ամրագրման կանոններ',
+        title: 'Սրահի վարձակալության կանոնները՝ ո՞րն է ընդունելի։',
+        hint: 'Հիմա՝ նվազագույնը 1 ժամ, առավելագույնը 8 ժամ, քայլը 30 րոպե, անվճար չեղարկում՝ 48 ժամ առաջ, դեպոզիտ՝ 0 %։',
+        type: 'radio',
+        options: ['Համաձայն եմ (ինչպես հիմա)', 'Այլ (գրեք)'],
+        code: 'src/config/business.ts › venue.* (min/max rental, granularity, freeCancellationHours, depositRate)'
+      },
+      {
+        id: 'r9', section: '9. Ամրագրման կանոններ',
+        title: 'Սրահը ո՞ր օրերին է փակ լինում։',
+        hint: 'Հիմա ոչ մի օր փակ չէ։ Սեփականատերը կարող է ինքը փակել օրը ժամանակացույցում։',
+        type: 'radio',
+        options: [
+          'Ոչ մի օր (ամեն օր բաց)',
+          'Կիրակի',
+          'Շաբաթ և կիրակի',
+          'Սեփականատերն ինքն է ընտրում'
+        ],
+        code: 'src/config/business.ts › venue.defaultClosedWeekdays'
+      },
+
+      /* ───── Ծանուցումներ ───── */
+      {
+        id: 'n1', section: '10. Ծանուցումներ',
+        title: 'Ո՞ր ծանուցման ուղիներն են պետք։',
+        hint: 'SMS-ը առանձին վճարվող ծառայություն է։ Պետք է ընտրել մատակարար և գրանցել անունը (2–3 շաբաթ)։',
+        type: 'checkbox',
+        options: [
+          'Էլ. փոստ',
+          'Push (հավելվածում կամ բրաուզերում)',
+          'SMS',
+          'WhatsApp կամ Telegram հղում'
+        ],
+        code: 'src/lib/notifications/ (email, push, sms)'
+      },
+      {
+        id: 'n2', section: '10. Ծանուցումներ',
+        title: 'Հաճախորդին հիշեցում քանի՞ ժամ առաջ ուղարկել։',
+        hint: 'Հիմա՝ 24 ժամ և 2 ժամ առաջ։',
+        type: 'radio',
+        options: ['24 ժամ և 2 ժամ (հիմա)', 'Միայն 24 ժամ', 'Միայն 2 ժամ', 'Այլ (գրեք)'],
+        code: 'notifications/reminders scheduler'
+      },
+
+      /* ───── Խանութ ───── */
+      {
+        id: 's1', section: '11. Խանութ',
+        title: 'Ո՞վ է վաճառում խանութում։',
+        hint: 'Եթե երրորդ կողմի վաճառողներ կան, նրանց համար կոմիսիոն է գործում։',
+        type: 'radio',
+        options: [
+          'Միայն հարթակը',
+          'Երրորդ կողմի վաճառողներ (բրենդներ, մարզիչներ)',
+          'Երկուսը'
+        ],
+        code: 'src/config/business.ts › commission.ownProductRate (0), marketplaceProductRate'
+      },
+      {
+        id: 's2', section: '11. Խանութ',
+        title: 'Երրորդ կողմի ապրանքից կոմիսիոն՝ ո՞րն է։',
+        hint: 'Հիմա՝ 10 %։ Հարթակի սեփական ապրանքից՝ 0 %։',
+        type: 'radio',
+        options: ['10 % (հիմա)', '5 %', '15 %', 'Այլ (գրեք)'],
+        code: 'src/config/business.ts › commission.marketplaceProductRate'
+      },
+      {
+        id: 's3', section: '11. Խանութ',
+        title: 'Ո՞վ է առաքում ապրանքները։',
+        hint: 'Առաքման վճարը գործարքի մաս է, և ինչ-որ դեպքում անվճար է։',
+        type: 'radio',
+        options: [
+          'Հարթակը իր կուրիերով',
+          'Կուրիերային ծառայություն (ընկերություն)',
+          'Հաճախորդը վերցնում է սրահից կամ գրասենյակից',
+          'Առաքում չկա'
+        ],
+        code: 'checkout delivery (DELIVERY_FEE, nonRefundableLineItems)'
+      },
+      {
+        id: 's4', section: '11. Խանութ',
+        title: 'Անվճար առաքման նվազագույն գումարը՝ ո՞րն է։',
+        hint: 'Հիմա՝ 25 000 ֏։ Դեռ չի հաստատվել։',
+        type: 'radio',
+        options: ['25 000 ֏ (հիմա)', '15 000 ֏', '50 000 ֏', 'Անվճար առաքում չկա'],
+        code: 'checkout free-delivery threshold (@confirm)'
+      },
+      {
+        id: 's5', section: '11. Խանութ',
+        title: 'Ապրանքը քանի՞ օրվա ընթացքում կարելի է վերադարձնել։',
+        hint: 'Սա կարևոր է վերադարձի կանոնների համար։',
+        type: 'radio',
+        options: ['14 օր', '7 օր', 'Չի վերադարձվում', 'Այլ (գրեք)'],
+        code: 'refundPolicy (օրինակ՝ product returns)'
+      },
+      {
+        id: 's6', section: '11. Խանութ',
+        title: 'Պահեստի մնացորդը հաշվի՞ առնվի։',
+        hint: 'Եթե հաշվի են առնվում, ապրանքը սպառվելիս այն չի վաճառվի։',
+        type: 'radio',
+        options: [
+          'Այո, ավտոմատ (յուրաքանչյուր ապրանքի քանակը)',
+          'Այո, բայց քանակը թարմացնում եմ ձեռքով',
+          'Ոչ, ապրանքը միշտ հասանելի է'
+        ],
+        code: 'Product stock (inventory)'
+      },
+
+      /* ───── Իրավական և տեխնիկական ───── */
+      {
+        id: 'l1', section: '12. Իրավական և տեխնիկական',
+        title: 'Ո՞վ է հարթակի սեփականատերը իրավական առումով։',
+        hint: 'Սա անհրաժեշտ է հաշիվների, դոկումենտների և ֆուտերի համար։',
+        type: 'radio',
+        options: ['ՍՊԸ', 'ԻՆ (անհատ ձեռնարկատեր)', 'Ֆիզիկական անձ', 'Դեռ գրանցված չէ'],
+        code: 'src/config/site.ts (legal entity, requisites)'
+      },
+      {
+        id: 'l2', section: '12. Իրավական և տեխնիկական',
+        title: 'Վերլուծական գործիքները (Google Analytics, PostHog) ի՞նչ պայմաններով։',
+        hint: 'Հիմա՝ միայն օգտատիրոջ համաձայնությամբ։ Cookie-ների պաշտպանությունը պարտադիր է։',
+        type: 'radio',
+        options: [
+          'Միայն օգտատիրոջ համաձայնությամբ',
+          'Անանուն, առանց համաձայնության',
+          'Չեմ ուզում, հանել'
+        ],
+        code: 'cookie consent; instrumentation-client.ts'
+      },
+      {
+        id: 'l3', section: '12. Իրավական և տեխնիկական',
+        title: 'Սխալների հետևման (Sentry) ծառայությունում օգտատիրոջ էկրանի ձայնագրությունը (session replay) պետք է՞ լինի։',
+        hint: 'Այն պարունակում է անձնական տվյալներ և վճարովի է։',
+        type: 'radio',
+        options: ['Ոչ', 'Այո, միայն սխալների դեպքում', 'Չգիտեմ, խորհուրդ եմ խնդրում'],
+        code: 'sentry.*.config.ts (replaysOnErrorSampleRate)'
+      },
+      {
+        id: 'l4', section: '12. Իրավական և տեխնիկական',
+        title: 'Անձնական տվյալները ո՞ր երկրում պահվեն։',
+        hint: 'Հիմա Supabase և Vercel սերվերները ԵՄ և ԱՄՆ-ում են։ Դա պետք է նշվի գաղտնիության քաղաքականությունում։',
+        type: 'radio',
+        options: [
+          'ԵՄ',
+          'ԱՄՆ',
+          'Հայաստան',
+          'Չգիտեմ, իրավաբանը պետք է որոշի'
+        ],
+        code: 'docs/launch/legal-brief.md (privacy, third parties)'
+      },
+
+      /* ───── Աջակցություն և հաշիվներ ───── */
+      {
+        id: 'o1', section: '13. Աջակցություն և հաշիվներ',
+        title: 'Ո՞ր կապի ուղիներով պետք է օգնություն ստանան օգտատերերը։',
+        hint: 'Ընտրեք բոլորը, որ պետք են։',
+        type: 'checkbox',
+        options: ['Էլ. փոստ', 'WhatsApp', 'Telegram', 'Հեռախոս', 'Կայքի կոնտակտ ձև'],
+        code: 'src/config/site.ts › contact'
+      },
+      {
+        id: 'o2', section: '13. Աջակցություն և հաշիվներ',
+        title: 'Հաշիվները (Vercel, Supabase, Cloudflare, Resend, Sentry, դոմեն artdance.am) ո՞ւմ անունով են։',
+        hint: 'Սա կարևոր է, որ ծրագրի ամբողջ հասանելիությունը ձեր ձեռքում լինի։',
+        type: 'radio',
+        options: [
+          'Ձեր անունով (դուք եք սեփականատերը)',
+          'Մեր անունով, դուք ունեք լրիվ հասանելիություն',
+          'Չգիտեմ, մտածեմ'
+        ],
+        code: 'docs/launch/production-setup.md'
+      }
+    ];
+
+    /* ───── Ընդհանուր գործառույթներ ───── */
+    const $ = (sel) => document.querySelector(sel);
+    const survey = $('#survey');
+    const counter = $('#counter');
+    const fill = $('#fill');
+    const out = $('#out');
+
+    const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+    function render() {
+      let html = '';
+      let lastSection = '';
+      QUESTIONS.forEach((q, i) => {
+        if (q.section !== lastSection) {
+          html += `<h2 class="section">${esc(q.section)}</h2>`;
+          lastSection = q.section;
+        }
+        html += `
+          <article class="card" data-q="${q.id}">
+            <div class="q-head">
+              <span class="q-num">${i + 1}</span>
+              <div>
+                <h3>${esc(q.title)}</h3>
+                <p class="hint">${esc(q.hint)}</p>
+              </div>
+            </div>
+            <div class="opts">
+              ${q.options.map((opt, j) => `
+                <label class="opt">
+                  <input type="${q.type}" name="${q.id}" value="${j}" />
+                  <span>${esc(opt)}</span>
+                </label>`).join('')}
+            </div>
+            <input class="note" type="text" name="${q.id}_note" placeholder="Ձեր տարբերակը կամ մեկնաբանություն (ըստ ցանկության)" />
+          </article>`;
+      });
+      survey.innerHTML = html;
+      counter.textContent = `0 / ${QUESTIONS.length}`;
+    }
+
+    function answerOf(q) {
+      const chosen = [...document.querySelectorAll(`input[name="${q.id}"]:checked`)]
+        .map((el) => q.options[Number(el.value)]);
+      const note = document.querySelector(`input[name="${q.id}_note"]`).value.trim();
+      return { chosen, note };
+    }
+
+    function updateProgress() {
+      const done = QUESTIONS.filter((q) => {
+        const { chosen, note } = answerOf(q);
+        return chosen.length > 0 || note.length > 0;
+      }).length;
+      counter.textContent = `${done} / ${QUESTIONS.length}`;
+      fill.style.width = `${(done / QUESTIONS.length) * 100}%`;
+    }
+
+    function buildSummary() {
+      const name = document.getElementById('respName').value.trim();
+      const contact = document.getElementById('respContact').value.trim();
+      const extra = document.getElementById('extra').value.trim();
+
+      const lines = [`${PKG.name} փաթեթ (${PKG.price}) — հարցաշարի պատասխաններ`];
+      lines.push(`Ամսաթիվ: ${new Date().toLocaleDateString('hy-AM')}`);
+      if (name) lines.push(`Անուն: ${name}`);
+      if (contact) lines.push(`Կոնտակտ: ${contact}`);
+
+      const data = QUESTIONS.map((q, i) => {
+        const { chosen, note } = answerOf(q);
+        lines.push('', `${i + 1}. ${q.title}`, `   Պատասխան: ${chosen.length ? chosen.join('; ') : '—'}`);
+        if (note) lines.push(`   Մեկնաբանություն: ${note}`);
+        return { id: q.id, title: q.title, answer: chosen, note, code: q.code };
+      });
+
+      if (extra) lines.push('', `Լրացուցիչ մտքեր: ${extra}`);
+
+      lines.push('', '--- MACHINE (developer) ---');
+      lines.push(JSON.stringify({ package: PKG.id, respondent: { name, contact }, answers: data }, null, 2));
+      return lines.join('\n');
+    }
+
+    survey.addEventListener('change', updateProgress);
+    survey.addEventListener('input', updateProgress);
+
+    $('#build').addEventListener('click', () => {
+      out.value = buildSummary();
+      out.style.display = 'block';
+      out.focus();
+    });
+
+    $('#copy').addEventListener('click', async () => {
+      if (!out.value) out.value = buildSummary();
+      out.style.display = 'block';
+      try {
+        await navigator.clipboard.writeText(out.value);
+        alert('Պատճենված է։');
+      } catch {
+        out.select();
+        document.execCommand('copy');
+      }
+    });
+
+    $('#print').addEventListener('click', () => window.print());
+
+    render();
+    updateProgress();
+  </script>
+</body>
+</html>
