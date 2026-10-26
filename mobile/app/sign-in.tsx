@@ -8,7 +8,7 @@ import { FloatingInput } from '@/components/auth/floating-input';
 import { OtpInput } from '@/components/auth/otp-input';
 import { SocialSignIn } from '@/components/auth/social-sign-in';
 import { Button } from '@/components/ui/button';
-import { AuthError, cancelTwoFactor, sendTwoFactorCode, signIn, verifyBackupCode, verifyTwoFactorCode } from '@/lib/auth';
+import { AuthError, sendTwoFactorCode, signIn, verifyBackupCode, verifyTwoFactorCode } from '@/lib/auth';
 import { hapticError, hapticSuccess } from '@/lib/haptics';
 import { deviceLocale, messagesFor, type Messages } from '@/lib/i18n';
 import { colors } from '@/theme';
@@ -147,7 +147,6 @@ export default function SignInScreen() {
   }
 
   function backToCredentials() {
-    cancelTwoFactor();
     setCode('');
     setBackupCode('');
     setUsingBackup(false);

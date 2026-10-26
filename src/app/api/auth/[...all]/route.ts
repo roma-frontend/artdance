@@ -27,17 +27,15 @@ export const runtime = 'nodejs';
 const handlers = toNextJsHandler(auth.handler);
 
 /**
- * Нативное приложение (Expo) ходит с `Authorization: Bearer`, а `Origin` у него
- * либо отсутствует, либо `exp://...` / адрес Metro. Плагин bearer внутри библиотеки
- * превращает токен в cookie, и проверка origin для мутирующих вызовов (смена имени,
- * пароля, выход) отвечает 403.
+ * Нативное приложение (Expo) шлёт POST без `Origin`, а Better Auth отклоняет такой
+ * запрос, если в нём есть cookie. Шаг кода 2FA идёт именно с challenge-cookie.
+ * Bearer-запросы с `exp://` Origin тоже переписываем: их Origin не в `trustedOrigins`.
  *
- * Для bearer-запроса подставляем origin приложения (он уже в `trustedOrigins`).
- * CSRF здесь не грозит: браузер не добавляет `Authorization` к cross-site запросу.
- * Запросы без Bearer (веб с cookie) не меняются.
+ * Подставляем origin приложения (он уже в `trustedOrigins`). Браузер всегда шлёт
+ * `Origin` на POST, поэтому POST без него не может быть CSRF из браузера.
  */
-async function withBearerOrigin(request: Request): Promise<Request> {
-  if (!isBearerRequest(request)) return request;
+async function withNativeOrigin(request: Request): Promise<Request> {
+  if (request.headers.get('origin') && !isBearerRequest(request)) return request;
 
   const headers = new Headers(request.headers);
   headers.set('origin', new URL(clientEnv.NEXT_PUBLIC_APP_URL).origin);
@@ -49,5 +47,5 @@ async function withBearerOrigin(request: Request): Promise<Request> {
 export const GET = handlers.GET;
 
 export async function POST(request: Request): Promise<Response> {
-  return handlers.POST(await withBearerOrigin(request));
+  return handlers.POST(await withNativeOrigin(request));
 }
