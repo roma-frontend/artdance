@@ -6,7 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useScrollToTop } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentProps } from 'react';
-import { Alert, Image, Linking, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
+import { Alert, Image, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 import Animated, {
   Extrapolation,
   FadeInDown,
@@ -30,7 +30,8 @@ import { loadAccountProfile, onProfileChange } from '@/lib/account-profile';
 import { getCurrentUser, signOut, type User } from '@/lib/auth';
 import { loadDancerProfile } from '@/lib/dancer-profile';
 import { isOnboardingSnoozed } from '@/lib/onboarding-progress';
-import { initials, webUrl } from '@/lib/format';
+import { initials } from '@/lib/format';
+import { openLandingWebPath } from '@/lib/web-links';
 import { deviceLocale, messagesFor, type Locale } from '@/lib/i18n';
 import { animateNextLayout, enterCard3D, openTiming } from '@/lib/motion';
 import { useScrollChrome } from '@/lib/use-scroll-chrome';
@@ -71,7 +72,9 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/accessibility',
   '/studio',
   '/studio/availability',
+  '/studio/classes',
   '/venue',
+  '/venue/room-assignment',
 ]);
 
 export default function AccountScreen() {
@@ -151,7 +154,7 @@ export default function AccountScreen() {
 
   function openRow(row: Row) {
     if (NATIVE_PATHS.has(row.path)) router.push(row.path as '/account/bookings');
-    else Linking.openURL(webUrl(locale, row.path)).catch(() => undefined);
+    else openLandingWebPath(locale, row.path);
   }
 
   function openProfileField(field: ProfileField) {

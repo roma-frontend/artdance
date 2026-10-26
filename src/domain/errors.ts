@@ -198,6 +198,9 @@ export const domainErrors = {
   duplicateEnrollment: () =>
     new DomainError({ code: 'DUPLICATE_ENROLLMENT', messageKey: 'booking.duplicateEnrollment' }),
 
+  eventRegistrationClosed: () =>
+    new DomainError({ code: 'VALIDATION_FAILED', messageKey: 'events.registrationClosed' }),
+
   outOfStock: (name: string) =>
     new DomainError({ code: 'OUT_OF_STOCK', messageKey: 'errors.outOfStock.description', params: { name } }),
 
@@ -218,7 +221,7 @@ export const domainErrors = {
     new DomainError({ code: 'REVIEW_WINDOW_CLOSED', messageKey: 'reviews.windowClosed' }),
 
   featureDisabled: () =>
-    new DomainError({ code: 'FEATURE_DISABLED', messageKey: 'common.states.comingSoon' }),
+    new DomainError({ code: 'FEATURE_DISABLED', messageKey: 'common.states.unavailable' }),
 
   internal: (cause?: unknown) =>
     new DomainError({ code: 'INTERNAL', messageKey: 'errors.generic.description', cause }),

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -11,7 +11,6 @@ import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { getGiftCards, type GiftCardsContent } from '@/lib/content';
 import { serverMessageOf } from '@/lib/server-message';
-import { webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
@@ -47,8 +46,16 @@ export default function GiftCardsScreen() {
     );
   }
 
-  function openWeb(path: string) {
-    Linking.openURL(webUrl(locale, path)).catch(() => undefined);
+  function openPath(path: string) {
+    if (path === '/shop/gift-card') {
+      router.push({ pathname: '/catalog/[section]/[slug]', params: { section: 'shop', slug: 'gift-card' } });
+      return;
+    }
+    if (path.startsWith('/legal/')) {
+      router.push({ pathname: '/legal', params: { slug: path.slice('/legal/'.length) } });
+      return;
+    }
+    router.push('/contact');
   }
 
   return (
@@ -76,7 +83,6 @@ export default function GiftCardsScreen() {
                 </View>
               ))}
             </View>
-            <Text style={type.caption}>{content.amounts.comingSoon}</Text>
             <Text style={type.caption}>{content.amounts.validity}</Text>
           </Animated.View>
 
@@ -108,10 +114,10 @@ export default function GiftCardsScreen() {
           <View style={styles.card}>
             <Text style={type.h3}>{content.cta.title}</Text>
             <Text style={type.bodySm}>{content.cta.subtitle}</Text>
-            <PressableScale onPress={() => openWeb(content.cta.primaryPath)} accessibilityRole="button">
+            <PressableScale onPress={() => openPath(content.cta.primaryPath)} accessibilityRole="button">
               <Text style={[type.label, styles.cta]}>{content.cta.primary}</Text>
             </PressableScale>
-            <PressableScale onPress={() => openWeb(content.cta.secondaryPath)} accessibilityRole="button">
+            <PressableScale onPress={() => openPath(content.cta.secondaryPath)} accessibilityRole="button">
               <Text style={[type.label, styles.cta]}>{content.cta.secondary}</Text>
             </PressableScale>
           </View>

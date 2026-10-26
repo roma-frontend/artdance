@@ -25,7 +25,12 @@ export type CompetitionEventDetail = {
   title: string;
   type: string;
   startsAt: string;
+  endsAt?: string;
+  startTime?: string;
+  endTime?: string;
   locationName: string;
+  price?: number;
+  spotsLeft?: number;
   registrationOpenAt?: string;
   registrationCloseAt?: string;
   competitionCategories?: CompetitionCategory[];
@@ -95,4 +100,24 @@ export async function registerForCompetition(
     throw new EventsError(response.status, await readServerMessage(response, catalogFor(deviceLocale(undefined))));
   }
   return (await response.json()) as { registration: { id: string } };
+}
+
+/** Бронь места на обычном событии; платная бронь потом оплачивается общим booking payment flow. */
+export async function bookEvent(eventSlug: string): Promise<{
+  booking: { id: string; reference: string; totalPrice: number; startsAt: string; endsAt: string; status: string; title: string };
+}> {
+  const token = await getSessionToken();
+  if (!token) throw new EventsError(401, null);
+
+  const response = await fetch(`${API_URL}/api/events/${encodeURIComponent(eventSlug)}/book`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: '{}',
+  });
+  if (!response.ok) {
+    throw new EventsError(response.status, await readServerMessage(response, catalogFor(deviceLocale(undefined))));
+  }
+  return (await response.json()) as {
+    booking: { id: string; reference: string; totalPrice: number; startsAt: string; endsAt: string; status: string; title: string };
+  };
 }

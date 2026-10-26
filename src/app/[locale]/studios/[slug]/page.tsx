@@ -6,7 +6,7 @@
  * **Главное действие здесь — занятия.** Они бронируются через инструктора.
  * Аренда зала (`/studios/[slug]/book`) открыта, когда включена функция `events`.
  * Если она выключена, рядом стоит выключенная кнопка с объяснением
- * (`common.states.comingSoon`) — тем же приёмом, что недоступный способ оплаты
+ * (`common.states.unavailable`) — тем же приёмом, что недоступный способ оплаты
  * на оформлении заказа.
  *
  * **Залов внутри площадки нет.** Инвентарь экранов обещает «залы», но в данных
@@ -285,7 +285,7 @@ export default async function StudioDetailPage({ params }: PageProps) {
                     id="rent-unavailable"
                     className="text-caption mt-3 rounded-md bg-accent-soft px-4 py-3 text-content-secondary"
                   >
-                    {tCommon('states.comingSoon')}
+                    {tCommon('states.unavailable')}
                   </p>
                 </>
               )}

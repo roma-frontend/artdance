@@ -118,7 +118,7 @@ export function PaymentMethodPicker({
           <span>
             <span className="block font-semibold">{t('errors.paymentFailed.title')}</span>
             <span className="text-caption block text-content-secondary">
-              {t('common.states.comingSoon')}
+              {t('errors.paymentFailed.description')}
             </span>
           </span>
         </p>

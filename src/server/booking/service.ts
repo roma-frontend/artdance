@@ -264,7 +264,10 @@ export async function cancelBooking(input: CancelBookingInput) {
       const released = await tx.classSession.updateMany({ where: { id: b.sessionId, bookedCount: { gte: b.participants } }, data: { bookedCount: { decrement: b.participants } } });
       if (released.count !== 1) throw domainErrors.validationFailed('sessionId');
     }
-     if (outcome.kind === 'free') {
+    if (b.eventId) {
+      await tx.event.updateMany({ where: { id: b.eventId, bookedCount: { gte: b.participants } }, data: { bookedCount: { decrement: b.participants } } });
+    }
+    if (outcome.kind === 'free') {
        const redemption = await tx.classPassRedemption.findUnique({ where: { bookingId: b.id }, select: { id: true, passId: true } });
        if (redemption) {
          await tx.classPass.update({ where: { id: redemption.passId }, data: { lessonsRemaining: { increment: 1 } } });
@@ -300,7 +303,7 @@ export async function expireUnpaidBookings(now: Date): Promise<{ expired: number
       createdAt: { lte: cutoff },
       payments: { none: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } } },
     },
-    select: { id: true, updatedAt: true, sessionId: true, participants: true },
+    select: { id: true, updatedAt: true, sessionId: true, eventId: true, participants: true },
   });
   let expired = 0;
   for (const b of stale) {
@@ -313,6 +316,9 @@ export async function expireUnpaidBookings(now: Date): Promise<{ expired: number
       if (result.count !== 1) return false;
       if (b.sessionId) {
         await tx.classSession.updateMany({ where: { id: b.sessionId, bookedCount: { gte: b.participants } }, data: { bookedCount: { decrement: b.participants } } });
+      }
+      if (b.eventId) {
+        await tx.event.updateMany({ where: { id: b.eventId, bookedCount: { gte: b.participants } }, data: { bookedCount: { decrement: b.participants } } });
       }
       const redemption = await tx.classPassRedemption.findUnique({ where: { bookingId: b.id }, select: { id: true, passId: true } });
       if (redemption) {

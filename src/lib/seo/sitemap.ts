@@ -215,7 +215,7 @@ function styleSpecs(slugs: readonly string[]): SitemapSpec[] {
  * запросам «как стать преподавателем в Ереване», но не являются товаром.
  *
  * `/pricing` виден всегда — это витрина/конверсия, а не сам товар
- * `subscriptions`. При выкл. подписках страница показывает `comingSoon`
+ * `subscriptions`. При выкл. подписках страница показывает нейтральное состояние
  * (см. `src/app/[locale]/pricing/page.tsx`), но URL остаётся каноническим.
  */
 function contentSpecs(): SitemapSpec[] {

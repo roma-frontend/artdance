@@ -46,6 +46,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       instructor: { select: { slug: true, user: { select: { name: true } } } },
       venue: { select: { name: true } },
       session: { select: { danceClass: { select: { title: true } } } },
+      event: { select: { title: true, locationName: true, venue: { select: { name: true } } } },
     },
   });
 
@@ -71,10 +72,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     paid: row.payments.length > 0,
     lessonType: row.lessonType,
     partnerName: row.partnerName,
-    venueName: row.venue?.name ?? null,
+    venueName: row.venue?.name ?? row.event?.venue?.name ?? row.event?.locationName ?? null,
     cancelledAt: row.cancelledAt?.toISOString() ?? null,
     cancellationReason: row.cancellationReason,
-    classTitle: row.session?.danceClass?.title ?? null,
+    classTitle: row.event?.title ?? row.session?.danceClass?.title ?? null,
     instructorName: row.instructor?.user?.name ?? null,
     instructorSlug: row.instructor?.slug ?? null,
     canReschedule:

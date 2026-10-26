@@ -8,10 +8,10 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { captchaRequired, TurnstileChallenge } from '@/components/ui/turnstile-challenge';
 import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { ContactError, getContact, sendContact, type ContactContent } from '@/lib/content';
-import { webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
 import { serverMessageOf } from '@/lib/server-message';
@@ -36,6 +36,8 @@ export default function ContactScreen() {
   const [fieldError, setFieldError] = useState<{ field: Field; text: string } | null>(null);
   const [sent, setSent] = useState<{ delivered: boolean; email: string } | null>(null);
   const [unsent, setUnsent] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -78,6 +80,7 @@ export default function ContactScreen() {
         topic,
         message: message.trim(),
         locale,
+        captchaToken,
       });
       setSent({ delivered: outcome.delivered, email: trimmedEmail });
     } catch (e) {
@@ -85,15 +88,19 @@ export default function ContactScreen() {
         const field = e.field as Field;
         setFieldError({ field, text: field === 'email' ? content.errors.email : content.errors.required });
       } else {
-        // Капча и сбои сети: отправка через приложение недоступна, даём путь на сайт.
+        // Капча и сбои сети: показываем ошибку и даём повторить отправку в приложении.
         setUnsent(serverMessageOf(e) ?? content.outcome.failedBody);
       }
+      // Токен одноразовый: после неудачи проверка проходится заново.
+      setCaptchaToken(null);
+      setCaptchaKey((k) => k + 1);
     } finally {
       setBusy(false);
     }
   }
 
-  const canSubmit = name.trim().length >= 2 && email.trim().length > 0 && message.trim().length >= 10;
+  const canSubmit =
+    name.trim().length >= 2 && email.trim().length > 0 && message.trim().length >= 10 && (!captchaRequired || captchaToken !== null);
   const delivered = sent?.delivered === true;
   const failedNotice = unsent !== null || (sent !== null && !sent.delivered);
 
@@ -124,7 +131,6 @@ export default function ContactScreen() {
                 <View style={styles.card}>
                   <Text style={type.h3}>{content.outcome.failedTitle}</Text>
                   <Text style={type.bodySm}>{unsent ?? content.outcome.failedBody}</Text>
-                  <Button label={t.openOnWeb} onPress={() => open(webUrl(locale, content.webPath))} variant="ghost" />
                 </View>
               ) : null}
 
@@ -175,6 +181,7 @@ export default function ContactScreen() {
                   />
                 </LabeledField>
 
+                <TurnstileChallenge onToken={setCaptchaToken} resetKey={captchaKey} />
                 <Button label={content.form.submit} onPress={submit} busy={busy} disabled={!canSubmit} />
               </Animated.View>
             </>

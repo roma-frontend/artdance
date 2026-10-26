@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -21,7 +21,7 @@ import {
   type PlacedOrder,
 } from '@/lib/checkout';
 import { catalogFor } from '@/i18n/catalog';
-import { plural, price, webUrl } from '@/lib/format';
+import { plural, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { openPaymentUrl } from '@/lib/payment-url';
 import { serverMessageOf } from '@/lib/server-message';
@@ -232,6 +232,10 @@ export default function CheckoutScreen() {
     { label: c.footer.refundPolicy, path: '/legal/refund-policy' },
   ];
 
+  function openLegal(path: string) {
+    router.push({ pathname: '/legal', params: { slug: path.replace('/legal/', '') } });
+  }
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {header}
@@ -380,7 +384,7 @@ export default function CheckoutScreen() {
               {termsLinks.map((link) => (
                 <Pressable
                   key={link.path}
-                  onPress={() => Linking.openURL(webUrl(locale, link.path)).catch(() => undefined)}
+                   onPress={() => openLegal(link.path)}
                   hitSlop={8}
                   accessibilityRole="link"
                 >

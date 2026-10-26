@@ -69,6 +69,54 @@ export async function getActiveVenueRooms(venueIds: readonly string[]) {
 }
 
 /**
+ * Данные для отдельного мобильного экрана выбора зала.
+ *
+ * Доступ к списку вариантов проверяется теми же правилами, что и изменение:
+ * инструктор своего занятия или участник соответствующей площадки. Нельзя
+ * отдавать активные залы только по `venueId`, иначе любой авторизованный клиент
+ * смог бы перечислить внутреннюю структуру чужой площадки.
+ */
+export async function getClassSessionRoomAssignment(sessionId: string) {
+  const session = await db.classSession.findFirst({
+    where: { id: sessionId, deletedAt: null, isCancelled: false },
+    select: {
+      id: true,
+      startsAt: true,
+      endsAt: true,
+      roomId: true,
+      danceClass: {
+        select: {
+          title: true,
+          venueId: true,
+          instructor: { select: { userId: true } },
+          venue: { select: { id: true, name: true } },
+        },
+      },
+    },
+  });
+
+  const venueId = session?.danceClass.venueId;
+  if (!session || !venueId || !session.danceClass.venue) throw domainErrors.notFound();
+
+  const caller = await requireCaller();
+  if (session.danceClass.instructor.userId !== caller.id) await requireVenueMembership(venueId);
+
+  const rooms = await getActiveVenueRooms([venueId]);
+
+  return {
+    session: {
+      id: session.id,
+      title: session.danceClass.title,
+      startsAt: session.startsAt,
+      endsAt: session.endsAt,
+      roomId: session.roomId,
+      venue: session.danceClass.venue,
+    },
+    rooms,
+  };
+}
+
+/**
  * Назначает занятию зал (или снимает зал при `roomId: null`).
  *
  * Правила:

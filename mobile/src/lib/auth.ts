@@ -110,11 +110,11 @@ export async function signUp(name: string, email: string, password: string): Pro
 }
 
 /** Запрос ссылки для сброса. Ответ одинаковый для любого адреса, поэтому наличие аккаунта не раскрывается. */
-export async function requestPasswordReset(email: string): Promise<void> {
+export async function requestPasswordReset(email: string, captchaToken: string | null): Promise<void> {
   const response = await fetch(`${API_URL}/api/account/password/forgot`, {
     method: 'POST',
     headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, captchaToken }),
   });
   if (!response.ok) {
     const body = (await response.json().catch(() => ({}))) as { error?: string };

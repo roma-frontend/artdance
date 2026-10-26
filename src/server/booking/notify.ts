@@ -34,6 +34,7 @@ async function bookingDisplay(bookingId: string): Promise<{
       venueId: true,
       roomId: true,
       sessionId: true,
+      event: { select: { title: true } },
       locationOption: true,
     },
   });
@@ -61,6 +62,8 @@ async function bookingDisplay(bookingId: string): Promise<{
       instructorName = name;
       title = `Session with ${name}`;
     }
+  } else if (b.event?.title) {
+    title = b.event.title;
   }
 
   if (b.instructorId && !instructorName) {

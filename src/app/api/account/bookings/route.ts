@@ -44,6 +44,7 @@ export async function GET() {
       payments: { where: { status: { in: ['AUTHORIZED', 'PAID', 'PARTIALLY_REFUNDED'] } }, select: { id: true }, take: 1 },
       instructor: { select: { slug: true, user: { select: { name: true } } } },
       session: { select: { danceClass: { select: { title: true } } } },
+      event: { select: { title: true } },
     },
   });
 
@@ -56,7 +57,7 @@ export async function GET() {
     totalPrice: b.totalPrice,
     currencyCode: b.currencyCode,
     paid: b.payments.length > 0,
-    classTitle: b.session?.danceClass?.title ?? null,
+    classTitle: b.event?.title ?? b.session?.danceClass?.title ?? null,
     instructorName: b.instructor?.user?.name ?? null,
     instructorSlug: b.instructor?.slug ?? null,
     canReschedule:

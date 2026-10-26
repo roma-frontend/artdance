@@ -16,7 +16,7 @@ import type { MessageKey } from '@/i18n/types';
 
 /** Ключи, которые действия возвращают наружу. Список закрытый — см. шапку. */
 const actionMessageKeys = [
-  'common.states.comingSoon',
+  'common.states.unavailable',
   'errors.generic.description',
   'errors.generic.title',
   'errors.paymentFailed.description',

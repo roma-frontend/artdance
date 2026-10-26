@@ -78,7 +78,7 @@ export type GiftCardsContent = {
   eyebrow: string;
   title: string;
   subtitle: string;
-  amounts: { title: string; note: string; presets: GiftCardsPreset[]; comingSoon: string; validity: string };
+  amounts: { title: string; note: string; presets: GiftCardsPreset[]; validity: string };
   steps: { title: string; items: GiftCardsStep[] };
   terms: { title: string; items: GiftCardsTerm[] };
   cta: { title: string; subtitle: string; primary: string; primaryPath: string; secondary: string; secondaryPath: string };
@@ -154,7 +154,7 @@ export type ContactContent = {
   supportEmail: string;
   webPath: string;
 };
-export type ContactInput = { name: string; email: string; topic: string; message: string; locale: string };
+export type ContactInput = { name: string; email: string; topic: string; message: string; locale: string; captchaToken: string | null };
 export type ContactOutcome = { delivered: boolean };
 
 export class ContactError extends Error {

@@ -23,8 +23,7 @@ const dictionary: Dictionary = {
     forgotTitle: 'Գաղտնաբառի վերականգնում',
     forgotSubmit: 'Ուղարկել հղումը',
     forgotSent: 'Եթե այս հասցեով հաշիվ կա, հղումն արդեն ճանապարհին է։ Բացեք այն բրաուզերում՝ նոր գաղտնաբառ սահմանելու համար։',
-    forgotCaptcha: 'Անվտանգության ստուգումը չանցավ։ Վերականգնեք գաղտնաբառը կայքում։',
-    forgotOpenWeb: 'Բացել կայքում',
+    forgotCaptcha: 'Անվտանգության ստուգումը չանցավ։ Փորձեք կրկին մի փոքր ուշ։',
     backToSignIn: 'Վերադառնալ մուտք',
     catalogEmpty: 'Դատարկ է',
     catalogNotFound: 'Չգտնվեց',
@@ -122,7 +121,7 @@ const dictionary: Dictionary = {
     profileActionsTitle: 'Ի՞նչ կարելի է փոխել',
     profileEditable: 'Հնարավոր է',
     profileLocked: 'Անհնար',
-    profileSoon: 'Շուտով',
+    profileUnavailable: 'Հասանելի չէ',
     profileNameHint: 'Անունը, որ տեսնում են ուրիշները',
     profilePasswordHint: 'Ընթացիկ և նոր գաղտնաբառ',
     profilePhotoTitle: 'Նկար',
@@ -166,8 +165,7 @@ const dictionary: Dictionary = {
     forgotTitle: 'Сброс пароля',
     forgotSubmit: 'Отправить ссылку',
     forgotSent: 'Если аккаунт с этим адресом есть, ссылка уже в пути. Откройте её в браузере, чтобы задать новый пароль.',
-    forgotCaptcha: 'Проверка безопасности не пройдена. Сбросьте пароль на сайте.',
-    forgotOpenWeb: 'Открыть на сайте',
+    forgotCaptcha: 'Проверка безопасности не пройдена. Попробуйте ещё раз чуть позже.',
     backToSignIn: 'Вернуться ко входу',
     catalogEmpty: 'Пока пусто',
     catalogNotFound: 'Не найдено',
@@ -265,7 +263,7 @@ const dictionary: Dictionary = {
     profileActionsTitle: 'Что можно изменить',
     profileEditable: 'Можно',
     profileLocked: 'Нельзя',
-    profileSoon: 'Скоро',
+    profileUnavailable: 'Недоступно',
     profileNameHint: 'Имя, которое видят другие',
     profilePasswordHint: 'Текущий и новый пароль',
     profilePhotoTitle: 'Фото',
@@ -309,8 +307,7 @@ const dictionary: Dictionary = {
     forgotTitle: 'Reset password',
     forgotSubmit: 'Send reset link',
     forgotSent: 'If an account exists for this email, the link is on its way. Open it in a browser to set a new password.',
-    forgotCaptcha: 'Security check failed. Reset your password on the website.',
-    forgotOpenWeb: 'Open on the website',
+    forgotCaptcha: 'Security verification failed. Try again a little later.',
     backToSignIn: 'Back to sign in',
     catalogEmpty: 'Nothing here yet',
     catalogNotFound: 'Not found',
@@ -408,7 +405,7 @@ const dictionary: Dictionary = {
     profileActionsTitle: 'What you can change',
     profileEditable: 'Editable',
     profileLocked: 'Locked',
-    profileSoon: 'Soon',
+    profileUnavailable: 'Unavailable',
     profileNameHint: 'The name others see',
     profilePasswordHint: 'Current and new password',
     profilePhotoTitle: 'Photo',
@@ -455,7 +452,6 @@ export type MessageKey =
   | 'forgotSubmit'
   | 'forgotSent'
   | 'forgotCaptcha'
-  | 'forgotOpenWeb'
   | 'backToSignIn'
   | 'catalogEmpty'
   | 'catalogNotFound'
@@ -553,7 +549,7 @@ export type MessageKey =
   | 'profileActionsTitle'
   | 'profileEditable'
   | 'profileLocked'
-  | 'profileSoon'
+  | 'profileUnavailable'
   | 'profileNameHint'
   | 'profilePasswordHint'
   | 'profilePhotoTitle'

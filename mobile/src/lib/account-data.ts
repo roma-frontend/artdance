@@ -82,3 +82,26 @@ export async function exportMyData(): Promise<string> {
   if (!response.ok) throw await failureFor(response);
   return response.text();
 }
+
+/** Отложенное удаление аккаунта. Сессия остаётся действующей до ответа сервера. */
+export async function requestAccountDeletion(): Promise<{ deletionRequestedAt: string; graceDays: number }> {
+  const token = await getSessionToken();
+  if (!token) throw new AccountDataError('UNAUTHORIZED', 401);
+  const response = await fetch(`${API_URL}/api/account/delete`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw await failureFor(response);
+  return (await response.json()) as { deletionRequestedAt: string; graceDays: number };
+}
+
+/** Отмена запроса удаления в пределах grace-периода. */
+export async function cancelAccountDeletion(): Promise<void> {
+  const token = await getSessionToken();
+  if (!token) throw new AccountDataError('UNAUTHORIZED', 401);
+  const response = await fetch(`${API_URL}/api/account/delete`, {
+    method: 'DELETE',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw await failureFor(response);
+}

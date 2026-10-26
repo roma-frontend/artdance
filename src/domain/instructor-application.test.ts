@@ -33,7 +33,7 @@ describe('instructorApplicationSchema', () => {
   });
 
   it('допускает пустой телефон, если поле не передано', () => {
-    const { phone: _phone, ...withoutPhone } = validFields;
+    const withoutPhone = Object.fromEntries(Object.entries(validFields).filter(([key]) => key !== 'phone'));
     expect(instructorApplicationSchema.safeParse(withoutPhone).success).toBe(true);
   });
 });

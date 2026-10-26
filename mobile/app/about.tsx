@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -10,7 +10,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { getAbout, type AboutContent } from '@/lib/content';
-import { webUrl } from '@/lib/format';
+import { openLandingWebPath } from '@/lib/web-links';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
@@ -47,7 +47,15 @@ export default function AboutScreen() {
   }
 
   function openWeb(path: string) {
-    Linking.openURL(webUrl(locale, path)).catch(() => undefined);
+    if (path === '/classes') {
+      router.push({ pathname: '/catalog/[section]', params: { section: 'classes' } });
+      return;
+    }
+    if (path === '/become-instructor') {
+      router.push('/become-instructor');
+      return;
+    }
+    openLandingWebPath(locale, path);
   }
 
   return (

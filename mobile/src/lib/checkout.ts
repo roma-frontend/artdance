@@ -74,6 +74,26 @@ export async function placeMyOrder(input: PlaceOrderInput): Promise<PlacedOrder>
 }
 
 /**
+ * Создаёт заказ на пакет занятий. Пакет выдаёт сервер после оплаты, поэтому ответ — заказ, а не пакет.
+ */
+export async function placeClassPassOrder(passId: string): Promise<PlacedOrder> {
+  const token = await getSessionToken();
+  if (!token) throw new CheckoutError('UNAUTHORIZED', 401);
+  const response = await fetch(`${API_URL}/api/class-passes/purchase`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ passId }),
+  });
+  if (!response.ok) throw await failureFor(response);
+  const body = (await response.json()) as { order: PlacedOrder };
+  return body.order;
+}
+
+/**
  * Отправляет заказ провайдеру. Кошелёк применяется автоматически. Если провайдер
  * вернул адрес, его открывает вызывающий код. Подтверждение оплаты приходит с webhook'а,
  * поэтому статус здесь — только ответ на запрос, а не доказательство оплаты.

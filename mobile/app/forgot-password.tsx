@@ -1,13 +1,13 @@
 import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 import { AuthLayout } from '@/components/auth/auth-layout';
 import { FloatingInput } from '@/components/auth/floating-input';
 import { Button } from '@/components/ui/button';
+import { captchaRequired, TurnstileChallenge } from '@/components/ui/turnstile-challenge';
 import { AuthError, requestPasswordReset } from '@/lib/auth';
-import { webUrl } from '@/lib/format';
 import { hapticError, hapticSuccess } from '@/lib/haptics';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { colors } from '@/theme';
@@ -19,19 +19,20 @@ export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [captchaFailed, setCaptchaFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
   const inFlight = useRef(false);
   const shake = useSharedValue(0);
+  const captchaPending = captchaRequired && captchaToken === null;
 
   async function submit() {
-    if (inFlight.current || !email.trim()) return;
+    if (inFlight.current || !email.trim() || captchaPending) return;
     inFlight.current = true;
     setBusy(true);
     setError(null);
-    setCaptchaFailed(false);
     try {
-      await requestPasswordReset(email.trim());
+      await requestPasswordReset(email.trim(), captchaToken);
       hapticSuccess();
       setSent(true);
     } catch (e) {
@@ -42,10 +43,12 @@ export default function ForgotPasswordScreen() {
         withTiming(-6, { duration: 60 }),
         withTiming(0, { duration: 60 }),
       );
-      // Капча проверяется только на сайте: отправляем пользователя туда.
+      // Сервер возвращает нейтральную ошибку, не раскрывая состояние аккаунта.
       const captcha = e instanceof AuthError && e.message === 'CAPTCHA_FAILED';
-      setCaptchaFailed(captcha);
       setError(captcha ? t.forgotCaptcha : t.genericError);
+      // Токен одноразовый: после любой ошибки просим пройти проверку заново.
+      setCaptchaToken(null);
+      setCaptchaKey((k) => k + 1);
     } finally {
       inFlight.current = false;
       setBusy(false);
@@ -85,13 +88,9 @@ export default function ForgotPasswordScreen() {
               {error}
             </Animated.Text>
           ) : null}
-          {captchaFailed ? (
-            <View style={styles.action}>
-              <Button label={t.forgotOpenWeb} onPress={() => Linking.openURL(webUrl(locale, '/forgot-password')).catch(() => undefined)} variant="ghost" />
-            </View>
-          ) : null}
+          <TurnstileChallenge onToken={setCaptchaToken} resetKey={captchaKey} />
           <View style={styles.action}>
-            <Button label={t.forgotSubmit} onPress={submit} busy={busy} disabled={!email.trim()} />
+            <Button label={t.forgotSubmit} onPress={submit} busy={busy} disabled={!email.trim() || captchaPending} />
           </View>
         </>
       )}

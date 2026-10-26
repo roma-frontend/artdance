@@ -4,11 +4,8 @@
  * Номиналы, границы суммы, шаг и срок действия — из `promotions.giftCard`. В
  * разметке ни одной цифры: «сделайте минимум 10 000» правится в конфигурации.
  *
- * Купить карту онлайн пока нельзя: покупка проходит через корзину и оформление
- * (фаза 4 плана), а страница товара `/shop/[slug]` появится вместе с ними.
- * Поэтому главное действие — не поддельная кнопка «купить», а разговор с нами:
- * карту выпустят вручную. Кнопка, которая ничего не делает, стоит дороже, чем
- * честное «пока так».
+ * Покупка идёт через обычную страницу товара, корзину и оформление заказа. Здесь
+ * остаётся объяснение номиналов и правил, а CTA ведёт в существующий product flow.
  */
 
 import type { Metadata } from 'next';
@@ -19,7 +16,6 @@ import { FactList } from '@/components/content/fact-list';
 import { StepList } from '@/components/content/step-list';
 import { PageHero, breadcrumbsFromTrail } from '@/components/layout/page-hero';
 import { SiteFooter } from '@/components/layout/site-footer';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { routes, site } from '@/config';
 import type { Locale } from '@/i18n/config';
@@ -68,12 +64,7 @@ export default async function GiftCardsPage({ params }: PageProps) {
       />
 
       <ContentSection title={content.amounts.title} subtitle={content.amounts.note}>
-        {/*
-          Номиналы — данные, а не кнопки: покупка появится вместе с магазином.
-          Пока это перечень, и он честно выглядит перечнем. У списка есть
-          доступное имя: без него скринридер объявляет четыре суммы подряд без
-          указания, что это варианты одного выбора.
-        */}
+        {/* Номиналы — данные страницы; выбор варианта выполняется на странице товара. */}
         <ul aria-label={content.amounts.title} className="flex flex-wrap gap-3">
           {content.amounts.presets.map((preset) => (
             <li
@@ -85,10 +76,7 @@ export default async function GiftCardsPage({ params }: PageProps) {
           ))}
         </ul>
 
-        <p className="text-caption mt-4 flex items-center gap-2 text-content-tertiary">
-          <Badge variant="metal">{content.amounts.comingSoon}</Badge>
-          {content.amounts.validity}
-        </p>
+        <p className="text-caption mt-4 text-content-tertiary">{content.amounts.validity}</p>
       </ContentSection>
 
       <ContentSection tone="raised" title={content.steps.title}>

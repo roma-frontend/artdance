@@ -3,3 +3,9 @@
  * Для локальной разработки укажите IP машины в локальной сети в mobile/.env.
  */
 export const API_URL: string = process.env.EXPO_PUBLIC_API_URL ?? 'https://artdance.vercel.app';
+
+/**
+ * Публичный ключ сайта Cloudflare Turnstile — тот же, что `NEXT_PUBLIC_TURNSTILE_SITE_KEY` на сервере.
+ * Пустой ключ означает, что сервер не настроил капчу, и формы отправляются без неё.
+ */
+export const TURNSTILE_SITE_KEY: string = process.env.EXPO_PUBLIC_TURNSTILE_SITE_KEY ?? '';

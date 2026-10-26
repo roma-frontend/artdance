@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -10,13 +10,20 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
 import { getHelp, type HelpContent, type HelpTopic } from '@/lib/content';
-import { webUrl } from '@/lib/format';
+import { openLandingWebPath } from '@/lib/web-links';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
-/** Разделы справки, которые открываются экраном приложения; остальные ведут на сайт. */
-const NATIVE_PATHS: ReadonlySet<string> = new Set(['/faq']);
+/** Разделы справки, которые открываются экранами приложения. */
+const NATIVE_PATHS: ReadonlySet<string> = new Set([
+  '/faq',
+  '/contact',
+  '/become-instructor',
+  '/legal/privacy',
+  '/legal/terms',
+  '/legal/refund-policy',
+]);
 
 export default function HelpScreen() {
   const locale = deviceLocale(undefined);
@@ -50,12 +57,26 @@ export default function HelpScreen() {
   }
 
   function openTopic(topic: HelpTopic) {
+    const path = topic.anchor ? `${topic.path}#${topic.anchor}` : topic.path;
     if (NATIVE_PATHS.has(topic.path)) {
-      router.push(topic.path as '/faq');
+      if (topic.path === '/faq') {
+        router.push('/faq');
+      } else if (topic.path === '/become-instructor') {
+        router.push('/become-instructor');
+      } else if (topic.path.startsWith('/legal/')) {
+        router.push({ pathname: '/legal', params: { slug: topic.path.slice('/legal/'.length) } });
+      } else {
+        router.push('/contact');
+      }
       return;
     }
-    const path = topic.anchor ? `${topic.path}#${topic.anchor}` : topic.path;
-    Linking.openURL(webUrl(locale, path)).catch(() => undefined);
+    // Путь вне allowlist не открывается в браузере: вместо него — обращение в поддержку.
+    if (!openLandingWebPath(locale, path)) router.push('/contact');
+  }
+
+  function openStillStuck() {
+    const path = content?.stillStuck.path ?? '';
+    if (!openLandingWebPath(locale, path)) router.push('/contact');
   }
 
   return (
@@ -87,7 +108,7 @@ export default function HelpScreen() {
             <Text style={type.h3}>{content.stillStuck.title}</Text>
             <Text style={type.bodySm}>{content.stillStuck.body}</Text>
             <PressableScale
-              onPress={() => Linking.openURL(webUrl(locale, content.stillStuck.path)).catch(() => undefined)}
+              onPress={openStillStuck}
               accessibilityRole="button"
             >
               <Text style={[type.label, styles.cta]}>{content.stillStuck.cta}</Text>

@@ -1,16 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { payMyOrder, placeClassPassOrder } from '@/lib/checkout';
 import { backLabel, goBack } from '@/lib/navigation';
 import { getPricing, type PricingComparisonCell, type PricingContent } from '@/lib/content';
+import { openPaymentUrl } from '@/lib/payment-url';
 import { serverMessageOf } from '@/lib/server-message';
-import { webUrl } from '@/lib/format';
+import { getSessionToken } from '@/lib/session';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
@@ -22,6 +24,8 @@ export default function PricingScreen() {
   const insets = useSafeAreaInsets();
   const [content, setContent] = useState<PricingContent | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
+  const [buyingId, setBuyingId] = useState<string | null>(null);
+  const [buyError, setBuyError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -46,7 +50,40 @@ export default function PricingScreen() {
   }
 
   function openWeb(path: string) {
-    Linking.openURL(webUrl(locale, path)).catch(() => undefined);
+    if (path === '/classes') {
+      router.push({ pathname: '/catalog/[section]', params: { section: 'classes' } });
+      return;
+    }
+    if (path === '/pricing') {
+      router.push('/account/subscription');
+    }
+  }
+
+  /*
+   * Покупка пакета идёт тем же путём, что и товар: заказ → оплата → экран заказа.
+   * Пакет выдаёт сервер после подтверждения оплаты, поэтому здесь его не показываем.
+   */
+  async function buyClassPass(passId: string) {
+    if (buyingId) return;
+    if (!(await getSessionToken())) {
+      router.push('/sign-in');
+      return;
+    }
+    setBuyingId(passId);
+    setBuyError(null);
+    try {
+      const order = await placeClassPassOrder(passId);
+      const intent = await payMyOrder(order.id, 'CARD', locale);
+      if (intent.redirectUrl && !(await openPaymentUrl(intent.redirectUrl))) {
+        setBuyError(t.bookPayFailed);
+        return;
+      }
+      router.push({ pathname: '/account/orders/[orderNumber]', params: { orderNumber: intent.orderNumber || order.orderNumber } });
+    } catch (error) {
+      setBuyError(serverMessageOf(error) ?? t.genericError);
+    } finally {
+      setBuyingId(null);
+    }
   }
 
   const plans = content?.plans ?? null;
@@ -134,11 +171,17 @@ export default function PricingScreen() {
                   <Text style={type.title}>{pass.lessonsLabel}</Text>
                   <Text style={type.caption}>{pass.validityLabel}</Text>
                   <Text style={type.bodySm}>{pass.perLesson}</Text>
-                  <PressableScale onPress={() => openWeb(content.webPath)} accessibilityRole="button">
+                  <PressableScale
+                    onPress={() => buyClassPass(pass.id)}
+                    disabled={buyingId !== null}
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: buyingId !== null, busy: buyingId === pass.id }}
+                  >
                     <Text style={[type.label, styles.cta]}>{pass.cta}</Text>
                   </PressableScale>
                 </Animated.View>
               ))}
+              {buyError ? <Text style={[type.bodySm, styles.error]}>{buyError}</Text> : null}
             </>
           ) : null}
 
@@ -188,4 +231,5 @@ const styles = StyleSheet.create({
   cellLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.sm },
   inline: { flexDirection: 'row', alignItems: 'center', gap: space.xs },
   cta: { color: colors.accentBright, marginTop: space.xs },
+  error: { color: colors.danger },
 });

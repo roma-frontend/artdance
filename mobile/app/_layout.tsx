@@ -160,8 +160,11 @@ export default function RootLayout() {
         <Stack.Screen name="legal" options={{ animation: 'default' }} />
         <Stack.Screen name="accessibility" options={{ animation: 'default' }} />
         <Stack.Screen name="studio/index" options={{ animation: 'default' }} />
+        <Stack.Screen name="studio/[slug]/book" options={{ animation: 'default' }} />
+        <Stack.Screen name="studio/classes" options={{ animation: 'default' }} />
         <Stack.Screen name="studio/availability" options={{ animation: 'default' }} />
         <Stack.Screen name="venue/index" options={{ animation: 'default' }} />
+        <Stack.Screen name="venue/room-assignment" options={{ animation: 'default' }} />
         <Stack.Screen name="contact" options={{ animation: 'default' }} />
       <Stack.Screen name="pricing" options={{ animation: 'default' }} />
       <Stack.Screen name="become-instructor" options={{ animation: 'default' }} />

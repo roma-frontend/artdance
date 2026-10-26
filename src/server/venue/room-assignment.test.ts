@@ -26,7 +26,13 @@ vi.mock('@/lib/auth/guards', () => ({
   requireVenueMembership: mocks.requireVenueMembership,
 }));
 
-import { assignClassSessionRoom, getActiveVenueRooms, getInstructorUpcomingSessions, getVenueUpcomingSessions } from './room-assignment';
+import {
+  assignClassSessionRoom,
+  getActiveVenueRooms,
+  getClassSessionRoomAssignment,
+  getInstructorUpcomingSessions,
+  getVenueUpcomingSessions,
+} from './room-assignment';
 
 const startsAt = new Date('2026-06-01T10:00:00Z');
 const endsAt = new Date('2026-06-01T11:00:00Z');
@@ -192,6 +198,48 @@ describe('getActiveVenueRooms', () => {
 
     expect(mocks.db.room.findMany.mock.calls[0]?.[0]?.where).toEqual({
       venueId: { in: ['venue-1', 'venue-2'] },
+      deletedAt: null,
+      isActive: true,
+    });
+  });
+});
+
+describe('getClassSessionRoomAssignment', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.requireCaller.mockResolvedValue({ id: 'instructor-1' });
+    mocks.db.room.findMany.mockResolvedValue([{ id: 'room-1', name: 'Main', venueId: 'venue-1' }]);
+  });
+
+  it('returns only the assigned session and rooms from its venue', async () => {
+    mocks.db.classSession.findFirst.mockResolvedValue({
+      id: 'session-1',
+      startsAt,
+      endsAt,
+      roomId: 'room-1',
+      danceClass: {
+        title: 'Salsa',
+        venueId: 'venue-1',
+        instructor: { userId: 'instructor-1' },
+        venue: { id: 'venue-1', name: 'Studio' },
+      },
+    });
+
+    const result = await getClassSessionRoomAssignment('session-1');
+
+    expect(result).toEqual({
+      session: {
+        id: 'session-1',
+        title: 'Salsa',
+        startsAt,
+        endsAt,
+        roomId: 'room-1',
+        venue: { id: 'venue-1', name: 'Studio' },
+      },
+      rooms: [{ id: 'room-1', name: 'Main', venueId: 'venue-1' }],
+    });
+    expect(mocks.db.room.findMany.mock.calls[0]?.[0]?.where).toEqual({
+      venueId: { in: ['venue-1'] },
       deletedAt: null,
       isActive: true,
     });

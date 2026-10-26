@@ -1,11 +1,11 @@
 import { useRouter } from 'expo-router';
 import { useRef, type ComponentRef } from 'react';
-import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { PressableScale } from '@/components/ui/pressable-scale';
 import type { BecomeInstructorContent } from '@/lib/content';
-import { webUrl } from '@/lib/format';
+import { openLandingWebPath } from '@/lib/web-links';
 import type { Locale } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
@@ -16,8 +16,12 @@ export function LandingBody({ content, locale }: { content: BecomeInstructorCont
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const earningsY = useRef(0);
 
-  function openWeb(path: string) {
-    Linking.openURL(webUrl(locale, path)).catch(() => undefined);
+  function openPath(path: string) {
+    if (path.startsWith('/legal/')) {
+      router.push({ pathname: '/legal', params: { slug: path.slice('/legal/'.length) } });
+      return;
+    }
+    openLandingWebPath(locale, path);
   }
 
   function scrollToEarnings() {
@@ -85,7 +89,7 @@ export function LandingBody({ content, locale }: { content: BecomeInstructorCont
         <PressableScale onPress={() => router.push('/contact')} accessibilityRole="button">
           <Text style={[type.label, styles.cta]}>{content.cta.primary}</Text>
         </PressableScale>
-        <PressableScale onPress={() => openWeb(content.cta.secondaryPath)} accessibilityRole="button">
+        <PressableScale onPress={() => openPath(content.cta.secondaryPath)} accessibilityRole="button">
           <Text style={[type.label, styles.cta]}>{content.cta.secondary}</Text>
         </PressableScale>
       </Animated.View>

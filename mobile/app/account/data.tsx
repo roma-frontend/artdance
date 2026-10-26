@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -9,8 +9,7 @@ import { Button } from '@/components/ui/button';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
-import { AccountDataError, exportMyData } from '@/lib/account-data';
-import { webUrl } from '@/lib/format';
+import { AccountDataError, cancelAccountDeletion, exportMyData, requestAccountDeletion } from '@/lib/account-data';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { shareTextFile } from '@/lib/share-file';
 import { EASE_OUT } from '@/lib/motion';
@@ -25,6 +24,7 @@ export default function MyDataScreen() {
   const insets = useSafeAreaInsets();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<string | null>(null);
+  const [deletionRequested, setDeletionRequested] = useState(false);
 
   async function onExport() {
     setBusy(true);
@@ -32,6 +32,40 @@ export default function MyDataScreen() {
     try {
       const json = await exportMyData();
       await shareTextFile('artdance-export.json', json, 'application/json');
+    } catch (error) {
+      setFailed(error instanceof AccountDataError ? (error.serverMessage ?? t.catalogError) : t.catalogError);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function confirmDeletion() {
+    Alert.alert(f.confirmDeleteAccount, f.deleteHint, [
+      { text: t.accountCancel, style: 'cancel' },
+      { text: f.requestDeletion, style: 'destructive', onPress: () => void onDelete() },
+    ]);
+  }
+
+  async function onDelete() {
+    setBusy(true);
+    setFailed(null);
+    try {
+      await requestAccountDeletion();
+      setDeletionRequested(true);
+    } catch (error) {
+      setFailed(error instanceof AccountDataError ? (error.serverMessage ?? t.catalogError) : t.catalogError);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onCancelDeletion() {
+    setBusy(true);
+    setFailed(null);
+    try {
+      await cancelAccountDeletion();
+      setDeletionRequested(false);
+      Alert.alert(f.deletionCancelled);
     } catch (error) {
       setFailed(error instanceof AccountDataError ? (error.serverMessage ?? t.catalogError) : t.catalogError);
     } finally {
@@ -61,11 +95,8 @@ export default function MyDataScreen() {
         <Animated.View entering={FadeInDown.delay(140).duration(420).easing(EASE_OUT)} style={styles.card}>
           <Text style={type.h3}>{f.deleteTitle}</Text>
           <Text style={type.bodySm}>{f.deleteHint}</Text>
-          <Button
-            label={t.openOnWeb}
-            variant="ghost"
-            onPress={() => Linking.openURL(webUrl(locale, '/account/data')).catch(() => undefined)}
-          />
+          <Button label={deletionRequested ? f.cancelDeletion : f.requestDeletion} variant="ghost" onPress={deletionRequested ? onCancelDeletion : confirmDeletion} busy={busy} disabled={busy} />
+          {deletionRequested ? <Text style={type.caption}>{f.deletionAccepted}</Text> : null}
         </Animated.View>
       </View>
     </View>

@@ -30,7 +30,6 @@ export interface GiftCardsContent {
     title: string;
     note: string;
     presets: GiftCardsPreset[];
-    comingSoon: string;
     validity: string;
   };
   steps: { title: string; items: GiftCardsStep[] };
@@ -66,7 +65,6 @@ export async function buildGiftCardsContent(locale: Locale): Promise<GiftCardsCo
         step: money(card.amountStep),
       }),
       presets: card.presetAmounts.map((amount) => ({ amount, label: money(amount) })),
-      comingSoon: tRoot('common.states.comingSoon'),
       validity: t('validityNote', {
         months: tRoot('common.units.months', { count: card.validityMonths }),
       }),
@@ -93,7 +91,7 @@ export async function buildGiftCardsContent(locale: Locale): Promise<GiftCardsCo
       title: t('cta.title'),
       subtitle: t('cta.subtitle'),
       primary: t('cta.primary'),
-      primaryPath: routes.contact(),
+      primaryPath: routes.product('gift-card'),
       secondary: t('cta.secondary'),
       secondaryPath: routes.refundPolicy(),
     },

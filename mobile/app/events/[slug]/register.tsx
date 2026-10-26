@@ -14,6 +14,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { getCatalogDetail } from '@/lib/catalog';
 import {
   ageFitsCategory,
+  bookEvent,
   isRegistrationOpen,
   isValidBirthDate,
   registerForCompetition,
@@ -24,6 +25,8 @@ import { plural, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
 import { serverMessageOf } from '@/lib/server-message';
+import { openPaymentUrl } from '@/lib/payment-url';
+import { payBooking } from '@/lib/bookings';
 import { colors, radius, space, type } from '@/theme';
 
 /** Категория без лимита мест (`spotsLeft` не пришёл) или с местами открыта для выбора. */
@@ -44,6 +47,7 @@ export default function EventRegisterScreen() {
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [successText, setSuccessText] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -92,12 +96,67 @@ export default function EventRegisterScreen() {
   }
 
   if (sent) {
-    return shell(<EmptyState icon="checkmark-circle-outline" title={c.events.registrationSuccess} />);
+    return shell(<EmptyState icon="checkmark-circle-outline" title={successText ?? c.events.registrationSuccess} />);
   }
 
   const categories = detail.competitionCategories ?? [];
+  const eventOpen = isRegistrationOpen(detail) && Date.parse(detail.startsAt) > Date.now();
+  const event = detail;
+
+  if (detail.type !== 'COMPETITION') {
+    if (!eventOpen) return shell(<EmptyState icon="lock-closed-outline" title={c.events.registrationClosed} />);
+    if (typeof detail.spotsLeft === 'number' && detail.spotsLeft <= 0) {
+      return shell(<EmptyState icon="people-outline" title={c.events.eventFull} />);
+    }
+
+    async function bookRegularEvent() {
+      if (sending) return;
+      setSending(true);
+      setNotice(null);
+      try {
+        const result = await bookEvent(event.slug);
+        if (result.booking.totalPrice > 0) {
+          try {
+            const payment = await payBooking(result.booking.id, 'CARD');
+            if (await openPaymentUrl(payment.redirectUrl)) {
+              setSuccessText(c.events.bookingSuccess);
+              setSent(true);
+              return;
+            }
+          } catch {
+            // The booking remains in the account and can be paid from its pass screen.
+          }
+        }
+        router.replace({ pathname: '/booking/[id]/pass', params: { id: result.booking.id } });
+      } catch (error) {
+        setNotice(serverMessageOf(error) ?? c.events.bookingError);
+      } finally {
+        setSending(false);
+      }
+    }
+
+    return shell(
+      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+        <Animated.View entering={enterItem(0)} style={styles.card}>
+          <Text style={type.h3}>{event.title}</Text>
+          {event.locationName ? <Text style={type.bodySm}>{event.locationName}</Text> : null}
+          {event.price !== undefined ? <Text style={type.bodySm}>{event.price > 0 ? price(event.price, locale) : c.events.freeEntry}</Text> : null}
+          {event.spotsLeft !== undefined ? (
+            <Text style={type.bodySm}>{plural(c.common.counts.spotsLeft, event.spotsLeft, locale)}</Text>
+          ) : null}
+        </Animated.View>
+        <Button label={c.events.bookCta} onPress={bookRegularEvent} busy={sending} />
+        {notice ? (
+          <Animated.View entering={enterItem(1)} style={styles.noticeCard} accessibilityLiveRegion="polite">
+            <Text style={[type.bodySm, styles.error]}>{notice}</Text>
+          </Animated.View>
+        ) : null}
+      </ScrollView>,
+    );
+  }
+
   if (detail.type !== 'COMPETITION' || categories.length === 0) {
-    return shell(<EmptyState icon="time-outline" title={c.common.states.comingSoon} />);
+    return shell(<EmptyState icon="time-outline" title={c.events.registrationUnavailable} />);
   }
 
   if (!isRegistrationOpen(detail)) {
@@ -117,11 +176,12 @@ export default function EventRegisterScreen() {
     setSending(true);
     setNotice(null);
     try {
-      await registerForCompetition(detail.slug, {
+       await registerForCompetition(detail.slug, {
         categoryId,
         birthDate,
         partnerName: partnerName.trim() || undefined,
       });
+      setSuccessText(c.events.registrationSuccess);
       setSent(true);
     } catch (error) {
       setNotice(serverMessageOf(error) ?? c.events.registrationError);

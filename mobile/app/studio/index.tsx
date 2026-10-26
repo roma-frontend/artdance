@@ -15,8 +15,9 @@ import { EASE_OUT, enterItem } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 /**
- * Кабинет инструктора-студии. Зеркалит веб `/studio`: доступность открыта,
- * заявки и площадки пока в статусе «скоро».
+ * Кабинет инструктора-студии. Основные доступные разделы зеркалят веб `/studio`.
+ * Заявки больше не показываются: в текущем веб-продукте для них нет источника
+ * данных, поэтому мобильный интерфейс не обещает несуществующую функцию.
  */
 export default function StudioDashboardScreen() {
   const c = catalogFor(deviceLocale(undefined));
@@ -61,8 +62,6 @@ export default function StudioDashboardScreen() {
         <EmptyState icon="lock-closed-outline" title={c.cabinet.notForRole} />
       ) : (
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-          <Text style={type.bodySm}>{`${c.common.states.comingSoon} — ${c.footer.applyHint}`}</Text>
-
           <Animated.View entering={enterItem(0)}>
             <PressableScale onPress={() => router.push('/studio/availability')} accessibilityRole="button">
               <View style={styles.card}>
@@ -73,11 +72,12 @@ export default function StudioDashboardScreen() {
           </Animated.View>
 
           <Animated.View entering={enterItem(1)}>
-            <View style={[styles.card, styles.disabled]} accessibilityState={{ disabled: true }}>
-              <Ionicons name="mail-outline" size={22} color={colors.text3} />
-              <Text style={[type.h3, styles.disabledText]}>{c.footer.studioDashboardRequests}</Text>
-              <Text style={type.caption}>{c.common.states.comingSoon}</Text>
-            </View>
+            <PressableScale onPress={() => router.push('./classes')} accessibilityRole="button">
+              <View style={styles.card}>
+                <Ionicons name="school-outline" size={22} color={colors.accentBright} />
+                <Text style={type.h3}>{c.footer.studioDashboardClasses}</Text>
+              </View>
+            </PressableScale>
           </Animated.View>
         </ScrollView>
       )}
@@ -92,6 +92,4 @@ const styles = StyleSheet.create({
   title: { flex: 1 },
   body: { paddingHorizontal: space.xl, paddingBottom: 60, gap: space.md },
   card: { padding: space.lg, borderRadius: radius.md, backgroundColor: 'rgba(245,241,234,0.06)', gap: space.sm },
-  disabled: { opacity: 0.5 },
-  disabledText: { color: colors.text3 },
 });
