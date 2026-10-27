@@ -58,7 +58,7 @@ describe('POST /api/booking/[id]/pay', () => {
 
     const response = await POST(request({ method: 'IDRAM', locale: 'hy' }), context);
 
-    expect(mocks.createBookingPayment).toHaveBeenCalledWith({ bookingId: 'booking-1', userId: 'customer-1', method: 'IDRAM', locale: 'hy', fromApp: false });
+    expect(mocks.createBookingPayment).toHaveBeenCalledWith({ bookingId: 'booking-1', userId: 'customer-1', method: 'IDRAM', locale: 'hy', fromApp: false, inAppSheet: false });
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toMatchObject({ paymentId: 'payment-1', redirectUrl: 'https://pay.example/x' });
   });

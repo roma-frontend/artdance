@@ -11,7 +11,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { payMyOrder, placeClassPassOrder } from '@/lib/checkout';
 import { backLabel, goBack } from '@/lib/navigation';
 import { getPricing, type PricingComparisonCell, type PricingContent } from '@/lib/content';
-import { openPaymentUrl } from '@/lib/payment-url';
+import { startPayment } from '@/lib/payment-url';
 import { serverMessageOf } from '@/lib/server-message';
 import { getSessionToken } from '@/lib/session';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
@@ -75,9 +75,12 @@ export default function PricingScreen() {
     try {
       const order = await placeClassPassOrder(passId);
       const intent = await payMyOrder(order.id, 'CARD', locale);
-      if (intent.redirectUrl && !(await openPaymentUrl(intent.redirectUrl))) {
-        setBuyError(t.bookPayFailed);
-        return;
+      if (intent.redirectUrl) {
+        const outcome = await startPayment(intent);
+        if (outcome === 'UNAVAILABLE') {
+          setBuyError(t.bookPayFailed);
+          return;
+        }
       }
       router.push({ pathname: '/account/orders/[orderNumber]', params: { orderNumber: intent.orderNumber || order.orderNumber } });
     } catch (error) {

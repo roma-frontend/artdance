@@ -10,12 +10,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { TestCardStubHost } from '@/components/payments/test-card-stub';
 import { SplashLoader } from '@/components/splash-loader';
 import { EmptyState } from '@/components/ui/empty-state';
 import { catalogFor } from '@/i18n/catalog';
 import { loadLocale, useLocale } from '@/lib/app-locale';
 import { getCurrentUser, onSessionChange, type User } from '@/lib/auth';
 import '@/lib/reminders';
+import { StripeRoot } from '@/lib/stripe-sheet';
 import { colors } from '@/theme';
 
 // Короткий минимум, чтобы заставка не мигала; остальное время задаёт реальная готовность.
@@ -118,6 +120,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+    <StripeRoot>
     <ThemeProvider value={navTheme}>
       <StatusBar style="light" />
       <Stack
@@ -145,6 +148,7 @@ export default function RootLayout() {
         <Stack.Screen name="account/notifications" options={{ animation: 'default' }} />
         <Stack.Screen name="account/dancer-profile" options={{ animation: 'default' }} />
         <Stack.Screen name="onboarding/dancer" options={{ animation: 'default' }} />
+        <Stack.Screen name="dance-match" options={{ animation: 'default' }} />
         <Stack.Screen name="booking/[id]/pass" options={{ animation: 'default' }} />
         <Stack.Screen name="booking/[id]/reschedule" options={{ animation: 'default' }} />
         <Stack.Screen name="booking/[id]/review" options={{ animation: 'default' }} />
@@ -184,7 +188,9 @@ export default function RootLayout() {
       <Stack.Screen name="cities/[city]/[district]" options={{ animation: 'default' }} />
         <Stack.Screen name="book/[instructor]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
       </Stack>
+      <TestCardStubHost />
     </ThemeProvider>
+    </StripeRoot>
     </GestureHandlerRootView>
   );
 }

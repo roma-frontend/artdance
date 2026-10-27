@@ -13,7 +13,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors, gradients, shadow } from '@/theme';
+import { colors } from '@/theme';
 
 /** Пульсирующая точка «онлайн»: ореол расходится и гаснет. */
 export function PulseDot({ color = colors.success, size = 8 }: { color?: string; size?: number }) {
@@ -71,7 +71,7 @@ export function CountUp({ value, style }: { value: number; style?: StyleProp<Tex
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
-/** Герой-знак: вращающееся градиентное кольцо, «дышащее» свечение и щит по центру. */
+/** Герой-знак: тонкое золотое кольцо с бегущей точкой, матовый диск и щит. Все слои внутри размера, без теней. */
 export function ShieldOrb({ size = 112, icon = 'shield-checkmark' }: { size?: number; icon?: IconName }) {
   const spin = useSharedValue(0);
   const breathe = useSharedValue(0);
@@ -79,57 +79,35 @@ export function ShieldOrb({ size = 112, icon = 'shield-checkmark' }: { size?: nu
 
   useEffect(() => {
     if (reduceMotion) return;
-    spin.value = withRepeat(withTiming(1, { duration: 9000, easing: Easing.linear }), -1, false);
-    breathe.value = withRepeat(withTiming(1, { duration: 2400, easing: Easing.inOut(Easing.sin) }), -1, true);
+    spin.value = withRepeat(withTiming(1, { duration: 7000, easing: Easing.linear }), -1, false);
+    breathe.value = withRepeat(withTiming(1, { duration: 3200, easing: Easing.inOut(Easing.sin) }), -1, true);
     return () => {
       cancelAnimation(spin);
       cancelAnimation(breathe);
     };
   }, [spin, breathe, reduceMotion]);
 
-  const ring = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
-  const orbit = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
-  const glow = useAnimatedStyle(() => ({
-    opacity: 0.35 + breathe.value * 0.45,
-    transform: [{ scale: 0.9 + breathe.value * 0.18 }],
-  }));
+  const arc = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
+  const glow = useAnimatedStyle(() => ({ opacity: interpolate(breathe.value, [0, 1], [0.14, 0.26]) }));
 
-  const ringInset = Math.round(size * 0.05);
+  const radius = size / 2;
+  const stroke = Math.max(1, Math.round(size * 0.014));
+  const coreInset = Math.round(size * 0.12);
   return (
-    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      <Animated.View pointerEvents="none" style={[styles.glow, { width: size * 1.5, height: size * 1.5, borderRadius: size * 0.75 }, glow]} />
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.orbit,
-          {
-            width: size * 1.12,
-            height: size * 1.12,
-            left: -size * 0.06,
-            top: -size * 0.06,
-            borderRadius: size * 0.56,
-          },
-          orbit,
-        ]}
-      >
-        <View style={[styles.orbitDot, { left: size * 0.56 - 3, top: -3 }]} />
+    <View style={[styles.orb, { width: size, height: size, borderRadius: radius }]}>
+      <Animated.View pointerEvents="none" style={[styles.orbGlow, { borderRadius: radius }, glow]} />
+      <View pointerEvents="none" style={[styles.orbTrack, { borderRadius: radius }]} />
+      <Animated.View pointerEvents="none" style={[styles.orbArc, { borderRadius: radius, borderWidth: stroke }, arc]}>
+        <View style={[styles.orbDot, { left: radius - 2.5, top: -stroke }]} />
       </Animated.View>
-      <Animated.View style={[{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }, ring]}>
-        <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-      </Animated.View>
-      <View
-        style={[
-          styles.core,
-          {
-            top: ringInset + 3,
-            left: ringInset + 3,
-            right: ringInset + 3,
-            bottom: ringInset + 3,
-            borderRadius: size / 2,
-          },
-        ]}
-      >
-        <Ionicons name={icon} size={Math.round(size * 0.38)} color={colors.accentBright} />
+      <View style={[styles.core, { top: coreInset, left: coreInset, right: coreInset, bottom: coreInset, borderRadius: radius }]}>
+        <LinearGradient
+          colors={['rgba(139,26,43,0.45)', 'rgba(11,8,9,0.96)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <Ionicons name={icon} size={Math.round(size * 0.36)} color={colors.metal} />
       </View>
     </View>
   );
@@ -153,10 +131,12 @@ export function GlassCard({ children, style }: { children: ReactNode; style?: St
 
 const styles = StyleSheet.create({
   halo: { position: 'absolute' },
-  glow: { position: 'absolute', backgroundColor: colors.accentBright, ...shadow },
-  orbit: { position: 'absolute', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(226,182,110,0.45)' },
-  orbitDot: { position: 'absolute', width: 6, height: 6, borderRadius: 3, backgroundColor: colors.metal },
-  core: { position: 'absolute', backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
+  orb: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  orbGlow: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.accentBright },
+  orbTrack: { ...StyleSheet.absoluteFillObject, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(226,182,110,0.22)' },
+  orbArc: { ...StyleSheet.absoluteFillObject, borderColor: 'transparent', borderTopColor: colors.metal },
+  orbDot: { position: 'absolute', width: 5, height: 5, borderRadius: 3, backgroundColor: colors.metal },
+  core: { position: 'absolute', overflow: 'hidden', backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   glassCard: {
     borderRadius: 20,
     borderWidth: StyleSheet.hairlineWidth,

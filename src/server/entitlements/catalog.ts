@@ -45,6 +45,11 @@ export const entitlementFeatureCatalog: readonly FeatureMeta[] = [
   { key: 'push', labelKey: 'push', tier: 'full', group: 'platform', docsRef: 'docs/07-feature-backlog.md C-07 — web push' },
   { key: 'boost', labelKey: 'boost', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md B-07 — промо-размещение' },
   { key: 'cms', labelKey: 'cms', tier: 'mvp', group: 'platform', docsRef: 'docs/06-implementation-plan.md — базовая админка' },
+  { key: 'calendarSync', labelKey: 'calendarSync', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md — синхронизация с календарём (phase3)' },
+  { key: 'forYou', labelKey: 'forYou', tier: 'full', group: 'content', docsRef: 'docs/07-feature-backlog.md — персональная подборка по анкете танцора' },
+  { key: 'liveActivities', labelKey: 'liveActivities', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md — Live Activity (iOS) для занятий' },
+  { key: 'homeWidgets', labelKey: 'homeWidgets', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md — виджет ближайшего занятия (iOS)' },
+  { key: 'dancePartner', labelKey: 'dancePartner', tier: 'premium', group: 'content', docsRef: 'docs/07-feature-backlog.md — подбор партнёра по совместимости анкет' },
 ] as const;
 
 /**
@@ -65,6 +70,11 @@ export const presetDefaults: Record<EntitlementPreset, Record<FeatureKey, boolea
     push: false,
     boost: false,
     cms: true,
+    calendarSync: false,
+    forYou: false,
+    liveActivities: false,
+    homeWidgets: false,
+    dancePartner: false,
   },
   full: {
     shop: true,
@@ -79,6 +89,11 @@ export const presetDefaults: Record<EntitlementPreset, Record<FeatureKey, boolea
     push: true,
     boost: false,
     cms: true,
+    calendarSync: false,
+    forYou: true,
+    liveActivities: false,
+    homeWidgets: false,
+    dancePartner: false,
   },
   premium: {
     shop: true,
@@ -93,6 +108,11 @@ export const presetDefaults: Record<EntitlementPreset, Record<FeatureKey, boolea
     push: true,
     boost: true,
     cms: true,
+    calendarSync: true,
+    forYou: true,
+    liveActivities: true,
+    homeWidgets: true,
+    dancePartner: true,
   },
 } as const;
 

@@ -66,9 +66,11 @@ export default function SignUpScreen() {
     setBusy(true);
     setError(null);
     try {
-      await signUp(name.trim(), email.trim(), password);
+      const user = await signUp(name.trim(), email.trim(), password);
       hapticSuccess();
-      router.replace('/');
+      // Как на вебе: клиент и атлет сразу попадают в анкету.
+      const dancer = user.role === 'CUSTOMER' || user.role === 'ATHLETE';
+      router.replace(dancer ? '/onboarding/dancer' : '/');
     } catch (error: unknown) {
       const code = error instanceof AuthError ? error.message : '';
       if (code.startsWith('USER_ALREADY_EXISTS')) fail(c.auth.signUp.emailTaken);

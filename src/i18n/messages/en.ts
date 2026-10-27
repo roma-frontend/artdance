@@ -1285,6 +1285,11 @@ const en = {
         push: 'Push notifications',
         boost: 'Boost / promotion',
         cms: 'CMS & content blocks',
+        calendarSync: 'Calendar sync',
+        forYou: 'Personal "For you" picks',
+        liveActivities: 'Live Activities (lock screen)',
+        homeWidgets: 'Home-screen widget',
+        dancePartner: 'Dance-partner match',
       },
     },
   reviews: {

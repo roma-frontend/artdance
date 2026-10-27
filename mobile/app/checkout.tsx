@@ -24,7 +24,7 @@ import {
 import { catalogFor } from '@/i18n/catalog';
 import { plural, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
-import { openPaymentUrl } from '@/lib/payment-url';
+import { startPayment } from '@/lib/payment-url';
 import { serverMessageOf } from '@/lib/server-message';
 import { EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
@@ -181,10 +181,13 @@ export default function CheckoutScreen() {
         setPlaced(order);
       }
       const intent = await payMyOrder(order.id, method, locale);
-      if (intent.redirectUrl && !(await openPaymentUrl(intent.redirectUrl))) {
-        // Заказ уже создан: остаёмся на экране, повтор оплатит его же.
-        setFormError(m.bookPayFailed);
-        return;
+      if (intent.redirectUrl) {
+        const outcome = await startPayment(intent);
+        if (outcome === 'UNAVAILABLE') {
+          // Заказ уже создан: остаёмся на экране, повтор оплатит его же.
+          setFormError(m.bookPayFailed);
+          return;
+        }
       }
       router.replace({ pathname: '/account/orders/[orderNumber]', params: { orderNumber: intent.orderNumber || order.orderNumber } });
     } catch (error) {

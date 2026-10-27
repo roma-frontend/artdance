@@ -1273,6 +1273,11 @@ const ru: Messages = {
       push: 'Push-уведомления',
       boost: 'Продвижение',
       cms: 'Контент и блоки',
+      calendarSync: 'Синхронизация с календарём',
+      forYou: 'Персональная подборка «Для тебя»',
+      liveActivities: 'Live Activity на экране блокировки',
+      homeWidgets: 'Виджет на главном экране',
+      dancePartner: 'Подбор партнёра для танцев',
     },
   },
   reviews: {

@@ -208,7 +208,7 @@ export default function AccountScreen() {
   const rowVisible = (row: Row) => !row.feature || entitlements?.[row.feature] === true;
 
   const allQuick: Row[] = [
-    { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52', feature: 'events' },
+    { icon: 'calendar', label: c.account.nav.bookings, path: '/account/bookings', tint: '#C93B52' },
     { icon: 'receipt', label: c.account.nav.orders, path: '/account/orders', tint: '#C9A96A', feature: 'shop' },
     { icon: 'wallet', label: c.account.nav.wallet, path: '/account/wallet', tint: '#3FB984', feature: 'wallet' },
     { icon: 'heart', label: c.account.nav.favorites, path: '/account/favorites', tint: '#E0607E' },

@@ -52,6 +52,25 @@ const guardFiles = walk(SRC)
   .filter(({ path }) => !path.startsWith(SEO_DIR))
   .filter(({ text }) => TUMBLER_IMPORT.test(text));
 
+/**
+ * Мобильное приложение — второй потребитель тумблеров: экраны читают их через
+ * `useEntitlements()` (ответ того же сервиса). Такой экран тоже точка защиты,
+ * иначе ключи, которые живут только в приложении, выглядели бы мёртвыми.
+ */
+const MOBILE_ROOT = join(process.cwd(), 'mobile');
+const mobileGuardFiles = ['app', 'src']
+  .flatMap((dir) => {
+    const abs = join(MOBILE_ROOT, dir);
+    try {
+      return walk(abs);
+    } catch {
+      return [];
+    }
+  })
+  .filter((file) => !/\.test\.tsx?$/.test(file))
+  .map((file) => ({ path: relative(process.cwd(), file), text: readFileSync(file, 'utf8') }))
+  .filter(({ text }) => /\buseEntitlements\s*\(/.test(text));
+
 describe('точки защиты тумблеров', () => {
   it('найдены файлы, где тумблер вообще спрашивают', () => {
     expect(guardFiles.length, 'ни один файл не читает сервис тумблеров').toBeGreaterThan(0);
@@ -59,10 +78,16 @@ describe('точки защиты тумблеров', () => {
 
   for (const meta of entitlementFeatureCatalog) {
     it(`ключ «${meta.key}» читают хотя бы в одном месте`, () => {
-      const hits = guardFiles.filter(({ text }) => new RegExp(`\\b${meta.key}\\b`).test(text));
+      const webHits = guardFiles
+        .filter(({ text }) => new RegExp(`\\b${meta.key}\\b`).test(text))
+        .map(({ path }) => path);
+      const mobileHits = mobileGuardFiles
+        .filter(({ text }) => new RegExp(`\\b${meta.key}\\b`).test(text))
+        .map(({ path }) => path);
+      const hits = [...webHits, ...mobileHits];
 
       expect(
-        hits.map(({ path }) => path),
+        hits,
         `ключ «${meta.key}» (тариф ${meta.tier}) есть в панели, но ни одна страница его не читает — ` +
           'тумблер выглядит рабочим и ничего не включает',
       ).not.toEqual([]);

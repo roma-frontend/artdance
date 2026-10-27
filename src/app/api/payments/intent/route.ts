@@ -30,6 +30,8 @@ const schema = z.object({
   locale: z.string().min(2).max(8).optional(),
   useWallet: z.boolean().optional(),
   fromApp: z.boolean().optional(),
+  /** Диплинк приложения для возврата после оплаты (например artdance://payment/return). */
+  returnTo: z.string().min(1).max(200).optional(),
   /**
    * Идентификатор гостя — тот же, что у его корзины.
    *
@@ -39,6 +41,8 @@ const schema = z.object({
    * не открывает доступ к чужому `userId`-заказу.
    */
   anonymousId: z.string().min(8).max(128).optional(),
+  /** Оплата в нативной форме (PaymentSheet): возвращается clientSecret без redirect. */
+  inAppSheet: z.boolean().optional(),
 });
 
 function json(body: object, status: number, extra: Record<string, string> = {}) {
@@ -82,6 +86,8 @@ export async function POST(request: Request) {
       /* Кошелёк гостю недоступен: баланс принадлежит аккаунту. */
       useWallet: parsed.data.useWallet === true,
       fromApp: parsed.data.fromApp === true,
+      returnTo: parsed.data.returnTo,
+      inAppSheet: parsed.data.inAppSheet === true,
     });
     return json(result, 200);
   } catch (error) {

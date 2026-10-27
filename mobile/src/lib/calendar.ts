@@ -30,11 +30,23 @@ export async function addToCalendar(input: CalendarInput): Promise<boolean> {
     if (endDate <= startDate) endDate = addMinutes(startDate, 60);
   }
 
+  return saveEvent({ title: input.title, startDate, endDate, venue: input.venue, url: input.url });
+}
+
+/** Добавляет уже забронированное занятие: время берётся из брони, поэтому пересчёт не нужен. */
+export async function addBookingToCalendar(input: { title: string; startsAt: string; endsAt: string; venue?: string; url: string }): Promise<boolean> {
+  const startDate = new Date(input.startsAt);
+  let endDate = new Date(input.endsAt);
+  if (endDate <= startDate) endDate = addMinutes(startDate, 60);
+  return saveEvent({ title: input.title, startDate, endDate, venue: input.venue, url: input.url });
+}
+
+async function saveEvent(input: { title: string; startDate: Date; endDate: Date; venue?: string; url: string }): Promise<boolean> {
   const result = await createEventInCalendarAsync(
     {
       title: input.title,
-      startDate,
-      endDate,
+      startDate: input.startDate,
+      endDate: input.endDate,
       location: input.venue,
       notes: input.url,
       timeZone: 'Asia/Yerevan',

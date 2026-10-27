@@ -8,13 +8,15 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/lib/class-time.test.ts src/lib/money.test.ts src/lib/server-message.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/class-time.test.ts src/lib/money.test.ts src/lib/server-message.test.ts src/lib/dance-match.test.ts src/lib/for-you.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/playfair-display": "^0.4.2",
     "@expo/metro-runtime": "~58.0.15",
+    "@expo/ui": "~58.0.23",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-community/datetimepicker": "9.2.1",
+    "@stripe/stripe-react-native": "0.81.0",
     "expo": "~58.0.19",
     "expo-apple-authentication": "~58.0.2",
     "expo-blur": "~58.0.5",
@@ -43,6 +45,7 @@
     "expo-updates": "~58.0.18",
     "expo-video": "~58.0.12",
     "expo-web-browser": "~58.0.6",
+    "expo-widgets": "~58.0.23",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.0",

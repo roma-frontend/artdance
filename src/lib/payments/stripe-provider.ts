@@ -40,6 +40,9 @@ function fromMinor(minor: number, currency: string): Money {
 function mapStripeStatus(pi: Stripe.PaymentIntent): PaymentSnapshot['status'] {
   switch (pi.status) {
     case 'succeeded': return 'PAID';
+    /* requires_payment_method: после отказа карты Stripe возвращает PI сюда же, и клиент может повторить. */
+    case 'requires_payment_method':
+    case 'requires_confirmation':
     case 'requires_action':
     case 'requires_capture':
     case 'processing':
@@ -65,6 +68,30 @@ export function createStripeProvider(): PaymentProvider {
     async createPayment(order: PaymentOrderRef): Promise<PaymentIntent> {
       const stripe = envStripe();
       if (!stripe) throw new PaymentProviderError('stripe', 'STRIPE_SECRET_KEY missing — set in .env/.env.local and Vercel env');
+
+      if (order.inAppSheet) {
+        // PaymentIntent для нативной формы (PaymentSheet). Карта вводится в приложении, на сайт Stripe не уходим.
+        const intent = await stripe.paymentIntents.create(
+          {
+            amount: toMinor(order.amount, order.currencyCode),
+            currency: order.currencyCode.toLowerCase(),
+            automatic_payment_methods: { enabled: true },
+            description: order.description.slice(0, 255),
+            receipt_email: order.customer.email || undefined,
+            metadata: { paymentId: order.paymentId, orderNumber: order.orderNumber },
+          },
+          // Повтор с тем же paymentId вернёт ту же PaymentIntent, а не создаст вторую оплату.
+          { idempotencyKey: `pi:${order.paymentId}` },
+        );
+        if (!intent.client_secret) throw new PaymentProviderError('stripe', 'PaymentIntent returned no client_secret');
+        return {
+          provider: 'stripe',
+          providerTransactionId: intent.id,
+          status: 'PENDING',
+          redirectUrl: null,
+          clientSecret: intent.client_secret,
+        };
+      }
 
       // Hosted Checkout: карта вводится на странице Stripe, мы получаем session.url для redirect.
       const session = await stripe.checkout.sessions.create({

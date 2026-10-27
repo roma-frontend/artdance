@@ -35,6 +35,10 @@ export interface CreateOrderPaymentInput {
   useWallet?: boolean;
   /** Вернуть клиента в приложение: в returnUrl добавляется `app=1`. */
   fromApp?: boolean;
+  /** Диплинк приложения, куда отправить клиента после оплаты. Только вместе с fromApp. */
+  returnTo?: string;
+  /** Оплата нативной формой в приложении: вернуть clientSecret вместо redirect. */
+  inAppSheet?: boolean;
 }
 
 export interface OrderPaymentResult {
@@ -50,6 +54,8 @@ export interface OrderPaymentResult {
   qrPayload: string | null;
   status: PaymentStatus;
   settledByWallet: boolean;
+  /** Секрет для нативной формы. Не сохраняется в БД: Stripe повторно отдаёт его по idempotencyKey. */
+  clientSecret?: string | null;
 }
 
 /** Возвращает заказ с контактами: они уходят провайдеру в выписку. */
@@ -88,6 +94,14 @@ function returnUrlFor(orderNumber: string, locale: string, fromApp: boolean): st
   return absoluteUrl(`/${resolved}${routes.checkoutResult(orderNumber)}${fromApp ? '?app=1' : ''}`);
 }
 
+/*
+ * Провайдер возвращает клиента на наш https-адрес (банки и Stripe не принимают кастомные схемы),
+ * а `/api/payments/return` перенаправляет его в приложение. Без returnTo — прежний путь.
+ */
+function appReturnUrlFor(returnTo: string | undefined, fallback: () => string): string {
+  return returnTo ? absoluteUrl(`/api/payments/return?to=${encodeURIComponent(returnTo)}`) : fallback();
+}
+
 /* Строка платежа уникальна по idempotencyKey, поэтому новая попытка пишется в ту же строку. */
 function isReusableAttempt(existing: { status: string; providerPayload: unknown }): boolean {
   if (existing.status === 'FAILED' || existing.status === 'CANCELLED') return false;
@@ -103,6 +117,10 @@ export interface CreateBookingPaymentInput {
   locale: string;
   /** Вернуть клиента в приложение: возврат на страницу результата с `app=1`. */
   fromApp?: boolean;
+  /** Диплинк приложения, куда отправить клиента после оплаты. Только вместе с fromApp. */
+  returnTo?: string;
+  /** Оплата нативной формой в приложении: вернуть clientSecret вместо redirect. */
+  inAppSheet?: boolean;
 }
 
 export interface BookingPaymentResult {
@@ -114,6 +132,7 @@ export interface BookingPaymentResult {
   redirectUrl: string | null;
   qrPayload: string | null;
   status: PaymentStatus;
+  clientSecret?: string | null;
 }
 
 /**
@@ -152,8 +171,11 @@ export async function createBookingPayment(input: CreateBookingPaymentInput): Pr
     select: { id: true, status: true, providerTransactionId: true, providerPayload: true },
   });
 
-  /* Уже созданная попытка возвращается, а не создаёт вторую оплату. */
-  if (existing?.providerTransactionId && isReusableAttempt(existing)) {
+  /*
+   * Уже созданная попытка возвращается, а не создаёт вторую оплату. Для нативной формы
+   * пропускаем: clientSecret не хранится, а Stripe по idempotencyKey вернёт ту же PaymentIntent.
+   */
+  if (existing?.providerTransactionId && isReusableAttempt(existing) && !input.inAppSheet) {
     const payload = (existing.providerPayload ?? {}) as { redirectUrl?: string; qrPayload?: string };
     return {
       bookingId: booking.id,
@@ -164,6 +186,7 @@ export async function createBookingPayment(input: CreateBookingPaymentInput): Pr
       redirectUrl: payload.redirectUrl ?? null,
       qrPayload: payload.qrPayload ?? null,
       status: existing.status as PaymentStatus,
+      clientSecret: null,
     };
   }
 
@@ -193,9 +216,10 @@ export async function createBookingPayment(input: CreateBookingPaymentInput): Pr
     locale: input.locale,
     customer: { email: booking.customer.email, phone: booking.customer.phone ?? undefined, name: booking.customer.name },
     returnUrl: input.fromApp
-      ? returnUrlFor(booking.reference, input.locale, true)
+      ? appReturnUrlFor(input.returnTo, () => returnUrlFor(booking.reference, input.locale, true))
       : absoluteUrl(`/${isLocale(input.locale) ? input.locale : 'hy'}${routes.accountBookings()}`),
     metadata: { bookingId: booking.id },
+    inAppSheet: input.inAppSheet === true,
   });
 
   await db.payment.update({
@@ -220,6 +244,7 @@ export async function createBookingPayment(input: CreateBookingPaymentInput): Pr
     redirectUrl: intent.redirectUrl,
     qrPayload: intent.qrPayload ?? null,
     status: intent.status,
+    clientSecret: intent.clientSecret ?? null,
   };
 }
 
@@ -335,8 +360,8 @@ export async function createOrderPayment(input: CreateOrderPaymentInput): Promis
     select: { id: true, status: true, providerTransactionId: true, providerPayload: true },
   });
 
-  /* Уже созданная попытка: возвращаем её, а не тянем у клиента вторую оплату. */
-  if (existing?.providerTransactionId && isReusableAttempt(existing)) {
+  /* Уже созданная попытка: возвращаем её, а не тянем у клиента вторую оплату. Нативная форма создаёт заново (см. booking). */
+  if (existing?.providerTransactionId && isReusableAttempt(existing) && !input.inAppSheet) {
     const payload = (existing.providerPayload ?? {}) as { redirectUrl?: string; qrPayload?: string };
     return {
       orderId: order.id,
@@ -350,6 +375,7 @@ export async function createOrderPayment(input: CreateOrderPaymentInput): Promis
       qrPayload: payload.qrPayload ?? null,
       status: existing.status as PaymentStatus,
       settledByWallet: false,
+      clientSecret: null,
     };
   }
 
@@ -383,8 +409,11 @@ export async function createOrderPayment(input: CreateOrderPaymentInput): Promis
     method: input.method,
     locale: input.locale,
     customer: { email: order.contactEmail, phone: order.contactPhone, name: order.contactName },
-    returnUrl: returnUrlFor(order.orderNumber, input.locale, input.fromApp === true),
+    returnUrl: appReturnUrlFor(input.fromApp ? input.returnTo : undefined, () =>
+      returnUrlFor(order.orderNumber, input.locale, input.fromApp === true),
+    ),
     metadata: { orderId: order.id },
+    inAppSheet: input.inAppSheet === true,
   });
 
   await db.payment.update({
@@ -412,5 +441,6 @@ export async function createOrderPayment(input: CreateOrderPaymentInput): Promis
     qrPayload: intent.qrPayload ?? null,
     status: intent.status,
     settledByWallet: false,
+    clientSecret: intent.clientSecret ?? null,
   };
 }

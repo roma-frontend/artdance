@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -26,21 +26,27 @@ import {
   type BookingPass,
   type ClientBookingDetail,
 } from '@/lib/bookings';
+import { addBookingToCalendar } from '@/lib/calendar';
 import { useEntitlements } from '@/lib/entitlements';
 import { dateLabel, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
-import { openPaymentUrl } from '@/lib/payment-url';
+import { nextClassProps } from '@/lib/next-class';
+import { paymentOutcomeText, startPayment } from '@/lib/payment-url';
+import { endNextClassActivities, nativeWidgetsAvailable, startNextClassActivity } from '@/lib/native-widgets';
 import { serverMessageOf } from '@/lib/server-message';
 import { useAppActive } from '@/lib/use-app-active';
 import { useBrightnessBoost } from '@/lib/use-brightness-boost';
 import { colors, radius, space, type } from '@/theme';
 
-/** Пропуск на занятие. Выключен тумблером `events` — экран недоступен, QR не запрашивается. */
+/** Подписи действий пропуска. Копия локальная, как и в карточке занятия. */
+const PASS_ACTIONS: Record<string, { calendar: string; liveActivity: string }> = {
+  ru: { calendar: 'Добавить в календарь', liveActivity: 'Показать на экране блокировки' },
+  en: { calendar: 'Add to calendar', liveActivity: 'Show on lock screen' },
+  hy: { calendar: 'Ավելացնել օրացույցում', liveActivity: 'Ցույց տալ կողպէքրանին' },
+};
+
 export default function BookingPassScreen() {
-  const entitlements = useEntitlements();
-  if (entitlements === null) return null;
-  if (entitlements.events !== true) return <Redirect href="/account/bookings" />;
   return <BookingPassContent />;
 }
 
@@ -52,6 +58,10 @@ function BookingPassContent() {
   const f = c.footer;
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const entitlements = useEntitlements();
+  const calendarOn = entitlements?.calendarSync === true;
+  const liveActivitiesOn = entitlements?.liveActivities === true;
+  const actions = PASS_ACTIONS[locale] ?? PASS_ACTIONS.en;
   const [pass, setPass] = useCachedState<BookingPass>(`booking.pass.${id}`, 'user');
   const [booking, setBooking] = useCachedState<ClientBookingDetail>(`booking.detail.${id}`, 'user');
   const [failed, setFailed] = useState<string | null>(null);
@@ -81,6 +91,7 @@ function BookingPassContent() {
     setCancelling(true);
     try {
       const result = await cancelMyBooking(id);
+      endNextClassActivities().catch(() => undefined);
       const rate = result.booking.totalPrice > 0 ? Math.round((result.fee / result.booking.totalPrice) * 100) : 0;
       Alert.alert(result.outcome === 'fee' ? c.booking.cancelLate.replace('{rate}', `${rate}%`) : c.booking.cancelFree);
       await load();
@@ -91,12 +102,35 @@ function BookingPassContent() {
     }
   }
 
+  async function onCalendar() {
+    if (!booking) return;
+    try {
+      await addBookingToCalendar({
+        title: booking.classTitle ?? 'ArtDance',
+        startsAt: booking.startsAt,
+        endsAt: booking.endsAt,
+        venue: booking.venueName ?? undefined,
+        url: `artdance://booking/${id}/pass`,
+      });
+    } catch (error) {
+      Alert.alert(error instanceof Error ? error.message : String(error));
+    }
+  }
+
+  async function onLiveActivity() {
+    if (!booking) return;
+    const started = await startNextClassActivity(nextClassProps(booking, locale), new Date(booking.endsAt)).catch(() => false);
+    if (!started) Alert.alert(t.catalogError);
+  }
+
   async function onPay() {
     if (paying) return;
     setPaying(true);
     try {
-      const { redirectUrl } = await payBooking(id, 'CARD');
-      if (!(await openPaymentUrl(redirectUrl))) Alert.alert(t.bookPayFailed);
+      const payment = await payBooking(id, 'CARD');
+      const outcome = await startPayment(payment);
+      if (outcome === 'PAID') await load();
+      Alert.alert(paymentOutcomeText(outcome, t));
     } catch (error) {
       Alert.alert(serverMessageOf(error) ?? t.bookPayFailed);
     } finally {
@@ -197,6 +231,12 @@ function BookingPassContent() {
             </>
           ) : null}
         </Animated.View>
+
+        {passActive && calendarOn ? <Button label={actions.calendar} variant="ghost" onPress={onCalendar} /> : null}
+
+        {passActive && liveActivitiesOn && nativeWidgetsAvailable() ? (
+          <Button label={actions.liveActivity} variant="ghost" onPress={onLiveActivity} />
+        ) : null}
 
         {canPay ? <Button label={t.payBookingCta} onPress={onPay} busy={paying} /> : null}
 

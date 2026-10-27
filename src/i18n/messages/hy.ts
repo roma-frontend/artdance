@@ -1280,6 +1280,11 @@ const hy: Messages = {
       push: "Push",
       boost: "Առաջխաղացում",
       cms: "Բովանդակություն",
+      calendarSync: "Օրացույցի համաժամեցում",
+      forYou: "Անձնական «Քեզ համար» ընտրանի",
+      liveActivities: "Live Activity կողպէկրանին",
+      homeWidgets: "Գլխավոր էկրանի վիջեթ",
+      dancePartner: "Պարային զուգընկերոջ ընտրություն",
     },
   },
   reviews: {

@@ -26,7 +26,7 @@ import { plural, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enterItem, EASE_OUT } from '@/lib/motion';
 import { serverMessageOf } from '@/lib/server-message';
-import { openPaymentUrl } from '@/lib/payment-url';
+import { paymentOutcomeText, startPayment } from '@/lib/payment-url';
 import { payBooking } from '@/lib/bookings';
 import { colors, radius, space, type } from '@/theme';
 
@@ -119,8 +119,9 @@ export default function EventRegisterScreen() {
         if (result.booking.totalPrice > 0) {
           try {
             const payment = await payBooking(result.booking.id, 'CARD');
-            if (await openPaymentUrl(payment.redirectUrl)) {
-              setSuccessText(c.events.bookingSuccess);
+            const outcome = await startPayment(payment);
+            if (outcome !== 'UNAVAILABLE') {
+              setSuccessText(paymentOutcomeText(outcome, t));
               setSent(true);
               return;
             }

@@ -13,8 +13,9 @@ import { bookingStatusLabel, canCancelBooking, canPayBooking, listMyBookings, pa
 import { dateLabel, price } from '@/lib/format';
 import { useEntitlements } from '@/lib/entitlements';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
-import { openPaymentUrl } from '@/lib/payment-url';
+import { paymentOutcomeText, startPayment } from '@/lib/payment-url';
 import { syncBookingReminders } from '@/lib/reminders';
+import { syncNextClassWidget } from '@/lib/next-class';
 import { serverMessageOf } from '@/lib/server-message';
 import { useAppActive } from '@/lib/use-app-active';
 import { enterItem, EASE_OUT } from '@/lib/motion';
@@ -30,13 +31,15 @@ export default function MyBookingsScreen() {
   const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);
-  const passEnabled = useEntitlements()?.events === true;
+  const entitlements = useEntitlements();
+  const homeWidgetsOn = entitlements?.homeWidgets === true;
 
   const load = useCallback(async () => {
     try {
       const list = await listMyBookings();
       setBookings(list);
       setFailed(null);
+      if (homeWidgetsOn) syncNextClassWidget(list, locale);
       syncBookingReminders(
         list.map((item) => ({
           id: item.id,
@@ -49,7 +52,7 @@ export default function MyBookingsScreen() {
     } catch (error) {
       setFailed(serverMessageOf(error) ?? t.catalogError);
     }
-  }, []);
+  }, [homeWidgetsOn, locale]);
 
   useFocusEffect(
     useCallback(() => {
@@ -68,8 +71,10 @@ export default function MyBookingsScreen() {
     if (payingId) return;
     setPayingId(bookingId);
     try {
-      const { redirectUrl } = await payBooking(bookingId, 'CARD');
-      if (!(await openPaymentUrl(redirectUrl))) Alert.alert(t.bookPayFailed);
+      const payment = await payBooking(bookingId, 'CARD');
+      const outcome = await startPayment(payment);
+      await load();
+      Alert.alert(paymentOutcomeText(outcome, t));
     } catch (error) {
       Alert.alert(serverMessageOf(error) ?? t.bookPayFailed);
     } finally {
@@ -110,9 +115,7 @@ export default function MyBookingsScreen() {
         renderItem={({ item, index }) => (
           <Animated.View entering={enterItem(index)} layout={LinearTransition.springify().damping(18)}>
             <PressableScale
-              onPress={() => {
-                if (passEnabled) router.push({ pathname: '/booking/[id]/pass', params: { id: item.id } });
-              }}
+              onPress={() => router.push({ pathname: '/booking/[id]/pass', params: { id: item.id } })}
               accessibilityRole="button"
               style={styles.card}
             >
@@ -132,12 +135,10 @@ export default function MyBookingsScreen() {
                   <Text style={styles.payText}>{t.payBookingCta}</Text>
                 </PressableScale>
               ) : null}
-              {passEnabled ? (
-                <View style={styles.openRow}>
-                  <Ionicons name="qr-code-outline" size={14} color={colors.metal} />
-                  <Text style={styles.openText}>{c.footer.passTitle}</Text>
-                </View>
-              ) : null}
+              <View style={styles.openRow}>
+                <Ionicons name="qr-code-outline" size={14} color={colors.metal} />
+                <Text style={styles.openText}>{c.footer.passTitle}</Text>
+              </View>
             </PressableScale>
           </Animated.View>
         )}

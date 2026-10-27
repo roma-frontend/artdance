@@ -2,6 +2,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { deviceLocale } from '@/lib/i18n';
 
 import { API_URL } from './config';
+import { paymentReturnUrl, type PaymentStart } from './payment-url';
 import { readServerMessage } from './server-message';
 import { getSessionToken } from './session';
 
@@ -164,9 +165,15 @@ async function postAuthed<T>(path: string, body: object): Promise<T> {
 
 export type PayMethod = 'CARD' | 'ARCA' | 'IDRAM' | 'TELCELL' | 'ARCA_QR';
 
-/** Оплата конкретной брони: сервер возвращает ссылку провайдера. */
-export function payBooking(bookingId: string, method: PayMethod): Promise<{ redirectUrl: string | null }> {
-  return postAuthed(`/api/booking/${encodeURIComponent(bookingId)}/pay`, { method, locale: deviceLocale(undefined), fromApp: true });
+/** Оплата конкретной брони: сервер возвращает ссылку провайдера и id транзакции для сверки. */
+export function payBooking(bookingId: string, method: PayMethod): Promise<PaymentStart> {
+  return postAuthed(`/api/booking/${encodeURIComponent(bookingId)}/pay`, {
+    method,
+    locale: deviceLocale(undefined),
+    fromApp: true,
+    returnTo: paymentReturnUrl(),
+    inAppSheet: true,
+  });
 }
 
 /** Отзыв по своей брони; сервер проверяет владельца, статус, окно и публикует после модерации. */

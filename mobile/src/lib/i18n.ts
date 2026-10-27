@@ -52,7 +52,9 @@ const dictionary: Dictionary = {
     bookDone: 'Դուք գրանցված եք',
     bookSlotTaken: 'Այս ժամը արդեն զբաղված է',
     bookFailed: 'Չհաջողվեց գրանցվել',
-    bookPayStarted: 'Գրանցումը հաստատված է։ Ավարտեք վճարումը բացված էջում',
+    bookPaid: 'Վճարումը ստացվել է',
+    bookPayPending: 'Վճարումը մշակվում է։ Կարգավիճակը կթարմացվի «Իմ գրանցումները» բաժնում։',
+    bookPayDeclined: 'Վճարումը չանցավ։ Կրկնել կարող եք «Իմ գրանցումները» բաժնում կամ տեղում։',
     bookPayFailed: 'Չհաջողվեց սկսել վճարումը',
     bookPayLater: 'Գրանցումը հաստատված է։ Վճարել կարող եք ավելի ուշ՝ «Իմ գրանցումները» բաժնում կամ տեղում։',
     showPassword: 'Ցույց տալ գաղտնաբառը',
@@ -208,7 +210,9 @@ const dictionary: Dictionary = {
     bookDone: 'Вы записаны',
     bookSlotTaken: 'Это время уже занято',
     bookFailed: 'Не удалось записаться',
-    bookPayStarted: 'Запись подтверждена. Завершите оплату на открывшейся странице',
+    bookPaid: 'Оплата получена',
+    bookPayPending: 'Оплата обрабатывается. Статус обновится в «Моих записях».',
+    bookPayDeclined: 'Оплата не прошла. Повторить можно в «Моих записях» или на месте.',
     bookPayFailed: 'Не удалось начать оплату',
     bookPayLater: 'Запись подтверждена. Оплатить можно позже в «Моих записях» или на месте.',
     showPassword: 'Показать пароль',
@@ -364,7 +368,9 @@ const dictionary: Dictionary = {
     bookDone: 'You are booked',
     bookSlotTaken: 'That time is already taken',
     bookFailed: 'Could not book',
-    bookPayStarted: 'Booking confirmed. Finish payment on the page that opened',
+    bookPaid: 'Payment received',
+    bookPayPending: 'Payment is being processed. The status will update in My bookings.',
+    bookPayDeclined: 'Payment was declined. You can try again in My bookings or at the studio.',
     bookPayFailed: 'Could not start payment',
     bookPayLater: 'Booking confirmed. You can pay later in My bookings or at the studio.',
     showPassword: 'Show password',
@@ -522,7 +528,9 @@ export type MessageKey =
   | 'bookDone'
   | 'bookSlotTaken'
   | 'bookFailed'
-  | 'bookPayStarted'
+  | 'bookPaid'
+  | 'bookPayPending'
+  | 'bookPayDeclined'
   | 'bookPayFailed'
   | 'bookPayLater'
   | 'showPassword'

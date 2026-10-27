@@ -111,7 +111,29 @@
           "microphonePermission": "Нужен микрофон, чтобы продиктовать сообщение ассистенту.",
           "speechRecognitionPermission": "Распознавание речи нужно, чтобы превращать голос в текст для ассистента."
         }
-      ]
+      ],
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.am.artdance.app",
+          "widgets": [
+            {
+              "name": "NextClassWidget",
+              "displayName": "ArtDance: next class",
+              "description": "Time and title of your next booked class.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ],
+                "initialLayout": "widgets/NextClassWidget.tsx"
+              },
+              "android": null
+            }
+          ]
+        }
+      ],
+      ["@stripe/stripe-react-native", {}]
     ],
     "experiments": {
       "typedRoutes": true

@@ -23,6 +23,11 @@ export const features = {
   push: true,
   boost: true,
   cms: true,
+  calendarSync: true,
+  forYou: true,
+  liveActivities: true,
+  homeWidgets: true,
+  dancePartner: true,
 } as const;
 
 export type FeatureKey = keyof typeof features;

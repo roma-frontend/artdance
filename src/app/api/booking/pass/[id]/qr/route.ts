@@ -7,8 +7,6 @@
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
 import { signPassToken } from '@/server/booking/pass-token';
-import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
-import { httpStatusFor, isDomainError } from '@/domain/errors';
 import { clientEnv } from '@/config/env';
 
 export const runtime = 'nodejs';
@@ -18,12 +16,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const { id } = await ctx.params;
   const caller = await getCaller();
   if (!caller) return Response.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  try {
-    await assertEntitlementOrThrow('events');
-  } catch (error) {
-    if (isDomainError(error)) return Response.json({ error: error.code }, { status: httpStatusFor(error.code) });
-    throw error;
-  }
   const booking = await db.booking.findUnique({
     where: { id },
     select: { id: true, customerId: true, reference: true },

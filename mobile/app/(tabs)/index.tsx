@@ -31,6 +31,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FiltersSheet } from '@/components/filters-sheet';
+import { ForYouSection } from '@/components/for-you-section';
 import { InstructorPeek } from '@/components/instructor-peek';
 import { PosterRowSkeleton, Skeleton } from '@/components/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -122,6 +123,8 @@ export default function HomeScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const entitlements = useEntitlements();
   const eventsOn = entitlements?.events === true;
+  const forYouOn = entitlements?.forYou === true;
+  const dancePartnerOn = entitlements?.dancePartner === true;
   const scrollRef = useRef<ScrollViewInstance>(null);
   useScrollToTop(scrollRef);
 
@@ -532,6 +535,14 @@ export default function HomeScreen() {
               )}
             </View>
 
+            {forYouOn ? (
+              <ForYouSection
+                locale={locale}
+                onOpen={(slug) => openDetail('classes', slug)}
+                onDancePartner={dancePartnerOn ? () => router.push('/dance-match') : undefined}
+              />
+            ) : null}
+
             <View style={styles.block}>
               <SectionHeader
                 eyebrow={t.home.instructors.eyebrow}
@@ -597,13 +608,14 @@ export default function HomeScreen() {
           key={peek.slug}
           instructor={peek}
           onClose={() => setPeek(null)}
+          // Даём превью отыграть выход, прежде чем начнётся переход: иначе два перехода идут одновременно.
           onOpenProfile={(slug) => {
             setPeek(null);
-            openDetail('instructors', slug);
+            setTimeout(() => openDetail('instructors', slug), 200);
           }}
           onBook={(slug) => {
             setPeek(null);
-            router.push({ pathname: '/book/[instructor]', params: { instructor: slug } });
+            setTimeout(() => router.push({ pathname: '/book/[instructor]', params: { instructor: slug } }), 200);
           }}
         />
       ) : null}

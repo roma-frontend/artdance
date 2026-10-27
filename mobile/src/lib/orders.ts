@@ -85,6 +85,23 @@ export async function reconcileMyPayment(paymentId: string): Promise<string> {
   return body.status;
 }
 
+/**
+ * DEV (Expo Go): тестовое подтверждение PaymentIntent. Сервер отвечает 404 вне тестового режима Stripe.
+ * Номер карты сюда не передаётся: только сценарий. Возвращает статус PaymentIntent из Stripe.
+ */
+export async function confirmTestPayment(providerTransactionId: string, scenario: 'success' | 'declined'): Promise<string> {
+  const token = await getSessionToken();
+  if (!token) throw new OrdersError('UNAUTHORIZED', 401);
+  const response = await fetch(`${API_URL}/api/payments/dev-confirm`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ providerTransactionId, scenario }),
+  });
+  if (!response.ok) throw await failureFor(response);
+  const body = (await response.json()) as { status: string };
+  return body.status;
+}
+
 export function orderStatusLabel(status: string, c: ReturnType<typeof catalogFor>): string {
   const labels = c.status.order as Record<string, string>;
   return labels[status.toLowerCase()] ?? status;

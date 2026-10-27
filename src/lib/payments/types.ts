@@ -56,6 +56,11 @@ export interface PaymentOrderRef {
   returnUrl: string;
   /** Произвольные метаданные, которые провайдер вернёт в webhook. */
   metadata?: Record<string, string>;
+  /**
+   * Оплата внутри приложения (нативная форма провайдера, без редиректа).
+   * Провайдер, который не умеет inline, игнорирует флаг и отдаёт redirectUrl.
+   */
+  inAppSheet?: boolean;
 }
 
 /** Результат создания платежа: куда отправить клиента. */
@@ -64,8 +69,13 @@ export interface PaymentIntent {
   /** Идентификатор транзакции на стороне провайдера. */
   providerTransactionId: string;
   status: PaymentStatus;
-  /** Redirect на страницу оплаты. `null`, если оплата inline (QR/кошелёк). */
+  /** Redirect на страницу оплаты. `null`, если оплата inline (QR/кошелёк/нативная форма). */
   redirectUrl: string | null;
+  /**
+   * Секрет для нативной формы оплаты (Stripe PaymentSheet). Передаётся только
+   * в ответе на создание платежа и не хранится в БД.
+   */
+  clientSecret?: string | null;
   /** Для ArcaQR и подобных: данные для отрисовки QR. */
   qrPayload?: string;
   /** Когда истекает возможность оплатить. */

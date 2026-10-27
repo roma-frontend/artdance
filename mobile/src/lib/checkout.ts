@@ -2,6 +2,7 @@ import { catalogFor } from '@/i18n/catalog';
 import { deviceLocale } from '@/lib/i18n';
 
 import { API_URL } from './config';
+import { paymentReturnUrl } from './payment-url';
 import { readServerMessage } from './server-message';
 import { getSessionToken } from './session';
 
@@ -34,6 +35,9 @@ export type PaymentIntentResult = {
   orderNumber: string;
   status: string;
   redirectUrl: string | null;
+  providerTransactionId: string | null;
+  /** Секрет нативной формы Stripe; есть только при inAppSheet. */
+  clientSecret?: string | null;
 };
 
 export class CheckoutError extends Error {
@@ -108,7 +112,7 @@ export async function payMyOrder(orderId: string, method: MobilePaymentMethod, l
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ orderId, method, locale, useWallet: true, fromApp: true }),
+    body: JSON.stringify({ orderId, method, locale, useWallet: true, fromApp: true, returnTo: paymentReturnUrl(), inAppSheet: true }),
   });
   if (!response.ok) throw await failureFor(response);
   return (await response.json()) as PaymentIntentResult;

@@ -23,6 +23,10 @@ const schema = z.object({
   method: z.enum(paymentMethods as unknown as [string, ...string[]]),
   locale: z.string().min(2).max(8).optional(),
   fromApp: z.boolean().optional(),
+  /** Диплинк приложения для возврата после оплаты (например artdance://payment/return). */
+  returnTo: z.string().min(1).max(200).optional(),
+  /** Оплата в нативной форме (PaymentSheet): возвращается clientSecret без redirect. */
+  inAppSheet: z.boolean().optional(),
 });
 
 function json(body: object, status: number, extra: Record<string, string> = {}) {
@@ -59,6 +63,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       method: parsed.data.method as (typeof paymentMethods)[number],
       locale: parsed.data.locale ?? caller.locale ?? 'hy',
       fromApp: parsed.data.fromApp === true,
+      returnTo: parsed.data.returnTo,
+      inAppSheet: parsed.data.inAppSheet === true,
     });
     return json(result, 200);
   } catch (error) {

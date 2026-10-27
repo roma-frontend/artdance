@@ -102,6 +102,7 @@ function CatalogDetailBody() {
   const { section, slug } = useLocalSearchParams<{ section: string; slug: string }>();
   const locale = deviceLocale(undefined);
   const m = messagesFor(locale);
+  const entitlements = useEntitlements();
   const t = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -372,7 +373,7 @@ function CatalogDetailBody() {
             {valid === 'classes' ? (
               <GlassButton icon="notifications-outline" label={REMIND_LABEL[locale] ?? REMIND_LABEL.en} onPress={remind} />
             ) : null}
-            {valid === 'classes' || valid === 'events' ? (
+            {(valid === 'classes' || valid === 'events') && entitlements?.calendarSync === true ? (
               <GlassButton icon="calendar-outline" label={CALENDAR_LABEL[locale] ?? CALENDAR_LABEL.en} onPress={addEvent} />
             ) : null}
             {favoriteKind ? (

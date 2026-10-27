@@ -23,7 +23,7 @@ import { API_URL } from '@/lib/config';
 import { useEntitlements } from '@/lib/entitlements';
 import { dateLabel, initials, plural, price, studioDayKey } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
-import { openPaymentUrl } from '@/lib/payment-url';
+import { paymentOutcomeText, paymentReturnUrl, startPayment as runPayment } from '@/lib/payment-url';
 import { resolveServerMessage, serverMessageOf } from '@/lib/server-message';
 import { getSessionToken } from '@/lib/session';
 import { colors, fill, fonts, gradients, radius, space, type } from '@/theme';
@@ -201,11 +201,12 @@ export default function BookScreen() {
     try {
       const payResponse = await authed(`/api/booking/${bookingId}/pay`, {
         method: 'POST',
-        body: JSON.stringify({ method: payMethod, locale, fromApp: true }),
+        body: JSON.stringify({ method: payMethod, locale, fromApp: true, returnTo: paymentReturnUrl(), inAppSheet: true }),
       });
-      const payment = await readJson<{ redirectUrl: string | null }>(payResponse);
-      if (await openPaymentUrl(payment.redirectUrl)) {
-        setResult({ kind: 'success', text: t.bookPayStarted, paying: true });
+      const payment = await readJson<{ redirectUrl: string | null; providerTransactionId: string | null; clientSecret?: string | null }>(payResponse);
+      const outcome = await runPayment(payment);
+      if (outcome !== 'UNAVAILABLE') {
+        setResult({ kind: 'success', text: paymentOutcomeText(outcome, t), paying: true });
         return;
       }
     } catch {
