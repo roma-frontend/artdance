@@ -132,9 +132,9 @@ export function GlassCard({ children, style }: { children: ReactNode; style?: St
 const styles = StyleSheet.create({
   halo: { position: 'absolute' },
   orb: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  orbGlow: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.accentBright },
-  orbTrack: { ...StyleSheet.absoluteFillObject, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(226,182,110,0.22)' },
-  orbArc: { ...StyleSheet.absoluteFillObject, borderColor: 'transparent', borderTopColor: colors.metal },
+  orbGlow: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: colors.accentBright },
+  orbTrack: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(226,182,110,0.22)' },
+  orbArc: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, borderColor: 'transparent', borderTopColor: colors.metal },
   orbDot: { position: 'absolute', width: 5, height: 5, borderRadius: 3, backgroundColor: colors.metal },
   core: { position: 'absolute', overflow: 'hidden', backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   glassCard: {
