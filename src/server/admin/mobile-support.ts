@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { getServerEnv } from '@/config/env';
 import { isEntitlementOwner, isSupportOperator } from '@/config/security';
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
@@ -61,15 +62,16 @@ export async function getMobileSupportSnapshot(canManageEntitlements: boolean) {
     };
   });
 
-  const paymentProvider = process.env.PAYMENT_PROVIDER ?? 'mock';
+  const env = getServerEnv();
+  const paymentProvider = env.PAYMENT_PROVIDER;
   const integrations = [
     { key: 'payments', provider: paymentProvider, connected: paymentProvider !== 'mock' },
-    { key: 'email', provider: 'resend', connected: Boolean(process.env.RESEND_API_KEY) },
-    { key: 'storage', provider: 'r2', connected: Boolean(process.env.R2_ACCESS_KEY_ID) },
+    { key: 'email', provider: 'resend', connected: Boolean(env.RESEND_API_KEY) },
+    { key: 'storage', provider: 'r2', connected: Boolean(env.R2_ACCESS_KEY_ID) },
     {
       key: 'sms',
-      provider: process.env.SMS_PROVIDER ?? 'mock',
-      connected: (process.env.SMS_PROVIDER ?? 'mock') !== 'mock' && Boolean(process.env.SMS_API_KEY),
+      provider: env.SMS_PROVIDER,
+      connected: env.SMS_PROVIDER !== 'mock' && Boolean(env.SMS_API_KEY),
     },
   ];
 
