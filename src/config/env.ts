@@ -176,6 +176,8 @@ const serverSchema = z.object({
   EMAIL_FROM: optionalEmail,
   EMAIL_REPLY_TO: optionalEmail,
   DEV_TWO_FACTOR_TEST_CODE: optionalString,
+  /** Временный обход 2FA до домена и провайдера. Только значение 'true' включает. */
+  TWO_FACTOR_TEMP_BYPASS: optionalString,
   SMS_PROVIDER: z.enum(['twilio', 'local-aggregator', 'mock']).default('mock'),
   SMS_API_KEY: optionalString,
   SMS_API_SECRET: optionalString,

@@ -106,6 +106,7 @@ interface SecondFactorSubject {
 }
 
 function isSecondFactorRequired(user: SecondFactorSubject): boolean {
+  if (twoFactorBypassed) return false;
   if (user.twoFactorEnabled) return true;
   return secondFactorRequiredRoles.includes(user.role ?? '') || isSupportOperator(user);
 }
@@ -124,6 +125,9 @@ function trustSignature(secret: string, message: string): string {
 type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 
 const env = getServerEnv();
+
+/* Временно выключает 2FA для всех входов (TWO_FACTOR_TEMP_BYPASS=true). */
+const twoFactorBypassed = env.TWO_FACTOR_TEMP_BYPASS === 'true';
 
 /**
  * Доверенные источники для проверки Origin.
@@ -594,7 +598,7 @@ export const auth = betterAuth({
      * Доверие устройству: после подтверждения браузер не спрашивает код, пока не
      * очищены cookie. Мобильное приложение хранит cookie в защищённом хранилище.
      */
-    twoFactor({
+    ...(twoFactorBypassed ? [] : [twoFactor({
       otpOptions: {
         period: TWO_FACTOR_CODE_MINUTES,
         digits: 6,
@@ -620,7 +624,7 @@ export const auth = betterAuth({
         },
       },
       trustDeviceMaxAge: TRUST_DEVICE_DAYS * SECONDS_PER_DAY,
-    }),
+    })]),
     /*
      * `nextCookies` обязан быть последним: он перехватывает ответ после всех
      * остальных плагинов и хуков.
