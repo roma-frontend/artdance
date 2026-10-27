@@ -163,6 +163,7 @@ export default function RootLayout() {
         <Stack.Screen name="studio/[slug]/book" options={{ animation: 'default' }} />
         <Stack.Screen name="studio/classes" options={{ animation: 'default' }} />
         <Stack.Screen name="studio/availability" options={{ animation: 'default' }} />
+        <Stack.Screen name="support/index" options={{ animation: 'default' }} />
         <Stack.Screen name="venue/index" options={{ animation: 'default' }} />
         <Stack.Screen name="venue/room-assignment" options={{ animation: 'default' }} />
         <Stack.Screen name="contact" options={{ animation: 'default' }} />

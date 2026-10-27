@@ -73,6 +73,12 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow $(PRODUCT_NAME) to unlock the support dashboard with Face ID."
+        }
+      ],
       "expo-font",
       "expo-image",
       "expo-calendar",

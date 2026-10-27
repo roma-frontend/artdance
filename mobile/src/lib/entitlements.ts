@@ -7,6 +7,7 @@ export type Entitlements = Record<string, boolean>;
 
 let cached: Entitlements | null = null;
 let pending: Promise<Entitlements> | null = null;
+const listeners = new Set<(data: Entitlements) => void>();
 
 /**
  * Один запрос на сессию. Сбой сети считаем «выключено»: раздел не показываем,
@@ -35,10 +36,19 @@ export function useEntitlements(): Entitlements | null {
   const [state, setState] = useState<Entitlements | null>(cached);
   useEffect(() => {
     let alive = true;
+    const listener = (data: Entitlements) => alive && setState(data);
+    listeners.add(listener);
     loadEntitlements().then((data) => alive && setState(data));
     return () => {
       alive = false;
+      listeners.delete(listener);
     };
   }, []);
   return state;
+}
+
+/** Сбрасывает кэш и рассылает свежий снимок всем подписанным экранам. */
+export function refreshEntitlements(): void {
+  cached = null;
+  loadEntitlements().then((data) => listeners.forEach((listener) => listener(data)));
 }

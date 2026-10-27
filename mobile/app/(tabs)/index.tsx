@@ -859,8 +859,8 @@ const BENTO: { section: Section; icon: IconName; desc: 'megaDescClasses' | 'mega
   { section: 'classes', icon: 'musical-notes', desc: 'megaDescClasses', tint: '#8B1A2B' },
   { section: 'instructors', icon: 'person', desc: 'megaDescInstructors', tint: '#6B4A1E' },
   { section: 'studios', icon: 'business', desc: 'megaDescStudios', tint: '#2E3B5C' },
-  { section: 'events', icon: 'sparkles', desc: 'megaDescEvents', tint: '#5C2A5A' },
   { section: 'shop', icon: 'bag-handle', desc: 'megaDescShop', tint: '#2F4F43' },
+  { section: 'events', icon: 'sparkles', desc: 'megaDescEvents', tint: '#5C2A5A' },
 ];
 
 /** Плитки разделов «бенто»: первая — широкая, остальные парами; у каждой свой цветовой тон. */

@@ -29,6 +29,7 @@ import { chooseLocale } from '@/lib/app-locale';
 import { loadAccountProfile, onProfileChange } from '@/lib/account-profile';
 import { getCurrentUser, signOut, type User } from '@/lib/auth';
 import { loadDancerProfile } from '@/lib/dancer-profile';
+import { getSupportAccess } from '@/lib/support';
 import { useEntitlements } from '@/lib/entitlements';
 import { isOnboardingSnoozed } from '@/lib/onboarding-progress';
 import { initials } from '@/lib/format';
@@ -36,11 +37,11 @@ import { openLandingWebPath } from '@/lib/web-links';
 import { deviceLocale, messagesFor, type Locale } from '@/lib/i18n';
 import { animateNextLayout, enterCard3D, openTiming } from '@/lib/motion';
 import { useScrollChrome } from '@/lib/use-scroll-chrome';
-import { colors, fonts, gradients, radius, space, type } from '@/theme';
+import { accentGlow, colors, fonts, gradients, radius, space, type } from '@/theme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 /** `feature` — ключ тумблера из `/api/entitlements`: раздел скрыт, когда support его выключил. */
-type Row = { icon: IconName; label: string; path: string; tint: string; feature?: string };
+type Row = { icon: IconName; label: string; path: string; tint: string; feature?: string; highlight?: boolean; sub?: string };
 type SectionDef = { key: string; title: string; rows: Row[]; open: boolean };
 
 const liquidGlass = isLiquidGlassAvailable();
@@ -76,6 +77,7 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/studio',
   '/studio/availability',
   '/studio/classes',
+  '/support',
   '/venue',
   '/venue/room-assignment',
 ]);
@@ -90,6 +92,7 @@ export default function AccountScreen() {
   const [user, setUser] = useState<User | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profileSheet, setProfileSheet] = useState(false);
+  const [supportAccess, setSupportAccess] = useState(false);
   const scrollRef = useRef<ScrollViewInstance>(null);
   useScrollToTop(scrollRef);
 
@@ -110,6 +113,12 @@ export default function AccountScreen() {
         if (!alive) return;
         setUser(u);
         if (u) {
+          // Сервер решает доступ; при отказе пункт просто не показывается.
+          getSupportAccess()
+            .then(() => {
+              if (alive) setSupportAccess(true);
+            })
+            .catch(() => undefined);
           loadAccountProfile()
             .then((p) => {
               if (alive) setAvatarUrl(p.avatarUrl);
@@ -195,6 +204,9 @@ export default function AccountScreen() {
           : []),
         ...(isVenueOwner
           ? [{ icon: 'storefront' as IconName, label: c.footer.venueDashboardTitle, path: '/venue', tint: '#C9A96A' }]
+          : []),
+        ...(supportAccess
+          ? [{ icon: 'shield-checkmark' as IconName, label: c.admin.support.mobile.entry, path: '/support', tint: colors.accentBright, highlight: true, sub: c.admin.support.operatorMode }]
           : []),
         { icon: 'ribbon', label: c.account.nav.subscription, path: '/account/subscription', tint: '#8E7CC3', feature: 'subscriptions' },
         { icon: 'people', label: c.account.nav.referrals, path: '/account/referrals', tint: '#5AA9E6', feature: 'referrals' },
@@ -429,14 +441,22 @@ function Section({ section, delay, onOpen }: { section: SectionDef; delay: numbe
               key={row.path}
               pressedScale={0.98}
               onPress={() => onOpen(row)}
-              style={[styles.row, index > 0 && styles.divider]}
+              style={[styles.row, index > 0 && styles.divider, row.highlight && styles.rowHighlight]}
               accessibilityRole="link"
             >
-              <LinearGradient colors={[row.tint, `${row.tint}99`]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.rowIcon}>
+              <LinearGradient
+                colors={row.highlight ? gradients.accent : [row.tint, `${row.tint}99`]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.rowIcon, row.highlight && accentGlow]}
+              >
                 <Ionicons name={row.icon} size={17} color={colors.white} />
               </LinearGradient>
-              <Text style={[type.label, styles.flex]}>{row.label}</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.text3} />
+              <View style={styles.flex}>
+                <Text style={[type.label, row.highlight && styles.highlightLabel]}>{row.label}</Text>
+                {row.sub ? <Text style={type.caption}>{row.sub}</Text> : null}
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={row.highlight ? colors.accentBright : colors.text3} />
             </PressableScale>
           ))}
         </View>
@@ -536,6 +556,8 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14, paddingHorizontal: space.lg },
   divider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.line },
   rowIcon: { width: 36, height: 36, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  rowHighlight: { backgroundColor: colors.accentSoft },
+  highlightLabel: { color: colors.accentBright },
   signOut: {
     flexDirection: 'row',
     alignItems: 'center',
