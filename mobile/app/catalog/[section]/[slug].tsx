@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentProps, type ComponentRef, type ReactNode } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 import { Alert, FlatList, Linking, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -108,7 +109,7 @@ function CatalogDetailBody() {
   const valid = sections.find((s) => s === section);
   const heroHeight = Math.min(height * 0.56, 480);
 
-  const [detail, setDetail] = useState<Detail | null>(null);
+  const [detail, setDetail] = useCachedState<Detail>(`content.catalog.${section}.${slug}`, 'public');
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   // null — состояние ещё не известно (или гость); true/false — сохранено ли в избранном.

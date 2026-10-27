@@ -27,9 +27,9 @@ import { Segmented } from '@/components/ui/segmented';
 import { catalogFor } from '@/i18n/catalog';
 import { chooseLocale } from '@/lib/app-locale';
 import { loadAccountProfile, onProfileChange } from '@/lib/account-profile';
-import { getCurrentUser, signOut, type User } from '@/lib/auth';
+import { getCurrentUser, getKnownUser, signOut, type User } from '@/lib/auth';
 import { loadDancerProfile } from '@/lib/dancer-profile';
-import { getSupportAccess } from '@/lib/support';
+import { SupportApiError, clearCachedSupportAccess, getSupportAccess, loadCachedSupportAccess, saveCachedSupportAccess } from '@/lib/support';
 import { useEntitlements } from '@/lib/entitlements';
 import { isOnboardingSnoozed } from '@/lib/onboarding-progress';
 import { initials } from '@/lib/format';
@@ -106,6 +106,18 @@ export default function AccountScreen() {
   );
 
   useEffect(() => {
+    getKnownUser().then((known) => {
+      if (known) setUser((prev) => prev ?? known);
+    });
+  }, []);
+
+  useEffect(() => {
+    loadCachedSupportAccess().then((cached) => {
+      if (cached?.canAccess) setSupportAccess(true);
+    });
+  }, []);
+
+  useEffect(() => {
     let alive = true;
     getCurrentUser()
       .catch(() => null)
@@ -113,12 +125,23 @@ export default function AccountScreen() {
         if (!alive) return;
         setUser(u);
         if (u) {
-          // Сервер решает доступ; при отказе пункт просто не показывается.
+          // Сервер решает доступ и обновляет кэш; пункт уже показан из кэша при запуске.
+          loadCachedSupportAccess().then((cached) => {
+            if (alive && cached && cached.userId !== u.id) setSupportAccess(false);
+          });
           getSupportAccess()
             .then(() => {
-              if (alive) setSupportAccess(true);
+              if (!alive) return;
+              setSupportAccess(true);
+              saveCachedSupportAccess(u.id, true);
             })
-            .catch(() => undefined);
+            .catch((error: unknown) => {
+              if (error instanceof SupportApiError && (error.status === 401 || error.status === 403)) {
+                if (!alive) return;
+                setSupportAccess(false);
+                saveCachedSupportAccess(u.id, false);
+              }
+            });
           loadAccountProfile()
             .then((p) => {
               if (alive) setAvatarUrl(p.avatarUrl);
@@ -157,6 +180,7 @@ export default function AccountScreen() {
         style: 'destructive',
         onPress: () => {
           signOut()
+            .then(() => clearCachedSupportAccess())
             .then(() => router.replace('/sign-in'))
             .catch(() => undefined);
         },

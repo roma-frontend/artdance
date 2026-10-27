@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
@@ -23,7 +24,7 @@ export default function MyOrdersScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [orders, setOrders] = useState<ClientOrder[] | null>(null);
+  const [orders, setOrders] = useCachedState<ClientOrder[]>('account.orders', 'user');
   const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 

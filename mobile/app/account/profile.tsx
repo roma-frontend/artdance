@@ -3,6 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { Image, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -66,7 +67,7 @@ export default function ProfileScreen() {
   const passwordY = useRef(0);
 
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<AccountProfile | null>(null);
+  const [profile, setProfile] = useCachedState<AccountProfile>('account.profile', 'user');
   const [loaded, setLoaded] = useState(false);
   const [cropImage, setCropImage] = useState<PickedImage | null>(null);
   const [avatarBusy, setAvatarBusy] = useState(false);

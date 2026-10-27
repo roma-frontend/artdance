@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
@@ -24,7 +25,7 @@ export default function StudioClassesScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<User | null | undefined>(undefined);
-  const [snapshot, setSnapshot] = useState<StudioClassesSnapshot | null>(null);
+  const [snapshot, setSnapshot] = useCachedState<StudioClassesSnapshot>('studio.classes', 'user');
   const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 

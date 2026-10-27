@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
@@ -65,7 +66,7 @@ export default function CartScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [cart, setCart] = useState<CartSnapshot | null>(null);
+  const [cart, setCart] = useCachedState<CartSnapshot>('account.cart', 'user');
   const [failed, setFailed] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [promo, setPromo] = useState('');

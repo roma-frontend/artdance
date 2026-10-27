@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,7 +38,7 @@ export default function StyleHubScreen() {
   const cardWidth = Math.round(width * 0.46);
   const heroHeight = Math.min(height * 0.52, 480);
 
-  const [hub, setHub] = useState<StyleHub | null>(null);
+  const [hub, setHub] = useCachedState<StyleHub>(`content.style.${slug}`, 'public');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

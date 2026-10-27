@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useScrollToTop } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import {
   ActivityIndicator,
   FlatList,
@@ -105,10 +106,10 @@ export default function HomeScreen() {
   const [hits, setHits] = useState<SearchHit[]>([]);
   const [searching, setSearching] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [events, setEvents] = useState<EventCard[] | null>(null);
-  const [instructors, setInstructors] = useState<InstructorCard[] | null>(null);
+  const [events, setEvents] = useCachedState<EventCard[]>('home.events', 'public');
+  const [instructors, setInstructors] = useCachedState<InstructorCard[]>('home.instructors', 'public');
   const [mood, setMood] = useState<MoodKey>('energy');
-  const [moodClasses, setMoodClasses] = useState<ClassCard[] | null>(null);
+  const [moodClasses, setMoodClasses] = useCachedState<ClassCard[]>('home.mood-classes', 'public');
   const [moodFailed, setMoodFailed] = useState(false);
   const [moodRetry, setMoodRetry] = useState(0);
   const [filtered, setFiltered] = useState<ClassCard[] | null>(null);
@@ -596,6 +597,10 @@ export default function HomeScreen() {
           key={peek.slug}
           instructor={peek}
           onClose={() => setPeek(null)}
+          onOpenProfile={(slug) => {
+            setPeek(null);
+            openDetail('instructors', slug);
+          }}
           onBook={(slug) => {
             setPeek(null);
             router.push({ pathname: '/book/[instructor]', params: { instructor: slug } });

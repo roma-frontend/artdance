@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -22,7 +23,7 @@ export default function PricingScreen() {
   const t = messagesFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [content, setContent] = useState<PricingContent | null>(null);
+  const [content, setContent] = useCachedState<PricingContent>('content.pricing', 'public');
   const [failed, setFailed] = useState<string | null>(null);
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [buyError, setBuyError] = useState<string | null>(null);

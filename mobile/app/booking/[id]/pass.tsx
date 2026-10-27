@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -51,8 +52,8 @@ function BookingPassContent() {
   const f = c.footer;
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [pass, setPass] = useState<BookingPass | null>(null);
-  const [booking, setBooking] = useState<ClientBookingDetail | null>(null);
+  const [pass, setPass] = useCachedState<BookingPass>(`booking.pass.${id}`, 'user');
+  const [booking, setBooking] = useCachedState<ClientBookingDetail>(`booking.detail.${id}`, 'user');
   const [failed, setFailed] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [paying, setPaying] = useState(false);

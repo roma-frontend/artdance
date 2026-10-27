@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Linking, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -26,7 +27,7 @@ export default function ContactScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [content, setContent] = useState<ContactContent | null>(null);
+  const [content, setContent] = useCachedState<ContactContent>('content.contact', 'public');
   const [failed, setFailed] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

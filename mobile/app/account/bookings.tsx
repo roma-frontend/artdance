@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
@@ -25,7 +26,7 @@ export default function MyBookingsScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [bookings, setBookings] = useState<ClientBooking[] | null>(null);
+  const [bookings, setBookings] = useCachedState<ClientBooking[]>('account.bookings', 'user');
   const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [payingId, setPayingId] = useState<string | null>(null);

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -21,7 +22,7 @@ export default function GiftCardsScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [content, setContent] = useState<GiftCardsContent | null>(null);
+  const [content, setContent] = useCachedState<GiftCardsContent>('content.gift-cards', 'public');
   const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {

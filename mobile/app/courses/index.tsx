@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -26,7 +27,7 @@ export default function CoursesScreen() {
   const insets = useSafeAreaInsets();
   const entitlements = useEntitlements();
   const enabled = entitlements?.courses === true;
-  const [courses, setCourses] = useState<CourseCard[] | null>(null);
+  const [courses, setCourses] = useCachedState<CourseCard[]>('content.courses', 'public');
   const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {

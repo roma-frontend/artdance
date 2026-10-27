@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useCachedState } from '@/lib/use-cached-state';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -24,14 +25,16 @@ export default function DancerProfileScreen() {
   const d = c.onboarding.dancer;
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [profile, setProfile] = useState<DancerProfile | null | undefined>(undefined);
+  // Обёртка: `null` в значении означает «анкеты нет», а отсутствие кэша — «ещё не загружено».
+  const [cachedProfile, setCachedProfile] = useCachedState<{ value: DancerProfile | null }>('account.dancer-profile', 'user');
+  const profile = cachedProfile ? cachedProfile.value : undefined;
   const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     loadDancerProfile()
       .then((next) => {
-        if (active) setProfile(next);
+        if (active) setCachedProfile({ value: next });
       })
       .catch((error: unknown) => {
         if (active) setFailed(serverMessageOf(error) ?? t.catalogError);

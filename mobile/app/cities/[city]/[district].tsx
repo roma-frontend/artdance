@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +34,7 @@ export default function DistrictScreen() {
   const { width } = useWindowDimensions();
   const cardWidth = Math.floor((width - space.xl * 2 - space.md) / 2);
   const { state, reload } = useCities();
-  const [listings, setListings] = useState<Listings | null>(null);
+  const [listings, setListings] = useCachedState<Listings>(`content.district.${citySlug}.${districtSlug}`, 'public');
   const [listingsFailed, setListingsFailed] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 

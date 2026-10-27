@@ -1,4 +1,5 @@
 import { API_URL } from './config';
+import { clearUserCache } from './offline-cache';
 import { readServerMessage } from './server-message';
 import {
   clearSessionToken,
@@ -229,6 +230,11 @@ export async function getCurrentUser(): Promise<User | null> {
   return user;
 }
 
+/** Последний подтверждённый пользователь из локального кэша, без сети. */
+export function getKnownUser(): Promise<User | null> {
+  return cachedUser();
+}
+
 /** Смена имени в профиле (адрес и роль здесь не меняются). */
 export async function updateName(name: string): Promise<void> {
   const response = await request('/update-user', { method: 'POST', body: JSON.stringify({ name }) });
@@ -248,6 +254,7 @@ export async function signOut(): Promise<void> {
   // Локальный выход не ждёт сеть: серверный отзыв токена идёт в фоне с лимитом времени.
   const token = await getSessionToken();
   await clearSessionToken();
+  await clearUserCache().catch(() => undefined);
   notifySessionChange();
   if (!token) return;
   const controller = new AbortController();

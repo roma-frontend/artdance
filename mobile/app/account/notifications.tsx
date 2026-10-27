@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState, type ComponentProps } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -32,7 +33,7 @@ export default function AccountNotificationsScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [state, setState] = useState<NotificationsState | null>(null);
+  const [state, setState] = useCachedState<NotificationsState>('account.notifications', 'user');
   const [failed, setFailed] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [pending, setPending] = useState(false);

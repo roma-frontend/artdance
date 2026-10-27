@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -27,7 +28,7 @@ export default function OrderDetailScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [order, setOrder] = useState<ClientOrderDetail | null>(null);
+  const [order, setOrder] = useCachedState<ClientOrderDetail>(`account.order.${orderNumber}`, 'user');
   const [failed, setFailed] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
   const shopOn = useEntitlements()?.shop === true;

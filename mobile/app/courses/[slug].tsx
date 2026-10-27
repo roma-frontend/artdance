@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -33,7 +34,7 @@ export default function CourseDetailScreen() {
   const insets = useSafeAreaInsets();
   const entitlements = useEntitlements();
   const enabled = entitlements?.courses === true;
-  const [course, setCourse] = useState<CourseDetail | null>(null);
+  const [course, setCourse] = useCachedState<CourseDetail>(`content.course.${slug}`, 'public');
   const [failed, setFailed] = useState<string | null>(null);
   const [paying, setPaying] = useState(false);
 

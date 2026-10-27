@@ -36,6 +36,7 @@ type Props = {
   instructor: InstructorCard;
   onClose: () => void;
   onBook: (slug: string) => void;
+  onOpenProfile: (slug: string) => void;
 };
 
 /** Ближайший свободный слот: `undefined` — загружается, `null` — свободных нет. */
@@ -47,7 +48,7 @@ const FRAME_MAX_WIDTH = 232;
  * Превью инструктора по долгому нажатию на «сторис»: ближайший слот
  * подгружается на лету, избранное переключается без перехода в профиль.
  */
-export function InstructorPeek({ instructor, onClose, onBook }: Props) {
+export function InstructorPeek({ instructor, onClose, onBook, onOpenProfile }: Props) {
   const locale = deviceLocale(undefined);
   const c = catalogFor(locale);
   const { width } = useWindowDimensions();
@@ -141,19 +142,21 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
                 <LinearGradient colors={gradients.heroShade} style={StyleSheet.absoluteFill} pointerEvents="none" />
                 <LinearGradient colors={['rgba(11,8,9,0.6)', 'rgba(11,8,9,0)']} style={styles.topShade} pointerEvents="none" />
                 <View style={styles.header}>
-                  <View style={styles.avatarRing}>
-                    <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-                    <View style={styles.avatar}>
-                      {instructor.image?.key ? (
-                        <FadeImage uri={mediaUri(instructor.image.key)} />
-                      ) : (
-                        <View style={styles.placeholder}>
-                          <Text style={styles.avatarInitials}>{initials(instructor.name)}</Text>
-                        </View>
-                      )}
+                  <Pressable onPress={() => onOpenProfile(instructor.slug)} accessibilityRole="link" accessibilityLabel={instructor.name}>
+                    <View style={styles.avatarRing}>
+                      <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                      <View style={styles.avatar}>
+                        {instructor.image?.key ? (
+                          <FadeImage uri={mediaUri(instructor.image.key)} />
+                        ) : (
+                          <View style={styles.placeholder}>
+                            <Text style={styles.avatarInitials}>{initials(instructor.name)}</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
-                  </View>
-                  <View style={styles.nameRow}>
+                  </Pressable>
+                  <Pressable onPress={() => onOpenProfile(instructor.slug)} accessibilityRole="link" style={styles.nameRow}>
                     <Text style={styles.name} numberOfLines={1}>
                       {instructor.name}
                     </Text>
@@ -162,7 +165,7 @@ export function InstructorPeek({ instructor, onClose, onBook }: Props) {
                         <Ionicons name="checkmark-circle" size={16} color={colors.metal} />
                       </Animated.View>
                     ) : null}
-                  </View>
+                  </Pressable>
                   <Pressable onPress={onClose} hitSlop={12} style={styles.closeButton} accessibilityRole="button" accessibilityLabel={c.common.actions.close}>
                     <Ionicons name="close" size={24} color={colors.white} />
                   </Pressable>

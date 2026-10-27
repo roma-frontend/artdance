@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,7 +22,7 @@ export default function FaqScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [groups, setGroups] = useState<FaqGroup[] | null>(null);
+  const [groups, setGroups] = useCachedState<FaqGroup[]>('content.faq', 'public');
   const [failed, setFailed] = useState(false);
   const [openKey, setOpenKey] = useState<string | null>(null);
 

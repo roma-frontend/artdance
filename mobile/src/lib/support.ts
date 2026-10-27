@@ -1,5 +1,10 @@
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+
 import { API_URL } from './config';
 import { getSessionToken } from './session';
+
+const ACCESS_KEY = 'artdance.support.access';
 
 export type SupportFeature = {
   key: string;
@@ -70,6 +75,30 @@ async function call<T>(path: string, init: { method?: 'GET' | 'POST'; body?: unk
 
 export function getSupportAccess(): Promise<{ canAccess: true; canManageEntitlements: boolean }> {
   return call<{ canAccess: true; canManageEntitlements: boolean }>('/api/mobile/support/access');
+}
+
+type CachedAccess = { userId: string; canAccess: boolean };
+
+/** Последний ответ сервера; нужен, чтобы пункт показывался сразу при запуске. */
+export async function loadCachedSupportAccess(): Promise<CachedAccess | null> {
+  const raw = Platform.OS === 'web' ? null : await SecureStore.getItemAsync(ACCESS_KEY).catch(() => null);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as CachedAccess;
+  } catch {
+    return null;
+  }
+}
+
+export async function clearCachedSupportAccess(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  await SecureStore.deleteItemAsync(ACCESS_KEY).catch(() => undefined);
+}
+
+export async function saveCachedSupportAccess(userId: string, canAccess: boolean): Promise<void> {
+  if (Platform.OS === 'web') return;
+  const value: CachedAccess = { userId, canAccess };
+  await SecureStore.setItemAsync(ACCESS_KEY, JSON.stringify(value)).catch(() => undefined);
 }
 
 export function getSupportSnapshot(): Promise<SupportSnapshot> {

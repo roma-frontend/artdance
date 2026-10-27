@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -31,8 +32,8 @@ export default function BlogScreen() {
   const insets = useSafeAreaInsets();
   const [category, setCategory] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
-  const [list, setList] = useState<BlogList | null>(null);
-  const [post, setPost] = useState<BlogDetail | null>(null);
+  const [list, setList] = useCachedState<BlogList>(`content.blog.list.${category ?? 'all'}`, 'public');
+  const [post, setPost] = useCachedState<BlogDetail>(`content.blog.post.${slug ?? ''}`, 'public');
   const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {

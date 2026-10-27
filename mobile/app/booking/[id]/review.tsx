@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -29,7 +30,7 @@ export default function BookingReviewScreen() {
   const r = c.reviews;
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [booking, setBooking] = useState<ClientBookingDetail | null>(null);
+  const [booking, setBooking] = useCachedState<ClientBookingDetail>(`booking.detail.${id}`, 'user');
   const [failed, setFailed] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
   const [text, setText] = useState('');

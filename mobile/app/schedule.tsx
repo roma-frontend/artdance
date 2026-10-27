@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { RefreshControl, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,7 +29,7 @@ export default function ScheduleScreen() {
   const cellWidth = (width - space.xl * 2 - space.md) / 2;
   const { scrollY, onScroll } = useScrollChrome();
 
-  const [items, setItems] = useState<CatalogItem[] | null>(null);
+  const [items, setItems] = useCachedState<CatalogItem[]>('content.schedule', 'public');
   const [failed, setFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);

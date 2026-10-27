@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,7 +27,7 @@ export default function RescheduleScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [slots, setSlots] = useState<Slot[] | null>(null);
+  const [slots, setSlots] = useCachedState<Slot[]>(`booking.slots.${instructor}`, 'public');
   const [loadFailed, setLoadFailed] = useState(false);
   const [day, setDay] = useState<string | null>(null);
   const [selected, setSelected] = useState<Slot | null>(null);

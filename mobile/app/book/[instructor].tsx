@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState, type ComponentProps } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp, LinearTransition, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -105,8 +106,8 @@ export default function BookScreen() {
   const c = catalogFor(locale);
   const insets = useSafeAreaInsets();
 
-  const [slots, setSlots] = useState<Slot[] | null>(null);
-  const [profile, setProfile] = useState<Instructor | null>(null);
+  const [slots, setSlots] = useCachedState<Slot[]>(`book.slots.${instructor}`, 'public');
+  const [profile, setProfile] = useCachedState<Instructor>(`content.instructor.${instructor}`, 'public');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
   const [selected, setSelected] = useState<Slot | null>(null);

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import type { ComponentProps } from 'react';
 import { useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -91,7 +92,7 @@ export default function CheckoutScreen() {
   const [method, setMethod] = useState<MobilePaymentMethod>('CARD');
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  const [cart, setCart] = useState<CartSnapshot | null>(null);
+  const [cart, setCart] = useCachedState<CartSnapshot>('account.cart', 'user');
   const [loadError, setLoadError] = useState<string | null>(null);
   /** Заказ, уже созданный в этом сеансе. Повтор после ошибки оплаты платит именно его, а не создаёт второй. */
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);

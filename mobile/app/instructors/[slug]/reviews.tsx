@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -25,7 +26,7 @@ export default function InstructorReviewsScreen() {
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList<InstructorReview>>(null);
   const [page, setPage] = useState(1);
-  const [data, setData] = useState<InstructorReviews | null>(null);
+  const [data, setData] = useCachedState<InstructorReviews>(`content.reviews.${slug}`, 'public');
   const [failed, setFailed] = useState<string | null>(null);
 
   useEffect(() => {

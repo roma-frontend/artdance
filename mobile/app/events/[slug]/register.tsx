@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -39,7 +40,7 @@ export default function EventRegisterScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [detail, setDetail] = useState<CompetitionEventDetail | null>(null);
+  const [detail, setDetail] = useCachedState<CompetitionEventDetail>(`content.event.${slug}`, 'public');
   const [failed, setFailed] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [birthDate, setBirthDate] = useState('');

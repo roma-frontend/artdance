@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -71,7 +72,7 @@ export default function AvailabilityScreen() {
   const a = c.studio.availability;
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [snapshot, setSnapshot] = useState<AvailabilitySnapshot | null>(null);
+  const [snapshot, setSnapshot] = useCachedState<AvailabilitySnapshot>('studio.availability', 'user');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);

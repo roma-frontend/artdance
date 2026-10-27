@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -42,7 +43,7 @@ export default function StudioBookScreen() {
   const c = catalogFor(locale);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [options, setOptions] = useState<RentalOptions | null>(null);
+  const [options, setOptions] = useCachedState<RentalOptions>(`content.studio.${slug}`, 'public');
   const [failed, setFailed] = useState<string | null>(null);
   const [roomId, setRoomId] = useState<string>('');
   const [date, setDate] = useState(yerevanDate());

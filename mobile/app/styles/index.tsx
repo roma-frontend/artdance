@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { useCachedState } from '@/lib/use-cached-state';
 import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +27,7 @@ export default function StylesIndexScreen() {
   const { width } = useWindowDimensions();
   const cardWidth = Math.floor((width - space.xl * 2 - space.md) / 2);
 
-  const [items, setItems] = useState<StyleSummary[] | null>(null);
+  const [items, setItems] = useCachedState<StyleSummary[]>('content.styles', 'public');
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
