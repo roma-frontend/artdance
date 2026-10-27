@@ -2890,7 +2890,7 @@ const en = {
 
     nav: {
       dashboard: 'Dashboard',
-      support: 'Support command center',
+      support: 'Command center',
       classes: 'Classes',
       sessions: 'Class sessions',
       instructors: 'Instructors',
@@ -3004,7 +3004,7 @@ const en = {
         tabEntitlements: 'Entitlements',
         tabPayouts: 'Payouts',
         tabIntegrations: 'Integrations',
-        noAccess: 'No access to the Support Command Center',
+        noAccess: 'No access to the Command center',
         retry: 'Retry',
         noTickets: 'No open tickets',
         noPayouts: 'No pending payouts',
@@ -3046,7 +3046,7 @@ const en = {
         biometricFailed: 'Biometric check failed. Enter your PIN.',
         pinDelete: 'Delete',
       },
-      title: 'Support command center',
+      title: 'Command center',
       subtitle: 'A complete operator cockpit for resolving platform issues end to end.',
       operatorMode: 'Operator mode',
       godModeActive: 'Full platform support is active',
@@ -3075,7 +3075,7 @@ const en = {
       resolve: 'Resolve',
       toolsTitle: 'Operator tools',
       toolsHint: 'Every enabled admin capability is one click away.',
-      thisConsole: 'Support command center',
+      thisConsole: 'Command center',
       recentActivity: 'Recent platform activity',
       viewAudit: 'View audit log',
       status: {
@@ -3241,6 +3241,7 @@ const en = {
         healthDb: 'DB',
         healthPostgres: 'PostgreSQL',
         healthCronReady: 'cron ready',
+        allSystemsOperational: 'All systems operational',
         healthLocked: '{count} locked',
         healthSla: 'SLA 24h',
         lastSync: 'last sync {time}',

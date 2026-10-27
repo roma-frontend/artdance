@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   FadeInDown,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withSequence,
@@ -47,16 +48,22 @@ type Props = {
 /** Экран PIN: тряска при ошибке, пружинные точки, стеклянная клавиатура на кинематографичном фоне. */
 export function SupportLockView(props: Props) {
   const shake = useSharedValue(0);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!props.shakeKey) return;
+    if (reduceMotion) {
+      shake.value = 0;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => undefined);
+      return;
+    }
     shake.value = withSequence(
       withTiming(-12, { duration: 45 }),
       withRepeat(withTiming(12, { duration: 85 }), 3, true),
       withTiming(0, { duration: 45 }),
     );
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => undefined);
-  }, [props.shakeKey, shake]);
+  }, [props.shakeKey, shake, reduceMotion]);
 
   const dotsStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
 

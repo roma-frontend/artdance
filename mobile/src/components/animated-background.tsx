@@ -2,11 +2,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
   withTiming,
+  useReducedMotion,
 } from 'react-native-reanimated';
 
 type OrbProps = {
@@ -20,14 +22,20 @@ type OrbProps = {
 
 function Orb({ color, size, top, left, duration, drift }: OrbProps) {
   const progress = useSharedValue(0);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reduceMotion) {
+      progress.value = 0;
+      return;
+    }
     progress.value = withRepeat(
       withTiming(1, { duration, easing: Easing.inOut(Easing.sin) }),
       -1,
       true,
     );
-  }, [duration, progress]);
+    return () => cancelAnimation(progress);
+  }, [duration, progress, reduceMotion]);
 
   const style = useAnimatedStyle(() => ({
     transform: [

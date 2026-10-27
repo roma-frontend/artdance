@@ -40,11 +40,17 @@ export function PulseDot({ color = colors.success, size = 8 }: { color?: string;
 }
 
 /** Числа плавно набирают значение; при смене значения анимация идёт от текущего. */
-export function CountUp({ value, style }: { value: number; style?: TextStyle }) {
+export function CountUp({ value, style }: { value: number; style?: StyleProp<TextStyle> }) {
   const [shown, setShown] = useState(0);
   const shownRef = useRef(0);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reduceMotion) {
+      shownRef.current = value;
+      setShown(value);
+      return;
+    }
     const from = shownRef.current;
     const start = Date.now();
     let frame = 0;
@@ -58,7 +64,7 @@ export function CountUp({ value, style }: { value: number; style?: TextStyle }) 
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [value]);
+  }, [value, reduceMotion]);
 
   return <Text style={style}>{shown.toLocaleString()}</Text>;
 }
@@ -82,6 +88,7 @@ export function ShieldOrb({ size = 112, icon = 'shield-checkmark' }: { size?: nu
   }, [spin, breathe, reduceMotion]);
 
   const ring = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
+  const orbit = useAnimatedStyle(() => ({ transform: [{ rotate: `${spin.value * 360}deg` }] }));
   const glow = useAnimatedStyle(() => ({
     opacity: 0.35 + breathe.value * 0.45,
     transform: [{ scale: 0.9 + breathe.value * 0.18 }],
@@ -91,6 +98,22 @@ export function ShieldOrb({ size = 112, icon = 'shield-checkmark' }: { size?: nu
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
       <Animated.View pointerEvents="none" style={[styles.glow, { width: size * 1.5, height: size * 1.5, borderRadius: size * 0.75 }, glow]} />
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.orbit,
+          {
+            width: size * 1.12,
+            height: size * 1.12,
+            left: -size * 0.06,
+            top: -size * 0.06,
+            borderRadius: size * 0.56,
+          },
+          orbit,
+        ]}
+      >
+        <View style={[styles.orbitDot, { left: size * 0.56 - 3, top: -3 }]} />
+      </Animated.View>
       <Animated.View style={[{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }, ring]}>
         <LinearGradient colors={gradients.ring} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
       </Animated.View>
@@ -131,6 +154,8 @@ export function GlassCard({ children, style }: { children: ReactNode; style?: St
 const styles = StyleSheet.create({
   halo: { position: 'absolute' },
   glow: { position: 'absolute', backgroundColor: colors.accentBright, ...shadow },
+  orbit: { position: 'absolute', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(226,182,110,0.45)' },
+  orbitDot: { position: 'absolute', width: 6, height: 6, borderRadius: 3, backgroundColor: colors.metal },
   core: { position: 'absolute', backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   glassCard: {
     borderRadius: 20,

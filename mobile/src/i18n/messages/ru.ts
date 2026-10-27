@@ -3061,6 +3061,7 @@ const ru: Messages = {
         healthDb: 'БД',
         healthPostgres: 'PostgreSQL',
         healthCronReady: 'cron готов',
+        allSystemsOperational: 'Все системы работают',
         healthLocked: '{count} заблокировано',
         healthSla: 'SLA 24ч',
         lastSync: 'синхр. {time} назад',

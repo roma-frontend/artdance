@@ -3073,6 +3073,7 @@ const hy: Messages = {
         healthDb: "ՏԲ",
         healthPostgres: "PostgreSQL",
         healthCronReady: "cron պատրաստ է",
+        allSystemsOperational: "Բոլոր համակարգերը աշխատում են",
         healthLocked: "{count} արգելափակված",
         healthSla: "SLA 24ժ",
         lastSync: "վերջին սինխ. {time}",

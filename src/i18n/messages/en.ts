@@ -2852,7 +2852,7 @@ const en = {
 
     nav: {
       dashboard: 'Dashboard',
-      support: 'Support command center',
+      support: 'Command center',
       classes: 'Classes',
       sessions: 'Class sessions',
       instructors: 'Instructors',
@@ -2959,7 +2959,7 @@ const en = {
     },
 
     support: {
-      title: 'Support command center',
+      title: 'Command center',
       subtitle: 'A complete operator cockpit for resolving platform issues end to end.',
       operatorMode: 'Operator mode',
       godModeActive: 'Full platform support is active',
@@ -2988,7 +2988,7 @@ const en = {
       resolve: 'Resolve',
       toolsTitle: 'Operator tools',
       toolsHint: 'Every enabled admin capability is one click away.',
-      thisConsole: 'Support command center',
+      thisConsole: 'Command center',
       recentActivity: 'Recent platform activity',
       viewAudit: 'View audit log',
       status: {

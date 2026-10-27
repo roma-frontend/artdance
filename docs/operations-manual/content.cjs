@@ -289,7 +289,7 @@ add('payouts-approvals', '/admin/payouts', [shot('payouts', '/admin/payouts'), s
 });
 
 add('support', '/admin/support', [shot('support', '/admin/support'), shot('support-operations', '/admin/support/operations')], {
-  title: '16. Support command center', lead: 'Support is an operator role with server-side allowlisting. Use it to find and explain records, not to bypass audit or payment controls.',
+  title: '16. Command center', lead: 'Support is an operator role with server-side allowlisting. Use it to find and explain records, not to bypass audit or payment controls.',
   steps: [
     ['Confirm operator mode', 'Open /admin/support and check the operator identity, capability notice, queue totals and recent activity. If the page denies access, do not attempt a direct action URL.'],
     ['Find a customer issue', 'Use the support queue or the approved global search. Search a booking reference, order number, customer email or support ticket identifier; confirm the returned record with the customer before acting.'],

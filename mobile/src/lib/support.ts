@@ -40,6 +40,10 @@ export type SupportSnapshot = {
   pulse: {
     counts: Record<string, number>;
     stats: Record<string, number>;
+    openTickets: number;
+    pendingTickets: number;
+    impersonations: number;
+    timestamp: string;
   };
   entitlements: { preset: 'mvp' | 'full' | 'premium'; features: SupportFeature[] };
   tickets: SupportTicket[];

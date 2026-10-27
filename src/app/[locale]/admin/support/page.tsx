@@ -20,7 +20,7 @@ export default async function AdminSupportPage({ params }: PageProps) {
   return (
     <>
       {/* Legacy anchors for e2e — keep heading names discoverable */}
-      <h1 className="sr-only">Support command center</h1>
+      <h1 className="sr-only">Command center</h1>
       <h2 id="support-queue" className="sr-only">Support queue</h2>
       <h2 id="support-tools" className="sr-only">Operator tools</h2>
       <section aria-labelledby="support-queue" className="sr-only"><span>queue</span></section>

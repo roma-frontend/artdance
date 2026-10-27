@@ -103,7 +103,7 @@ test('админка: общий скролл и правая sticky-колон�
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-test('support command center: доступ только allowlisted operator и широкая панель инструментов', async ({ page }, testInfo) => {
+test('Command center: доступ только allowlisted operator и широкая панель инструментов', async ({ page }, testInfo) => {
   await page.context().setExtraHTTPHeaders({ 'x-forwarded-for': `10.82.${testInfo.parallelIndex}.1` });
   await page.goto('/en/admin/support');
   await page.getByLabel(en.auth.signIn.emailLabel).fill(supportOperator.email);
@@ -111,7 +111,7 @@ test('support command center: доступ только allowlisted operator и 
   await page.getByRole('button', { name: en.auth.signIn.submit }).click();
   await completeTwoFactor(page);
   /* The first Supabase connection can cold-start above the global 10s assertion budget. */
-  await expect(page.getByRole('heading', { name: 'Support command center', exact: true }).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('heading', { name: 'Command center', exact: true }).first()).toBeVisible({ timeout: 30_000 });
   await expect(page.locator('[role="tabpanel"][data-state="active"]')).toBeVisible({ timeout: 30_000 });
 
   // legacy sr-only sections have 0 size — check GodTabs panels directly
