@@ -47,6 +47,7 @@ import {
 import { approvedReviewsWhere, reviewSelect, toReview, type ReviewRow } from './reviews';
 import { upcomingSessionsRelation } from './relations';
 import { getStyleSummaries } from './styles';
+import { styleHeroImageFor } from '@/server/content/style-hero-media';
 import {
   publicVenueWhere,
   toVenueCard,
@@ -303,7 +304,7 @@ async function loadHomeContent(locale: Locale): Promise<HomeContent> {
     styleTiles: config.styleTiles.map((tile) => ({
       style: tile.style,
       slug: danceStyleSlug(tile.style),
-      image: requireMedia(tile.mediaStorageKey),
+      image: styleHeroImageFor(tile.style) ?? requireMedia(tile.mediaStorageKey),
       classCount: summariesByStyle.get(tile.style)?.classCount ?? 0,
     })),
     popularClasses: orderedBy(config.collections.popularClassSlugs, classes, (row) => row.slug),
