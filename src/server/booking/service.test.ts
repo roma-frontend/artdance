@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   db: {
@@ -12,10 +12,13 @@ const mocks = vi.hoisted(() => ({
     availabilityRule: { findMany: vi.fn() },
     availabilityException: { findMany: vi.fn() },
     booking: { findUnique: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn(), findUniqueOrThrow: vi.fn() },
+    user: { findUnique: vi.fn() },
     $transaction: vi.fn(),
   },
   notifyBookingConfirmed: vi.fn(),
   notifyBookingCancelled: vi.fn(),
+  hasConsent: vi.fn(),
+  recordConsent: vi.fn(),
 }));
 
 vi.mock('@/lib/db', () => ({ db: mocks.db }));
@@ -25,8 +28,10 @@ vi.mock('@/server/booking/notify', () => ({
   notifyWaitlistReady: vi.fn(),
 }));
 vi.mock('@/server/wallet/service', () => ({ creditWallet: vi.fn() }));
+vi.mock('@/lib/consent/store', () => ({ hasConsent: mocks.hasConsent, recordConsent: mocks.recordConsent }));
 
 import { booking } from '@/config/business';
+import { bookingConsentRules } from '@/config/consents';
 import { cancelBooking, createBookingFromHold, expireUnpaidBookings, quoteBooking, quoteCancellation, rescheduleBooking } from './service';
 
 const now = new Date('2026-10-01T08:00:00Z');
@@ -92,6 +97,44 @@ describe('автоотмена неоплаченных броней', () => {
 
     expect(result).toEqual({ expired: 0 });
     expect(mocks.db.classSession.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('обязательные согласия при брони', () => {
+  afterEach(() => {
+    delete bookingConsentRules.PRIVATE_SESSION;
+  });
+
+  it('без принятого согласия бронь не создаётся и база не меняется', async () => {
+    bookingConsentRules.PRIVATE_SESSION = ['healthWaiver'];
+    mocks.db.user.findUnique.mockResolvedValue({ email: 'anna@example.com' });
+    mocks.hasConsent.mockResolvedValue(false);
+    mocks.db.danceClass.findFirst.mockResolvedValue({ id: 'class-1', price: 10_000, venueId: 'venue-1' });
+
+    await expect(createBookingFromHold({ holdId: hold.id, userId: hold.userId, now }))
+      .rejects.toMatchObject({ code: 'VALIDATION_FAILED', field: 'consents' });
+    expect(mocks.db.$transaction).not.toHaveBeenCalled();
+    expect(mocks.db.booking.create).not.toHaveBeenCalled();
+  });
+
+  it('принятое согласие пишется версией в бронь и записью в ConsentRecord с IP', async () => {
+    bookingConsentRules.PRIVATE_SESSION = ['healthWaiver'];
+    mocks.db.user.findUnique.mockResolvedValue({ email: 'anna@example.com' });
+    mocks.db.danceClass.findFirst.mockResolvedValue({ id: 'class-1', price: 10_000, venueId: 'venue-1' });
+    mocks.recordConsent.mockResolvedValue(undefined);
+
+    await createBookingFromHold({ holdId: hold.id, userId: hold.userId, consents: ['healthWaiver'], ipAddress: '203.0.113.7', now });
+
+    expect(mocks.db.booking.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ consentVersion: 'healthWaiver:draft-1' }),
+    }));
+    expect(mocks.recordConsent).toHaveBeenCalledWith({
+      userId: hold.userId,
+      email: 'anna@example.com',
+      documentId: 'healthWaiver',
+      version: 'draft-1',
+      ipAddress: '203.0.113.7',
+    });
   });
 });
 

@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { cacheControl } from '@/config/cache';
+import { bookingConsentIds } from '@/config/consents';
 import { httpStatusFor, isDomainError } from '@/domain/errors';
 import { getCaller } from '@/lib/auth/guards';
 import { checkRateLimit, clientIdentifier, rateLimitHeaders } from '@/lib/security/rate-limit';
 import { createBookingFromHold } from '@/server/booking/service';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-const schema = z.object({ holdId: z.string().min(1), locationOption: z.enum(['STUDIO','CUSTOMER_LOCATION','ONLINE']).optional(), customerAddress: z.string().max(240).optional().nullable(), anonymousId: z.string().min(1).optional().nullable(), useClassPass: z.boolean().optional(), partnerName: z.string().trim().min(1).max(160).optional() });
+const schema = z.object({ holdId: z.string().min(1), locationOption: z.enum(['STUDIO','CUSTOMER_LOCATION','ONLINE']).optional(), customerAddress: z.string().max(240).optional().nullable(), anonymousId: z.string().min(1).optional().nullable(), useClassPass: z.boolean().optional(), partnerName: z.string().trim().min(1).max(160).optional(), consents: z.array(z.enum(bookingConsentIds)).max(bookingConsentIds.length).optional() });
 function json(body: object, status: number, extra: Record<string,string> = {}) { return NextResponse.json(body, { status, headers: { 'Cache-Control': cacheControl.none, 'X-Content-Type-Options':'nosniff', ...extra } }); }
 export async function POST(request: Request) {
   const limit = await checkRateLimit('bookingHold', clientIdentifier(request.headers));
@@ -18,8 +19,9 @@ export async function POST(request: Request) {
   const userId = caller?.id ?? null;
   const anonymousId = parsed.data.anonymousId ?? null;
   if (!userId && !anonymousId) return json({ error:'UNAUTHORIZED', messageKey:'errors.unauthorized.description' }, 401);
+  const ip = clientIdentifier(request.headers);
   try {
-    const result = await createBookingFromHold({ holdId: parsed.data.holdId, userId, anonymousId, locationOption: parsed.data.locationOption, customerAddress: parsed.data.customerAddress ?? null, useClassPass: parsed.data.useClassPass === true, partnerName: parsed.data.partnerName, now: new Date() });
+    const result = await createBookingFromHold({ holdId: parsed.data.holdId, userId, anonymousId, locationOption: parsed.data.locationOption, customerAddress: parsed.data.customerAddress ?? null, useClassPass: parsed.data.useClassPass === true, partnerName: parsed.data.partnerName, consents: parsed.data.consents ?? [], ipAddress: ip === 'unknown' ? null : ip, now: new Date() });
     return json({ booking: { id: result.id, reference: result.reference, totalPrice: result.totalPrice, startsAt: result.startsAt.toISOString(), endsAt: result.endsAt.toISOString() } }, 201);
   } catch (e) {
     if (isDomainError(e)) return json({ error: e.code, messageKey: e.messageKey, params: e.params, field: e.field }, httpStatusFor(e.code));

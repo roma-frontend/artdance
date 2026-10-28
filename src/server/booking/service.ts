@@ -16,6 +16,8 @@ import { Prisma } from '@/generated/prisma/client';
 import { notifyBookingCancelled, notifyBookingConfirmed, notifyWaitlistReady } from '@/server/booking/notify';
 import { creditWallet } from '@/server/wallet/service';
 import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
+import type { BookingConsentId } from '@/config/consents';
+import { checkBookingConsents, storeBookingConsents } from '@/server/booking/consents';
 function isUniqueViolation(error: unknown): boolean { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'; }
 function refFromId(id: string): string { return 'BK-' + id.slice(-8).toUpperCase(); }
 
@@ -86,7 +88,7 @@ function rentalRules(): RentalRules {
  * Аренда зала: предоплата обязательна, поэтому бронь создаётся PENDING и становится CONFIRMED при оплате.
  * Уведомление о подтверждении не шлём: до оплаты бронь не подтверждена.
  */
-async function createRentalFromHold(input: { holdId: string; roomId: string; startsAt: Date; endsAt: Date; userId: string | null; now: Date; useClassPass?: boolean; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE' }) {
+async function createRentalFromHold(input: { holdId: string; roomId: string; startsAt: Date; endsAt: Date; userId: string | null; now: Date; useClassPass?: boolean; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; consents?: readonly BookingConsentId[]; ipAddress?: string | null }) {
   const { holdId, roomId, startsAt, endsAt, userId, now } = input;
   if (!userId) throw domainErrors.unauthorized();
   if (input.useClassPass) throw domainErrors.validationFailed('classPass');
@@ -97,9 +99,10 @@ async function createRentalFromHold(input: { holdId: string; roomId: string; sta
   if (!room) throw domainErrors.notFound();
   assertRentalDuration(rentalMinutes(startsAt, endsAt), rentalRules());
   const totalPrice = rentalPrice(room.pricePerHour, rentalMinutes(startsAt, endsAt));
+  const consent = await checkBookingConsents({ customerId: userId, subject: 'STUDIO_RENTAL', accepted: input.consents });
   const bufMs = booking.bufferBetweenBookingsMinutes * 60_000;
   try {
-    return await db.$transaction(async (tx) => {
+    const result = await db.$transaction(async (tx) => {
       const consumed = await tx.slotHold.deleteMany({ where: { id: holdId, expiresAt: { gt: now } } });
       if (consumed.count !== 1) throw domainErrors.holdExpired();
       const conflict = await tx.booking.findFirst({
@@ -116,7 +119,7 @@ async function createRentalFromHold(input: { holdId: string; roomId: string; sta
         data: {
           reference: 'tmp-' + holdId.slice(-6), subject: 'STUDIO_RENTAL', lessonType: 'PRIVATE', status: 'PENDING', customerId: userId,
           instructorId: null, venueId: room.venueId, roomId: room.id, sessionId: null, startsAt, endsAt, participants: 1, partnerName: null,
-          locationOption: 'STUDIO', customerAddress: null, basePrice: room.pricePerHour, travelFee: 0, discountAmount: 0, totalPrice,
+          locationOption: 'STUDIO', customerAddress: null, basePrice: room.pricePerHour, travelFee: 0, discountAmount: 0, totalPrice, consentVersion: consent.consentVersion,
           cancellationWindowHours: venue.freeCancellationHours, lateCancellationRate: booking.lateCancellationFeeRate,
           rescheduleWindowHours: booking.freeRescheduleHours, maxReschedules: booking.maxReschedulesPerBooking,
         },
@@ -124,10 +127,12 @@ async function createRentalFromHold(input: { holdId: string; roomId: string; sta
       });
       return tx.booking.update({ where: { id: created.id }, data: { reference: refFromId(created.id) }, select: { id: true, reference: true, totalPrice: true, startsAt: true, endsAt: true } });
     });
+    await storeBookingConsents(consent, input.ipAddress ?? null);
+    return result;
   } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; }
 }
 
-export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; partnerName?: string | null; useClassPass?: boolean; now: Date; }
+export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; partnerName?: string | null; useClassPass?: boolean; consents?: readonly BookingConsentId[]; ipAddress?: string | null; now: Date; }
 export async function createBookingFromHold(input: CreateBookingInput) {
   const { holdId, userId, anonymousId, now } = input;
   if (!userId && !anonymousId) throw domainErrors.unauthorized();
@@ -137,7 +142,7 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   if (!owned) throw domainErrors.forbidden();
   if (isHoldExpired(hold, now)) throw domainErrors.holdExpired();
   if (isRentalHold(hold) && hold.roomId) {
-    return createRentalFromHold({ holdId: hold.id, roomId: hold.roomId, startsAt: hold.startsAt, endsAt: hold.endsAt, userId: userId ?? null, now, useClassPass: input.useClassPass, locationOption: input.locationOption });
+    return createRentalFromHold({ holdId: hold.id, roomId: hold.roomId, startsAt: hold.startsAt, endsAt: hold.endsAt, userId: userId ?? null, now, useClassPass: input.useClassPass, locationOption: input.locationOption, consents: input.consents, ipAddress: input.ipAddress ?? null });
   }
   let basePrice: number | null = null;
   let danceClass: { id: string; price: number; venueId: string | null; lessonType: 'GROUP' | 'PRIVATE' | 'PAIR' } | null = null;
@@ -180,6 +185,7 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   if (lessonType === 'PAIR' && (!partnerName || partnerName.length > 160)) throw domainErrors.validationFailed('partnerName');
   if (lessonType !== 'PAIR' && partnerName) throw domainErrors.validationFailed('partnerName');
   if (input.useClassPass && lessonType !== 'GROUP') throw domainErrors.validationFailed('classPass');
+  const consent = await checkBookingConsents({ customerId, subject: lessonType === 'PRIVATE' ? 'PRIVATE_SESSION' : 'CLASS_SESSION', accepted: input.consents });
   const bookedCheck = session;
   let createdId: string | null = null;
   try {
@@ -226,7 +232,7 @@ export async function createBookingFromHold(input: CreateBookingInput) {
          discountAmount = dynamicPrice;
          payableTotal = travelFee;
        }
-       const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject, lessonType, status: 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants, partnerName: lessonType === 'PAIR' ? partnerName : null, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount, totalPrice: payableTotal, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules }, select: { id: true, reference: true } });
+       const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject, lessonType, status: 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants, partnerName: lessonType === 'PAIR' ? partnerName : null, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount, totalPrice: payableTotal, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules, consentVersion: consent.consentVersion }, select: { id: true, reference: true } });
        if (classPassId) {
          const redeemed = await tx.classPass.updateMany({ where: { id: classPassId, purchaserId: customerId, lessonsRemaining: { gt: 0 }, expiresAt: { gt: now } }, data: { lessonsRemaining: { decrement: 1 } } });
          if (redeemed.count !== 1) throw domainErrors.validationFailed('classPass');
@@ -237,6 +243,7 @@ export async function createBookingFromHold(input: CreateBookingInput) {
       return updated;
     });
     createdId = result.id;
+    await storeBookingConsents(consent, input.ipAddress ?? null);
     void notifyBookingConfirmed(result.id).catch(() => {});
     return result;
   } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; } finally { void createdId; }
