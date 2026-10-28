@@ -1,0 +1,37 @@
+name: Booking cron
+
+# Внешний планировщик: Vercel Hobby даёт один ежедневный cron, а напоминания за 2 ч нужны чаще.
+on:
+  schedule:
+    # Окно напоминания ±15 мин, GitHub может задержать запуск на несколько минут — шаг 15.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Прогоны не накладываются друг на друга: следующий ждёт предыдущего.
+concurrency:
+  group: booking-cron
+  cancel-in-progress: false
+
+jobs:
+  booking-cron:
+    # Пока APP_URL не задан, запуск пропускается, а не падает каждые 15 минут.
+    if: ${{ vars.APP_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: POST /api/cron/booking
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Нужен секрет CRON_SECRET" >&2
+            exit 1
+          fi
+          curl --fail-with-body --silent --show-error --max-time 120 \
+            -X POST \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL%/}/api/cron/booking"

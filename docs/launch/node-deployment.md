@@ -129,6 +129,7 @@ npm run db:deploy
 - `CRON_SECRET` и внешний scheduler: перенести расписания из `vercel.json`,
   вызывая соответствующие POST /api/cron/* с `Authorization: Bearer <CRON_SECRET>`.
   На Node-хостинге vercel.json само по себе расписания не создаёт.
+  `/api/cron/booking` запускает `.github/workflows/booking-cron.yml` (GitHub Actions, каждые 15 мин): нужны секрет `CRON_SECRET` и переменная `APP_URL` в репозитории; пока `APP_URL` не задан, прогоны пропускаются. Публичный репозиторий отключает расписания после 60 дней без активности: проверять вкладку Actions.
 
 ## Cloudflare
 
