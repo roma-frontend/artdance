@@ -12,11 +12,11 @@
 
 | Приоритет | Что это значит                                                                                                                                                                         | Влияние на смету |
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- |
-| **P0**    | Без этого запуск получится хуже макета, либо возникает юридический или операционный риск. Это часть варианта PLATFORM: работы уже покрыты строками «полное QA», «безопасность», «SEO». | не увеличивает   |
+| **P0**    | Без этого запуск получится хуже макета, либо возникает юридический или операционный риск. Это часть варианта FULL (PLATFORM): работы уже покрыты строками «полное QA», «безопасность», «SEO». | не увеличивает   |
 | **P1**    | Прямо влияет на выручку или на стоимость поддержки. Продаётся как модуль Фазы 2.                                                                                                       | допсоглашение    |
 | **P2**    | Отрыв от конкурентов, Фаза 3. Делается, когда есть поток броней.                                                                                                                       | допсоглашение    |
 
-Оценки в часах. Цена выводится из сметы PLATFORM (9 200 000 AMD ≈ 615 часов) →
+Оценки в часах. Цена выводится из сметы FULL (PLATFORM): 9 200 000 AMD ≈ 615 часов →
 **≈ 15 000 AMD за час**. Столбец «Нужно» перечисляет то, что придётся добавить в
 конфиг, схему или i18n — сводка в §6.
 
@@ -26,6 +26,8 @@
 
 Дополняет `docs/05-screen-inventory.md`. Пути добавляются в `src/config/routes.ts`
 одной правкой — литералов в коде быть не должно.
+
+Состояние на 28.10.2026: почти все маршруты из таблицы уже есть. Нет: A-12 (`/account/payment-methods`) и A-25 (`/help/[topic]`); A-24 — один sitemap вместо разбивки; A-04 — алиас `/search` на `/discover`; A-03 реализован как `/cities/[city]/[district]`. Полный список неготовых пунктов — в `docs/06`, раздел «Не реализовано — начинать отсюда».
 
 | id   | Маршрут                                                                    | Зачем                                                                                                                                                                                     | Prio                   |          Часы |
 | ---- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ------------: |
@@ -72,13 +74,13 @@
 
 Ключевое следствие для схемы: DanceSport — это не «ещё один стиль», а **дисциплина
 со специализациями и парами танцев**. Плоский enum `DanceStyle` этого не выражает:
-параллельная таксономия `DanceDiscipline` (DanceSport / Social) со связью
+параллельная таксономия `Discipline` (DanceSport / Social) со связью
 стилей к дисциплинам — то, что делает каталог честным и даёт фильтр «DanceSport
 vs Social» без костылей в i18n.
 
 | ID    | Задача                                                                                                                                                                                                                           | Приоритет                                    | Оценка | Статус |
 | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------ | ------ |
-| DS-01 | Таксономия: `DanceDiscipline` (DanceSport, Social) + связь `DanceStyle` → дисциплина; STYLES-справочник: Standard (Slow Waltz, Tango, Venice Waltz, Slow Foxtrot, QuickStep) и Latine (Samba, Chachacha, Rumba, Pasodoble, Jive) | **P0** (в договоре — стили каталога, фаза 2) | 12     | ✅ 21.09 — `src/domain/dancesport.ts` (домен без таблицы; связь к стилям через `style`); KIZOMBA добавлен в `DanceStyle` |
+| DS-01 | Таксономия: `Discipline` (DanceSport, Social) + связь `DanceStyle` → дисциплина; STYLES-справочник: Standard (Slow Waltz, Tango, Venice Waltz, Slow Foxtrot, QuickStep) и Latine (Samba, Chachacha, Rumba, Pasodoble, Jive) | **P0** (в договоре — стили каталога, фаза 2) | 12     | 🔶 21.09 — `src/domain/dancesport.ts`: `Discipline` (Standard и Latine, домен без таблицы); KIZOMBA добавлен в `DanceStyle`; дисциплины Social и модели `DanceDiscipline` нет |
 | DS-02 | Лендинг и шапка: первый экран, меню и футер ведут разделами «DanceSport» и «Social Events»; копирайт — по официальной терминологии                                                                                               | **P0** (в договоре — фаза 2)                 | 6      | ✅ 21.09 — секции `DisciplineSections` + `CompetitionSection` на главной, «Competitions» в шапке, группа «Сообщество» в футере |
 | DS-03 | Секция «National & International» на лендинге: соревнования по официальному календарю WDSF Armenia + World Wind и другие Open-турниры                                                                                            | **P0** (в договоре — события, фаза 2)        | 10     | 🔶 21.09 — афиша-срез `/competitions` + демо-турнир; интеграция календаря WDSF — остаётся P2 |
 | DS-04 | Профиль атлета: роль «Athlete» рядом с инструктором — специализация (Standard/Latine), партнёр, рейтинг, достижения                                                                                                              | P1                                           | 16     | 🔶 21.09 — страница `/athletes` из спортивного профиля инструкторов (контент-слой); отдельная роль Athlete в схеме — не начато |
@@ -109,14 +111,14 @@ MVP ведётся вручную через админку — как собы�
 
 | id   | Фича                                | Почему это деньги                                                                                                                                                                    | Prio | Часы |
 | ---- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---- | ---: |
-| B-01 | ✅ сделано: **Пакеты занятий** — `cp-5/10/20` (5%/10%/15%, `60/90/120` дней) `config/pricing.ts:classPasses` + `/pricing ClassPassGrid` (`Price perSession` + CTA), `domain/class-pass.ts` (`activePasses/pickUsablePass`) | P1 | 24 |
+| B-01 | ✅ сделано: **Пакеты занятий** — `cp-5/10/20` (5%/10%/15%, `60/90/120` дней) `config/pricing.ts:classPasses` + `/pricing ClassPassGrid` (`Price perSession` + CTA), `domain/class-pass.ts` (`activePasses/pickUsablePass`, вызовов нет; погашение — `classPassRedemption` в `server/booking/service.ts` и `server/class-pass/service.ts`) | P1 | 24 |
 | B-02 | ✅ сделано: **Регулярные брони** — `domain/recurring.ts:nextOccurrences` (Tue `19:00`, `2..12` нед, `Asia/Yerevan`) + `RecurringSeries/seriesId` + `POST /api/booking/recurring` (hold→Booking луп `3.5`) | P1 | 24 |
 | B-03 | ✅ сделано: **Кредит вместо возврата** — `domain/wallet.ts:WalletKind` + `server/wallet (credit/debit)` + `cancel→creditWallet` (`CREDIT_REFUND` `refId=bookingId`), `/account/wallet` баланс | P1 | 20 |
 | B-04 | ✅ сделано: **Кошелёк и единая книга** — `applyWalletToPayment({ userId, amount, orderId })` (`DEBIT_CHECKOUT` `refId=orderId`, capping по балансу, idempotent) — один леджер `WalletAccount/WalletEntry` на возвраты/бонусы/рефералы/подарки | P1 | 20 |
-| B-05 | ✅ сделано: **Рефералы** — `Referral(referrerId, refereeId? @unique, code, bonusPaidAt)` + `server/referral (ensureReferralCode/bindReferral/payReferralBonus 3000 AMD обеим, CREDIT_REFERRAL)` | P1 | 16 |
-| B-06 | ✅ сделано: **Корпоративные счета/b2b** — `domain/corporate.ts:invoiceOverdue` + `server/corporate (createCorporateAccount/issueInvoice Invoice INV-…, markInvoicePaid → CorporateAccount.balance increment)` | P1 | 16 |
-| B-07 | ✅ сделано: **Промо-размещение (бусты)** — `domain/boost.ts:boostActive/boostBidValid 1000..100000` + `server/boost (createBoost/approveBoost/activeBoosts)` + `ranking.ts: boostedBonus` | P2 | 20 |
-| B-08 | ✅ сделано: **Баннеры** — `domain/banner.ts:bannerLive` (`isActive + startsAt..endsAt`) + `server/banners (listLiveBanners/createBanner)` (`Banner key @unique, order, isActive`) — `HeroSection` уже потребляет | P2 | 12 |
+| B-05 | 🔶 частично: **Рефералы** — `Referral(referrerId, refereeId? @unique, code, bonusPaidAt)` + `server/referral` (`ensureReferralCode`, `payReferralBonus` 3000 AMD обеим, `CREDIT_REFERRAL`; `payReferralBonus` вызывается при оплате, `src/server/payments/settle.ts`); `bindReferral` нигде не вызывается, `User.referredById` нигде не заполняется — приглашённый не привязывается | P1 | 16 |
+| B-06 | 🔶 код есть, не подключён: **Корпоративные счета/b2b** — `domain/corporate.ts:invoiceOverdue` + `server/corporate (createCorporateAccount/issueInvoice Invoice INV-…, markInvoicePaid → CorporateAccount.balance increment); вызовов из маршрутов и действий нет` | P1 | 16 |
+| B-07 | 🔶 код есть, не подключён: **Промо-размещение (бусты)** — `domain/boost.ts:boostActive/boostBidValid 1000..100000` + `server/boost/service.ts` (`createBoost`, `approveBoost`, `activeBoosts`; вызовов из маршрутов и действий нет) + `ranking.ts: boostedBonus` | P2 | 20 |
+| B-08 | ✅ сделано: **Баннеры** — `domain/banner.ts:bannerLive` (`isActive + startsAt..endsAt`) + `server/banners` (`listLiveBanners`; `Banner key @unique, order, isActive`); создание в админке (реестр `server/admin/registry.ts`, `createBanner` не вызывается), показ в `AnnouncementBar` (`server/content/banners.ts:getLiveBanners`); `HeroSection` баннеры не потребляет | P2 | 12 |
 | B-08b | Тариф для инструкторов              | Подписка исполнителя: аналитика, приоритет в выдаче, снижённая комиссия. `subscriptionPlans` уже есть — нужен инструкторский набор квот | P2 | 20 |
 | B-09 | Групповая бронь со сплитом оплаты   | Организатор зовёт друзей, каждый платит свою часть. Вирусный механизм: одна бронь = 4 новых аккаунта                                                                                 | P2   |   28 |
 | B-10 | Динамическое ценообразование        | Множители за пиковые и «мёртвые» часы (утро, будни). Заполняет пустые слоты без скидочных распродаж                                                                                  | P2   |   16 |
@@ -134,15 +136,15 @@ MVP ведётся вручную через админку — как собы�
 
 | id   | Фича                                                                                                                                                                                                                                                                                                               | Зачем                                                                                                                                              | Prio   | Часы |
 | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ---: |
-| C-01 | ✅ сделано: **Ранжирование каталога по качеству** — `src/config/ranking.ts` (веса, сумма 100) + `src/domain/ranking.ts` (`computeRankingScore`, `rankingBreakdown`, `newcomerBonus`), подключено к порядку инструкторов (`Instructors` query), `verify 2031×3 / build 402 SSG` | **P0** | 12 |
+| C-01 | ✅ сделано: **Ранжирование каталога по качеству** — `src/config/ranking.ts` (веса, сумма 100) + `src/domain/ranking.ts` (`computeRankingScore`, `rankingBreakdown`, `newcomerBonus`), подключено к порядку инструкторов (`Instructors` query), `npm run verify` зелёный (1224 теста) | **P0** | 12 |
 | C-02 | ✅ сделано: **Тупики → альтернативы** — заполненная группа показывает 3 ближайших свободных времени (`getAlternativeSlots`) + лист ожидания `WaitlistEntry(position)`/`claimWindow 120м` через `POST /api/waitlist`/`claim` (`src/domain/availability/conflicts.ts` + `src/server/booking/service.ts:joinWaitlist/claimWaitlistSlot/notifyWaitlistReady`) | **P0** | 10 |
-| C-03 | ✅ сделано: **Поиск с транслитерацией** — `createSearchIndex`/`matchSearchKey` (`src/server/search/index.ts`), `normalizeQuery` (hy/ru/en → одна форма), `/search` + `SearchOverlay` (`GET /api/search`, транслитерационный поиск) | **P0** | 12 |
-| C-04 | ✅ сделано: **Восстановление брошенной корзины и брони** — `Cart.expiresAt` (`24ч`, `src/domain/cart-abandonment.ts`) + `findAbandonedCarts` + `remindAbandonedCart` (`notify cart.abandoned` dedupe `cart:{id}:abandoned`, `src/server/cart/abandonment.ts`), `Cron`/`notify` путь (push→sms→email) | P1 | 12 |
-| C-05 | ✅ сделано: **Сохранённые поиски и алерты** — `domain/saved-search.ts` (`normalizeQuery` 2..80), `SavedSearch(@@unique [userId,query,scope])` + `GET/POST /api/saved-searches` (`src/server/saved-search/service.ts`) + `/account/saved-searches` | «Сообщить, когда появится бачата…» | P1 | 14 |
-| C-06 | ✅ сделано: **Рекомендации** — `domain/recommendations.ts` (`similarByCategory` + `collaborativeCandidates` `OrderItem→productId` via `ProductVariant`), `server/recommendations/service.ts:productRecommendations` (same category приоритет + коллаборативный фолбэк `take 500`), `Рекомендации` на `/shop/[slug]` | P1 | 16 |
-| C-07 | ✅ сделано: **Web push + SMS fallback** — `lib/notifications/push.ts` (`preferredChannel: PUSH if PushSubscription else SMS if phone else EMAIL`), `cron/booking` напоминания `24ч/2ч` + `waitlist ready` через единый `notify` (push→sms→email), `verify 2031×3 / build 401 SSG` | P1 | 14 |
-| C-08 | ✅ сделано: **Скидка на первое занятие** — `domain/first-booking.ts` (`isFirstBooking COUNT==0` + `firstBookingDiscount`), `server/promo/first-booking.ts:applyFirstBookingPromo` (`PromoCode isActive + usageLimit guard`, `Booking COUNT` проверка) | P1 | 8 |
-| C-09 | ✅ сделано: **Онбординг-серия писем** — `server/onboarding/steps.ts` (`welcome 0d → howToBook 3d → bonus 7d`, `scheduleAt/nextOnboardingStep` dedupe `onboarding:{userId}:{templateKey}`) | P1 | 10 |
+| C-03 | ✅ сделано: **Поиск с транслитерацией** — `searchKey`/`keyIncludes` (`src/lib/search/normalize.ts`), `matchesQuery` (`src/domain/catalog.ts`), `normalizeQuery` (hy/ru/en → одна форма, `src/lib/search/normalize.ts`), `/search` + `SearchOverlay` (`src/components/search/search-overlay.tsx`, `GET /api/search` в `src/app/api/search/route.ts`) | **P0** | 12 |
+| C-04 | 🔶 частично: **Восстановление брошенной корзины и брони** — `Cart.expiresAt` (`24ч`, `src/domain/cart-abandonment.ts`) и очистка просроченных корзин (`purgeExpiredCarts` из cron `purge-holds`) подключены; `findAbandonedCarts` и `remindAbandonedCart` (`notify cart.abandoned` dedupe `cart:{id}:abandoned`, `src/server/cart/abandonment.ts`), нигде не вызываются; цепочка push→sms→email не реализована (push не отправляется, SMS — заглушка) | P1 | 12 |
+| C-05 | 🔶 частично: **Сохранённые поиски и алерты** — `domain/saved-search.ts` (`normalizeQuery` 2..80), `SavedSearch(@@unique [userId,query,scope])` + `GET/POST /api/saved-searches` (`src/server/saved-search/service.ts`); страницы `/account/saved-searches` нет; алертов о новых совпадениях нет (задача, читающая `SavedSearch`, не написана) | «Сообщить, когда появится бачата…» | P1 | 14 |
+| C-06 | 🔶 функции есть, на странице не выводятся: **Рекомендации** — `domain/recommendations.ts` (`similarByCategory` + `collaborativeCandidates` `OrderItem→productId` via `ProductVariant`), `server/recommendations/service.ts:productRecommendations` (same category приоритет + коллаборативный фолбэк `take 500`), `Рекомендации` на `/shop/[slug]` не подключены (`productRecommendations` не вызывается) | P1 | 16 |
+| C-07 | 🔶 частично: **Web push + SMS fallback** — подписка `PushSubscription` и тумблер есть (`src/lib/notifications/push.ts`), отправка не подключена (`web-push` не установлен, `send.ts` пропускает канал PUSH, `preferredChannel` не вызывается); SMS — заглушка (`src/lib/sms/send.ts`); напоминания `24ч/2ч` и `waitlist ready` есть в `runBookingCron`, но `/api/cron/booking` не запланирован в `vercel.json` | P1 | 14 |
+| C-08 | 🔶 код есть, не подключён: **Скидка на первое занятие** — `domain/first-booking.ts` (`isFirstBooking COUNT==0` + `firstBookingDiscount`), `server/promo/first-booking.ts:applyFirstBookingPromo` (`PromoCode isActive + usageLimit guard`, `Booking COUNT` проверка); `applyFirstBookingPromo` нигде не вызывается | P1 | 8 |
+| C-09 | 🔶 код есть, не подключён: **Онбординг-серия писем** — `server/onboarding/steps.ts` (`welcome 0d → howToBook 3d → bonus 7d`, `scheduleAt/nextOnboardingStep` dedupe `onboarding:{userId}:{templateKey}`); `nextOnboardingStep` нигде не вызывается, серия не запускается | P1 | 10 |
 | C-10 | Журнал прогресса                                                                                                                                                                                                                                                                                                   | Посещения, освоенные фигуры, стрик. Обоснование подписки Pro (`quota.progressJournal` уже объявлена) | P2 | 20 |
 
 ---
@@ -153,14 +155,14 @@ MVP ведётся вручную через админку — как собы�
 
 | id   | Фича                           | Зачем                                                                                                                                                                                                                 | Prio   | Часы |
 | ---- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ---: |
-| D-01 | ✅ сделано: `src/domain/booking/policy.ts` — **защита от обхода** косвенно: `cancellationOutcome/bookingGuardrails` + `Order→Payout` разрыв, контакты не раскрываются до `Order/COMMISSION` (см. `notify` канал) | **P0** | 10 |
-| D-02 | ✅ сделано: **Верификация инструктора** — `domain/verification.ts` (`canGoVerified/verificationStatus`) + `server/verification/service.ts` (`submitVerificationDocument/approveVerificationDocument→isVerified/reject`) + `/instructors/[slug]` badge `inst-v` | **P0** | 12 |
-| D-03 | ✅ сделано: `ConsentRecord(version)` (`src/domain/consent.ts` + `server/consent/service.ts`) — **согласия при брони** `healthWaiver/shootingConsent/minorParentalConsent` (версия фиксируется в `Booking.consentVersion`) | **P0** | 8 |
-| D-04 | ✅ сделано: `booking.requestResponseSlaHours=12` + `autoDeclineAfterHours=24` (`src/config/business.ts`) — **SLA ответа на заявку** (`WaitlistEntry.claimWindow 120м` + `Cron booking` авто-отклонение с освобождением слота) | **P0** | 8 |
-| D-05 | ✅ сделано: `src/lib/security/rate-limit.ts` + `lib/notifications/channels.ts` — **антифрод** (скоростные лимиты `card/device`, `SmsDispatch`, `ReviewQueueEntry` модерация) | **P0** | 12 |
-| D-06 | ✅ сделано: **Ответ на отзыв** — `domain/review-reply.ts` (`replyValid 10..2000`) + `server/reviews/reply.ts` (`replyToReview` + `P2002` guard `ReviewResponse @unique(reviewId)` + `deleteReply`) — `ReviewResponse` в схеме | P1 | 10 |
-| D-07 | ✅ сделано: **Индекс надёжности** — `domain/reliability.ts` (`NO_SHOW -15/LATE_CANCEL -10/COMPLETED +2/DISPUTE_LOST -20`, `0..100` clamp) + `server/reliability/service.ts:recordReliabilityEvent` (`User.reliabilityScore @default 100` + `ReliabilityEvent` ledger) | P1 | 12 |
-| D-08 | ✅ сделано: **Споры** — `domain/dispute.ts` (`disputeValidReason 12..2000`) + `server/disputes/service.ts:openDispute/resolveDispute→recordReliabilityEvent` (`Dispute bookingId @unique, APPROVED/REJECTED`) | P1 | 16 |
+| D-01 | 🔶 частично: `src/domain/booking/policy.ts` — `cancellationOutcome` есть; **защита от обхода** в коде не найдена: нет `bookingGuardrails` и маскировки контактов | **P0** | 10 |
+| D-02 | ✅ сделано: **Верификация инструктора** — подача в `server/actions/verification.ts` (`VerificationDocument`), одобрение в админке `server/actions/admin/operations.ts` (ставит `isVerified: true`) + `/instructors/[slug]` badge `inst-v`; `domain/verification.ts` (`canGoVerified`) вызывается только из `server/verification/service.ts`, который не вызывается; `verificationStatus` не вызывается | **P0** | 12 |
+| D-03 | 🔶 частично: `ConsentRecord(version)` и `recordConsent`/`hasConsent` (`src/lib/consent/store.ts`) есть; **согласия при брони** `healthWaiver/shootingConsent/minorParentalConsent` не реализованы; `Booking.consentVersion` есть в схеме, но не заполняется | **P0** | 8 |
+| D-04 | 🔶 частично: `booking.requestResponseSlaHours=24` и `autoDeclineAfterHours=48` (`src/config/business.ts`) — **SLA ответа на заявку** не реализован: ключи нигде не используются, авто-отклонение в `runBookingCron` нет, `Booking.requestExpiresAt` не используется (`WaitlistEntry.claimWindow 120м` — другое окно, для листа ожидания) | **P0** | 8 |
+| D-05 | 🔶 частично: `src/lib/security/rate-limit.ts` (`checkRateLimit`, `checkApiFloodLimit`, лимиты `rateLimits` в `src/config/business.ts`) и `assertSmsBudget` (`src/lib/notifications/channels.ts`, не вызывается) — **антифрод**; лимитов по карте и устройству, модели `SmsDispatch` и очереди модерации `ReviewQueueEntry` нет | **P0** | 12 |
+| D-06 | 🔶 код есть, не подключён: **Ответ на отзыв** — `domain/review-reply.ts` (`replyValid 10..2000`) + `server/reviews/reply.ts` (`replyToReview` + `P2002` guard `ReviewResponse @unique(reviewId)` + `deleteReply`) — `ReviewResponse` в схеме; `replyToReview` и `deleteReply` нигде не вызываются, ответа инструктора из кабинета и API нет | P1 | 10 |
+| D-07 | 🔶 код есть, не подключён: **Индекс надёжности** — `domain/reliability.ts` (`NO_SHOW -15/LATE_CANCEL -10/COMPLETED +2/DISPUTE_LOST -20`, `0..100` clamp) + `server/reliability/service.ts:recordReliabilityEvent` (`User.reliabilityScore @default 100` + `ReliabilityEvent` ledger); `recordReliabilityEvent` нигде не вызывается (единственный вызов — в `resolveDispute`, который тоже не вызывается): `NO_SHOW`, `LATE_CANCEL`, `COMPLETED` не записываются | P1 | 12 |
+| D-08 | 🔶 код есть, не подключён: **Споры** — `domain/dispute.ts` (`disputeValidReason 12..2000`) + `server/disputes/service.ts:openDispute/resolveDispute→recordReliabilityEvent` (`Dispute bookingId @unique, APPROVED/REJECTED`); `openDispute` и `resolveDispute` нигде не вызываются — спор в продукте открыть и решить нельзя | P1 | 16 |
 
 ---
 
@@ -214,7 +216,7 @@ C-01 закрыт (см. §3), строки оставлены в истории
 
 ### Новые модели Prisma
 
-Проверено против текущей схемы (60 моделей) — ни одной из этих в ней нет.
+Проверено по `prisma/schema.prisma` на 28.10.2026 (102 модели): все модели из таблицы уже есть в схеме; подключение к продукту — в статусах §2–§4. Поля из таблицы «Новые поля в существующих моделях» проверены: есть `User.referralCode/referredById/reliabilityScore/marketingConsentAt`, `Booking.seriesId/checkInAt/checkedInById/requestExpiresAt/consentVersion/source`, `InstructorProfile.verifiedAt/responseTimeMinutes/acceptanceRate/rankingScore/boostedUntil`, `Review.photoAssetIds`, `MediaAsset.blurDataUrl`; нет `Order.corporateAccountId` и скалярного `Order.invoiceId` (связь `Order.invoice` с `Invoice` есть; `corporateAccountId` есть у `Invoice`).
 
 | Модель                             | Для чего                                     |
 | ---------------------------------- | -------------------------------------------- |
@@ -236,7 +238,7 @@ C-01 закрыт (см. §3), строки оставлены в истории
 | `ShortLink`                        | ссылки и QR (A-22)                           |
 | `FeatureFlagOverride`              | флаги из админки (E-07)                      |
 
-Из этого списка в схему уже добавлена `NewsletterSubscriber` (рассылка и
+В схеме уже есть `NewsletterSubscriber` (рассылка и
 отписка, A-09) — она в миграции `init`, поле задачи теперь только экран и
 письма.
 
