@@ -1,9 +1,9 @@
 /**
- * PUSH (C-07) — Web Push вместо email, когда подписка есть, иначе email.
- * Хранение PushSubscription уже в схеме (endpoint/keys), отправка — через
- * `web-push` в `lib/notifications/send.ts`. Выбор канала: PUSH если тумблер `push`
- * включён И есть активная подписка, иначе EMAIL — один `notify` покрывает оба
- * сценария.
+ * PUSH (C-07) — выбор канала: PUSH, если тумблер `push` включён и есть активная подписка, иначе EMAIL.
+ * Хранение PushSubscription уже в схеме (endpoint/keys).
+ * **Статус: отправка Web Push не подключена.** Пакета `web-push` нет в `package.json`, `lib/notifications/send.ts`
+ * пропускает канал PUSH («позже»), `preferredChannel` нигде не вызывается: уведомления уходят только по email.
+ * См. `docs/06-implementation-plan.md`.
  *
  * **SMS здесь намеренно нет.** Шлюза нет ни в коде, ни у заказчика
  * (`SMS_SENDER_ID` — 2–3 недели на регистрацию), а канал, который не отправляется,
