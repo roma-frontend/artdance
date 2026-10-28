@@ -45,6 +45,7 @@ import { mediaUrl, seo, site } from '@/config';
 import { mediaProcessing } from '@/config/media-processing';
 import { seedMediaPath } from '@/design/seed-media';
 import { darkColors, raw } from '@/design/tokens';
+import { fetchR2Object } from '@/lib/media/fetch-r2-object';
 
 const card = seo.openGraph.card;
 
@@ -138,6 +139,9 @@ function toArrayBuffer(buffer: Buffer): ArrayBuffer {
 
 /* ─────────────────────────────── Фотография ─────────────────────────────── */
 
+/** Худший случай на маршрут — две попытки по 15 с, это внутри лимита статической сборки в 60 с. */
+const PHOTO_FETCH = { attempts: 2, timeoutMs: 15_000, backoffMs: 1_000 };
+
 /**
  * Байты исходного кадра по ссылке на медиа.
  *
@@ -150,14 +154,13 @@ async function sourceBytes(key: string): Promise<Buffer | null> {
   const url = seedMediaPath(key) || mediaUrl(key);
   if (url.startsWith('/')) return readFile(join(process.cwd(), 'public', url));
 
-  if (url.startsWith('http')) {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    return Buffer.from(await response.arrayBuffer());
-  }
+  if (url.startsWith('http')) return fetchR2Object(url, key, PHOTO_FETCH);
 
   return null;
 }
+
+/** Кадр по ключу — один раз на процесс; сбой тоже кешируется, иначе каждый маршрут ждал бы таймаут. */
+const photoCache = new Map<string, Promise<Buffer | null>>();
 
 /**
  * Кадр, пережатый под карточку, или `null`.
@@ -166,15 +169,13 @@ async function sourceBytes(key: string): Promise<Buffer | null> {
  * упавшая сборка из-за одного файла — нет. Причина сбоя уходит в предупреждение,
  * которое переживает продакшен-сборку (`removeConsole` оставляет `warn`).
  */
-async function cardPhoto(key: string | null | undefined): Promise<ArrayBuffer | null> {
-  if (!key) return null;
-
+async function loadCardPhoto(key: string): Promise<Buffer | null> {
   try {
     const { default: sharp } = await import('sharp');
     const source = await sourceBytes(key);
     if (!source) return null;
 
-    const jpeg = await sharp(source)
+    return await sharp(source)
       .resize(ogImageSize.width, ogImageSize.height, { fit: 'cover' })
       /*
        * Кадр гасится здесь, а не вуалью поверх: фильтра `brightness` у движка
@@ -184,12 +185,23 @@ async function cardPhoto(key: string | null | undefined): Promise<ArrayBuffer | 
       .modulate({ brightness: card.photoBrightness })
       .jpeg({ quality: mediaProcessing.quality.jpeg })
       .toBuffer();
-
-    return toArrayBuffer(jpeg);
   } catch (error) {
     console.warn(`[og] кадр «${key}» не удалось подготовить: ${String(error)}`);
     return null;
   }
+}
+
+async function cardPhoto(key: string | null | undefined): Promise<ArrayBuffer | null> {
+  if (!key) return null;
+
+  let pending = photoCache.get(key);
+  if (!pending) {
+    pending = loadCardPhoto(key);
+    photoCache.set(key, pending);
+  }
+
+  const jpeg = await pending;
+  return jpeg === null ? null : toArrayBuffer(jpeg);
 }
 
 /* ─────────────────────────────── Карточка ─────────────────────────────── */

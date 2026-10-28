@@ -35,8 +35,8 @@ import { fileURLToPath } from 'node:url';
 import { designAssets } from '../design/asset-manifest.ts';
 import r2Inventory from '../design/media-r2-manifest.json';
 import { mediaProcessing, presetBudget } from '../src/config/media-processing.ts';
+import { fetchR2Object } from '../src/lib/media/fetch-r2-object.ts';
 import { budgetFor, describeImage, processImage, withinBudget } from '../src/lib/media/ingest.ts';
-import { fetchR2Object } from './fetch-r2-object.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
