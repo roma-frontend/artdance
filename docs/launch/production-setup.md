@@ -73,7 +73,7 @@ Project → Settings → Environment Variables → Production. Обязател�
 3. Применить миграции и сид:
 
 ```bash
-DATABASE_URL="…" DIRECT_DATABASE_URL="…" npm run db:migrate
+DATABASE_URL="…" DIRECT_DATABASE_URL="…" npm run db:deploy
 DATABASE_URL="…" npm run db:seed   # демо-контент; перед настоящим запуском решаем, оставляем или чистим
 ```
 
