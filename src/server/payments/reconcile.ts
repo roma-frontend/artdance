@@ -9,6 +9,7 @@ import 'server-only';
 
 import { db } from '@/lib/db';
 import { domainErrors } from '@/domain/errors';
+import { money } from '@/domain/money';
 import { getPaymentProvider, type PaymentProviderId } from '@/lib/payments';
 import { recordAudit } from '@/lib/audit';
 import { settlePaidOrder } from '@/server/payments/settle';
@@ -24,22 +25,39 @@ export interface ReconcileInput {
   /** pay_\w+ из Payment.providerTransactionId или paymentId (cuid) */
   paymentId: string;
   expectedProvider?: PaymentProviderId;
+  /** Исход mock-платежа, который задаёт dev-confirm (только mock, в любом окружении). Провайдер не опрашивается. */
+  simulatedOutcome?: 'PAID' | 'FAILED';
 }
 
 export async function reconcilePayment(input: ReconcileInput) {
   const payment =
-    ((await db.payment.findUnique({ where: { id: input.paymentId } })) as unknown as { id: string; provider: string; providerTransactionId: string | null; status: string; orderId: string | null; bookingId: string | null } | null) ??
-    ((await db.payment.findFirst({ where: { providerTransactionId: input.paymentId } }) as unknown as { id: string; provider: string; providerTransactionId: string | null; status: string; orderId: string | null; bookingId: string | null } | null));
+    ((await db.payment.findUnique({ where: { id: input.paymentId } })) as unknown as { id: string; provider: string; providerTransactionId: string | null; status: string; amount: number; orderId: string | null; bookingId: string | null } | null) ??
+    ((await db.payment.findFirst({ where: { providerTransactionId: input.paymentId } }) as unknown as { id: string; provider: string; providerTransactionId: string | null; status: string; amount: number; orderId: string | null; bookingId: string | null } | null));
   if (!payment || !payment.providerTransactionId) return { status: 'NOT_FOUND' as const };
 
   if (isTerminal(payment.status)) return { status: payment.status as PaymentStatus };
 
   const provider = getPaymentProvider(payment.provider as PaymentProviderId);
   let snapshot: Awaited<ReturnType<typeof provider.getPayment>>;
-  try {
-    snapshot = await provider.getPayment(payment.providerTransactionId);
-  } catch (error) {
-    throw domainErrors.paymentFailed(error);
+  if (input.simulatedOutcome) {
+    // Тестовый исход: провайдер не опрашивается, его память mock не общая для инстансов.
+    // Только для mock: реальный провайдер такой исход не принимает.
+    if (payment.provider !== 'mock') throw domainErrors.forbidden();
+    const isPaid = input.simulatedOutcome === 'PAID';
+    snapshot = {
+      providerTransactionId: payment.providerTransactionId,
+      status: input.simulatedOutcome,
+      paidAmount: money(isPaid ? payment.amount : 0),
+      failureCode: isPaid ? undefined : 'SIMULATED_DECLINE',
+      failureMessage: isPaid ? undefined : 'Simulated decline (mock, dev only)',
+      raw: { simulated: true, outcome: input.simulatedOutcome },
+    };
+  } else {
+    try {
+      snapshot = await provider.getPayment(payment.providerTransactionId);
+    } catch (error) {
+      throw domainErrors.paymentFailed(error);
+    }
   }
 
   const paid = snapshot.status === 'PAID' || snapshot.status === 'AUTHORIZED';

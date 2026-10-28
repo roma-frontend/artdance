@@ -78,7 +78,6 @@ export default async function CheckoutStepPage({ params }: PageProps) {
           lines={content.cart.lines}
           promo={content.cart.promo}
           paymentMethods={content.paymentMethods}
-          inlineCardForm={content.inlineCardForm}
           locale={locale as Locale}
         />
       </div>

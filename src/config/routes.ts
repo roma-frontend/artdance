@@ -312,6 +312,7 @@ export const apiRoutes = {
   booking: () => '/api/booking',
   bookingPay: (bookingId: string) => `/api/booking/${encodeURIComponent(bookingId)}/pay`,
   paymentIntent: () => '/api/payments/intent',
+  paymentDevConfirm: () => '/api/payments/dev-confirm',
   paymentWebhook: (provider: string) => `/api/webhooks/payments/${provider}`,
   emailWebhook: () => '/api/webhooks/email',
   /**

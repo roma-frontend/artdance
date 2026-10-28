@@ -12,11 +12,9 @@
  * (`errors.paymentFailed`). Ровно тот случай, для которого в каталоге компонентов
  * заведён `MaintenanceNotice`: «платежи недоступны» сообщается заранее.
  *
- * **Форма карты рендерится только для inline-ввода.** У redirect-схемы (ArCa
- * EPG, Paynet) реквизиты вводятся на странице банка, и своё поле «номер карты» в
- * этом случае — не просто лишнее, а вредное: оно выглядит как место, куда можно
- * ввести карту, и приучает делать это на любом сайте. В прототипе форма карты
- * стоит всегда — это дефект макета, а не требование.
+ * **Оплата идёт в приложении, а не на сайте банка.** Выбор способа ничего не
+ * списывает: шаг оформления передаёт его в `useInAppPayment()`. Реквизиты карты
+ * этот компонент не показывает и не принимает.
  *
  * **`RadioGroup`, а не `<div onclick>`.** В макете плитки — обычные `div`:
  * выбрать способ оплаты с клавиатуры нельзя. Radix даёт модель радиогруппы
@@ -33,7 +31,7 @@ import {
   TriangleAlertIcon,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType } from 'react';
 
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { paymentMethodLabelKey, type PaymentMethod } from '@/domain/enums';
@@ -57,21 +55,11 @@ const methodIcons: Record<PaymentMethod, ComponentType<{ className?: string }>> 
 const armenianMethods: readonly PaymentMethod[] = ['ARCA', 'IDRAM', 'TELCELL', 'ARCA_QR'];
 const worldwideMethods: readonly PaymentMethod[] = ['CARD'];
 
-/** Способы, при которых клиент уходит на страницу провайдера. */
-const redirectingMethods: readonly PaymentMethod[] = ['CARD', 'ARCA', 'IDRAM', 'TELCELL', 'ARCA_QR'];
-
 interface PaymentMethodPickerProps {
   /** Из `availablePaymentMethods()`. Пустой список = оплата недоступна. */
   methods: readonly PaymentMethod[];
   value?: PaymentMethod | undefined;
   onChange(method: PaymentMethod): void;
-  /**
-   * Провайдер принимает реквизиты карты на нашей стороне. По умолчанию нет:
-   * inline-ввод требует PCI-обязательств и включается осознанно.
-   */
-  inlineCardForm?: boolean;
-  /** Поля карты. Рендерятся только при `inlineCardForm` и выбранной карте. */
-  children?: ReactNode;
   /** Предыдущая попытка оплаты не прошла. */
   failed?: boolean;
   className?: string;
@@ -81,15 +69,13 @@ export function PaymentMethodPicker({
   methods,
   value,
   onChange,
-  inlineCardForm = false,
-  children,
   failed = false,
   className,
 }: PaymentMethodPickerProps) {
   const t = useTranslations();
 
-  const showCardForm = inlineCardForm && value === 'CARD';
-  const showRedirectNote = value !== undefined && redirectingMethods.includes(value);
+  /* Подсказка про оплату в приложении: показываем, когда способ выбран и он онлайновый. */
+  const showInAppNote = value !== undefined && value !== 'CASH_ON_DELIVERY';
 
   return (
     <section
@@ -172,13 +158,9 @@ export function PaymentMethodPicker({
         </div>
       )}
 
-      {showRedirectNote && (
-        <p className="text-caption mt-4 text-content-secondary">
-          {t('checkout.payment.redirectNote')}
-        </p>
+      {showInAppNote && (
+        <p className="text-caption mt-4 text-content-secondary">{t('checkout.payment.inAppNote')}</p>
       )}
-
-      {showCardForm && <div className="mt-6">{children}</div>}
     </section>
   );
 }

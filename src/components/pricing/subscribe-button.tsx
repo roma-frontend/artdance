@@ -14,8 +14,9 @@
 
 import { Loader2Icon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
+import { useInAppPayment } from '@/components/payments/in-app-payment';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/config/routes';
 import { paymentMethods, type PaymentMethod } from '@/domain/enums';
@@ -52,6 +53,9 @@ export function SubscribeButton({
 
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<MessageKey | null>(null);
+  const { pay } = useInAppPayment();
+  /* Заказ подписки создаётся один раз: повтор после закрытия листа оплаты идёт по нему. */
+  const pendingOrder = useRef<{ orderId: string; orderNumber: string } | null>(null);
 
   if (!signedIn) {
     return (
@@ -67,27 +71,28 @@ export function SubscribeButton({
     setPending(true);
     setError(null);
     try {
-      const order = await purchaseSubscriptionAction({ planId, interval });
-      if (order?.serverError) {
-        setError(toActionMessageKey(order.serverError.messageKey));
-        return;
-      }
-      if (!order?.data?.orderId) {
-        setError('errors.generic.description');
-        return;
+      let order = pendingOrder.current;
+      if (!order) {
+        const created = await purchaseSubscriptionAction({ planId, interval });
+        if (created?.serverError) {
+          setError(toActionMessageKey(created.serverError.messageKey));
+          return;
+        }
+        if (!created?.data?.orderId) {
+          setError('errors.generic.description');
+          return;
+        }
+        order = { orderId: created.data.orderId, orderNumber: created.data.orderNumber };
+        pendingOrder.current = order;
       }
 
-      const intent = await createPaymentIntent({ orderId: order.data.orderId, method });
-      if (!intent.ok) {
-        setError(intent.error.messageKey);
-        return;
-      }
-
-      if (intent.data.redirectUrl) {
-        window.location.assign(intent.data.redirectUrl);
-        return;
-      }
-      router.push(routes.checkoutResult(order.data.orderNumber));
+      const { orderId, orderNumber } = order;
+      const outcome = await pay({
+        method,
+        start: () => createPaymentIntent({ orderId, method }),
+        onComplete: () => router.push(routes.checkoutResult(orderNumber)),
+      });
+      if (!outcome.ok) setError(outcome.messageKey);
     } catch {
       setError('errors.generic.description');
     } finally {

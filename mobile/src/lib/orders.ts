@@ -86,8 +86,9 @@ export async function reconcileMyPayment(paymentId: string): Promise<string> {
 }
 
 /**
- * DEV (Expo Go): тестовое подтверждение PaymentIntent. Сервер отвечает 404 вне тестового режима Stripe.
- * Номер карты сюда не передаётся: только сценарий. Возвращает статус PaymentIntent из Stripe.
+ * Тестовое подтверждение платежа для заглушки оплаты (Expo Go и mock-провайдер). Сервер отвечает 404
+ * в production и для платежей, которые нельзя подтвердить тестовой картой. Номер карты сюда не передаётся,
+ * только сценарий. Возвращает 'declined' при отказе карты, иначе статус платежа.
  */
 export async function confirmTestPayment(providerTransactionId: string, scenario: 'success' | 'declined'): Promise<string> {
   const token = await getSessionToken();

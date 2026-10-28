@@ -72,16 +72,6 @@ export function availablePaymentMethodsWithGlobal(): readonly PaymentMethod[] {
 }
 
 /**
- * Принимает ли текущий провайдер реквизиты карты на нашей стороне.
- *
- * Решает, рендерить ли поля карты в оформлении. Спрашивается у провайдера, а не
- * задаётся в компоненте: для redirect-схемы своя форма карты — прямой вред.
- */
-export function supportsInlineCardForm(): boolean {
-  return getPaymentProvider().supportsInlineCard;
-}
-
-/**
  * Роутинг по способу оплаты: AM-кошельки/ArCa → primary, CARD извне/мир → global (Stripe).
  * Пока config один, возвращает его же.
  */

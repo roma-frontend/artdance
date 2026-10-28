@@ -16,6 +16,7 @@ import { LiteModeProvider } from '@/lib/perf/lite-mode';
 import { STORAGE_KEY, liteModeInlineScript } from '@/lib/perf/detect-weak-device';
 import { LenisProvider } from '@/components/fx/lenis-provider';
 import { FavoritesSync } from '@/components/favorites/favorites-sync';
+import { InAppPaymentProvider } from '@/components/payments/in-app-payment';
 import { SearchOverlayProvider } from '@/components/search/search-overlay';
 import { JsonLdScript } from '@/components/seo/json-ld';
 import { Toaster } from '@/components/ui/sonner';
@@ -169,9 +170,11 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
                 <FavoritesSync />
                 <Toaster position="top-center" />
                 <SkipToContent />
-                <SiteChrome announcement={<AnnouncementBar locale={rawLocale} />}>
-                  {children}
-                </SiteChrome>
+                <InAppPaymentProvider>
+                  <SiteChrome announcement={<AnnouncementBar locale={rawLocale} />}>
+                    {children}
+                  </SiteChrome>
+                </InAppPaymentProvider>
               </SearchOverlayProvider>
             </LiteModeProvider>
           </NextIntlClientProvider>

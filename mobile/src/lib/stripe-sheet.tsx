@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-export type SheetResult = 'COMPLETED' | 'CANCELED' | 'FAILED' | 'UNAVAILABLE';
+export type CardConfirmResult = 'PAID' | 'DECLINED' | 'FAILED' | 'CANCELED';
 
 // Веб-сборка: Stripe нативной формы не имеет. Нативная реализация — stripe-sheet.native.tsx.
 export function isNativeStripeAvailable(): boolean {
@@ -11,6 +11,11 @@ export function StripeRoot({ children }: { children: ReactElement }) {
   return children;
 }
 
-export async function presentStripeSheet(_clientSecret: string, _returnURL: string): Promise<SheetResult> {
-  return 'UNAVAILABLE';
+/** Веб-сборка: нативного поля карты нет, оплата в браузере не открывается. */
+export function NativeCardField(_props: { onComplete: (complete: boolean) => void }) {
+  return null;
+}
+
+export async function confirmCardPayment(_clientSecret: string): Promise<CardConfirmResult> {
+  return 'FAILED';
 }

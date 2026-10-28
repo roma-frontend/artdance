@@ -34,10 +34,15 @@ export type PlacedOrder = {
 export type PaymentIntentResult = {
   orderNumber: string;
   status: string;
-  redirectUrl: string | null;
+  /** Провайдер платежа: 'stripe' или 'mock'. */
+  provider: string;
+  /** Сумма, уходящая провайдеру. Ноль, если заказ закрыт балансом кошелька. */
+  amount: number;
   providerTransactionId: string | null;
-  /** Секрет нативной формы Stripe; есть только при inAppSheet. */
+  /** Секрет встроенной формы оплаты; есть только при inAppSheet. */
   clientSecret?: string | null;
+  /** Заказ закрыт балансом кошелька целиком: провайдер не участвует. */
+  settledByWallet: boolean;
 };
 
 export class CheckoutError extends Error {
@@ -98,9 +103,9 @@ export async function placeClassPassOrder(passId: string): Promise<PlacedOrder> 
 }
 
 /**
- * Отправляет заказ провайдеру. Кошелёк применяется автоматически. Если провайдер
- * вернул адрес, его открывает вызывающий код. Подтверждение оплаты приходит с webhook'а,
- * поэтому статус здесь — только ответ на запрос, а не доказательство оплаты.
+ * Отправляет заказ провайдеру и возвращает секрет для встроенной формы оплаты. Кошелёк применяется
+ * автоматически. Подтверждение оплаты приходит с webhook'а и сверки, поэтому статус здесь — только
+ * ответ на запрос, а не доказательство оплаты.
  */
 export async function payMyOrder(orderId: string, method: MobilePaymentMethod, locale: string): Promise<PaymentIntentResult> {
   const token = await getSessionToken();

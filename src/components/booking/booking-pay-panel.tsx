@@ -1,9 +1,9 @@
 /**
  * ОПЛАТА БРОНИ — выбор способа и переход к провайдеру для PENDING-брони.
  *
- * Аренда зала и любая бронь без предоплаты ждут оплаты. Подтверждение приходит
- * webhook'ом провайдера, поэтому после редиректа здесь ничего не подтверждается:
- * статус читается из базы при следующей загрузке страницы.
+ * Аренда зала и любая бронь без предоплаты ждут оплаты. Оплата идёт в листе
+ * поверх страницы. Подтверждение приходит webhook'ом провайдера или сверкой:
+ * после неё страница обновляется, и статус читается из базы.
  */
 
 'use client';
@@ -13,10 +13,11 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { PaymentMethodPicker } from '@/components/checkout/payment-method-picker';
+import { useInAppPayment } from '@/components/payments/in-app-payment';
 import { Button } from '@/components/ui/button';
-import { apiRoutes } from '@/config';
 import type { PaymentMethod } from '@/domain/enums';
 import { useRouter } from '@/i18n/routing';
+import { startBookingPayment } from '@/lib/payments/api';
 
 interface BookingPayPanelProps {
   bookingId: string;
@@ -27,6 +28,7 @@ interface BookingPayPanelProps {
 export function BookingPayPanel({ bookingId, methods }: BookingPayPanelProps) {
   const t = useTranslations('booking');
   const router = useRouter();
+  const { pay: payInApp } = useInAppPayment();
   const [method, setMethod] = useState<PaymentMethod | undefined>(undefined);
   const [pending, setPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -36,21 +38,12 @@ export function BookingPayPanel({ bookingId, methods }: BookingPayPanelProps) {
     setPending(true);
     setFailed(false);
     try {
-      const res = await fetch(apiRoutes.bookingPay(bookingId), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method }),
+      const outcome = await payInApp({
+        method,
+        start: () => startBookingPayment({ bookingId, method }),
+        onComplete: () => router.refresh(),
       });
-      const body = (await res.json().catch(() => null)) as { redirectUrl?: string | null } | null;
-      if (!res.ok) {
-        setFailed(true);
-        return;
-      }
-      if (body?.redirectUrl) {
-        window.location.assign(body.redirectUrl);
-        return;
-      }
-      router.refresh();
+      if (!outcome.ok) setFailed(true);
     } catch {
       setFailed(true);
     } finally {

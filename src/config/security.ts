@@ -25,6 +25,12 @@ const externalOrigins = {
   analytics: 'https://eu.i.posthog.com',
   vercelInsights: 'https://va.vercel-scripts.com',
   /**
+   * Встроенная оплата Stripe Elements: скрипт и iframe полей (`js.stripe.com`),
+   * 3-D Secure челлендж (`hooks.stripe.com`). Без них форма оплаты не загрузится.
+   */
+  stripeJs: 'https://js.stripe.com',
+  stripeHooks: 'https://hooks.stripe.com',
+  /**
    * Встраивание видео соревнований (требование заказчика от 21.09.2026).
    * `youtube-nocookie` — официальный privacy-enhanced режим: до нажатия «play»
    * YouTube не ставит свои куки, что и позволяет держать его во `frame-src`,
@@ -78,12 +84,12 @@ function buildCsp(extraScriptSrc = ''): string {
     // 'wasm-unsafe-eval' — разрешает WebAssembly.compile из строки (Sentry, некоторые полифилы).
     // 'unsafe-eval' добавлен для prod: framer-motion и Sentry используют Function/eval в чанках
     // (1626pru...x.js), что на enterprise Chrome с Site Isolation блочится без него.
-    `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' ${externalOrigins.turnstile} ${externalOrigins.vercelInsights} ${externalOrigins.maps}${previewScript}${extraScriptSrc}${devScript}`,
+    `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'unsafe-eval' ${externalOrigins.turnstile} ${externalOrigins.vercelInsights} ${externalOrigins.maps} ${externalOrigins.stripeJs}${previewScript}${extraScriptSrc}${devScript}`,
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
     `img-src 'self' data: blob: https: ${externalOrigins.mapsStatic}`,
     `connect-src 'self' https: ${externalOrigins.analytics}${devConnect}`,
-    `frame-src 'self' ${externalOrigins.turnstile} ${externalOrigins.youtube}`,
+    `frame-src 'self' ${externalOrigins.turnstile} ${externalOrigins.youtube} ${externalOrigins.stripeJs} ${externalOrigins.stripeHooks}`,
     "media-src 'self' blob: https:",
     "worker-src 'self' blob:",
     "manifest-src 'self'",

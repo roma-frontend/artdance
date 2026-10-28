@@ -365,6 +365,6 @@ test.describe('Оформление', () => {
     await expect(arca).toHaveAttribute('aria-checked', 'true');
 
     await expect(page.getByRole('button', { name: en.common.actions.continue })).toBeEnabled();
-    await expect(page.getByText(en.checkout.payment.redirectNote)).toBeVisible();
+    await expect(page.getByText(en.checkout.payment.inAppNote)).toBeVisible();
   });
 });

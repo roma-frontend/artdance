@@ -15,7 +15,7 @@ import { useEntitlements } from '@/lib/entitlements';
 import { levelLabel, plural, price, styleLabel } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { enrollInCourse, getCourse, type CourseDetail } from '@/lib/courses';
-import { paymentOutcomeText, startPayment } from '@/lib/payment-url';
+import { orderPaymentError, paymentOutcomeText, startPayment } from '@/lib/payment-url';
 import { backLabel, goBack } from '@/lib/navigation';
 import { serverMessageOf } from '@/lib/server-message';
 import { EASE_OUT } from '@/lib/motion';
@@ -61,7 +61,7 @@ export default function CourseDetailScreen() {
       const intent = await payMyOrder(order.id, 'CARD', locale);
       const outcome = await startPayment(intent);
       if (outcome === 'PAID') await load();
-      Alert.alert(paymentOutcomeText(outcome, t));
+      Alert.alert(outcome === 'PAID' || outcome === 'PENDING' ? paymentOutcomeText(outcome, t) : orderPaymentError(outcome, c.checkout.payment));
     } catch (error) {
       Alert.alert(serverMessageOf(error) ?? t.bookPayFailed);
     } finally {

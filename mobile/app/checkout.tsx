@@ -24,7 +24,7 @@ import {
 import { catalogFor } from '@/i18n/catalog';
 import { plural, price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
-import { startPayment } from '@/lib/payment-url';
+import { orderPaymentError, startPayment } from '@/lib/payment-url';
 import { serverMessageOf } from '@/lib/server-message';
 import { EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
@@ -181,13 +181,11 @@ export default function CheckoutScreen() {
         setPlaced(order);
       }
       const intent = await payMyOrder(order.id, method, locale);
-      if (intent.redirectUrl) {
-        const outcome = await startPayment(intent);
-        if (outcome === 'UNAVAILABLE') {
-          // Заказ уже создан: остаёмся на экране, повтор оплатит его же.
-          setFormError(m.bookPayFailed);
-          return;
-        }
+      const outcome = await startPayment(intent);
+      if (outcome !== 'PAID' && outcome !== 'PENDING') {
+        // Заказ уже создан: остаёмся на экране, повтор оплатит его же.
+        setFormError(orderPaymentError(outcome, c.checkout.payment));
+        return;
       }
       router.replace({ pathname: '/account/orders/[orderNumber]', params: { orderNumber: intent.orderNumber || order.orderNumber } });
     } catch (error) {
@@ -360,7 +358,7 @@ export default function CheckoutScreen() {
               onPress={() => setMethod(value)}
             />
           ))}
-          <Text style={type.caption}>{c.checkout.payment.redirectNote}</Text>
+          <Text style={type.caption}>{c.checkout.payment.inAppNote}</Text>
         </View>
 
         {cart && totals ? (

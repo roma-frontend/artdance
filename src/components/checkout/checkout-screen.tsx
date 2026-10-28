@@ -11,10 +11,10 @@
  * `aria-describedby` и `aria-invalid` сам — забыть их нельзя, потому что место
  * вызова их и не задаёт.
  *
- * **Способы оплаты и форма карты приходят от провайдера.** Список — из
- * `availablePaymentMethods()`, наличие inline-формы — из `supportsInlineCard`.
- * Три плитки в разметке, как в макете, означали бы три способа, из которых
- * работает один; поле «номер карты» при redirect-схеме — хуже, чем лишнее.
+ * **Способы оплаты приходят от провайдера.** Список — из
+ * `availablePaymentMethods()`. Карту вводит встроенный лист оплаты, поэтому
+ * поля карты на этом экране не нужны: три плитки в разметке, как в макете,
+ * означали бы три способа, из которых работает один.
  *
  * **Сводка справа считается `domain/cart.ts`**, а зона доставки выбирается на
  * своём шаге: до него доставка не посчитана, а не «бесплатна».
@@ -24,18 +24,17 @@
  * (`lib/checkout/draft.ts`, `sessionStorage`) и подставляется при открытии
  * шага. Без этого последний шаг отправлял бы заказ без контактов.
  *
- * **Последняя кнопка действительно создаёт заказ и платёж.** Порядок:
- * `createOrderAction` → `POST /api/payments/intent` → редирект на провайдера.
- * Успех здесь не рисуется никогда: подтверждение приходит от webhook или
- * сверки, а redirect клиента доказательством оплаты не является — поэтому
- * экран уводит на страницу возврата `/checkout/result/:orderNumber`, которая
- * показывает статус из базы и сама просит сверку.
+ * **Последняя кнопка создаёт заказ один раз и открывает оплату.** Порядок:
+ * `createOrderAction` → `pay()`, который создаёт попытку (`POST /api/payments/intent`)
+ * и открывает встроенный лист. Повтор после отказа берёт тот же заказ.
+ * Успех рисуется только по статусу из базы: лист сверяет платёж, после чего
+ * экран уводит на страницу `/checkout/result/:orderNumber`.
  */
 
 'use client';
 
 import { useFormatter, useTranslations } from 'next-intl';
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { cartValidate, fetchCart } from '@/lib/cart/api';
 import { useCartStore } from '@/lib/cart/store';
 import { getAnonymousId } from '@/lib/client/anonymous-id';
@@ -47,6 +46,7 @@ import { createOrderAction } from '@/server/actions/orders';
 import { OrderSummary, type OrderSummaryLine } from '@/components/checkout/order-summary';
 import { PaymentMethodPicker } from '@/components/checkout/payment-method-picker';
 import { TrustBadges } from '@/components/checkout/trust-badges';
+import { useInAppPayment } from '@/components/payments/in-app-payment';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormField } from '@/components/ui/form-field';
@@ -59,20 +59,11 @@ import type { Locale } from '@/i18n/config';
 import { Link, useRouter } from '@/i18n/routing';
 import type { MessageKey } from '@/i18n/types';
 import {
-  cardBrandLabel,
-  detectCardBrand,
-  formatCardholder,
-  formatCardNumber,
-  formatCvv,
   formatEmailInput,
-  formatExpiry,
   formatName,
   formatPhone,
   formatPostalCode,
-  isCardNumberValid,
-  isCvvValid,
   isEmailValid,
-  isExpiryValid,
   isPhoneValid,
   isPostalCodeValid,
   onlyDigits,
@@ -87,11 +78,7 @@ type FieldName =
   | 'address'
   | 'city'
   | 'postalCode'
-  | 'notes'
-  | 'cardNumber'
-  | 'expiry'
-  | 'cvv'
-  | 'cardholder';
+  | 'notes';
 
 type FieldValues = Partial<Record<FieldName, string>>;
 type FieldErrors = Partial<Record<FieldName, MessageKey>>;
@@ -113,7 +100,6 @@ interface CheckoutScreenProps {
   step: CheckoutStep;
   lines: readonly CartScreenLine[];
   paymentMethods: readonly PaymentMethod[];
-  inlineCardForm: boolean;
   locale: Locale;
   /** Промокод, применённый в корзине: скидка не теряется при переходе. */
   promo: AppliedPromo | null;
@@ -123,13 +109,15 @@ export function CheckoutScreen({
   step,
   lines,
   paymentMethods,
-  inlineCardForm,
   locale,
   promo,
 }: CheckoutScreenProps) {
   const t = useTranslations();
   const format = useFormatter();
   const router = useRouter();
+  const { pay } = useInAppPayment();
+  /* Заказ, созданный на этом экране. Повтор после отказа оплаты идёт по нему, а не создаёт новый. */
+  const pendingOrder = useRef<{ id: string; orderNumber: string } | null>(null);
 
   /*
    * Начальные значения — из черновика. `readDraft` синхронно читает
@@ -161,21 +149,16 @@ export function CheckoutScreen({
 
   const set = (name: FieldName) => (value: string) => {
     let next = value;
-    if (name === 'cardNumber') next = formatCardNumber(value);
-    else if (name === 'expiry') next = formatExpiry(value);
-    else if (name === 'cvv') next = formatCvv(value, values.cardNumber);
-    else if (name === 'phone') next = formatPhone(value);
+    if (name === 'phone') next = formatPhone(value);
     else if (name === 'email') next = formatEmailInput(value);
     else if (name === 'firstName' || name === 'lastName') next = formatName(value);
     else if (name === 'postalCode') next = formatPostalCode(value);
-    else if (name === 'cardholder') next = formatCardholder(value);
     setValues((current) => ({ ...current, [name]: next }));
     setErrors((current) => (current[name] ? { ...current, [name]: undefined } : current));
 
     /*
      * Контактные и адресные поля сразу уходят в черновик — это они переезжают
-     * между шагами. Реквизиты карты не сохраняются: `writeDraft` их вырезает,
-     * а форма карты живёт только на шаге оплаты.
+     * между шагами. Реквизиты карты сюда не попадают: их вводит лист оплаты.
      */
     if (name === 'firstName' || name === 'lastName' || name === 'email' || name === 'phone' ||
         name === 'address' || name === 'city' || name === 'postalCode' || name === 'notes') {
@@ -267,21 +250,6 @@ export function CheckoutScreen({
       found['address' as FieldName] = 'validation.required';
     }
 
-    if (step === 'payment') {
-      if (!method) {
-        found['cardNumber' as FieldName] = 'validation.required';
-      } else if (inlineCardForm && method === 'CARD') {
-        for (const name of ['cardNumber', 'expiry', 'cvv', 'cardholder'] as const) {
-          if (!values[name]?.trim()) found[name] = 'validation.required';
-        }
-        if (values.cardNumber?.trim() && !isCardNumber(values.cardNumber)) found.cardNumber = 'validation.invalidCard';
-        if (values.expiry?.trim() && !isExpiry(values.expiry)) found.expiry = 'validation.invalidExpiry';
-        if (values.cvv?.trim() && !isCvv(values.cvv, values.cardNumber)) found.cvv = 'validation.invalidCvv';
-        if (values.cardholder?.trim() && values.cardholder.trim().length < 2) found.cardholder = 'validation.minLength';
-        if (values.cardholder?.trim() && /[^A-Z\s'-]/.test(values.cardholder.trim())) found.cardholder = 'validation.maxLength';
-      }
-    }
-
     setErrors(found);
     return Object.keys(found).length === 0;
   };
@@ -314,74 +282,68 @@ export function CheckoutScreen({
       setTermsError(true);
       return;
     }
+    if (!method) return;
 
-    const draft = readDraft();
     setSubmitting(true);
     setSubmitError(null);
 
     try {
+      let order = pendingOrder.current;
+
       /*
-       * Проверка корзины на сервере перед созданием заказа: цены и остатки под
-       * оформлением могли измениться. Заказ создаётся из `Cart` в БД, а не из
-       * того, что нарисовано на экране, — поэтому «итог в сводке» и «итог
-       * заказа» расходятся только в том случае, если корзина правда изменилась,
-       * и тогда честнее показать это, чем продать по старой цене.
+       * Заказ создаётся один раз. Отказ карты или закрытый лист возвращают к той же
+       * кнопке, и она повторяет оплату по уже созданному заказу, а не плодит новый.
        */
-      const fresh = await cartValidate();
-      if (fresh) useCartStore.getState().setSnapshot(fresh as never);
+      if (!order) {
+        const draft = readDraft();
 
-      const order = await createOrderAction({
-        contactEmail: draft.email,
-        contactPhone: draft.phone,
-        contactName: draftContactName(draft),
-        deliveryMethod: draft.deliveryMethod === 'courier' ? 'COURIER' : draft.deliveryMethod === 'pickup' ? 'PICKUP_POINT' : null,
-        deliveryAddress:
-          draft.deliveryMethod === 'courier'
-            ? { street: draft.address, city: draft.city, postalCode: draft.postalCode || null }
-            : null,
-        deliveryNotes: draft.notes || null,
-        anonymousId: getAnonymousId(),
-      });
-
-      if (order?.serverError) {
-        setSubmitError(toActionMessageKey(order.serverError.messageKey));
-        return;
-      }
-      if (!order?.data?.id) {
-        setSubmitError('errors.generic.description');
-        return;
-      }
-
-      const intent = await createPaymentIntent({
-        orderId: order.data.id,
-        method: method ?? 'CARD',
-        useWallet: true,
-        anonymousId: getAnonymousId(),
-      });
-
-      if (!intent.ok) {
-        setSubmitError(intent.error.messageKey);
-        return;
-      }
-
-      /* Черновик больше не нужен: заказ и платёж созданы. */
-      clearDraft();
-
-      if (intent.data.redirectUrl) {
         /*
-         * Полный переход, а не `router.push`: провайдер ждёт обычный GET от
-         * браузера, а не клиентскую навигацию, и адрес ведёт на чужой origin.
+         * Проверка корзины на сервере перед созданием заказа: цены и остатки под
+         * оформлением могли измениться. Заказ создаётся из `Cart` в БД, а не из
+         * того, что нарисовано на экране, — поэтому «итог в сводке» и «итог
+         * заказа» расходятся только в том случае, если корзина правда изменилась,
+         * и тогда честнее показать это, чем продать по старой цене.
          */
-        window.location.assign(intent.data.redirectUrl);
-        return;
+        const fresh = await cartValidate();
+        if (fresh) useCartStore.getState().setSnapshot(fresh as never);
+
+        const created = await createOrderAction({
+          contactEmail: draft.email,
+          contactPhone: draft.phone,
+          contactName: draftContactName(draft),
+          deliveryMethod: draft.deliveryMethod === 'courier' ? 'COURIER' : draft.deliveryMethod === 'pickup' ? 'PICKUP_POINT' : null,
+          deliveryAddress:
+            draft.deliveryMethod === 'courier'
+              ? { street: draft.address, city: draft.city, postalCode: draft.postalCode || null }
+              : null,
+          deliveryNotes: draft.notes || null,
+          anonymousId: getAnonymousId(),
+        });
+
+        if (created?.serverError) {
+          setSubmitError(toActionMessageKey(created.serverError.messageKey));
+          return;
+        }
+        if (!created?.data?.id) {
+          setSubmitError('errors.generic.description');
+          return;
+        }
+
+        order = { id: created.data.id, orderNumber: created.data.orderNumber };
+        pendingOrder.current = order;
       }
 
-      /*
-       * Redirect отсутствует: баланс закрыл заказ целиком, или провайдер
-       * работает по QR. В обоих случаях статус есть только в базе — страница
-       * возврата покажет правду и не нарисует «успех» от себя.
-       */
-      router.push(routes.checkoutResult(order.data.orderNumber));
+      const { id: orderId, orderNumber } = order;
+      const outcome = await pay({
+        method,
+        start: () => createPaymentIntent({ orderId, method, useWallet: true }),
+        onComplete: () => {
+          /* Заказ и оплата подтверждены сервером: черновик больше не нужен. */
+          clearDraft();
+          router.push(routes.checkoutResult(orderNumber));
+        },
+      });
+      if (!outcome.ok) setSubmitError(outcome.messageKey);
     } catch {
       setSubmitError('errors.generic.description');
     } finally {
@@ -391,6 +353,7 @@ export function CheckoutScreen({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    if (step === 'payment' && !method) return;
     if (!validate()) return;
 
     if (step === 'confirm') {
@@ -551,65 +514,7 @@ export function CheckoutScreen({
               setMethod(next);
               writeDraft({ paymentMethod: next });
             }}
-            inlineCardForm={inlineCardForm}
-          >
-            <div className="flex flex-col gap-4">
-              <TextField
-                name="cardNumber"
-                labelKey="checkout.payment.cardNumber"
-                inputMode="numeric"
-                autoComplete="cc-number"
-                required
-                placeholder="1234-5678-9012-3456"
-                maxLength={19}
-                brandHint={(() => {
-                  const b = detectCardBrand(values.cardNumber ?? '');
-                  return b !== 'unknown' ? cardBrandLabel[b] : undefined;
-                })()}
-                value={values.cardNumber}
-                error={errors.cardNumber}
-                onChange={set('cardNumber')}
-              />
-
-              <div className="form-2col">
-                <TextField
-                  name="expiry"
-                  labelKey="checkout.payment.expiry"
-                  placeholder="MM/YY"
-                  inputMode="numeric"
-                  autoComplete="cc-exp"
-                  required
-                  maxLength={5}
-                  value={values.expiry}
-                  error={errors.expiry}
-                  onChange={set('expiry')}
-                />
-                <TextField
-                  name="cvv"
-                  labelKey="checkout.payment.cvv"
-                  placeholder={/^3[47]/.test(onlyDigits(values.cardNumber ?? '')) ? '****' : '***'}
-                  inputMode="numeric"
-                  autoComplete="cc-csc"
-                  required
-                  maxLength={/^3[47]/.test(onlyDigits(values.cardNumber ?? '')) ? 4 : 3}
-                  value={values.cvv}
-                  error={errors.cvv}
-                  onChange={set('cvv')}
-                />
-              </div>
-
-              <TextField
-                name="cardholder"
-                labelKey="checkout.payment.cardholder"
-                autoComplete="cc-name"
-                required
-                placeholder="NAME SURNAME"
-                value={values.cardholder}
-                error={errors.cardholder}
-                onChange={set('cardholder')}
-              />
-            </div>
-          </PaymentMethodPicker>
+          />
         )}
 
         {step === 'confirm' && (
@@ -721,7 +626,6 @@ interface TextFieldProps {
   placeholder?: string;
   maxLength?: number;
   hintKey?: MessageKey;
-  brandHint?: string;
 }
 
 function TextField({
@@ -737,7 +641,6 @@ function TextField({
   placeholder,
   maxLength,
   hintKey,
-  brandHint,
 }: TextFieldProps) {
   return (
     <FormField name={name} labelKey={labelKey} required={required} errorKey={error ?? null} hintKey={hintKey}>
@@ -757,11 +660,6 @@ function TextField({
             aria-invalid={field.invalid}
             className="form-input w-full min-w-0"
           />
-          {brandHint && (
-            <span className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-content-tertiary">
-              {brandHint}
-            </span>
-          )}
         </div>
       )}
     </FormField>
@@ -796,6 +694,3 @@ function isPhone(v: string) { return isPhoneValid(v); }
 function isPostalCode(v: string) { return isPostalCodeValid(v); }
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- оставлен для симметрии валидаторов
 function digitsOf(v: string) { return onlyDigits(v); }
-function isCardNumber(v: string) { return isCardNumberValid(v); }
-function isExpiry(v: string) { return isExpiryValid(v); }
-function isCvv(v: string, pan?: string) { return isCvvValid(v, pan); }

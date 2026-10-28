@@ -743,6 +743,18 @@ const en = {
     removedToast: '{name} removed from your bag',
   },
 
+  paymentSheet: {
+    title: 'Payment',
+    description: 'Amount to pay: {amount}',
+    loading: 'Opening secure payment…',
+    processing: 'Processing payment…',
+    testHint: 'Test mode: 4242 4242 4242 4242 completes the payment, 4000 0000 0000 0002 is declined. Any future expiry and any CVV.',
+    testCardUnknown: 'Unknown test card. Use one of the numbers from the hint.',
+    declined: 'The card was declined. Try another card.',
+    notCompleted: 'The payment was not completed. Try again.',
+    unavailable: 'This payment method is not available right now.',
+  },
+
   checkout: {
     title: 'Checkout',
     steps: {
@@ -781,10 +793,9 @@ const en = {
       cardNumber: 'Card number',
       expiry: 'Expiry',
       cvv: 'CVV',
-      cardholder: 'Cardholder name',
       billingTitle: 'Billing address',
       sameAsDelivery: 'Same as delivery address',
-      redirectNote: 'You will be redirected to your payment provider to complete the payment.',
+      inAppNote: 'Payment is completed on this page, without leaving the site.',
       submitCta: 'Complete payment — {total}',
       sectionArmenia: 'Armenia',
       sectionWorldwide: 'Worldwide card',

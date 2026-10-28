@@ -1,36 +1,28 @@
 import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
 
-import { promptTestCard } from '@/components/payments/test-card-stub';
+import { presentPaymentSheet, type SheetOutcome } from '@/components/payments/payment-sheet';
+import type { TestScenario } from '@/components/payments/test-card-stub';
 
 import { confirmTestPayment, reconcileMyPayment } from './orders';
-import { isNativeStripeAvailable, presentStripeSheet } from './stripe-sheet';
+import { confirmCardPayment, isNativeStripeAvailable } from './stripe-sheet';
 
 /**
- * Ответ сервера на старт оплаты. `clientSecret` есть только для нативной формы Stripe,
- * `redirectUrl` — для страницы провайдера.
+ * Ответ сервера на старт оплаты. `clientSecret` и `provider` нужны для встроенной формы оплаты;
+ * `settledByWallet` значит, что заказ полностью оплачен кошельком и провайдер не участвует.
  */
 export type PaymentStart = {
-  redirectUrl: string | null;
+  provider?: string | null;
   providerTransactionId: string | null;
   clientSecret?: string | null;
+  amount?: number;
+  settledByWallet?: boolean;
 };
 
 /**
- * Итог оплаты в приложении. `PAID` подтверждён сверкой с провайдером.
- * `PENDING` — возврат получен, статус ещё не известен. `UNAVAILABLE` — оплату открыть не удалось.
+ * Итог оплаты в приложении. `PAID` подтверждён сверкой с провайдером. `PENDING` — сверка
+ * не ответила, статус придёт вебхуком. `UNAVAILABLE` — оплату открыть не удалось.
  */
 export type PaymentOutcome = 'PAID' | 'PENDING' | 'FAILED' | 'CANCELED' | 'UNAVAILABLE';
-
-/** Страница провайдера открывается только по https; http допустим в разработке для mock-провайдера. */
-export function isSafePaymentUrl(url: string): boolean {
-  try {
-    const { protocol } = new URL(url);
-    return protocol === 'https:' || (__DEV__ && protocol === 'http:');
-  } catch {
-    return false;
-  }
-}
 
 /** Адрес, куда провайдер вернёт клиента: диплинк приложения (в Expo Go это exp://...). */
 export function paymentReturnUrl(): string {
@@ -53,50 +45,47 @@ async function settle(transactionId: string): Promise<PaymentOutcome> {
 }
 
 /**
- * Открывает страницу оплаты внутри приложения (без выхода в браузер). После возврата
- * сверяет платёж с провайдером: сам редирект не считается оплатой.
+ * Оплата тестовой картой из заглушки: сервер подтверждает платёж (mock или тестовый PaymentIntent Stripe).
+ * Отказ карты возвращает DECLINED; исключение сервера попадает в форму и становится FAILED.
  */
-export async function openPaymentUrl(
-  url: string | null | undefined,
-  transactionId: string | null | undefined,
-): Promise<PaymentOutcome> {
-  if (!url || !isSafePaymentUrl(url)) return 'UNAVAILABLE';
-  const session = await WebBrowser.openAuthSessionAsync(url, paymentReturnUrl()).catch(() => null);
-  if (!session) return 'UNAVAILABLE';
-  if (session.type !== 'success') return 'CANCELED';
-  if (!transactionId) return 'PENDING';
-  return settle(transactionId);
+async function submitTestCard(transactionId: string, scenario: TestScenario | null): Promise<SheetOutcome> {
+  if (!scenario) return 'FAILED';
+  const status = await confirmTestPayment(transactionId, scenario);
+  return status === 'declined' ? 'DECLINED' : 'PAID';
 }
 
 /**
- * Единая точка оплаты для экранов:
- * - нативная форма Stripe (dev/production сборка);
- * - тестовая заглушка в Expo Go (сервер подтверждает тестовой картой);
- * - страница провайдера, если серверу нужен редирект (mock и прочие способы).
- * Итог всегда сверяется с провайдером, даже когда форма сообщила об успехе.
+ * Оплата в приложении, без браузера. Открывает встроенную форму: нативную Stripe (провайдер stripe
+ * в dev или production сборке) либо заглушку тестовой карты (Expo Go и mock). Успешная форма ещё не оплата:
+ * итог сверяется с провайдером.
  */
 export async function startPayment(start: PaymentStart): Promise<PaymentOutcome> {
+  if (start.settledByWallet) return 'PAID';
   const transactionId = start.providerTransactionId;
-  if (start.clientSecret && transactionId) {
-    if (isNativeStripeAvailable()) {
-      const result = await presentStripeSheet(start.clientSecret, paymentReturnUrl());
-      if (result === 'COMPLETED') return settle(transactionId);
-      if (result === 'CANCELED') return 'CANCELED';
-      return result === 'FAILED' ? 'FAILED' : 'UNAVAILABLE';
-    }
+  const clientSecret = start.clientSecret;
+  if (!transactionId || !clientSecret) return 'UNAVAILABLE';
 
-    const scenario = await promptTestCard();
-    if (!scenario) return 'CANCELED';
-    try {
-      const status = await confirmTestPayment(transactionId, scenario);
-      // Отказ тестовой карты: платёж не подтверждён, сверка не нужна.
-      if (status === 'declined') return 'FAILED';
-      return settle(transactionId);
-    } catch {
-      return 'UNAVAILABLE';
-    }
-  }
-  return openPaymentUrl(start.redirectUrl, transactionId);
+  const native = start.provider === 'stripe' && isNativeStripeAvailable();
+  const outcome = await presentPaymentSheet({
+    amount: start.amount ?? 0,
+    mode: native ? 'native' : 'stub',
+    submit: (scenario) => (native ? confirmCardPayment(clientSecret) : submitTestCard(transactionId, scenario)),
+  });
+
+  if (outcome === 'PAID') return settle(transactionId);
+  if (outcome === 'DECLINED') return 'FAILED';
+  if (outcome === 'CANCELED') return 'CANCELED';
+  return 'UNAVAILABLE';
+}
+
+/** Текст неуспешного итога для экрана заказа: заказ сохранён, поэтому повтор описан прямо. */
+export function orderPaymentError(
+  outcome: Exclude<PaymentOutcome, 'PAID' | 'PENDING'>,
+  t: { declined: string; canceled: string; unavailable: string },
+): string {
+  if (outcome === 'FAILED') return t.declined;
+  if (outcome === 'CANCELED') return t.canceled;
+  return t.unavailable;
 }
 
 /** Текст пользователю по итогу оплаты. */

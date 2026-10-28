@@ -496,8 +496,10 @@ model TwoFactor {
 model Account {
   id                    String    @id @default(cuid())
   userId                String
-  // Кто выдал идентификатор: `credential` для пароля, домен провайдера для OAuth.
-  issuer                String
+  // Устарело: Better Auth 1.7.3+ его не записывает, аккаунт ищется по providerId и
+  // accountId. Колонка ослаблена до NULL миграцией account_issuer_relax; удаление —
+  // отдельной миграцией, когда откат больше не нужен.
+  issuer                String?
   // Идентификатор пользователя у провайдера. Для пароля — id самого пользователя.
   accountId             String
   providerId            String
@@ -513,7 +515,6 @@ model Account {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([issuer, accountId])
   @@index([userId])
 }
 

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { TestCardStubHost } from '@/components/payments/test-card-stub';
+import { PaymentSheetHost } from '@/components/payments/payment-sheet';
 import { SplashLoader } from '@/components/splash-loader';
 import { EmptyState } from '@/components/ui/empty-state';
 import { catalogFor } from '@/i18n/catalog';
@@ -188,7 +188,7 @@ export default function RootLayout() {
       <Stack.Screen name="cities/[city]/[district]" options={{ animation: 'default' }} />
         <Stack.Screen name="book/[instructor]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
       </Stack>
-      <TestCardStubHost />
+      <PaymentSheetHost />
     </ThemeProvider>
     </StripeRoot>
     </GestureHandlerRootView>

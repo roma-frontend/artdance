@@ -1,13 +1,15 @@
 /**
- * DEV-ONLY: тестовое подтверждение PaymentIntent для Expo Go.
+ * Тестовое подтверждение платежа для встроенной формы (сайт и приложение).
  *
- * В Expo Go нативная форма Stripe недоступна, поэтому приложение показывает заглушку
- * ввода карты и просит сервер подтвердить PaymentIntent тестовым методом Stripe
- * (`pm_card_visa` или `pm_card_chargeDeclined`). Номер карты на сервер не уходит:
- * сценарий выбирается на клиенте.
+ * Провайдер mock: сценарий задаёт исход (успех или отказ), платёж сверяется через
+ * reconcile с пометкой «симулировано». Провайдер Stripe: PaymentIntent подтверждается
+ * тестовым методом (`pm_card_visa` или `pm_card_chargeDeclined`). Номер карты на сервер
+ * не уходит: сценарий выбирается на клиенте.
  *
- * Маршрут закрыт в трёх местах: не в production, только ключ `sk_test_`, только владелец платежа.
- * Реальные деньги с его помощью списать нельзя.
+ * Владелец платежа — вошедший пользователь либо гость по `anonymousId` (только у заказа
+ * без владельца-пользователя). Поддержка проходит всегда. Mock не списывает реальных денег
+ * и работает в любом окружении: на демо-стенде иначе нельзя завершить ни одну покупку.
+ * Stripe — только с ключом `sk_test_` и не в production.
  */
 
 import { NextResponse } from 'next/server';
@@ -19,14 +21,41 @@ import { absoluteUrl } from '@/config/site';
 import { isSupportOperator } from '@/config/security';
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
+import { reconcilePayment } from '@/server/payments/reconcile';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const schema = z.object({
-  providerTransactionId: z.string().regex(/^pi_[A-Za-z0-9]+$/).max(128),
+  providerTransactionId: z.string().regex(/^(pi|mock)_[A-Za-z0-9-]+$/).max(128),
   scenario: z.enum(['success', 'declined']),
+  /** Гостевой ключ браузера: доказывает владение гостевым заказом. С сессией не нужен. */
+  anonymousId: z.string().min(8).max(128).optional(),
 });
+
+/** Владелец платежа: пользователь, либо гостевой ключ заказа. У брони гостей нет. */
+interface PaymentOwner {
+  userId: string | null;
+  anonymousId: string | null;
+}
+
+async function ownerOf(payment: { orderId: string | null; bookingId: string | null }): Promise<PaymentOwner | null> {
+  if (payment.orderId) {
+    const order = await db.order.findUnique({
+      where: { id: payment.orderId },
+      select: { userId: true, anonymousId: true },
+    });
+    return order ? { userId: order.userId, anonymousId: order.anonymousId } : null;
+  }
+  if (payment.bookingId) {
+    const booking = await db.booking.findUnique({
+      where: { id: payment.bookingId },
+      select: { customerId: true },
+    });
+    return booking ? { userId: booking.customerId, anonymousId: null } : null;
+  }
+  return null;
+}
 
 const noStore = { 'Cache-Control': 'no-store' };
 
@@ -36,13 +65,6 @@ function json(body: object, status: number) {
 
 export async function POST(request: Request) {
   const env = getServerEnv();
-  const key = env.STRIPE_SECRET_KEY;
-  if (env.NODE_ENV === 'production' || !key?.startsWith('sk_test_')) {
-    return json({ error: 'NOT_FOUND' }, 404);
-  }
-
-  const caller = await getCaller();
-  if (!caller) return json({ error: 'UNAUTHORIZED' }, 401);
 
   let body: unknown;
   try {
@@ -52,19 +74,41 @@ export async function POST(request: Request) {
   }
   const parsed = schema.safeParse(body);
   if (!parsed.success) return json({ error: 'VALIDATION_FAILED' }, 400);
+  const { anonymousId } = parsed.data;
+
+  // Без входа и без гостевого ключа владельца не установить: отказ раньше любого запроса к базе.
+  const caller = await getCaller();
+  if (!caller && !anonymousId) return json({ error: 'UNAUTHORIZED' }, 401);
 
   const payment = await db.payment.findFirst({
     where: { providerTransactionId: parsed.data.providerTransactionId },
-    select: { orderId: true, bookingId: true },
+    select: { id: true, provider: true, orderId: true, bookingId: true },
   });
   if (!payment) return json({ error: 'NOT_FOUND' }, 404);
 
-  const ownerId = payment.orderId
-    ? (await db.order.findUnique({ where: { id: payment.orderId }, select: { userId: true } }))?.userId ?? null
-    : payment.bookingId
-      ? (await db.booking.findUnique({ where: { id: payment.bookingId }, select: { customerId: true } }))?.customerId ?? null
-      : null;
-  if (!(ownerId === caller.id || isSupportOperator(caller))) return json({ error: 'FORBIDDEN' }, 403);
+  const owner = await ownerOf(payment);
+  const ownsByAccount = caller !== null && owner?.userId != null && owner.userId === caller.id;
+  const ownsAsGuest =
+    owner !== null && owner.userId === null && owner.anonymousId !== null && anonymousId === owner.anonymousId;
+  const isOperator = caller !== null && isSupportOperator(caller);
+  if (!(ownsByAccount || ownsAsGuest || isOperator)) return json({ error: 'FORBIDDEN' }, 403);
+
+  if (payment.provider === 'mock') {
+    const result = await reconcilePayment({
+      paymentId: payment.id,
+      simulatedOutcome: parsed.data.scenario === 'success' ? 'PAID' : 'FAILED',
+    });
+    return json({ status: result.status === 'FAILED' ? 'declined' : result.status }, 200);
+  }
+
+  const key = env.STRIPE_SECRET_KEY;
+  if (
+    env.NODE_ENV === 'production' ||
+    !key?.startsWith('sk_test_') ||
+    !parsed.data.providerTransactionId.startsWith('pi_')
+  ) {
+    return json({ error: 'NOT_FOUND' }, 404);
+  }
 
   const stripe = new Stripe(key, { apiVersion: '2024-12-18.acl' as never });
   const paymentMethod = parsed.data.scenario === 'success' ? 'pm_card_visa' : 'pm_card_chargeDeclined';

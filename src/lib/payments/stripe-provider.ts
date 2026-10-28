@@ -63,19 +63,19 @@ export function createStripeProvider(): PaymentProvider {
     id: 'stripe',
     supportedMethods: ['CARD'] as const as readonly PaymentMethod[],
     supportsPartialRefund: true,
-    supportsInlineCard: false,
 
     async createPayment(order: PaymentOrderRef): Promise<PaymentIntent> {
       const stripe = envStripe();
       if (!stripe) throw new PaymentProviderError('stripe', 'STRIPE_SECRET_KEY missing — set in .env/.env.local and Vercel env');
 
       if (order.inAppSheet) {
-        // PaymentIntent для нативной формы (PaymentSheet). Карта вводится в приложении, на сайт Stripe не уходим.
+        // PaymentIntent для встроенной формы (Payment Element на сайте, PaymentSheet в приложении). Карта вводится в нашей форме, на страницу Stripe не уходим.
         const intent = await stripe.paymentIntents.create(
           {
             amount: toMinor(order.amount, order.currencyCode),
             currency: order.currencyCode.toLowerCase(),
-            automatic_payment_methods: { enabled: true },
+            // Методы с переходом на сайт банка отключены: оплата остаётся в приложении.
+            automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
             description: order.description.slice(0, 255),
             receipt_email: order.customer.email || undefined,
             metadata: { paymentId: order.paymentId, orderNumber: order.orderNumber },

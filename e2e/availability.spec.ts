@@ -2,14 +2,12 @@ import { expect, test } from '@playwright/test';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { randomUUID } from 'node:crypto';
-import { createLocalAccountIssuer } from '@better-auth/core/db';
 import { hashPassword } from 'better-auth/crypto';
 import { demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
 import { completeTwoFactor } from './support/two-factor';
 
 const CREDENTIAL_PROVIDER = 'credential';
-const CREDENTIAL_ISSUER = createLocalAccountIssuer(CREDENTIAL_PROVIDER);
 
 /**
  * E2E расписания инструктора.
@@ -32,7 +30,7 @@ test('instructor edits availability: rule saved, exception saved, other rows unt
   const owner = await db.user.create({ data: { email: `${key}@example.test`, name: 'Avail owner', role: 'INSTRUCTOR' } });
   const stranger = await db.user.create({ data: { email: `${key}-stranger@example.test`, name: 'Avail stranger', role: 'INSTRUCTOR' } });
   const ownerHash = await hashPassword(demoPassword);
-  await db.account.create({ data: { userId: owner.id, issuer: CREDENTIAL_ISSUER, accountId: owner.id, providerId: CREDENTIAL_PROVIDER, password: ownerHash } });
+  await db.account.create({ data: { userId: owner.id, accountId: owner.id, providerId: CREDENTIAL_PROVIDER, password: ownerHash } });
   const ownerProfile = await db.instructorProfile.create({ data: { userId: owner.id, slug: key, headline: 'Avail', bio: 'Avail', styles: ['BALLROOM'], yearsExperience: 1, hourlyRateFrom: 20000, moderation: 'APPROVED', publishedAt: new Date() } });
   const strangerProfile = await db.instructorProfile.create({ data: { userId: stranger.id, slug: `${key}-s`, headline: 'Stranger', bio: 'Stranger', styles: ['BALLROOM'], yearsExperience: 1, hourlyRateFrom: 20000, moderation: 'APPROVED', publishedAt: new Date() } });
 

@@ -8,10 +8,11 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
-import { payMyOrder, placeClassPassOrder } from '@/lib/checkout';
+import { catalogFor } from '@/i18n/catalog';
+import { payMyOrder, placeClassPassOrder, type PlacedOrder } from '@/lib/checkout';
 import { backLabel, goBack } from '@/lib/navigation';
 import { getPricing, type PricingComparisonCell, type PricingContent } from '@/lib/content';
-import { startPayment } from '@/lib/payment-url';
+import { orderPaymentError, startPayment } from '@/lib/payment-url';
 import { serverMessageOf } from '@/lib/server-message';
 import { getSessionToken } from '@/lib/session';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
@@ -27,6 +28,8 @@ export default function PricingScreen() {
   const [failed, setFailed] = useState<string | null>(null);
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [buyError, setBuyError] = useState<string | null>(null);
+  /* Заказ на пакет, который не оплачен: повтор оплатит его, а не создаст дубль. */
+  const [placedPass, setPlacedPass] = useState<{ passId: string; order: PlacedOrder } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -73,15 +76,16 @@ export default function PricingScreen() {
     setBuyingId(passId);
     setBuyError(null);
     try {
-      const order = await placeClassPassOrder(passId);
+      // Повтор после отказа оплаты берёт уже созданный заказ, а не создаёт новый.
+      const order = placedPass?.passId === passId ? placedPass.order : await placeClassPassOrder(passId);
+      setPlacedPass({ passId, order });
       const intent = await payMyOrder(order.id, 'CARD', locale);
-      if (intent.redirectUrl) {
-        const outcome = await startPayment(intent);
-        if (outcome === 'UNAVAILABLE') {
-          setBuyError(t.bookPayFailed);
-          return;
-        }
+      const outcome = await startPayment(intent);
+      if (outcome !== 'PAID' && outcome !== 'PENDING') {
+        setBuyError(orderPaymentError(outcome, catalogFor(locale).checkout.payment));
+        return;
       }
+      setPlacedPass(null);
       router.push({ pathname: '/account/orders/[orderNumber]', params: { orderNumber: intent.orderNumber || order.orderNumber } });
     } catch (error) {
       setBuyError(serverMessageOf(error) ?? t.genericError);

@@ -50,12 +50,6 @@ export const mockPaymentProvider: PaymentProvider = {
   id: 'mock',
   supportedMethods: paymentMethods as readonly PaymentMethod[],
   supportsPartialRefund: true,
-  /**
-   * Разработка ведётся на mock, и форма карты — часть экрана оформления,
-   * которую нужно видеть и проверять до подписания договора с банком. У реальных
-   * адаптеров с redirect-схемой флаг будет `false`.
-   */
-  supportsInlineCard: true,
 
   async createPayment(order: PaymentOrderRef): Promise<PaymentIntent> {
     const providerTransactionId = `mock_${randomUUID()}`;
@@ -65,6 +59,20 @@ export const mockPaymentProvider: PaymentProvider = {
       attempts: 0,
     });
 
+    const expiresAt = new Date(Date.now() + booking.holdTtlMinutes * 60_000);
+
+    // Оплата в приложении: вместо страницы провайдера отдаём clientSecret, итог подтверждает dev-confirm или reconcile.
+    if (order.inAppSheet) {
+      return {
+        provider: 'mock',
+        providerTransactionId,
+        status: 'PENDING',
+        redirectUrl: null,
+        clientSecret: `${providerTransactionId}_secret`,
+        expiresAt,
+      };
+    }
+
     const url = new URL(order.returnUrl);
     url.searchParams.set('transactionId', providerTransactionId);
 
@@ -73,7 +81,7 @@ export const mockPaymentProvider: PaymentProvider = {
       providerTransactionId,
       status: 'PENDING',
       redirectUrl: url.toString(),
-      expiresAt: new Date(Date.now() + booking.holdTtlMinutes * 60_000),
+      expiresAt,
     };
   },
 

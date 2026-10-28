@@ -18,6 +18,7 @@ import { cacheControl } from '@/config/cache';
 import { paymentMethods } from '@/domain/enums';
 import { httpStatusFor, isDomainError } from '@/domain/errors';
 import { getCaller } from '@/lib/auth/guards';
+import { publishableKeyFor } from '@/lib/payments/publishable-key';
 import { checkRateLimit, clientIdentifier, rateLimitHeaders } from '@/lib/security/rate-limit';
 import { createOrderPayment } from '@/server/payments/service';
 
@@ -89,7 +90,7 @@ export async function POST(request: Request) {
       returnTo: parsed.data.returnTo,
       inAppSheet: parsed.data.inAppSheet === true,
     });
-    return json(result, 200);
+    return json({ ...result, publishableKey: publishableKeyFor(result.provider) }, 200);
   } catch (error) {
     if (isDomainError(error)) {
       return json({ error: error.code, messageKey: error.messageKey }, httpStatusFor(error.code));

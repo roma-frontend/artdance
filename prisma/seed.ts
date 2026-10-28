@@ -46,7 +46,6 @@
 import { config as loadEnv } from 'dotenv';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { hashPassword } from 'better-auth/crypto';
-import { createLocalAccountIssuer } from '@better-auth/core/db';
 
 import { PrismaClient } from '../src/generated/prisma/client.ts';
 import { booking, promotions } from '../src/config/business.ts';
@@ -95,16 +94,13 @@ const CLEAN_SLOTS = process.argv.includes('--clean') || process.env.CLEAN_SLOTS 
 const SESSIONS_PER_CLASS = 8;
 
 /**
- * Имя провайдера входа по паролю и его «издатель».
+ * Имя провайдера входа по паролю.
  *
- * Обе строки — внутренний контракт Better Auth: по ним библиотека находит запись
- * с хешем при входе по адресу. `issuer` не равен `providerId`: у способов входа
- * без собственного издателя библиотека строит синтетический
- * (`local:credential`), и строится он её же функцией — зашивать строку значило бы
- * получить аккаунт, в который нельзя войти, при первом же изменении формата.
+ * Это внутренний контракт Better Auth: по паре `providerId` + `accountId` библиотека
+ * находит запись с хешем при входе по адресу. Колонку `issuer` библиотека больше
+ * не пишет, поэтому сид её не заполняет.
  */
 const CREDENTIAL_PROVIDER = 'credential';
-const CREDENTIAL_ISSUER = createLocalAccountIssuer(CREDENTIAL_PROVIDER);
 
 const MS_PER_MINUTE = 60_000;
 const MS_PER_WEEK = 7 * 24 * 60 * MS_PER_MINUTE;
@@ -313,9 +309,8 @@ async function upsertUser(input: {
  *
  * Хеш считает та же функция, что и Better Auth при регистрации
  * (`better-auth/crypto`): свой алгоритм здесь означал бы аккаунт, который
- * выглядит рабочим, но в который нельзя войти. `issuer` и `providerId` —
- * `credential`, `accountId` — id пользователя: так библиотека находит пароль при
- * входе по адресу.
+ * выглядит рабочим, но в который нельзя войти. `providerId` — `credential`,
+ * `accountId` — id пользователя: так библиотека находит пароль при входе по адресу.
  *
  * Пароль в открытом виде лежит в фикстурах осознанно: это локальная разработка, и
  * «секрет» в сиде — фикция. В production сид демо-аккаунтов не запускается.
@@ -323,16 +318,20 @@ async function upsertUser(input: {
 async function setDemoPassword(userId: string): Promise<void> {
   const hash = await hashPassword(demoPassword);
 
-  await prisma.account.upsert({
-    where: { issuer_accountId: { issuer: CREDENTIAL_ISSUER, accountId: userId } },
-    update: { password: hash },
-    create: {
-      userId,
-      issuer: CREDENTIAL_ISSUER,
-      accountId: userId,
-      providerId: CREDENTIAL_PROVIDER,
-      password: hash,
-    },
+  // Составного уникального ключа по (providerId, accountId) в схеме нет, поэтому
+  // upsert невозможен: ищем запись тем же способом, что и библиотека при входе.
+  const existing = await prisma.account.findFirst({
+    where: { providerId: CREDENTIAL_PROVIDER, accountId: userId },
+    select: { id: true },
+  });
+
+  if (existing) {
+    await prisma.account.update({ where: { id: existing.id }, data: { password: hash } });
+    return;
+  }
+
+  await prisma.account.create({
+    data: { userId, accountId: userId, providerId: CREDENTIAL_PROVIDER, password: hash },
   });
 }
 
