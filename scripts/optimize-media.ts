@@ -36,6 +36,7 @@ import { designAssets } from '../design/asset-manifest.ts';
 import r2Inventory from '../design/media-r2-manifest.json';
 import { mediaProcessing, presetBudget } from '../src/config/media-processing.ts';
 import { budgetFor, describeImage, processImage, withinBudget } from '../src/lib/media/ingest.ts';
+import { fetchR2Object } from './fetch-r2-object.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -191,9 +192,7 @@ async function main(): Promise<void> {
       } else {
         const remote = r2Inventory.find((entry) => entry.key === `media/seed/${optimized}`);
         if (!remote) throw new Error(`R2 inventory missing: ${optimized}`);
-        const response = await fetch(remote.url, { signal: AbortSignal.timeout(30_000) });
-        if (!response.ok) throw new Error(`R2 GET ${response.status}: ${optimized}`);
-        data = Buffer.from(await response.arrayBuffer());
+        data = await fetchR2Object(remote.url, optimized);
         if (data.length !== remote.bytes) throw new Error(`R2 size mismatch: ${optimized}`);
       }
       const described = await describeImage(data);
