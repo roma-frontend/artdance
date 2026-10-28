@@ -39,9 +39,11 @@ import 'server-only';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { PHASE_PRODUCTION_BUILD } from 'next/constants';
 import { ImageResponse } from 'next/og';
 
 import { mediaUrl, seo, site } from '@/config';
+import { getServerEnv } from '@/config/env';
 import { mediaProcessing } from '@/config/media-processing';
 import { seedMediaPath } from '@/design/seed-media';
 import { darkColors, raw } from '@/design/tokens';
@@ -159,8 +161,13 @@ async function sourceBytes(key: string): Promise<Buffer | null> {
   return null;
 }
 
-/** Кадр по ключу — один раз на процесс; сбой тоже кешируется, иначе каждый маршрут ждал бы таймаут. */
-const photoCache = new Map<string, Promise<Buffer | null>>();
+/** Сбой кадра держится в кеше пять минут: повтор через это время, а не на каждом маршруте. */
+const FAILURE_TTL_MS = 5 * 60_000;
+
+type PhotoEntry = { photo: Promise<Buffer | null>; expires: number };
+
+/** Кадр по ключу — один раз на процесс; успех кешируется навсегда, сбой истекает через `FAILURE_TTL_MS`. */
+const photoCache = new Map<string, PhotoEntry>();
 
 /**
  * Кадр, пережатый под карточку, или `null`.
@@ -191,16 +198,25 @@ async function loadCardPhoto(key: string): Promise<Buffer | null> {
   }
 }
 
+/** Запись кеша для ключа; истёкший сбой запрашивается заново. */
+function photoEntry(key: string): PhotoEntry {
+  const cached = photoCache.get(key);
+  if (cached && cached.expires > Date.now()) return cached;
+
+  const onBuild = getServerEnv().NEXT_PHASE === PHASE_PRODUCTION_BUILD;
+  const entry: PhotoEntry = { photo: loadCardPhoto(key), expires: Infinity };
+  // На сборке сбой не истекает: повторные попытки удлинили бы статическую генерацию сверх лимита.
+  void entry.photo.then((jpeg) => {
+    if (jpeg === null && !onBuild) entry.expires = Date.now() + FAILURE_TTL_MS;
+  });
+  photoCache.set(key, entry);
+  return entry;
+}
+
 async function cardPhoto(key: string | null | undefined): Promise<ArrayBuffer | null> {
   if (!key) return null;
 
-  let pending = photoCache.get(key);
-  if (!pending) {
-    pending = loadCardPhoto(key);
-    photoCache.set(key, pending);
-  }
-
-  const jpeg = await pending;
+  const jpeg = await photoEntry(key).photo;
   return jpeg === null ? null : toArrayBuffer(jpeg);
 }
 

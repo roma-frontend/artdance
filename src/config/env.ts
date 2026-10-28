@@ -114,6 +114,8 @@ const rawClientEnv = {
 
 const serverSchema = z.object({
   NODE_ENV: nodeEnv.default('development'),
+  /* Фаза выставляется самим Next; 'phase-production-build' — только на продакшен-сборке. */
+  NEXT_PHASE: optionalString,
 
   /* База данных */
   DATABASE_URL: requiredString,
