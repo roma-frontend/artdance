@@ -126,8 +126,8 @@ type HookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 
 const env = getServerEnv();
 
-/* Временно выключает 2FA для всех входов (TWO_FACTOR_TEMP_BYPASS=true). */
-const twoFactorBypassed = env.TWO_FACTOR_TEMP_BYPASS === 'true';
+/* Временный обход 2FA (TWO_FACTOR_TEMP_BYPASS=true) работает только вне production; в production флаг игнорируется. */
+const twoFactorBypassed = env.TWO_FACTOR_TEMP_BYPASS === 'true' && env.NODE_ENV !== 'production';
 
 /**
  * Доверенные источники для проверки Origin.
