@@ -25,6 +25,8 @@ test('instructor edits availability: rule saved, exception saved, other rows unt
   }
   const db = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
   const key = `avail-e2e-${randomUUID()}`;
+  // Исключения в прошлом скрыты на странице расписания, поэтому дата в будущем.
+  const exceptionDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   // Инструктор-владелец и второй инструктор, чьё правило трогать нельзя.
   const owner = await db.user.create({ data: { email: `${key}@example.test`, name: 'Avail owner', role: 'INSTRUCTOR' } });
@@ -71,8 +73,8 @@ test('instructor edits availability: rule saved, exception saved, other rows unt
     expect(savedRule.endTime).toBe('21:00');
     expect(savedRule.isActive).toBe(true);
 
-    // 2. Исключение: блокировка среды 08:00–10:00, причина «Отпуск».
-    await page.locator('section:has(#exceptions-title) input[name="date"]').fill('2026-10-28');
+    // 2. Исключение: блокировка 08:00–10:00 на будущую дату, причина «Отпуск».
+    await page.locator('section:has(#exceptions-title) input[name="date"]').fill(exceptionDate);
     await page.locator('section:has(#exceptions-title) input[name="startTime"]').fill('08:00');
     await page.locator('section:has(#exceptions-title) input[name="endTime"]').fill('10:00');
     await page.locator('section:has(#exceptions-title) input[name="reason"]').fill('Vacation');
@@ -84,7 +86,7 @@ test('instructor edits availability: rule saved, exception saved, other rows unt
       where: { instructorId: ownerProfile.id, reason: 'Vacation' },
     });
     expect(savedException.isAvailable).toBe(false);
-    expect(savedException.startsAt.toISOString().slice(0, 10)).toBe('2026-10-28');
+    expect(savedException.startsAt.toISOString().slice(0, 10)).toBe(exceptionDate);
 
     // 3. Чужое правило не должно измениться или удалиться.
     const untouchedStrangerRule = await db.availabilityRule.findUniqueOrThrow({ where: { id: strangerRule.id } });
