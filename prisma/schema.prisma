@@ -2144,6 +2144,42 @@ model ConsentRecord {
   @@index([userId])
 }
 
+/**
+ * ── D-05: учёт платных SMS и очередь ручной проверки ──
+ * SmsDispatch: одна строка на SMS, принятую провайдером; по ней считается бюджет.
+ * Номер получателя не хранится (ПДн). Поля получателя появятся вместе с провайдером.
+ */
+model SmsDispatch {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/**
+ * Очередь ручной проверки: сработало правило, решение принимает оператор.
+ * Уникальность [kind, subject] не даёт дублей за один и тот же период.
+ */
+model ReviewQueueEntry {
+  id           String            @id @default(cuid())
+  kind         String
+  subject      String
+  reason       String
+  status       ReviewQueueStatus @default(OPEN)
+  createdAt    DateTime          @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+
+  @@unique([kind, subject])
+  @@index([status, createdAt])
+}
+
+enum ReviewQueueStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
 model InstructorApplication {
   id        String           @id @default(cuid())
   userId    String?

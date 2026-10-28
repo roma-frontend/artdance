@@ -11,6 +11,8 @@
 
 import 'server-only';
 
+import { checkSmsBudget } from '@/lib/sms/budget';
+
 export interface SmsResult {
   delivered: boolean;
   reason?: string;
@@ -30,7 +32,18 @@ export async function sendSms(input: { to: string; text: string }): Promise<SmsR
     return { delivered: false, reason: 'provider-not-configured' };
   }
 
-  // Провайдер появится здесь. До тех пор ветка недостижима: см. isSmsConfigured.
+  const budget = await checkSmsBudget(new Date()).catch((error: unknown) => {
+    console.error('[sms] бюджет не проверен, SMS не отправлено', error);
+    return null;
+  });
+  if (budget === null) return { delivered: false, reason: 'budget-unavailable' };
+  if (!budget.ok) {
+    console.warn(`[sms] лимит SMS (${budget.period}) исчерпан, SMS не отправлено`);
+    return { delivered: false, reason: 'budget-exceeded' };
+  }
+
+  // Провайдер появится здесь. После принятия SMS записать SmsDispatch: по нему считается бюджет.
+  // До тех пор ветка недостижима: см. isSmsConfigured.
   void input;
   return { delivered: false, reason: 'not-implemented' };
 }
