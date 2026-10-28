@@ -102,7 +102,6 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function BookingPassPage({ params }: PageProps) {
   const { locale, id } = await params;
   setRequestLocale(locale as Locale);
-  await assertEntitlementOrNotFound('events');
   const t = await getTranslations({ locale: locale as Locale, namespace: 'footer' });
   const tAccount = await getTranslations({ locale: locale as Locale, namespace: 'account' });
   const tCommon = await getTranslations({ locale: locale as Locale, namespace: 'common' });
@@ -160,6 +159,8 @@ export default async function BookingPassPage({ params }: PageProps) {
   const isOwner = booking.customerId === caller.id;
   const isStaff = caller.role === 'ADMIN' || caller.role === 'SUPPORT';
   if (!isOwner && !isStaff) notFound();
+  // Мероприятия и аренда зала создаются только при включённом модуле events; занятия и приваты — нет.
+  if (booking.subject === 'EVENT_TICKET' || booking.subject === 'STUDIO_RENTAL') await assertEntitlementOrNotFound('events');
 
   const icsHref = `/api/ics/${booking.id}`;
   const base = clientEnv.NEXT_PUBLIC_APP_URL.replace(/\/$/, '');
