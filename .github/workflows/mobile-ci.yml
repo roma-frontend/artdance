@@ -1,0 +1,51 @@
+name: Mobile CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - "src/app/api/**"
+      - "src/server/**"
+      - "src/domain/**"
+      - "src/lib/**"
+      - "src/config/**"
+      - "prisma/schema.prisma"
+      - ".github/workflows/mobile-ci.yml"
+  pull_request:
+    paths:
+      - "mobile/**"
+      - "src/app/api/**"
+      - "src/server/**"
+      - "src/domain/**"
+      - "src/lib/**"
+      - "src/config/**"
+      - "prisma/schema.prisma"
+      - ".github/workflows/mobile-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Typecheck and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci --prefer-offline --no-audit
+      - run: npm run typecheck
+      - run: npm test
