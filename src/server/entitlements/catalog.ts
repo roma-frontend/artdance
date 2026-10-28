@@ -3,8 +3,8 @@
  *
  * Пресет = коммерческий пакет из `docs/01-commercial-proposal.md`:
  *   MVP     — 5 000 000 ֏, база для показа клиенту
- *   FULL    — 5–6 млн AMD (Recommended)
- *   PREMIUM — 7–8+ млн (видео, комиссии, выплаты, CRM)
+ *   FULL    — 9 200 000 ֏ (рекомендуемый пакет)
+ *   PREMIUM — 13 000 000 ֏ (видео, комиссии, выплаты, CRM)
  *
  * Fine-toggles — по ключам из `src/config/features.ts` (FeatureKey).
  * Причина: навигация, sitemap и поиск уже фильтруются ровно этими ключами.
@@ -12,7 +12,7 @@
  *
  * **SMS в состав пакетов не входит:** шлюза нет ни в коде, ни у заказчика
  * (`SMS_SENDER_ID` — 2–3 недели на регистрацию), а канал, который не
- * отправляется, хуже его отсутствия. FULL/PREMIUM включают Email и Push;
+ * отправляется, хуже его отсутствия. FULL/PREMIUM обещают Email и Push (Push пока не отправляется, см. `docs/06-implementation-plan.md`);
  * SMS возвращается вместе с провайдером — отдельной строкой в
  * `docs/06-implementation-plan.md` («вне договора»).
  */
@@ -33,11 +33,11 @@ export interface FeatureMeta {
 }
 
 export const entitlementFeatureCatalog: readonly FeatureMeta[] = [
-  { key: 'shop', labelKey: 'shop', tier: 'mvp', group: 'store', docsRef: 'docs/01-commercial-proposal.md §2 — PLATFORM: магазин, корзина, склад' },
+  { key: 'shop', labelKey: 'shop', tier: 'mvp', group: 'store', docsRef: 'docs/01-commercial-proposal.md §2 — FULL (PLATFORM): магазин, корзина, склад' },
   { key: 'events', labelKey: 'events', tier: 'full', group: 'content', docsRef: 'docs/06-implementation-plan.md — движок бронирования' },
-  { key: 'courses', labelKey: 'courses', tier: 'premium', group: 'content', docsRef: 'docs/01-commercial-proposal.md §2 — MARKETPLACE: онлайн-курсы' },
-  { key: 'videoCourses', labelKey: 'videoCourses', tier: 'premium', group: 'content', docsRef: 'docs/01-commercial-proposal.md §2 — MARKETPLACE: онлайн-курсы с видео' },
-  { key: 'subscriptions', labelKey: 'subscriptions', tier: 'premium', group: 'platform', docsRef: 'docs/01-commercial-proposal.md §2 — MARKETPLACE: подписки' },
+  { key: 'courses', labelKey: 'courses', tier: 'premium', group: 'content', docsRef: 'docs/01-commercial-proposal.md §2 — PREMIUM (MARKETPLACE): онлайн-курсы' },
+  { key: 'videoCourses', labelKey: 'videoCourses', tier: 'premium', group: 'content', docsRef: 'docs/01-commercial-proposal.md §2 — PREMIUM (MARKETPLACE): онлайн-курсы с видео' },
+  { key: 'subscriptions', labelKey: 'subscriptions', tier: 'premium', group: 'platform', docsRef: 'docs/01-commercial-proposal.md §2 — PREMIUM (MARKETPLACE): подписки' },
   { key: 'wallet', labelKey: 'wallet', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md B-04 — кошелёк и единая книга' },
   { key: 'referrals', labelKey: 'referrals', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md B-05 — рефералы' },
   { key: 'packages', labelKey: 'packages', tier: 'premium', group: 'platform', docsRef: 'docs/07-feature-backlog.md B-01 — пакеты занятий' },
@@ -54,7 +54,7 @@ export const entitlementFeatureCatalog: readonly FeatureMeta[] = [
 
 /**
  * Дефолты пресета. `true` = фича включена в пакете (до overrides).
- * Совпадают с таблицей «Состав MVP и границы» + `docs/01-commercial-proposal.md`.
+ * Состав сверяется с `docs/01-commercial-proposal.md` §2; расхождения с договором в `docs/06-implementation-plan.md` ещё не закрыты.
  */
 export const presetDefaults: Record<EntitlementPreset, Record<FeatureKey, boolean>> = {
   mvp: {
@@ -129,8 +129,8 @@ export function presetPriceHint(preset: EntitlementPreset): string {
     case 'mvp':
       return '5 000 000 ֏';
     case 'full':
-      return '5–6 000 000 ֏';
+      return '9 200 000 ֏';
     case 'premium':
-      return '7–8+ 000 000 ֏';
+      return '13 000 000 ֏';
   }
 }

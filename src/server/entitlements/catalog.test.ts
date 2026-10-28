@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest';
 
 import { features, type FeatureKey } from '@/config/features';
 
-import { entitlementFeatureCatalog, entitlementPresets, presetDefaults } from './catalog';
+import { entitlementFeatureCatalog, entitlementPresets, presetDefaults, presetPriceHint } from './catalog';
 
 const mvpKeys = Object.keys(presetDefaults.mvp).sort();
 const featureKeys = Object.keys(features).sort();
@@ -39,6 +39,14 @@ describe('ключи пресетов', () => {
 
   it('каталог не содержит дублей', () => {
     expect(new Set(catalogKeys).size).toBe(catalogKeys.length);
+  });
+});
+
+describe('цены коммерческих пресетов', () => {
+  it('совпадают с коммерческим предложением и договорным MVP', () => {
+    expect(presetPriceHint('mvp')).toBe('5 000 000 ֏');
+    expect(presetPriceHint('full')).toBe('9 200 000 ֏');
+    expect(presetPriceHint('premium')).toBe('13 000 000 ֏');
   });
 });
 

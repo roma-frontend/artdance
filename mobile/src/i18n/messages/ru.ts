@@ -1269,8 +1269,8 @@ const ru: Messages = {
   entitlements: {
     preset: {
       mvp: 'MVP — 5 000 000 ֏',
-      full: 'FULL — 5–6 000 000 ֏',
-      premium: 'PREMIUM — 7–8+ 000 000 ֏',
+      full: 'FULL — 9 200 000 ֏',
+      premium: 'PREMIUM — 13 000 000 ֏',
     },
     presetHint: {
       mvp: 'Объём по договору: курсы, инструкторы, площадки, бронь, магазин, вход, почта, SEO. Без видео, маркетплейса, CRM.',
@@ -1279,8 +1279,8 @@ const ru: Messages = {
     },
     presetPrice: {
       mvp: 'MVP · 5 000 000 ֏',
-      full: 'FULL · 5–6 000 000 ֏',
-      premium: 'PREMIUM · 7–8+ 000 000 ֏',
+      full: 'FULL · 9 200 000 ֏',
+      premium: 'PREMIUM · 13 000 000 ֏',
     },
     feature: {
       shop: 'Магазин и оформление',

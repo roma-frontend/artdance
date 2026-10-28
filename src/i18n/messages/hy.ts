@@ -1265,8 +1265,8 @@ const hy: Messages = {
   entitlements: {
     preset: {
       mvp: "MVP — 5 000 000 ֏",
-      full: "FULL — 5–6 000 000 ֏",
-      premium: "PREMIUM — 7–8+ 000 000 ֏",
+      full: "FULL — 9 200 000 ֏",
+      premium: "PREMIUM — 13 000 000 ֏",
     },
     presetHint: {
       mvp: "Պայմանագրով՝ կատալոգ, մարզիչներ, դահլիճներ, ամրագրում, խանութ, մուտք, նամակ, SEO։",
@@ -1275,8 +1275,8 @@ const hy: Messages = {
     },
     presetPrice: {
       mvp: "MVP · 5 000 000 ֏",
-      full: "FULL · 5–6 000 000 ֏",
-      premium: "PREMIUM · 7–8+ 000 000 ֏",
+      full: "FULL · 9 200 000 ֏",
+      premium: "PREMIUM · 13 000 000 ֏",
     },
     feature: {
       shop: "Խանութ",
