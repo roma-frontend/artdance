@@ -76,6 +76,7 @@ import {
   demoVenues,
   isDemoThrowawayEmail,
 } from './fixtures/demo.ts';
+import { assertSeedTarget } from './seed-guard.ts';
 
 loadEnv({ path: ['.env.local', '.env'], quiet: true });
 
@@ -83,6 +84,7 @@ const connectionString = process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE
 if (!connectionString) {
   throw new Error('seed — не задан DIRECT_DATABASE_URL / DATABASE_URL');
 }
+const seedTarget = assertSeedTarget(connectionString, process.env);
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
 
@@ -1034,7 +1036,7 @@ async function seedFooterLinks(): Promise<void> {
 /* ─────────────────────────── Запуск ─────────────────────────── */
 
 async function main(): Promise<void> {
-  console.log('seed — начало');
+  console.log(`seed — начало, цель: ${seedTarget}`);
   console.log(`  направлений в домене: ${danceStyles.length}`);
 
   await cleanupProbeUsers();
