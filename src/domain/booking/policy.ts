@@ -10,8 +10,9 @@
  * пишутся в БД в момент бронирования. Если завтра заказчик поменяет окно отмены с
  * 24 часов на 12, вчерашние брони обязаны решаться по вчерашним условиям —
  * иначе спор невозможно закрыть, а прошлое переписывается правкой конфига.
- * Поэтому ни один импорт из `config/business.ts` в этом файле не нужен: числа
- * приходят снимком.
+ * Поэтому правила отмены и переноса не читают `config/business.ts`: числа
+ * приходят снимком. Исключение — пороги защиты контактов (`bookingGuardrails`
+ * в конце файла): это текущая настройка обнаружения, а не условие договора.
  *
  * **Функции ничего не бросают, а возвращают исход.** Отмена — это не ошибка, а
  * развилка: бесплатно, с удержанием или нельзя. Экрану нужно показать разницу
@@ -26,11 +27,13 @@
  * `now` всегда параметром — тесты не зависят от даты запуска.
  */
 
+import { booking as bookingRules } from '@/config/business';
 import type { BookingStatus } from '@/domain/enums';
 import { domainErrors } from '@/domain/errors';
 import { applyRate, clampNonNegative, subtract, type Money } from '@/domain/money';
 import type { MessageKey } from '@/i18n/types';
 import { isValidInterval, type Interval } from '@/lib/time/interval';
+import { findContactInfo, maskContactInfo, type ContactKind } from '@/lib/text/contacts';
 
 const MS_PER_HOUR = 60 * 60 * 1_000;
 
@@ -233,4 +236,56 @@ export function rescheduleRefusalMessageKey(reason: RescheduleRefusal): MessageK
     case 'SAME_TIME':
       return 'booking.conflictError';
   }
+}
+
+/* ───────────────────────── ЗАЩИТА КОМИССИИ (D-01) ───────────────────────── */
+
+/** Свободный текст, который клиент вводит при бронировании. */
+export type GuardedTextField = 'partnerName' | 'customerAddress';
+
+const GUARDED_FIELDS: readonly GuardedTextField[] = ['partnerName', 'customerAddress'];
+
+export interface BookingGuardrailInput {
+  /** Оплачена ли бронь. */
+  paid: boolean;
+  /** Введённый клиентом текст; `null` или отсутствие значения означает, что поля нет. */
+  text: Partial<Record<GuardedTextField, string | null>>;
+}
+
+export interface BookingGuardrailDecision {
+  /** Что показать. До оплаты контакты замаскированы; значение в БД этим не меняется. */
+  display: Record<GuardedTextField, string | null>;
+  /** Поля с контактами до оплаты: повод для ручной проверки. Бронь этим не блокируется. */
+  flaggedFields: GuardedTextField[];
+  /** Виды найденных контактов по всем полям. Сами значения сюда не попадают. */
+  kinds: ContactKind[];
+}
+
+/**
+ * Что показать и что проверить в свободном тексте брони.
+ *
+ * Пороги читаются из `booking.contactGuard`. В отличие от условий отмены они не
+ * снимаются со снимка брони: это настройка обнаружения, а не договор. После оплаты
+ * контакты открыты и не проверяются.
+ */
+export function bookingGuardrails(input: BookingGuardrailInput): BookingGuardrailDecision {
+  const minPhoneDigits = bookingRules.contactGuard.minPhoneDigits;
+  const display: Record<GuardedTextField, string | null> = { partnerName: null, customerAddress: null };
+  const flaggedFields: GuardedTextField[] = [];
+  const kinds = new Set<ContactKind>();
+
+  for (const field of GUARDED_FIELDS) {
+    const value = input.text[field] ?? null;
+    display[field] = value;
+    if (value === null || input.paid) continue;
+
+    const matches = findContactInfo(value, minPhoneDigits);
+    if (matches.length === 0) continue;
+
+    display[field] = maskContactInfo(value, minPhoneDigits);
+    flaggedFields.push(field);
+    for (const match of matches) kinds.add(match.kind);
+  }
+
+  return { display, flaggedFields, kinds: [...kinds].sort() };
 }

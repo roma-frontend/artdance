@@ -107,7 +107,15 @@ const moderationTones = {
  * ошибку находит человек, а не сборка.
  */
 export type StatusBadgeSubject =
-  | { kind: 'booking'; status: BookingStatus }
+  | {
+      kind: 'booking';
+      status: BookingStatus;
+      /**
+       * Заявка ждёт ответа инструктора: PENDING с `requestExpiresAt`. Подпись называет
+       * именно ожидание ответа, потому что тот же PENDING у аренды значит «ждёт оплаты».
+       */
+      awaitingResponse?: boolean;
+    }
   | { kind: 'payment'; status: PaymentStatus }
   | { kind: 'order'; status: OrderStatus }
   | { kind: 'payout'; status: PayoutStatus }
@@ -120,7 +128,13 @@ export function statusPresentation(subject: StatusBadgeSubject): {
 } {
   switch (subject.kind) {
     case 'booking':
-      return { tone: bookingTones[subject.status], labelKey: bookingStatusLabelKey(subject.status) };
+      return {
+        tone: bookingTones[subject.status],
+        labelKey:
+          subject.awaitingResponse && subject.status === 'PENDING'
+            ? 'status.booking.awaitingResponse'
+            : bookingStatusLabelKey(subject.status),
+      };
     case 'payment':
       return { tone: paymentTones[subject.status], labelKey: paymentStatusLabelKey(subject.status) };
     case 'order':

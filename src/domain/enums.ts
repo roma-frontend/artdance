@@ -423,6 +423,14 @@ export function bookingStatusLabelKey(status: BookingStatus): MessageKey {
   return `status.booking.${bookingStatusI18nKeys[status]}`;
 }
 
+export const bookingSubjects = ['CLASS_SESSION', 'PRIVATE_SESSION', 'STUDIO_RENTAL', 'EVENT_TICKET'] as const;
+export type BookingSubject = (typeof bookingSubjects)[number];
+
+/** Подпись вида брони. Тексты живут в `admin.enums.bookingSubject`. */
+export function bookingSubjectLabelKey(subject: BookingSubject): MessageKey {
+  return `admin.enums.bookingSubject.${subject}`;
+}
+
 /** Статусы, которые считаются «занимающими слот» при проверке конфликтов. */
 export const slotBlockingBookingStatuses: readonly BookingStatus[] = [
   'PENDING',

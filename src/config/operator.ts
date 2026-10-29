@@ -16,5 +16,14 @@ export const operatorEditableModels = [
   'PriceOption', 'InstructorTariff', 'ShortLink', 'AdSlot', 'CorporateAccount',
 ] as const;
 
+/**
+ * Поля, которые меняют только сервисы бизнес-логики (верификация, баланс).
+ * Общий редактор таблиц их не трогает, иначе он обходит проверки сервиса.
+ */
+export const operatorProtectedFields: Readonly<Record<string, readonly string[]>> = {
+  InstructorProfile: ['isVerified', 'verifiedAt'],
+  CorporateAccount: ['balance'],
+};
+
 export const operatorPageSize = 25;
 export const operatorExportLimit = 20_000;

@@ -13,8 +13,8 @@
 - `src/hooks/useUpload.ts` — `useUpload(endpoint)` → `FormData file → fetch → {publicUrl} + uploading`.
 - UI-паттерны: **gallery** (`products` — `grid-cols-4` превью, чекбоксы `✓/+`, `✕`, bulk `Select All/Delete Selected/Delete All`, `onDrop/onDragOver/setDragActive`, скрытый `input[type=file] multiple accept="image/*"` + `fileRef.click()`, цикл `for(f of files){await upload(f)}`) и **single-cover** (`categories/brands/promotions` — `border-dashed aspect-video/square` кнопка, preview+`✕`).
 - Валидация сервер: `ALLOWED_MIME Set(jpeg/png/webp/avif(+gif admin)) + file.size + !file + R2 env guard` (`src/app/api/upload/route.ts:9,61,65` — `10MB admin`, `review-upload:5MB`), `checkAdminRateLimit 100/60s` vs public `5/60s`.
-- Шарп: `rotate().resize({maxDim, fit:inside, withoutEnlargement}).webp({quality effort4})`, GIF passthrough, `try/catch→fallback original`, best-effort thumb `400px q72` sibling `key-thumb`.
-- Хранение R2 `S3Client forcePathStyle`, ключи `products/<uuid>` без расширения, `CacheControl immutable`, доставка `/api/r2-image?url=` прокси + `/api/r2-media?key=&url=` с `Range/206/ETag`, `toThumbUrl` rewrite `-thumb`, `buildImageUrl` indirection (обход `402 r2.dev`), нормализация `convex/lib/imageUrl`.
+- Обработка (artdance, фактически): `processImage` в `src/lib/media/ingest.ts` — ре-энкод sharp в форматы `mediaProcessing.outputFormats` (`avif`, `webp`), EXIF снимается ре-энкодом, анимация (`isAnimated`) отклоняется при `allowAnimated=false` (`MEDIA_ANIMATED`), пресет роли передаётся без ручного списка форматов; для аватаров кодирование в `jpeg`. Варианты — `variantKey` (`<base>-<width>.<format>`). Thumb `-thumb` не реализован; caron-вариант `webp 400px q72` не портирован.
+- Хранение (artdance, фактически): R2 по SigV4 без SDK (`src/lib/media/storage.ts`). `putMediaObject` пишет в публичный бакет `R2_BUCKET`; `putPrivateObject` — в приватный `R2_PRIVATE_BUCKET` (в production без R2 и бакета ошибка, локального фолбэка нет; в dev — `.private-uploads` вне `public/`). Ключи — `mediaPaths.<роль>(ownerId, fileId)` + расширение мастера. Доставка — `/media-proxy/<ключ>` (`src/proxy.ts`: GET/HEAD, Range, CORS `*`) или прямой R2 URL через `mediaUrl`. Маршрутов `/api/r2-image`, `/api/r2-media`, `toThumbUrl` и `convex/*` в проекте нет.
 - Orphan GC: `ListObjectsV2 + imageReferences + regex html + whitelist hero/poster + 7д grace + dry-run/apply`.
 
 ## 3. Фазы (порядок важен, каждая заканчивается зеленым CI)
@@ -45,16 +45,16 @@
 
 ### Фаза 5 — Тесты и CI-страж
 
-- Расширить `src/lib/security/uploads.test.ts` (новые kinds, `TOO_MANY_FILES` с `1`, `gif` reject), `src/lib/media/ingest.test.ts` (thumb sibling), добавить `src/app/api/media/upload/route.test.ts` (аналог `caron/r2-image.test.ts: 401/400/429/413/unsupported/too_many`) и `src/components/form/photo-uploader.test.tsx` (drag-drop, sequential halt on first fail).
+- Статус тестов (artdance): `src/lib/security/uploads.test.ts` расширен границами политик по ролям; `src/app/api/media/upload/route.test.ts` добавлен (доступ и лимит 429, поля формы, разбор содержимого, запись в хранилище и upsert для одиночной роли, сбой хранилища); `src/config/media-processing.test.ts` и `src/server/queries/media.test.ts` добавлены. Тест thumb-sibling не нужен: thumb не реализован. `src/components/form/photo-uploader.test.tsx` заблокирован: в проекте нет jsdom и @testing-library, зависимости не ставились.
 - `npm run media:check/video:check/design:check` — считать `blog/banner/course MediaAsset` вместо строкового `storageKey`.
 
 ### Фаза 6 — Доставка, GC, доки
 
-- Добавить `src/app/api/r2-image/route.ts` + `src/app/api/r2-media/route.ts` (Range+ETag), `src/lib/thumb.ts:toThumbUrl`, `convex/r2Actions:auditOrphans` для `/admin/cleanup` dry-run, обновить `scripts/optimize-media.ts` для баннеров/блога, доки `docs/09-helpers-catalog.md` + `AGENTS.md` секция upload-contract.
+- Статус (artdance): `/api/r2-image`, `/api/r2-media`, `src/lib/thumb.ts` и `convex/r2Actions:auditOrphans` не портированы (в проекте нет Convex; Range уже отдаёт `/media-proxy/`). Orphan GC и dry-run очистки не реализованы: блокер, нужно решение владельца о правилах удаления. `scripts/optimize-media.ts` не содержит ссылок на баннеры, блог и `MediaAsset` (проверено grep): обновление для них не выполнено. Документация: `docs/09-helpers-catalog.md` и секция upload-contract в `AGENTS.md` обновлены.
 
 ## 4. Риски и инварианты
 
-- `MediaAsset.storageKey @unique` — одна запись на файл, иначе `delete` уносит чужой файл. `storageKey` генерируется `safeObjectName(file.name, randomUUID())` (расширение только, без имени).
+- `MediaAsset.storageKey @unique` — одна запись на файл, иначе `delete` уносит чужой файл. `storageKey` строится `mediaPaths.<роль>(ownerId, fileId)` + расширение мастера; `safeObjectName` определён и протестирован, но маршрут его не вызывает.
 - Курсора `public/media` по-прежнему `not in git` (`.gitignore: /public/media/`), артефакты `R2` проверяются `media:check` + `media-r2-manifest`.
 - До внедрения 6 сущностей уже покрыты — регрессию ловит `848` юнит-тестов + `npm run typecheck/lint/i18n:check/design:check`.
 

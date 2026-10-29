@@ -12,6 +12,7 @@
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
+import { DisputeResolveButtons } from '@/components/admin/dispute-resolve-buttons';
 import { ModerationActions } from '@/components/admin/moderation-actions';
 import { EmptyState } from '@/components/ui/empty-state';
 import { routes } from '@/config';
@@ -30,10 +31,11 @@ interface PageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const tabs: readonly { id: ModerationTab; labelKey: 'reviewsTab' | 'instructorsTab' | 'venuesTab' }[] = [
+const tabs: readonly { id: ModerationTab; labelKey: 'reviewsTab' | 'instructorsTab' | 'venuesTab' | 'disputesTab' }[] = [
   { id: 'reviews', labelKey: 'reviewsTab' },
   { id: 'instructors', labelKey: 'instructorsTab' },
   { id: 'venues', labelKey: 'venuesTab' },
+  { id: 'disputes', labelKey: 'disputesTab' },
 ];
 
 export default async function AdminModerationPage({ params, searchParams }: PageProps) {
@@ -41,12 +43,15 @@ export default async function AdminModerationPage({ params, searchParams }: Page
   setRequestLocale(locale as Locale);
 
   const { can } = await adminAccess();
-  if (!can('reviews.moderate') && !can('content.moderate')) return <AccessDenied />;
+  const canModerate = can('reviews.moderate') || can('content.moderate');
+  const canResolveDisputes = can('dispute.resolve');
+  if (!canModerate && !canResolveDisputes) return <AccessDenied />;
+
+  // Вкладка споров видна только тем, кто может их решать; остальные очереди — модераторам.
+  const visibleTabs = tabs.filter((item) => (item.id === 'disputes' ? canResolveDisputes : canModerate));
 
   const query = parseAdminQuery(await searchParams);
-  const tab: ModerationTab = tabs.some((item) => item.id === query.tab)
-    ? (query.tab as ModerationTab)
-    : 'reviews';
+  const tab: ModerationTab = visibleTabs.find((item) => item.id === query.tab)?.id ?? visibleTabs[0]?.id ?? 'reviews';
 
   const { items, total } = await listModerationQueue(tab, query);
 
@@ -60,7 +65,7 @@ export default async function AdminModerationPage({ params, searchParams }: Page
 
       <div className="flex flex-col gap-6">
         <nav aria-label={t('title')} className="flex flex-wrap gap-2">
-          {tabs.map((item) => (
+          {visibleTabs.map((item) => (
             <Link
               key={item.id}
               href={routes.adminModeration({ tab: item.id, ...(query.status ? { status: query.status } : {}) })}
@@ -123,7 +128,11 @@ export default async function AdminModerationPage({ params, searchParams }: Page
 
                 <p className="text-body-sm whitespace-pre-line text-content-secondary">{item.body}</p>
 
-                <ModerationActions kind={tab} id={item.id} />
+                {tab === 'disputes' ? (
+                  <DisputeResolveButtons id={item.id} />
+                ) : (
+                  <ModerationActions kind={tab} id={item.id} />
+                )}
               </li>
             ))}
           </ul>

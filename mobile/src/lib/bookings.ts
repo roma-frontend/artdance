@@ -1,6 +1,7 @@
 import { catalogFor } from '@/i18n/catalog';
 import { deviceLocale } from '@/lib/i18n';
 
+import type { BookingConsentId, BookingConsentRules } from './booking-consents';
 import { API_URL } from './config';
 import { paymentReturnUrl, type PaymentStart } from './payment-url';
 import { readServerMessage } from './server-message';
@@ -27,15 +28,23 @@ export class BookingsError extends Error {
     message: string,
     readonly status: number,
     readonly serverMessage: string | null = null,
+    /** Поле, которое сервер отверг (например, `consents`); null, если ошибка не про поле. */
+    readonly field: string | null = null,
   ) {
     super(message);
   }
 }
 
-/** Ошибка ответа с переведённым текстом сервера, если messageKey есть в словаре приложения. */
+/** Ошибка ответа: переведённый текст сервера по messageKey и поле из тела ответа. */
 async function failureFor(response: Response): Promise<BookingsError> {
+  const body = (await response.clone().json().catch(() => ({}))) as { field?: unknown };
   const serverMessage = await readServerMessage(response, catalogFor(deviceLocale(undefined)));
-  return new BookingsError(`HTTP ${response.status}`, response.status, serverMessage);
+  return new BookingsError(
+    `HTTP ${response.status}`,
+    response.status,
+    serverMessage,
+    typeof body.field === 'string' ? body.field : null,
+  );
 }
 
 /** Брони текущего клиента. Личность определяет сервер по bearer-токену. */
@@ -123,6 +132,13 @@ export async function listAvailableSlots(instructorSlug: string): Promise<Slot[]
   if (!response.ok) throw await failureFor(response);
   const body = (await response.json()) as { slots: Slot[] };
   return body.slots;
+}
+
+/** Правила согласий при брони: какие подтверждения нужны каждому предмету. Эндпоинт публичный. */
+export async function getBookingConsents(): Promise<BookingConsentRules> {
+  const response = await fetch(`${API_URL}/api/booking/consents`, { headers: { Accept: 'application/json' } });
+  if (!response.ok) throw await failureFor(response);
+  return (await response.json()) as BookingConsentRules;
 }
 
 export type ClassSessionSlot = Slot & {
@@ -218,6 +234,9 @@ export function createRecurringSeries(input: {
   startTime: string;
   durationMinutes: number;
   weeks: number;
+  /** Согласия и дата рождения участника: только когда у предмета есть правило (см. booking-consents.ts). */
+  consents?: BookingConsentId[];
+  participantBirthDate?: string;
 }): Promise<RecurringSeries> {
   return postAuthed('/api/booking/recurring', input);
 }

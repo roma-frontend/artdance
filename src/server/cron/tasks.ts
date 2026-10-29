@@ -7,6 +7,9 @@ import { purgeExpiredCarts } from '@/server/cart/service';
 import { purgeExpiredHolds } from '@/server/hold/service';
 import { expireUnpaidBookings } from '@/server/booking/service';
 import { notifyBookingReminder, notifyWaitlistReady } from '@/server/booking/notify';
+import { expireBookingRequests, remindBookingRequests } from '@/server/booking/requests';
+import { runPeriodicJobs } from '@/server/cron/periodic';
+import { recordReliabilityEvent } from '@/server/reliability/service';
 
 export interface CronReport {
   purgedHolds: number;
@@ -15,30 +18,45 @@ export interface CronReport {
   autoCompleted: number;
   remindersSent: number;
   waitlistExpired: number;
+  requestsExpired: number;
+  requestsReminded: number;
+  sessionsPurged: number;
+  scheduledSent: number;
+  abandonedCartReminders: number;
+  onboardingSent: number;
+  savedSearchAlerts: number;
+  digestSent: boolean;
 }
 
 export async function runBookingCron(now: Date): Promise<CronReport> {
+  // Периодика первой: её задачи изолированы и не пропускаются из-за сбоя бронирований (см. periodic.ts).
+  const periodic = await runPeriodicJobs(now, runDailyDigest);
+
   const [purged, purgedCartsRes] = await Promise.all([purgeExpiredHolds(now), purgeExpiredCarts(now).catch(() => ({ purged: 0 }))]);
   const purgedCarts = purgedCartsRes.purged;
   const { expired: expiredUnpaid } = await expireUnpaidBookings(now);
+  // Заявки на бронь: сначала истечение, затем напоминания инструктору по оставшимся
+  const { expired: requestsExpired } = await expireBookingRequests(now);
+  const { reminded: requestsReminded } = await remindBookingRequests(now);
 
   // Автозавершение: CONFIRMED брони, где endsAt + autoCompleteAfterHours <= now.
   // Делаем одним запросом по cutoff, а не выборкой + фильтром в памяти.
+  // Каждую бронь переводим compare-and-set и засчитываем только реально переведённую: повтор прогона не удвоит счёт.
   const autoCompleteCutoff = new Date(now.getTime() - booking.autoCompleteAfterHours * 60 * 60 * 1000);
   const toComplete = await db.booking.findMany({
-    where: {
-      status: 'CONFIRMED' as never,
-      endsAt: { lte: autoCompleteCutoff },
-    } as never,
-    select: { id: true },
+    where: { status: 'CONFIRMED', endsAt: { lte: autoCompleteCutoff } },
+    select: { id: true, instructor: { select: { userId: true } } },
   });
   let autoCompleted = 0;
-  if (toComplete.length > 0) {
-    const res = await db.booking.updateMany({
-      where: { id: { in: toComplete.map((b) => b.id) } } as never,
-      data: { status: 'COMPLETED', completedAt: now } as never,
+  for (const b of toComplete) {
+    const claimed = await db.booking.updateMany({
+      where: { id: b.id, status: 'CONFIRMED' },
+      data: { status: 'COMPLETED', completedAt: now },
     });
-    autoCompleted = res.count;
+    if (claimed.count !== 1) continue;
+    autoCompleted += 1;
+    // Проведение засчитывается инструктору; аренда без инструктора не засчитывается.
+    if (b.instructor) await recordReliabilityEvent({ userId: b.instructor.userId, kind: 'COMPLETED', refId: b.id });
   }
 
   // Напоминания: брони CONFIRMED с startsAt в окнах 24ч и 2ч (±15 мин) без уже отправленного reminder
@@ -95,7 +113,22 @@ export async function runBookingCron(now: Date): Promise<CronReport> {
     }
   }
 
-  return { purgedHolds: purged.purged, purgedCarts, expiredUnpaid, autoCompleted, remindersSent, waitlistExpired };
+  return {
+    purgedHolds: purged.purged,
+    purgedCarts,
+    expiredUnpaid,
+    autoCompleted,
+    remindersSent,
+    waitlistExpired,
+    requestsExpired,
+    requestsReminded,
+    sessionsPurged: periodic.sessionsPurged,
+    scheduledSent: periodic.scheduledSent,
+    abandonedCartReminders: periodic.abandonedCartReminders,
+    onboardingSent: periodic.onboardingSent,
+    savedSearchAlerts: periodic.savedSearchAlerts,
+    digestSent: periodic.digestSent,
+  };
 }
 
 export interface DigestReport {

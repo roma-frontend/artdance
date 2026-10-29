@@ -14,9 +14,12 @@
 import { z } from 'zod';
 
 import { reviews } from '@/config/business';
-import { db } from '@/lib/db';
-import { publicAction } from '@/server/safe-action';
+import { replyLengths } from '@/domain/review-reply';
 import { getCaller } from '@/lib/auth/guards';
+import { recordAudit } from '@/lib/audit';
+import { db } from '@/lib/db';
+import { deleteReply, replyToReview } from '@/server/reviews/reply';
+import { authedAction, publicAction } from '@/server/safe-action';
 
 const createSchema = z.object({
   bookingId: z.string().min(1),
@@ -37,7 +40,7 @@ export const createReviewAction = publicAction
         customerId: true,
         instructorId: true,
         venueId: true,
-        sessionId: true,
+        session: { select: { classId: true } },
         status: true,
         endsAt: true,
         startsAt: true,
@@ -80,7 +83,7 @@ export const createReviewAction = publicAction
         bookingId: booking.id,
         instructorId: booking.instructorId ?? undefined,
         venueId: booking.venueId ?? undefined,
-        classId: booking.sessionId ?? undefined,
+        classId: booking.session?.classId ?? undefined,
         rating: parsedInput.rating,
         body: parsedInput.body,
         authorRole: null,
@@ -91,7 +94,6 @@ export const createReviewAction = publicAction
       select: { id: true },
     });
 
-    const { recordAudit } = await import('@/lib/audit');
     await recordAudit({
       actor: caller,
       action: 'public.review.create',
@@ -102,4 +104,44 @@ export const createReviewAction = publicAction
     }).catch(() => {});
 
     return { ok: true as const, id: review.id };
+  });
+
+const replySchema = z.object({
+  reviewId: z.string().min(1).max(64),
+  body: z.string().trim().min(replyLengths.min).max(replyLengths.max),
+});
+
+/**
+ * Ответ на отзыв (D-06). Право проверяет сервис: инструктор отзыва, участник площадки или администратор.
+ */
+export const replyToReviewAction = authedAction
+  .metadata({ rateLimit: 'reviewReply', audit: 'review.reply.create' })
+  .inputSchema(replySchema)
+  .action(async ({ parsedInput, ctx }) => {
+    const reply = await replyToReview({ reviewId: parsedInput.reviewId, actor: ctx.caller, body: parsedInput.body });
+    await recordAudit({
+      actor: ctx.caller,
+      action: 'review.reply.create',
+      entityType: 'Review',
+      entityId: parsedInput.reviewId,
+      after: { replyId: reply.id },
+      ipAddress: ctx.identifier,
+    });
+    return { ok: true as const, id: reply.id };
+  });
+
+/** Удаление ответа: то же право, что и на запись. */
+export const deleteReviewReplyAction = authedAction
+  .metadata({ rateLimit: 'reviewReply', audit: 'review.reply.delete' })
+  .inputSchema(z.object({ reviewId: z.string().min(1).max(64) }))
+  .action(async ({ parsedInput, ctx }) => {
+    await deleteReply({ reviewId: parsedInput.reviewId, actor: ctx.caller });
+    await recordAudit({
+      actor: ctx.caller,
+      action: 'review.reply.delete',
+      entityType: 'Review',
+      entityId: parsedInput.reviewId,
+      ipAddress: ctx.identifier,
+    });
+    return { ok: true as const };
   });

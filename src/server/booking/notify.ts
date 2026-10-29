@@ -2,6 +2,8 @@ import 'server-only';
 
 import { absoluteUrl } from '@/config/site';
 import { booking } from '@/config/business';
+import { routes } from '@/config/routes';
+import { requestDueDedupeKey } from '@/domain/booking/request';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notifications/send';
 import type { Locale } from '@/i18n/config';
@@ -148,6 +150,32 @@ export async function notifyBookingReminder(bookingId: string, hoursOffset: numb
   });
 }
 
+/**
+ * Напоминание инструктору о заявке, которая ждёт ответа. true — письмо поставлено в очередь.
+ */
+export async function notifyBookingRequestDue(
+  bookingId: string,
+  instructorUserId: string,
+  requestExpiresAt: Date,
+): Promise<boolean> {
+  const info = await bookingDisplay(bookingId);
+  if (!info) return false;
+  const user = await db.user.findUnique({ where: { id: instructorUserId }, select: { locale: true } });
+  const locale = (user?.locale as Locale) ?? 'ru';
+  return notify({
+    userId: instructorUserId,
+    type: 'booking.requestDue',
+    locale,
+    data: {
+      title: info.title,
+      when: formatWhen(info.startsAt, locale),
+      deadline: formatWhen(requestExpiresAt, locale),
+    },
+    dedupeKey: requestDueDedupeKey(bookingId),
+    href: absoluteUrl(`/${locale}${routes.instructorDashboard()}`),
+  });
+}
+
 export async function notifyWaitlistReady(sessionId: string, userId: string, claimUntil: Date): Promise<void> {
   const user = await db.user.findUnique({ where: { id: userId }, select: { locale: true } });
   const locale = (user?.locale as Locale) ?? 'ru';
@@ -156,12 +184,7 @@ export async function notifyWaitlistReady(sessionId: string, userId: string, cla
     userId,
     type: 'waitlist.ready',
     locale,
-    data: {
-      subject: 'Your waitlist spot is ready',
-      body: `A spot opened up. Claim it before ${when}.`,
-      href: `/${locale}/classes`,
-      when,
-    } as unknown as Record<string, string | number>,
+    data: { when },
     dedupeKey: `waitlist:${sessionId}:${userId}:${claimUntil.toISOString()}`,
     href: absoluteUrl(`/${locale}/classes`),
   });

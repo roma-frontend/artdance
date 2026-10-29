@@ -37,7 +37,7 @@ import { db } from '@/lib/db';
 import { defineQuery } from '@/server/query';
 
 import { classCardsBy } from './classes';
-import { firstMediaRef, mediaSelect, type MediaRow } from './media';
+import { firstMediaRef, type MediaRow } from './media';
 import { styleHeroImageFor } from '@/server/content/style-hero-media';
 import { toInstructorCard } from './instructors';
 import { toVenueCard } from './venues';
@@ -54,7 +54,7 @@ async function loadSummaries(): Promise<Map<DanceStyle, StyleSummary>> {
   const [classRows, instructorRows] = await Promise.all([
     db.danceClass.findMany({
       where: { isActive: true, instructor: { moderation: 'APPROVED', publishedAt: { not: null } } },
-      select: { style: true, media: { select: mediaSelect } },
+      select: { style: true, media: mediaRelation },
       take: limits.query.maxRows,
     }),
     db.instructorProfile.findMany({

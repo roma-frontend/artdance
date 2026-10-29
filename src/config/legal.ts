@@ -42,6 +42,12 @@ export type LegalDocumentId = (typeof legalDocumentIds)[number];
 /** Статус документа: черновик нашей редакции или проверенный юристом текст. */
 export type LegalDocumentStatus = 'draft' | 'active';
 
+/**
+ * Возраст совершеннолетия (D-03). Участник младше этого возраста требует подтверждения
+ * родителя или опекуна при брони. Число юридическое: меняется только по решению юриста.
+ */
+export const adultAgeYears = 18;
+
 export interface LegalDocumentSpec {
   id: LegalDocumentId;
   /** Последний сегмент адреса — параметр `[slug]`. */

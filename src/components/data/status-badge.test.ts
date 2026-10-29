@@ -129,4 +129,12 @@ describe('statusPresentation: смысл тонов', () => {
     );
     expect(statusPresentation({ kind: 'order', status: 'CANCELLED' }).tone).toBe('neutral');
   });
+
+  it('ожидание ответа инструктора подписано отдельно от оплаты', () => {
+    const awaiting = statusPresentation({ kind: 'booking', status: 'PENDING', awaitingResponse: true });
+    const unpaid = statusPresentation({ kind: 'booking', status: 'PENDING' });
+    expect(awaiting.labelKey).toBe('status.booking.awaitingResponse');
+    expect(awaiting.tone).toBe('warning');
+    expect(unpaid.labelKey).toBe('status.booking.pending');
+  });
 });

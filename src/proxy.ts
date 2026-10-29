@@ -1,12 +1,13 @@
 /**
  * PROXY (в Next.js ≤15 назывался middleware) — единый edge-слой безопасности.
  *
- * Пять задач за один проход, без обращений к базе данных:
+ * Шесть задач за один проход, без обращений к базе данных:
  *   1. security-заголовки и CSP на каждый ответ;
  *   2. CSRF: проверка `Origin` на мутирующих методах;
  *   3. backstop rate limit на весь `/api`;
  *   4. локализация URL (next-intl);
- *   5. гейт приватных разделов по наличию cookie сессии.
+ *   5. гейт приватных разделов по наличию cookie сессии;
+ *   6. реферальный код из `?ref=` в cookie: redirect на тот же адрес без параметра.
  *
  * Почему всё вместе: заголовки, заданные и здесь, и в `next.config.ts`,
  * конфликтуют, а отладка превращается в угадывание, какой слой победил.
@@ -18,7 +19,8 @@
  *   • реальной проверки прав — cookie можно подделать. Здесь только
  *     перенаправление на страницу входа; авторизация в `@/lib/auth/guards`;
  *   • `Set-Cookie` на каждый ответ — это сделало бы страницы некешируемыми CDN
- *     и заставило вызывать функцию на каждый просмотр каталога.
+ *     и заставило вызывать функцию на каждый просмотр каталога. Исключение —
+ *     redirect с `?ref=` (задача 6): он без тела и помечен `no-store`.
  */
 
 import createIntlMiddleware from 'next-intl/middleware';
@@ -26,6 +28,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { security } from '@/config/business';
 import { cacheControl } from '@/config/cache';
+import { growth } from '@/config/growth';
 import { isProtectedPath, routes } from '@/config/routes';
 import {
   authContentSecurityPolicy,
@@ -35,6 +38,7 @@ import {
   mutatingMethods,
   originExemptPathPrefixes,
 } from '@/config/security';
+import { extractReferralCode } from '@/domain/referral';
 import { locales } from '@/i18n/config';
 import { routing } from '@/i18n/routing';
 import { isBearerRequest } from '@/lib/auth/bearer';
@@ -43,6 +47,8 @@ import { checkApiFloodLimit, clientIdentifier } from '@/lib/security/rate-limit'
 const intlMiddleware = createIntlMiddleware(routing);
 
 const MUTATING = new Set<string>(mutatingMethods);
+
+const SECONDS_PER_DAY = 60 * 60 * 24;
 
 function applySecurityHeaders(response: NextResponse, pathname: string): NextResponse {
   for (const [key, value] of baseSecurityHeaders) {
@@ -196,7 +202,13 @@ export default async function proxy(request: NextRequest) {
         signal: AbortSignal.timeout(15_000),
       });
       const headers = new Headers(upstream.headers);
-      headers.set('Cache-Control', cacheControl.media);
+      // Успешный объект несёт свой Cache-Control из R2 (immutable, см. storage.ts).
+      // Ошибку не кешируем: временный 404/5xx иначе залипает в CDN.
+      if (!upstream.ok) {
+        headers.set('Cache-Control', cacheControl.none);
+      } else if (!headers.has('Cache-Control')) {
+        headers.set('Cache-Control', cacheControl.media);
+      }
       headers.set('Access-Control-Allow-Origin', '*');
       const mediaResponse = applySecurityHeaders(
         new NextResponse(upstream.body, { status: upstream.status, headers }),
@@ -210,6 +222,29 @@ export default async function proxy(request: NextRequest) {
         NextResponse.json({ error: 'MEDIA_UPSTREAM_UNAVAILABLE' }, { status: 502 }),
         pathname,
       );
+    }
+  }
+
+  /*
+   * Реферальный код: `?ref=CODE` уходит в cookie, а браузер перенаправляется на
+   * тот же адрес без параметра. Ответ — redirect без тела, поэтому Set-Cookie не
+   * попадает в кешируемую страницу: иначе код одного посетителя ушёл бы всем, кто
+   * откроет ту же страницу из кеша. По той же причине redirect помечен `no-store`.
+   * Только GET: у POST и других методов cookie не нужна.
+   */
+  if (request.method === 'GET') {
+    const arrival = extractReferralCode(new URL(request.url), growth.referral.queryParam);
+    if (arrival) {
+      const referralRedirect = NextResponse.redirect(arrival.cleanUrl);
+      referralRedirect.cookies.set(growth.referral.cookieName, arrival.code, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: security.session.secureCookies,
+        path: '/',
+        maxAge: growth.referral.expiryDays * SECONDS_PER_DAY,
+      });
+      referralRedirect.headers.set('Cache-Control', cacheControl.none);
+      return applySecurityHeaders(referralRedirect, pathname);
     }
   }
 

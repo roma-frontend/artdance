@@ -5,13 +5,16 @@
 
 export const growth = {
   referral: {
-    /** Бонус пригласившему и приглашённому, AMD. */
-    referrerBonus: 2_000,
-    inviteeBonus: 1_000,
-    /** Минимум трат, чтобы бонус начислился. */
+    /** Бонус каждой стороне, AMD: пригласившему и приглашённому. Единая сумма, её видит пользователь. */
+    bonusAmount: 3_000,
+    /** Минимум трат для начисления. Не проверяется: правило не реализовано, нужно решение владельца. */
     minSpend: 5_000,
     /** Сколько дней действует реферальная связь. */
     expiryDays: 90,
+    /** Параметр адреса, в котором приходит код: `?ref=CODE`. */
+    queryParam: 'ref',
+    /** Cookie, в которой код хранится до регистрации. */
+    cookieName: 'ref',
   },
   abandonedCart: {
     delayMinutes: 30,
@@ -20,10 +23,6 @@ export const growth = {
   savedSearch: {
     frequency: 'daily' as const,
     maxPerUser: 10,
-  },
-  firstBookingDiscount: {
-    percent: 10,
-    maxDiscount: 2_000,
   },
   digest: {
     dailyHour: 9,

@@ -60,6 +60,9 @@ interface SendEmailInput {
   replyTo?: string;
 }
 
+/** Содержимое письма без адреса получателя: превью рендерит его без отправки. */
+export type EmailContent = Omit<SendEmailInput, 'to'>;
+
 const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const TIMEOUT_MS = 10_000;
 
@@ -67,7 +70,7 @@ export async function sendEmail(input: SendEmailInput): Promise<EmailResult> {
   const env = getServerEnv();
   const from = env.EMAIL_FROM;
 
-  const html = await renderEmail(input);
+  const html = await renderEmailHtml(input);
 
   if (!env.RESEND_API_KEY || !from) {
     /*
@@ -143,7 +146,7 @@ export async function sendEmail(input: SendEmailInput): Promise<EmailResult> {
  * это единственное место в проекте, где значение токена попадает в строку, и
  * причина именно в том, что CSS-переменные в письме не работают.
  */
-async function renderEmail(input: SendEmailInput): Promise<string> {
+export async function renderEmailHtml(input: EmailContent): Promise<string> {
   const messages = await loadMessages(input.locale);
   const common = messages.email.common;
   const brand = messages.brand.name;

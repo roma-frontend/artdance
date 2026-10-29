@@ -6,26 +6,27 @@
 
 import { z } from 'zod';
 
-import { db } from '@/lib/db';
-import { authedAction } from '@/server/safe-action';
+import { requireInstructorProfile } from '@/lib/auth/guards';
+import { authedAction, capabilityAction } from '@/server/safe-action';
+import { decideVerificationDocument, submitVerificationDocument } from '@/server/verification/service';
 
-const uploadSchema = z.object({ instructorId: z.string().min(1), type: z.string().min(1), storageKey: z.string().min(1) });
+const uploadSchema = z.object({ type: z.string().min(1), storageKey: z.string().min(1) });
 
 export const uploadVerificationDoc = authedAction
   .metadata({ rateLimit: 'mediaUpload' })
   .inputSchema(uploadSchema)
   .action(async ({ parsedInput }: { parsedInput: z.infer<typeof uploadSchema> }) => {
-    const doc = await db.verificationDocument.create({
-      data: { instructorId: parsedInput.instructorId, type: parsedInput.type, storageKey: parsedInput.storageKey, status: 'PENDING' },
-      select: { id: true },
-    });
+    /* Владелец — из сессии: клиентский instructorId не принимаем, иначе документ привязывается к чужому профилю. */
+    const { instructorId } = await requireInstructorProfile();
+    const doc = await submitVerificationDocument({ instructorId, type: parsedInput.type, storageKey: parsedInput.storageKey });
     return { id: doc.id };
   });
 
-export const approveVerificationDoc = authedAction
-  .metadata({ rateLimit: 'adminMutation' })
+/* Одобрение — только с правом модерации контента; статус и бейдж меняет сервис верификации. */
+export const approveVerificationDoc = capabilityAction('content.moderate')
+  .metadata({ rateLimit: 'adminMutation', audit: 'admin.verification.approve' })
   .inputSchema(z.object({ id: z.string().min(1) }))
-  .action(async ({ parsedInput }: { parsedInput: { id: string } }) => {
-    await db.verificationDocument.update({ where: { id: parsedInput.id }, data: { status: 'APPROVED' } });
+  .action(async ({ parsedInput, ctx }) => {
+    await decideVerificationDocument({ documentId: parsedInput.id, decision: 'APPROVED', actor: ctx.caller, ipAddress: ctx.identifier });
     return { ok: true as const };
   });

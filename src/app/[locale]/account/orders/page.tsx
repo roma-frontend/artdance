@@ -133,8 +133,8 @@ export default async function AccountOrdersPage({ params, searchParams }: PagePr
                   <span className="min-w-0 break-all font-mono text-caption font-semibold">{o.orderNumber}</span>
                   {(orderStatuses as readonly string[]).includes(o.status) ? <StatusBadge kind="order" status={o.status as OrderStatus} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{o.status}</Badge>}
                 </div>
-                <p className="mt-1.5 break-words text-caption text-content-tertiary [overflow-wrap:anywhere]">{new Date(o.placedAt).toLocaleDateString(locale)} · {o._count.items}×</p>
-                <p className="mt-1 break-words text-body-sm text-content-secondary [overflow-wrap:anywhere]">{o.items[0]?.titleSnapshot ?? '—'}</p>
+                <p className="mt-1.5 text-caption text-content-tertiary [overflow-wrap:anywhere]">{new Date(o.placedAt).toLocaleDateString(locale)} · {o._count.items}×</p>
+                <p className="mt-1 text-body-sm text-content-secondary [overflow-wrap:anywhere]">{o.items[0]?.titleSnapshot ?? '—'}</p>
                 <div className="mt-2 flex justify-end">
                   <Price amount={o.total} emphasis="total" />
                 </div>

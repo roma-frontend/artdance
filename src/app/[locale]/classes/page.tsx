@@ -1,8 +1,9 @@
 /**
  * ЗАНЯТИЯ — листинг с фильтрами.
  *
- * Страница делает три вещи и ничего больше: разбирает URL, спрашивает контент,
- * раскладывает карточки в сетку. Фильтры, сортировка, пустое состояние и
+ * Страница делает четыре вещи и ничего больше: разбирает URL, спрашивает контент,
+ * показывает рекламный слот `catalog-top`, если к нему привязан активный баннер,
+ * и раскладывает карточки в сетку. Фильтры, сортировка, пустое состояние и
  * пагинация живут в `CatalogShell` — одинаково во всех шести разделах каталога.
  *
  * Маршрут кешируется CDN (`catalogPaths` в `config/cache.ts`): персональных
@@ -15,6 +16,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { CatalogShell } from '@/components/catalog/catalog-shell';
 import { ClassCard } from '@/components/catalog/class-card';
+import { AdSlotBanner } from '@/components/content/ad-slot-banner';
 import { CardTilt } from '@/components/fx/card-tilt';
 import { PageHero } from '@/components/layout/page-hero';
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -66,6 +68,8 @@ export default async function ClassesPage({ params, searchParams }: PageProps) {
         locale={locale as Locale}
         breadcrumbs={[{ label: tNav('classes') }]}
       />
+
+      <AdSlotBanner slotKey="catalog-top" locale={locale as Locale} />
 
       <CatalogShell
         query={query}

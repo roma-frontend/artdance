@@ -34,7 +34,7 @@ import { defaultLocale } from '@/i18n/config';
 import { db } from '@/lib/db';
 import { defineQuery } from '@/server/query';
 
-import { mediaSelect, toMediaRef, type MediaRow } from './media';
+import { liveSingleMedia, toMediaRef, trashableMediaSelect, type TrashableMediaRow } from './media';
 
 /* ─────────────────────────── Типы для компонентов ─────────────────────────── */
 
@@ -110,11 +110,11 @@ const courseSelect = {
   totalMinutes: true,
   coverKey: true,
   translations: { select: { locale: true, title: true, description: true } },
-  media: { where: { deletedAt: null }, select: mediaSelect },
+  media: { select: trashableMediaSelect },
   instructor: {
     select: {
       slug: true,
-      user: { select: { name: true, avatarMedia: { select: mediaSelect } } },
+      user: { select: { name: true, avatarKey: true, avatarMedia: { select: trashableMediaSelect } } },
     },
   },
   _count: { select: { lessons: { where: { deletedAt: null } } } },
@@ -131,8 +131,12 @@ type CourseRow = {
   totalMinutes: number;
   coverKey: string | null;
   translations: TranslationRow[];
-  media: MediaRow[];
-  instructor: { slug: string; user: { name: string; avatarMedia: MediaRow | null } };
+  /* Связь «один к одному»: кадр один, а не список. Удалённость проверяет `liveSingleMedia`. */
+  media: TrashableMediaRow | null;
+  instructor: {
+    slug: string;
+    user: { name: string; avatarKey: string | null; avatarMedia: TrashableMediaRow | null };
+  };
   _count: { lessons: number };
 };
 
@@ -144,15 +148,26 @@ type CourseRow = {
  * спрятать обложку у старых; только старое — не показать загруженную сейчас.
  */
 function coverOf(row: CourseRow): MediaRef | null {
-  const asset = row.media[0];
+  const asset = liveSingleMedia(row.media);
   if (asset) return toMediaRef(asset);
   if (!row.coverKey) return null;
   return { key: row.coverKey, alt: { hy: row.title, ru: row.title, en: row.title } };
 }
 
+/**
+ * Аватар инструктора: кадр медиатеки, потом собственный `avatarKey` пользователя.
+ * Тот же порядок, что у обложки. Загрузка через медиатеку сбрасывает `avatarKey`,
+ * поэтому после мягкого удаления кадра старый файл не воскресает.
+ */
+function instructorAvatarOf(user: CourseRow['instructor']['user']): MediaRef | null {
+  const asset = liveSingleMedia(user.avatarMedia);
+  if (asset) return toMediaRef(asset);
+  if (!user.avatarKey) return null;
+  return { key: user.avatarKey, alt: { hy: user.name, ru: user.name, en: user.name } };
+}
+
 function toCard(row: CourseRow, locale: Locale): CourseCard {
   const text = resolveCourseText(row, row.translations, locale);
-  const avatarRow = row.instructor.user.avatarMedia;
   return {
     id: row.id,
     slug: row.slug,
@@ -166,9 +181,8 @@ function toCard(row: CourseRow, locale: Locale): CourseCard {
     instructor: {
       slug: row.instructor.slug,
       name: row.instructor.user.name,
-      avatar: avatarRow ? toMediaRef(avatarRow) : null,
+      avatar: instructorAvatarOf(row.instructor.user),
     },
-    /* см. `avatarRow` — это единственный кадр пользователя, а не список. */
     cover: coverOf(row),
   };
 }

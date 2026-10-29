@@ -11,20 +11,23 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Skeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
+import { DateTimeField } from '@/components/ui/date-time-field';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FadeImage } from '@/components/ui/fade-image';
 import { GlassButton } from '@/components/ui/glass-button';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { catalogFor } from '@/i18n/catalog';
 import { getCurrentUser } from '@/lib/auth';
-import { claimWaitlistHold, createRecurringSeries, joinClassWaitlist, listClassSessions, quoteBooking, type BookingQuote } from '@/lib/bookings';
+import { BookingsError, claimWaitlistHold, createRecurringSeries, getBookingConsents, joinClassWaitlist, listClassSessions, quoteBooking, type BookingQuote } from '@/lib/bookings';
+import { bookingConsentForm, bookingSubjectFor, buildConsentBody, consentErrorField, type BookingConsentId, type BookingConsentRules, type ConsentField, type LessonType } from '@/lib/booking-consents';
+import { yerevanDate } from '@/lib/class-time';
 import { getCatalogDetail, mediaUri } from '@/lib/catalog';
 import { API_URL } from '@/lib/config';
 import { useEntitlements } from '@/lib/entitlements';
 import { dateLabel, initials, plural, price, studioDayKey } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
 import { paymentOutcomeText, paymentReturnUrl, type PaymentStart, startPayment as runPayment } from '@/lib/payment-url';
-import { resolveServerMessage, serverMessageOf } from '@/lib/server-message';
+import { readServerMessage, resolveServerMessage, serverMessageOf } from '@/lib/server-message';
 import { getSessionToken } from '@/lib/session';
 import { colors, fill, fonts, gradients, radius, space, type } from '@/theme';
 
@@ -39,7 +42,7 @@ type Slot = {
   waitlist?: { position: number; claimable: boolean } | null;
 };
 type Availability = { instructorSlug: string; slots: Slot[] };
-type Failure = { error?: string; messageKey?: string; params?: Record<string, string | number> };
+type Failure = { error?: string; messageKey?: string; params?: Record<string, string | number>; field?: string };
 type PayMethod = 'CARD' | 'ARCA' | 'IDRAM' | 'TELCELL';
 type IconName = ComponentProps<typeof Ionicons>['name'];
 type Instructor = { name?: string; headline?: string; image?: { key?: string }; ratingAverage?: number };
@@ -60,9 +63,23 @@ class BookingError extends Error {
   constructor(
     readonly code: string,
     readonly serverMessage: string | null = null,
+    /** Поле, которое сервер отверг (`consents` или `participantBirthDate`); null, если его нет. */
+    readonly field: string | null = null,
   ) {
     super(code);
   }
+}
+
+/** Поле согласий из ошибки брони или серии; null для остальных ошибок. */
+function fieldOf(error: unknown): string | null {
+  return error instanceof BookingError || error instanceof BookingsError ? error.field : null;
+}
+
+/** Ошибка создания брони: код и поле из тела ответа, текст — через readServerMessage. */
+async function bookingFailure(response: Response): Promise<BookingError> {
+  const body = (await response.clone().json().catch(() => ({}))) as Failure;
+  const serverMessage = await readServerMessage(response, catalogFor(deviceLocale(undefined)));
+  return new BookingError(body.error ?? `HTTP ${response.status}`, serverMessage, body.field ?? null);
 }
 
 async function authed(path: string, init: RequestInit = {}): Promise<Response> {
@@ -120,6 +137,11 @@ export default function BookScreen() {
   const [quote, setQuote] = useState<BookingQuote | null>(null);
   const entitlements = useEntitlements();
   const recurringEnabled = entitlements?.recurring === true;
+  const [classLessonType, setClassLessonType] = useState<LessonType | null>(null);
+  const [consentRules, setConsentRules] = useState<BookingConsentRules | null>(null);
+  const [birthDate, setBirthDate] = useState('');
+  const [consentChecked, setConsentChecked] = useState<BookingConsentId[]>([]);
+  const [consentError, setConsentError] = useState<{ field: ConsentField; text: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -129,16 +151,21 @@ export default function BookScreen() {
     getCatalogDetail<Instructor>('instructors', instructor)
       .then((data) => alive && setProfile(data))
       .catch(() => undefined);
-    const request: Promise<{ slots: Slot[]; pair: boolean }> = classSlug
-      ? listClassSessions(instructor, classSlug).then((data) => ({ slots: data.slots, pair: data.lessonType === 'PAIR' }))
+    const request: Promise<{ slots: Slot[]; pair: boolean; lessonType: LessonType | null }> = classSlug
+      ? listClassSessions(instructor, classSlug).then((data) => ({
+          slots: data.slots,
+          pair: data.lessonType === 'PAIR',
+          lessonType: data.lessonType,
+        }))
       : fetch(`${API_URL}/api/availability?instructor=${encodeURIComponent(instructor)}&count=20`)
           .then((response) => readJson<Availability>(response))
-          .then((data) => ({ slots: data.slots, pair: false }));
+          .then((data) => ({ slots: data.slots, pair: false, lessonType: null }));
     request
       .then((data) => {
         if (alive) {
           setSlots(data.slots);
           setPairOnly(data.pair);
+          setClassLessonType(data.lessonType);
         }
       })
       .catch((err: unknown) => {
@@ -152,6 +179,7 @@ export default function BookScreen() {
   // Цена выбранного слота до подтверждения: сервер считает её так же, как при брони.
   useEffect(() => {
     setQuote(null);
+    setConsentError(null);
     if (!selected || isWaitlistSlot(selected)) return;
     const controller = new AbortController();
     quoteBooking(
@@ -162,6 +190,17 @@ export default function BookScreen() {
       .catch(() => undefined);
     return () => controller.abort();
   }, [selected, weeks, instructor, classSlug, recurringEnabled]);
+
+  // Правила согласий грузим один раз на экран. Пока их нет, формы согласий нет, и сервер проверит бронь сам.
+  useEffect(() => {
+    let alive = true;
+    getBookingConsents()
+      .then((rules) => alive && setConsentRules(rules))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const days = useMemo(() => {
     const map = new Map<string, Slot[]>();
@@ -180,6 +219,27 @@ export default function BookScreen() {
         ? c.booking.waitlistClaim
         : c.common.actions.joinWaitlist
       : t.bookConfirm;
+
+  // Согласия нужны, когда бронь создаётся. Слот листа ожидания без места лишь ставит в очередь.
+  const isRecurring = recurringEnabled && !classSlug && weeks > 1;
+  const consentNeeded = selected !== null && !isWaitlistSlot(selected);
+  const consentForm = bookingConsentForm({
+    rules: consentRules,
+    subject: selected && !isRecurring ? bookingSubjectFor(selected, classLessonType) : 'PRIVATE_SESSION',
+    birthDate,
+    checked: consentChecked,
+    today: yerevanDate(Date.now()),
+  });
+  const consentFields = buildConsentBody(consentForm, birthDate);
+  const consentShown = consentNeeded && consentForm.active;
+  const consentBlocked = consentNeeded && !consentForm.ready;
+  const birthDateError =
+    consentError?.field === 'participantBirthDate' ? consentError.text : consentForm.birthDateInvalid ? c.validation.invalidDate : null;
+
+  function toggleConsent(id: BookingConsentId) {
+    setConsentError(null);
+    setConsentChecked((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
+  }
 
   async function refreshSlots(): Promise<Slot[]> {
     if (classSlug) return (await listClassSessions(instructor, classSlug)).slots;
@@ -216,9 +276,10 @@ export default function BookScreen() {
   }
 
   async function confirm() {
-    if (!selected || busy) return;
+    if (!selected || busy || consentBlocked) return;
     setBusy(true);
     setResult(null);
+    setConsentError(null);
     try {
       if (classSlug && selected.sessionId && isWaitlistSlot(selected)) {
         if (!selected.waitlist) {
@@ -232,7 +293,7 @@ export default function BookScreen() {
         return;
       }
 
-      if (recurringEnabled && !classSlug && weeks > 1) {
+      if (isRecurring) {
         // Серия создаётся сразу, без удержания: сервер бронирует каждую дату. Оплачиваем первую бронь, как на сайте.
         const series = await createRecurringSeries({
           instructorId: instructor,
@@ -241,6 +302,7 @@ export default function BookScreen() {
           startTime: selected.startTime,
           durationMinutes: Math.round((Date.parse(selected.endIso) - Date.parse(selected.startIso)) / 60000),
           weeks,
+          ...consentFields,
         });
         setSelected(null);
         refreshSlotsInBackground();
@@ -267,7 +329,8 @@ export default function BookScreen() {
         holdId = hold.id;
       }
 
-      const bookingResponse = await authed('/api/booking', { method: 'POST', body: JSON.stringify({ holdId }) });
+      const bookingResponse = await authed('/api/booking', { method: 'POST', body: JSON.stringify({ holdId, ...consentFields }) });
+      if (!bookingResponse.ok) throw await bookingFailure(bookingResponse);
       const { booking } = await readJson<{ booking: { id: string; totalPrice: number } }>(bookingResponse);
       setSelected(null);
       refreshSlotsInBackground();
@@ -278,6 +341,15 @@ export default function BookScreen() {
         setResult({ kind: 'success', text: t.bookDone });
       }
     } catch (err: unknown) {
+      const consentField = consentErrorField(fieldOf(err));
+      if (consentField && consentForm.active) {
+        // Сервер отверг согласия или дату: подсвечиваем своё поле и показываем текст рядом с ним.
+        setConsentError({
+          field: consentField,
+          text: serverMessageOf(err) ?? (consentField === 'consents' ? c.booking.consent.required : c.validation.invalidDate),
+        });
+        return;
+      }
       const code = err instanceof BookingError ? err.code : '';
       setResult({ kind: 'error', text: code === 'SLOT_CONFLICT' || code === 'SLOT_UNAVAILABLE' ? t.bookSlotTaken : (serverMessageOf(err) ?? t.bookFailed) });
     } finally {
@@ -477,6 +549,53 @@ export default function BookScreen() {
           </Animated.View>
         ) : null}
 
+        {consentShown ? (
+          <Animated.View entering={FadeInDown.duration(400)} layout={LinearTransition} style={styles.padded}>
+            <Text style={[type.eyebrow, styles.sectionGap, styles.payTitle]}>{c.booking.consent.title}</Text>
+            <View style={[styles.consentCard, consentError?.field === 'consents' && styles.consentCardError]}>
+              <DateTimeField
+                mode="date"
+                label={c.booking.consent.birthDateLabel}
+                value={birthDate}
+                onChange={(value) => {
+                  setBirthDate(value);
+                  setConsentError(null);
+                }}
+                placeholder={c.events.birthDatePlaceholder}
+                maximumDate={new Date()}
+                disabled={busy}
+                error={birthDateError}
+              />
+              <Text style={type.caption}>{c.booking.consent.birthDateHint}</Text>
+              {consentForm.ids.map((id) => {
+                const checked = consentForm.acceptedIds.includes(id);
+                return (
+                  <PressableScale
+                    key={id}
+                    pressedScale={0.98}
+                    onPress={() => toggleConsent(id)}
+                    disabled={busy}
+                    style={styles.consentRow}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked, disabled: busy }}
+                  >
+                    <Ionicons name={checked ? 'checkbox' : 'square-outline'} size={22} color={checked ? colors.accentBright : colors.text3} />
+                    <Text style={[type.bodySm, styles.flex]}>{c.booking.consent.items[id]}</Text>
+                  </PressableScale>
+                );
+              })}
+              {consentForm.draft ? <Text style={type.caption}>{c.booking.consent.draftNotice}</Text> : null}
+              {consentError?.field === 'consents' ? (
+                <Text style={[type.caption, styles.consentErrorText]} accessibilityRole="alert">
+                  {consentError.text}
+                </Text>
+              ) : consentForm.ids.length > 0 && !consentForm.ready ? (
+                <Text style={type.caption}>{c.booking.consent.required}</Text>
+              ) : null}
+            </View>
+          </Animated.View>
+        ) : null}
+
         {selected && !isWaitlistSlot(selected) ? (
           <Animated.View entering={FadeInDown.duration(400)} layout={LinearTransition} style={styles.padded}>
             <Text style={[type.eyebrow, styles.sectionGap, styles.payTitle]}>{t.payMethodTitle}</Text>
@@ -536,7 +655,7 @@ export default function BookScreen() {
             </Animated.Text>
           ) : null}
         </View>
-        <Button label={barLabel} onPress={confirm} busy={busy} disabled={!selected} style={styles.barButton} />
+        <Button label={barLabel} onPress={confirm} busy={busy} disabled={!selected || consentBlocked} style={styles.barButton} />
       </View>
     </View>
   );
@@ -640,6 +759,17 @@ const styles = StyleSheet.create({
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.lineStrong, alignItems: 'center', justifyContent: 'center' },
   radioActive: { borderColor: colors.accentBright },
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accentBright },
+  consentCard: {
+    gap: space.md,
+    padding: space.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.line,
+  },
+  consentCardError: { borderColor: colors.danger },
+  consentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, minHeight: 44, paddingVertical: 4 },
+  consentErrorText: { color: colors.danger, fontWeight: '600' },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',

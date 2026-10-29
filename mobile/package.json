@@ -8,7 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/lib/class-time.test.ts src/lib/money.test.ts src/lib/server-message.test.ts src/lib/dance-match.test.ts src/lib/for-you.test.ts"
+    "test": "node --experimental-strip-types --test src/lib/class-time.test.ts src/lib/money.test.ts src/lib/server-message.test.ts src/lib/dance-match.test.ts src/lib/for-you.test.ts src/lib/booking-consents.test.ts"
   },
   "dependencies": {
     "@expo-google-fonts/playfair-display": "^0.4.2",

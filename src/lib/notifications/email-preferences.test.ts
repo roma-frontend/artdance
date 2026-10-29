@@ -13,6 +13,12 @@ describe('emailPreferencesFrom', () => {
       'booking.reminder',
       'booking.cancelled',
       'waitlist.ready',
+      'booking.requestDue',
+      'cart.abandoned',
+      'onboarding.welcome',
+      'onboarding.howToBook',
+      'onboarding.bonus',
+      'savedSearch.match',
     ]);
   });
 

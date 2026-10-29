@@ -1,13 +1,14 @@
 import 'server-only';
-import { booking, venue } from '@/config/business';
+import { booking, bookingRequestRules, venue } from '@/config/business';
 import { domainErrors } from '@/domain/errors';
+import { needsResponse, requestExpiresAtFor } from '@/domain/booking/request';
 import { assertRentalDuration, isRentalHold, rentalMinutes, rentalPrice, type RentalRules } from '@/domain/rental';
 import { publicClassWhere } from '@/server/queries/classes';
 import { notTrashed } from '@/server/queries/relations';
 import { publicInstructorWhere } from '@/server/queries/instructors';
 import { slotBlockingBookingStatuses } from '@/domain/enums';
 import { isHoldExpired } from '@/domain/slot-hold';
-import { cancellationOutcome, refundAmountFor, rescheduleOutcome, type BookingSnapshot } from '@/domain/booking/policy';
+import { bookingGuardrails, cancellationOutcome, refundAmountFor, rescheduleOutcome, type BookingSnapshot } from '@/domain/booking/policy';
 import { assertInsideAvailability, assertNoConflict } from '@/domain/availability/conflicts';
 import { expandRules } from '@/domain/availability/compute';
 import { site } from '@/config/site';
@@ -18,6 +19,10 @@ import { creditWallet } from '@/server/wallet/service';
 import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 import type { BookingConsentId } from '@/config/consents';
 import { checkBookingConsents, storeBookingConsents } from '@/server/booking/consents';
+import { flagBookingContactText } from '@/server/booking/guardrails';
+import { isLateCancellation } from '@/domain/reliability';
+import { recordReliabilityEvent } from '@/server/reliability/service';
+import { applyFirstBookingPromo, consumeFirstBookingPromo } from '@/server/promo/first-booking';
 function isUniqueViolation(error: unknown): boolean { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'; }
 function refFromId(id: string): string { return 'BK-' + id.slice(-8).toUpperCase(); }
 
@@ -88,10 +93,11 @@ function rentalRules(): RentalRules {
  * Аренда зала: предоплата обязательна, поэтому бронь создаётся PENDING и становится CONFIRMED при оплате.
  * Уведомление о подтверждении не шлём: до оплаты бронь не подтверждена.
  */
-async function createRentalFromHold(input: { holdId: string; roomId: string; startsAt: Date; endsAt: Date; userId: string | null; now: Date; useClassPass?: boolean; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; consents?: readonly BookingConsentId[]; ipAddress?: string | null }) {
+async function createRentalFromHold(input: { holdId: string; roomId: string; startsAt: Date; endsAt: Date; userId: string | null; now: Date; useClassPass?: boolean; promoCode?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; consents?: readonly BookingConsentId[]; participantBirthDate?: string | null; ipAddress?: string | null }) {
   const { holdId, roomId, startsAt, endsAt, userId, now } = input;
   if (!userId) throw domainErrors.unauthorized();
   if (input.useClassPass) throw domainErrors.validationFailed('classPass');
+  if (input.promoCode?.trim()) throw domainErrors.validationFailed('promoCode');
   if (input.locationOption && input.locationOption !== 'STUDIO') throw domainErrors.validationFailed('locationOption');
   if (startsAt <= now) throw domainErrors.slotUnavailable();
   await assertEntitlementOrThrow('events');
@@ -99,7 +105,7 @@ async function createRentalFromHold(input: { holdId: string; roomId: string; sta
   if (!room) throw domainErrors.notFound();
   assertRentalDuration(rentalMinutes(startsAt, endsAt), rentalRules());
   const totalPrice = rentalPrice(room.pricePerHour, rentalMinutes(startsAt, endsAt));
-  const consent = await checkBookingConsents({ customerId: userId, subject: 'STUDIO_RENTAL', accepted: input.consents });
+  const consent = await checkBookingConsents({ customerId: userId, subject: 'STUDIO_RENTAL', accepted: input.consents, participantBirthDate: input.participantBirthDate, now });
   const bufMs = booking.bufferBetweenBookingsMinutes * 60_000;
   try {
     const result = await db.$transaction(async (tx) => {
@@ -132,7 +138,7 @@ async function createRentalFromHold(input: { holdId: string; roomId: string; sta
   } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; }
 }
 
-export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; partnerName?: string | null; useClassPass?: boolean; consents?: readonly BookingConsentId[]; ipAddress?: string | null; now: Date; }
+export interface CreateBookingInput { holdId: string; userId?: string | null; anonymousId?: string | null; locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE'; customerAddress?: string | null; partnerName?: string | null; useClassPass?: boolean; promoCode?: string | null; consents?: readonly BookingConsentId[]; participantBirthDate?: string | null; ipAddress?: string | null; now: Date; }
 export async function createBookingFromHold(input: CreateBookingInput) {
   const { holdId, userId, anonymousId, now } = input;
   if (!userId && !anonymousId) throw domainErrors.unauthorized();
@@ -142,7 +148,7 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   if (!owned) throw domainErrors.forbidden();
   if (isHoldExpired(hold, now)) throw domainErrors.holdExpired();
   if (isRentalHold(hold) && hold.roomId) {
-    return createRentalFromHold({ holdId: hold.id, roomId: hold.roomId, startsAt: hold.startsAt, endsAt: hold.endsAt, userId: userId ?? null, now, useClassPass: input.useClassPass, locationOption: input.locationOption, consents: input.consents, ipAddress: input.ipAddress ?? null });
+    return createRentalFromHold({ holdId: hold.id, roomId: hold.roomId, startsAt: hold.startsAt, endsAt: hold.endsAt, userId: userId ?? null, now, useClassPass: input.useClassPass, promoCode: input.promoCode, locationOption: input.locationOption, consents: input.consents, participantBirthDate: input.participantBirthDate, ipAddress: input.ipAddress ?? null });
   }
   let basePrice: number | null = null;
   let danceClass: { id: string; price: number; venueId: string | null; lessonType: 'GROUP' | 'PRIVATE' | 'PAIR' } | null = null;
@@ -182,10 +188,15 @@ export async function createBookingFromHold(input: CreateBookingInput) {
   const lessonType = session ? (danceClass?.lessonType ?? 'GROUP') : 'PRIVATE';
   const participants = lessonType === 'PAIR' ? 2 : 1;
   const partnerName = input.partnerName?.trim() || null;
+  const promoCode = input.promoCode?.trim() || null;
   if (lessonType === 'PAIR' && (!partnerName || partnerName.length > 160)) throw domainErrors.validationFailed('partnerName');
   if (lessonType !== 'PAIR' && partnerName) throw domainErrors.validationFailed('partnerName');
+  if (input.useClassPass && promoCode) throw domainErrors.validationFailed('promoCode');
   if (input.useClassPass && lessonType !== 'GROUP') throw domainErrors.validationFailed('classPass');
-  const consent = await checkBookingConsents({ customerId, subject: lessonType === 'PRIVATE' ? 'PRIVATE_SESSION' : 'CLASS_SESSION', accepted: input.consents });
+  const subject = lessonType === 'PRIVATE' ? 'PRIVATE_SESSION' : 'CLASS_SESSION';
+  // D-04: тип из bookingRequestRules ждёт ответа инструктора: бронь PENDING, место удержано, подтверждение после ответа.
+  const requested = needsResponse(subject, bookingRequestRules);
+  const consent = await checkBookingConsents({ customerId, subject, accepted: input.consents, participantBirthDate: input.participantBirthDate, now });
   const bookedCheck = session;
   let createdId: string | null = null;
   try {
@@ -214,10 +225,10 @@ export async function createBookingFromHold(input: CreateBookingInput) {
       }
       const conflict = await tx.booking.findFirst({ where: conflictWhere as never });
       if (conflict) throw domainErrors.slotConflict();
-       const subject = lessonType === 'PRIVATE' ? 'PRIVATE_SESSION' : 'CLASS_SESSION';
         let classPassId: string | null = null;
         let discountAmount = 0;
         let payableTotal = totalPrice;
+        let promoCodeId: string | null = null;
         if (input.useClassPass) {
           if (lessonType !== 'GROUP') throw domainErrors.validationFailed('classPass');
           // Entitlement guard (server-side, inside tx): packages disabled → FEATURE_DISABLED
@@ -231,8 +242,14 @@ export async function createBookingFromHold(input: CreateBookingInput) {
          classPassId = pass.id;
          discountAmount = dynamicPrice;
          payableTotal = travelFee;
+       } else if (promoCode) {
+          const promo = await applyFirstBookingPromo({ userId: customerId, promoCode, lessonPrice: dynamicPrice, travelFee, lineType: subject === 'PRIVATE_SESSION' ? 'PRIVATE_SESSION' : 'CLASS_BOOKING', now, tx });
+          await consumeFirstBookingPromo(tx, promo);
+          promoCodeId = promo.promoCodeId;
+          discountAmount = promo.discountAmount;
+          payableTotal = totalPrice - discountAmount;
        }
-       const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject, lessonType, status: 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants, partnerName: lessonType === 'PAIR' ? partnerName : null, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount, totalPrice: payableTotal, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules, consentVersion: consent.consentVersion }, select: { id: true, reference: true } });
+       const created = await tx.booking.create({ data: { reference: 'tmp-' + hold.id.slice(-6), subject, lessonType, status: requested ? 'PENDING' : 'CONFIRMED', customerId, instructorId: hold.instructorId, venueId, roomId: hold.roomId, sessionId: hold.sessionId, startsAt: hold.startsAt, endsAt: hold.endsAt, participants, partnerName: lessonType === 'PAIR' ? partnerName : null, locationOption, customerAddress: input.customerAddress ?? null, basePrice, travelFee, discountAmount, promoCodeId, totalPrice: payableTotal, cancellationWindowHours, lateCancellationRate, rescheduleWindowHours, maxReschedules, consentVersion: consent.consentVersion, requestExpiresAt: requested ? requestExpiresAtFor(now, booking.autoDeclineAfterHours, hold.startsAt) : null }, select: { id: true, reference: true } });
        if (classPassId) {
          const redeemed = await tx.classPass.updateMany({ where: { id: classPassId, purchaserId: customerId, lessonsRemaining: { gt: 0 }, expiresAt: { gt: now } }, data: { lessonsRemaining: { decrement: 1 } } });
          if (redeemed.count !== 1) throw domainErrors.validationFailed('classPass');
@@ -244,7 +261,12 @@ export async function createBookingFromHold(input: CreateBookingInput) {
     });
     createdId = result.id;
     await storeBookingConsents(consent, input.ipAddress ?? null);
-    void notifyBookingConfirmed(result.id).catch(() => {});
+    /* Бронь создана до оплаты: контакты в свободном тексте проверяем сейчас, без блокировки. */
+    const guard = bookingGuardrails({ paid: false, text: { partnerName, customerAddress: input.customerAddress ?? null } });
+    if (guard.flaggedFields.length > 0) {
+      await flagBookingContactText({ bookingId: result.id, fields: guard.flaggedFields, kinds: guard.kinds });
+    }
+    if (!requested) void notifyBookingConfirmed(result.id).catch(() => {});
     return result;
   } catch (e) { if (isUniqueViolation(e)) throw domainErrors.slotConflict(); throw e; } finally { void createdId; }
 }
@@ -266,6 +288,10 @@ export async function cancelBooking(input: CancelBookingInput) {
       data: { status: 'CANCELLED_BY_CUSTOMER', cancelledAt: input.now, cancellationReason: input.reason ?? (outcome.kind === 'fee' ? 'LATE_FEE:' + fee : null) },
     });
     if (claimed.count !== 1) throw domainErrors.cancellationWindowClosed();
+    // Отменяет только клиент (проверка выше): поздняя отмена засчитывается ему в этой же транзакции.
+    if (isLateCancellation({ now: input.now, startsAt: b.startsAt, cancellationWindowHours: b.cancellationWindowHours })) {
+      await recordReliabilityEvent({ userId: b.customerId, kind: 'LATE_CANCEL', refId: b.id }, tx);
+    }
     const updated = await tx.booking.findUniqueOrThrow({ where: { id: b.id }, select: { id: true, reference: true, status: true, totalPrice: true } });
     if (b.sessionId) {
       const released = await tx.classSession.updateMany({ where: { id: b.sessionId, bookedCount: { gte: b.participants } }, data: { bookedCount: { decrement: b.participants } } });
@@ -307,7 +333,7 @@ export async function expireUnpaidBookings(now: Date): Promise<{ expired: number
   const stale = await db.booking.findMany({
     where: {
       status: 'PENDING',
-      createdAt: { lte: cutoff },
+      createdAt: { lte: cutoff }, requestExpiresAt: null,
       payments: { none: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } } },
     },
     select: { id: true, updatedAt: true, sessionId: true, eventId: true, participants: true },

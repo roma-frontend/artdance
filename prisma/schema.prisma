@@ -113,6 +113,47 @@ enum DanceSportDiscipline {
 }
 
 /**
+ * Верхний уровень таксономии (DS-01): DanceSport и Social — две дисциплины,
+ * а не пункты списка стилей. Набор фиксирован, поэтому `kind` уникален.
+ * Строки заводит миграция `20261031120000_dance_discipline_taxonomy`.
+ */
+enum DanceDisciplineKind {
+  DANCESPORT
+  SOCIAL
+}
+
+/**
+ * Дисциплина верхнего уровня. Десять официальных танцев DanceSport остаются
+ * в `DanceSportDiscipline`, программы — в `DanceSportProgram`.
+ */
+model DanceDiscipline {
+  id        String              @id @default(cuid())
+  kind      DanceDisciplineKind @unique
+  slug      String              @unique
+  sortOrder Int                 @default(0)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  styles DanceStyleDiscipline[]
+}
+
+/**
+ * Связь стиля каталога с дисциплиной, многие-ко-многим: танго входит и в
+ * спортивную программу (Tango Standard), и в социальную. Стили вне обеих
+ * дисциплин (клубные направления) связи не имеют.
+ */
+model DanceStyleDiscipline {
+  style        DanceStyle
+  disciplineId String
+  createdAt    DateTime   @default(now())
+
+  discipline DanceDiscipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  @@id([style, disciplineId])
+  @@index([disciplineId])
+}
+
+/**
  * Формат занятия: группа, индивидуально или пара.
  */
 enum LessonType {
@@ -1138,6 +1179,8 @@ model Booking {
   basePrice      Int
   travelFee      Int    @default(0)
   discountAmount Int    @default(0)
+  // C-08: промокод на первую бронь. totalPrice уже с учётом скидки.
+  promoCodeId    String?
   totalPrice     Int
   currencyCode   String @default("AMD")
 
@@ -1160,6 +1203,7 @@ model Booking {
   updatedAt DateTime @updatedAt
 
   customer          User                 @relation("BookingCustomer", fields: [customerId], references: [id])
+  promoCode         PromoCode?           @relation(fields: [promoCodeId], references: [id])
   instructor        InstructorProfile?   @relation(fields: [instructorId], references: [id])
   venue             Venue?               @relation(fields: [venueId], references: [id])
   room              Room?                @relation(fields: [roomId], references: [id])
@@ -1192,6 +1236,7 @@ model Booking {
   @@index([status, startsAt])
   @@index([startsAt, endsAt])
   @@index([athleteProfileId])
+  @@index([promoCodeId])
 }
 
 model AthleteProfile {
@@ -1655,8 +1700,9 @@ model PromoCode {
   createdAt     DateTime       @default(now())
   deletedAt     DateTime?
 
-  carts  Cart[]
-  orders Order[]
+  carts    Cart[]
+  orders   Order[]
+  bookings Booking[]
 
   @@unique([code], where: raw("\"deletedAt\" IS NULL"))
   @@index([isActive, endsAt])
@@ -2197,15 +2243,20 @@ model InstructorApplication {
 }
 
 model SavedSearch {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
   query     String
-  scope     String   @default("all")
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scope     String    @default("all")
+  createdAt DateTime  @default(now())
+  // Когда совпадения проверяли в последний раз. null — проверки ещё не было (первая только запоминает базу).
+  checkedAt DateTime?
+  // Результаты, о которых пользователь уже знает (на момент последней проверки). Новое = всё, чего здесь нет.
+  matchedIds String[] @default([])
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, query, scope])
   @@index([userId])
+  @@index([checkedAt])
 }
 
 model PushSubscription {

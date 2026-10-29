@@ -59,7 +59,7 @@ export default async function AccountBookingsPage({ params, searchParams }: Page
       take: pageSize,
       skip,
       select: {
-        id: true, reference: true, status: true, startsAt: true, endsAt: true, totalPrice: true, createdAt: true,
+        id: true, reference: true, status: true, startsAt: true, endsAt: true, totalPrice: true, createdAt: true, requestExpiresAt: true,
         instructor: { select: { slug: true, user: { select: { name: true } } } },
         session: { select: { danceClass: { select: { title: true, slug: true } } } },
       },
@@ -124,7 +124,7 @@ export default async function AccountBookingsPage({ params, searchParams }: Page
                     <div className="min-w-0">
                       <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                         <span className="font-mono text-body-sm font-semibold">{b.reference}</span>
-                        {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
+                        {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" awaitingResponse={b.requestExpiresAt !== null} /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
                       </div>
                       {(classTitle || instructorName) && <p className="text-body-sm mt-1 truncate text-content-secondary">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
                       <p className="text-body-sm mt-1 font-medium">{when}</p>
@@ -148,7 +148,7 @@ export default async function AccountBookingsPage({ params, searchParams }: Page
                 return (
                   <li key={b.id} className="flex items-center gap-3 px-3 py-2.5 hover:bg-surface-sunken sm:px-4">
                     <span className="font-mono text-caption font-semibold sm:text-body-sm">{b.reference}</span>
-                    {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" /> : <Badge variant="neutral" size="sm">{b.status}</Badge>}
+                    {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" awaitingResponse={b.requestExpiresAt !== null} /> : <Badge variant="neutral" size="sm">{b.status}</Badge>}
                     {classTitle ? <span className="hidden min-w-0 truncate text-body-sm text-content-secondary sm:block">{classTitle}</span> : null}
                     <span className="ml-auto hidden shrink-0 text-body-sm font-medium tabular-nums sm:block">{whenShort}</span>
                     <Price amount={b.totalPrice} emphasis="total" />
@@ -171,11 +171,11 @@ export default async function AccountBookingsPage({ params, searchParams }: Page
                   <li key={b.id} className="min-w-0 rounded-xl border border-border-default bg-surface-card p-3 shadow-sm">
                     <div className="flex min-w-0 flex-col items-start gap-2">
                       <span className="min-w-0 break-all font-mono text-caption font-semibold">{b.reference}</span>
-                      {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
+                      {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" awaitingResponse={b.requestExpiresAt !== null} /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
                     </div>
-                    {(classTitle || instructorName) && <p className="mt-1.5 break-words text-body-sm text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
+                    {(classTitle || instructorName) && <p className="mt-1.5 text-body-sm text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
                     <div className="mt-2 flex min-w-0 items-center justify-between gap-3">
-                      <span className="break-words text-caption font-medium tabular-nums text-content-tertiary [overflow-wrap:anywhere]">{whenShort}</span>
+                      <span className="text-caption font-medium tabular-nums text-content-tertiary [overflow-wrap:anywhere]">{whenShort}</span>
                       <Price amount={b.totalPrice} emphasis="total" />
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">

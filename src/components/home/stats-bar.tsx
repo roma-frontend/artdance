@@ -13,6 +13,8 @@ interface StatsBarProps {
 export function StatsBar({ stats }: StatsBarProps) {
   const t = useTranslations('home.hero');
 
+  if (stats.length === 0) return null;
+
   return (
     <section className="border-y border-border-default/60 bg-surface-card/80">
       <div className="page-container py-8 md:py-10">

@@ -306,7 +306,7 @@ export async function listPayouts(query: AdminListParams): Promise<OperationsPag
 
 /* ────────────────────────────── Модерация ────────────────────────────── */
 
-export type ModerationTab = 'reviews' | 'instructors' | 'venues';
+export type ModerationTab = 'reviews' | 'instructors' | 'venues' | 'disputes';
 
 export interface ModerationItem {
   id: string;
@@ -412,6 +412,46 @@ export async function listModerationQueue(
     // Заявки первыми — их нужно решить до появления в каталоге.
     const items = [...appItems, ...profileItems].slice(0, take);
     return { total: appTotal + profileTotal, items };
+  }
+
+  if (tab === 'disputes') {
+    // D-08: споры по броням. Решение принимает модератор с правом `dispute.resolve`
+    // (кнопки в карточке очереди); статус меняет сервис споров, не эта выборка.
+    const where: Prisma.DisputeWhereInput = { status };
+    const [rows, total] = await Promise.all([
+      db.dispute.findMany({
+        where,
+        take,
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          reason: true,
+          openedBy: true,
+          createdAt: true,
+          booking: {
+            select: {
+              reference: true,
+              session: { select: { danceClass: { select: { title: true } } } },
+              instructor: { select: { user: { select: { name: true } } } },
+            },
+          },
+        },
+      }),
+      db.dispute.count({ where }),
+    ]);
+
+    return {
+      total,
+      items: rows.map((row) => ({
+        id: row.id,
+        title: row.booking.reference,
+        body: row.reason,
+        author: row.openedBy,
+        target: row.booking.session?.danceClass.title ?? row.booking.instructor?.user.name ?? null,
+        rating: null,
+        createdAt: iso(row.createdAt),
+      })),
+    };
   }
 
   const where: Prisma.VenueWhereInput = { moderation: status };

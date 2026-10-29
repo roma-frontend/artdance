@@ -5,7 +5,8 @@
  * из запроса. Имя и пароль здесь не живут: их меняет better-auth.
  */
 
-import { mediaPaths, mediaUrl } from '@/config/media';
+import { mediaPaths, mediaUrl, variantKey } from '@/config/media';
+import type { VariantFormat } from '@/config/media-processing';
 import type { Locale } from '@/i18n/config';
 import { db } from '@/lib/db';
 import { putMediaObject } from '@/lib/media/storage';
@@ -21,7 +22,7 @@ export type AccountProfile = {
 /** Результат обработки изображения из `processImage`, нужные поля. */
 export type AvatarImage = {
   master: { format: string; data: Buffer };
-  variants: readonly { width: number; format: string; data: Buffer }[];
+  variants: readonly { width: number; format: VariantFormat; data: Buffer }[];
 };
 
 export async function getAccountProfile(userId: string): Promise<AccountProfile | null> {
@@ -30,12 +31,22 @@ export async function getAccountProfile(userId: string): Promise<AccountProfile 
     select: { name: true, email: true, locale: true, timeZone: true, avatarKey: true },
   });
   if (!user) return null;
+  /*
+   * Кадр из медиатеки (админ) первым: он задан явно. Собственный файл пользователя
+   * (`avatarKey`) — фоллбэк. Оба источника при записи сбрасывают друг друга (см.
+   * storeAvatar, clearAvatar и /api/media/upload), поэтому расхождения не остаётся.
+   */
+  const managed = await db.mediaAsset.findFirst({
+    where: { avatarOwnerId: userId },
+    select: { storageKey: true },
+  });
+  const avatarKey = managed?.storageKey ?? user.avatarKey;
   return {
     name: user.name,
     email: user.email,
     locale: user.locale,
     timeZone: user.timeZone,
-    avatarUrl: user.avatarKey ? mediaUrl(user.avatarKey) : null,
+    avatarUrl: avatarKey ? mediaUrl(avatarKey) : null,
   };
 }
 
@@ -68,17 +79,30 @@ export async function storeAvatar(userId: string, image: AvatarImage): Promise<s
 
   for (const variant of image.variants) {
     await putMediaObject(
-      `${baseKey}-${variant.width}.${variant.format}`,
+      variantKey(baseKey, variant.width, variant.format),
       variant.data,
       `image/${variant.format}`,
     );
   }
 
-  await db.user.update({ where: { id: userId }, data: { avatarKey: master.key } });
+  /*
+   * Собственный аватар вытесняет кадр из медиатеки: иначе чтение (медиатека первой)
+   * продолжило бы показывать прежний кадр администратора. Файлы в хранилище остаются.
+   */
+  await db.$transaction(async (tx) => {
+    await tx.mediaAsset.deleteMany({ where: { avatarOwnerId: userId } });
+    await tx.user.update({ where: { id: userId }, data: { avatarKey: master.key } });
+  });
   return master.key;
 }
 
-/** Убирает ссылку на аватар. Файлы в хранилище остаются: это дешевле и безопаснее, чем удалять на лету. */
+/**
+ * Убирает аватар целиком: собственный файл и кадр из медиатеки, иначе он снова стал бы виден.
+ * Файлы в хранилище остаются: это дешевле и безопаснее, чем удалять на лету.
+ */
 export async function clearAvatar(userId: string): Promise<void> {
-  await db.user.update({ where: { id: userId }, data: { avatarKey: null } });
+  await db.$transaction(async (tx) => {
+    await tx.mediaAsset.deleteMany({ where: { avatarOwnerId: userId } });
+    await tx.user.update({ where: { id: userId }, data: { avatarKey: null } });
+  });
 }

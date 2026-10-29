@@ -61,6 +61,7 @@ export {
   businessRules,
   booking,
   bookingLocationOptions,
+  bookingRequestRules,
   commerce,
   commission,
   currency,
@@ -98,6 +99,7 @@ export {
   type SubscriptionPlanId,
 } from './pricing';
 export {
+  adultAgeYears,
   legalDocuments,
   legalDocumentBySlug,
   legalDocumentIds,
@@ -110,6 +112,18 @@ export {
   type LegalDocumentSpec,
   type LegalDocumentStatus,
 } from './legal';
+export {
+  bookingConsentIds,
+  bookingConsentRequiresBirthDate,
+  bookingConsentRules,
+  bookingConsents,
+  bookingConsentsRequired,
+  bookingConsentsSnapshot,
+  bookingConsentTextKey,
+  bookingMinorConsentIds,
+  type BookingConsentId,
+  type BookingConsentSpec,
+} from './consents';
 export { features, isEnabled, deliveryPhases, type DeliveryPhaseId, type FeatureKey } from './features';
 export {
   headerCta,

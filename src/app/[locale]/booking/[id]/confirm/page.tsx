@@ -49,8 +49,8 @@ export default async function BookingConfirmPage({ params }: PageProps) {
   const booking = await db.booking.findUnique({
     where: { id },
     select: {
-      id: true, reference: true, totalPrice: true, basePrice: true, travelFee: true,
-      startsAt: true, endsAt: true, status: true, customerId: true,
+      id: true, reference: true, totalPrice: true, basePrice: true, travelFee: true, discountAmount: true,
+      startsAt: true, endsAt: true, status: true, customerId: true, requestExpiresAt: true,
       rescheduleCount: true, maxReschedules: true, rescheduleWindowHours: true,
       cancellationWindowHours: true, lateCancellationRate: true,
       instructor: { select: { slug: true, user: { select: { name: true } } } },
@@ -61,8 +61,8 @@ export default async function BookingConfirmPage({ params }: PageProps) {
     ?? await db.booking.findUnique({
         where: { reference: id },
         select: {
-          id: true, reference: true, totalPrice: true, basePrice: true, travelFee: true,
-          startsAt: true, endsAt: true, status: true, customerId: true,
+          id: true, reference: true, totalPrice: true, basePrice: true, travelFee: true, discountAmount: true,
+          startsAt: true, endsAt: true, status: true, customerId: true, requestExpiresAt: true,
           rescheduleCount: true, maxReschedules: true, rescheduleWindowHours: true,
           cancellationWindowHours: true, lateCancellationRate: true,
           instructor: { select: { slug: true, user: { select: { name: true } } } },
@@ -105,29 +105,32 @@ export default async function BookingConfirmPage({ params }: PageProps) {
     <main id={site.mainContentId} className="page-container inner-page min-w-0">
       <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <h1 className="text-heading-2 break-words [overflow-wrap:anywhere]">{isCancelled ? tBooking('cancelTitle') : tBooking('confirmedTitle')}</h1>
-          <p className="text-body mt-2 flex min-w-0 flex-wrap items-center gap-2 break-words text-content-secondary [overflow-wrap:anywhere]">
+          <h1 className="text-heading-2 [overflow-wrap:anywhere]">{isCancelled ? tBooking('cancelTitle') : tBooking('confirmedTitle')}</h1>
+          <p className="text-body mt-2 flex min-w-0 flex-wrap items-center gap-2 text-content-secondary [overflow-wrap:anywhere]">
             <span className="min-w-0 break-all">{tAccount('orders.orderNumber', { number: resolved.reference } as never)}</span>
-            {(bookingStatuses as readonly string[]).includes(resolved.status) ? <StatusBadge kind="booking" status={resolved.status as BookingStatus} size="sm" className="max-w-full break-words" /> : <Badge variant="metal" size="sm" className="max-w-full break-words">{resolved.status}</Badge>}
+            {(bookingStatuses as readonly string[]).includes(resolved.status) ? <StatusBadge kind="booking" status={resolved.status as BookingStatus} size="sm" className="max-w-full break-words" awaitingResponse={resolved.requestExpiresAt !== null} /> : <Badge variant="metal" size="sm" className="max-w-full break-words">{resolved.status}</Badge>}
           </p>
           {(classTitle || instructorName) && (
-            <p className="text-body-sm mt-1 break-words text-content-tertiary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>
+            <p className="text-body-sm mt-1 text-content-tertiary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>
           )}
         </div>
         <div className="max-w-full shrink-0">
-          {(bookingStatuses as readonly string[]).includes(resolved.status) ? <StatusBadge kind="booking" status={resolved.status as BookingStatus} className="max-w-full break-words" /> : <Badge variant={isCancelled ? 'warning' : 'success'} className="max-w-full break-words">{isCancelled ? tBooking('cancelTitle') : resolved.status}</Badge>}
+          {(bookingStatuses as readonly string[]).includes(resolved.status) ? <StatusBadge kind="booking" status={resolved.status as BookingStatus} className="max-w-full break-words" awaitingResponse={resolved.requestExpiresAt !== null} /> : <Badge variant={isCancelled ? 'warning' : 'success'} className="max-w-full break-words">{isCancelled ? tBooking('cancelTitle') : resolved.status}</Badge>}
         </div>
       </div>
       <div className="mt-6 min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-4 sm:p-6">
         <dl className="grid min-w-0 gap-2 text-body-sm">
-          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4"><dt className="shrink-0 text-content-tertiary">{tBooking('summaryDate')}</dt><dd className="min-w-0 break-words font-medium [overflow-wrap:anywhere]">{new Date(resolved.startsAt).toLocaleString(locale)}</dd></div>
-          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4"><dt className="shrink-0 text-content-tertiary">{tBooking('summaryTime')}</dt><dd className="min-w-0 break-words font-medium tabular-nums [overflow-wrap:anywhere]">{new Date(resolved.startsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} — {new Date(resolved.endsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</dd></div>
+          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4"><dt className="shrink-0 text-content-tertiary">{tBooking('summaryDate')}</dt><dd className="min-w-0 font-medium [overflow-wrap:anywhere]">{new Date(resolved.startsAt).toLocaleString(locale)}</dd></div>
+          <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4"><dt className="shrink-0 text-content-tertiary">{tBooking('summaryTime')}</dt><dd className="min-w-0 font-medium tabular-nums [overflow-wrap:anywhere]">{new Date(resolved.startsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} — {new Date(resolved.endsAt).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</dd></div>
+          {resolved.discountAmount > 0 && (
+            <div className="flex min-w-0 items-center justify-between gap-4"><dt className="shrink-0 text-content-tertiary">{tCommon('labels.discount')}</dt><dd className="min-w-0">&minus;<Price amount={resolved.discountAmount} /></dd></div>
+          )}
           <div className="flex min-w-0 items-center justify-between gap-4"><dt className="shrink-0 text-content-tertiary">{tCommon('labels.total')}</dt><dd className="min-w-0"><Price amount={resolved.totalPrice} emphasis="total" /></dd></div>
           {(resolved as { basePrice?: number }).basePrice != null && (resolved as { travelFee?: number }).travelFee! > 0 && (
             <div className="flex min-w-0 items-center justify-between gap-4"><dt className="shrink-0 text-content-tertiary">{tBooking('locationCustomer')}</dt><dd className="min-w-0"><Price amount={(resolved as { travelFee: number }).travelFee!} /></dd></div>
           )}
         </dl>
-        <p className="text-caption mt-3 break-words text-content-tertiary [overflow-wrap:anywhere]">{tBooking('cancellationNote', { hours: String(resolved.cancellationWindowHours) } as never)}</p>
+        <p className="text-caption mt-3 text-content-tertiary [overflow-wrap:anywhere]">{tBooking('cancellationNote', { hours: String(resolved.cancellationWindowHours) } as never)}</p>
         {!isCancelled && resolved.status !== 'COMPLETED' && (
           <div className="mt-4 grid min-w-0 gap-3">
             <CancelBookingButton bookingId={resolved.id} />

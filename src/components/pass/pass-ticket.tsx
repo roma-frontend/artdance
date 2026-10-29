@@ -97,7 +97,7 @@ export function PassTicket({
         {/* Название брони — заголовок билета (h1 страницы) */}
         {bookingTitle ? (
           <div className="px-4 pt-4 sm:px-6">
-            <h1 className="text-heading-3 break-words leading-tight [overflow-wrap:anywhere]">{bookingTitle}</h1>
+            <h1 className="text-heading-3 leading-tight [overflow-wrap:anywhere]">{bookingTitle}</h1>
           </div>
         ) : null}
 
@@ -110,22 +110,22 @@ export function PassTicket({
             </div>
             <div className="min-w-0">
               <dt className="text-caption text-content-tertiary">{startsLabel ?? 'Starts'}</dt>
-              <dd className="mt-1 break-words font-semibold [overflow-wrap:anywhere]">{startsText}</dd>
+              <dd className="mt-1 font-semibold [overflow-wrap:anywhere]">{startsText}</dd>
             </div>
             <div className="min-w-0">
               <dt className="text-caption text-content-tertiary">{endsLabel ?? 'Ends'}</dt>
-              <dd className="mt-1 break-words font-semibold [overflow-wrap:anywhere]">{endsText}</dd>
+              <dd className="mt-1 font-semibold [overflow-wrap:anywhere]">{endsText}</dd>
             </div>
             {venueText ? (
               <div className="col-span-2 min-w-0">
                 <dt className="text-caption text-content-tertiary">{venueLabel ?? 'Venue'}</dt>
-                <dd className="mt-1 break-words font-medium [overflow-wrap:anywhere]">{venueText}</dd>
+                <dd className="mt-1 font-medium [overflow-wrap:anywhere]">{venueText}</dd>
               </div>
             ) : null}
             {instructorText ? (
               <div className="col-span-2 min-w-0">
                 <dt className="text-caption text-content-tertiary">{instructorLabel ?? 'Instructor'}</dt>
-                <dd className="mt-1 break-words font-medium [overflow-wrap:anywhere]">{instructorText}</dd>
+                <dd className="mt-1 font-medium [overflow-wrap:anywhere]">{instructorText}</dd>
               </div>
             ) : null}
           </dl>

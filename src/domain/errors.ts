@@ -102,6 +102,22 @@ export const domainErrors = {
       ...(field ? { field } : {}),
     }),
 
+  /** Дата рождения участника не распознана, не существует или в будущем (D-03). */
+  participantBirthDateInvalid: () =>
+    new DomainError({
+      code: 'VALIDATION_FAILED',
+      messageKey: 'validation.invalidDate',
+      field: 'participantBirthDate',
+    }),
+
+  /** Бронь требует согласие, которое не отмечено (D-03). Поле `consents` подсвечивает блок галочек. */
+  consentRequired: () =>
+    new DomainError({
+      code: 'VALIDATION_FAILED',
+      messageKey: 'booking.consent.required',
+      field: 'consents',
+    }),
+
   rateLimited: (retryAfterSeconds: number) =>
     new DomainError({
       code: 'RATE_LIMITED',
@@ -161,6 +177,10 @@ export const domainErrors = {
   slotUnavailable: () =>
     new DomainError({ code: 'SLOT_UNAVAILABLE', messageKey: 'errors.slotUnavailable.description' }),
 
+  /** Лимит сохранённых поисков (`growth.savedSearch.maxPerUser`). Текст подсказывает, что делать. */
+  savedSearchLimitReached: () =>
+    new DomainError({ code: 'VALIDATION_FAILED', messageKey: 'savedSearches.limitReached' }),
+
   slotConflict: () => new DomainError({ code: 'SLOT_CONFLICT', messageKey: 'booking.conflictError' }),
 
   holdExpired: () => new DomainError({ code: 'HOLD_EXPIRED', messageKey: 'booking.holdExpired' }),
@@ -216,6 +236,10 @@ export const domainErrors = {
 
   eventRegistrationClosed: () =>
     new DomainError({ code: 'VALIDATION_FAILED', messageKey: 'events.registrationClosed' }),
+  bookingRequestNotPending: () =>
+    new DomainError({ code: 'VALIDATION_FAILED', messageKey: 'booking.request.notPending' }),
+  bookingRequestExpired: () =>
+    new DomainError({ code: 'VALIDATION_FAILED', messageKey: 'booking.request.expired' }),
 
   outOfStock: (name: string) =>
     new DomainError({ code: 'OUT_OF_STOCK', messageKey: 'errors.outOfStock.description', params: { name } }),

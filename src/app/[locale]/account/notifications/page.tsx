@@ -5,6 +5,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 
+import { PushToggle } from '@/components/account/push-toggle';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { routes, site } from '@/config';
 import type { Locale } from '@/i18n/config';
@@ -33,6 +34,7 @@ export default async function AccountNotificationsPage({ params }: PageProps) {
     <main id={site.mainContentId} className="page-container inner-page">
       <h1 className="text-heading-2">{t('notificationsTitle')}</h1>
       <p className="text-body mt-2 text-content-secondary">{t('notificationsHint')}</p>
+      <div className="mt-6"><PushToggle /></div>
       <SiteFooter />
     </main>
   );

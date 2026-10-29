@@ -24,6 +24,7 @@
 import { expect, test } from '@playwright/test';
 
 import { routes } from '../src/config/routes';
+import { fetchFullSitemap } from './support/sitemap';
 import { danceStyleSlug, danceStyles, relatedDanceStyles } from '../src/domain/enums';
 import en from '../src/i18n/messages/en';
 
@@ -250,10 +251,7 @@ test.describe('хаб направления: данные не расходят
   });
 
   test('направление без предложения не попадает в карту сайта', async ({ request }) => {
-    const response = await request.get('/sitemap.xml');
-    expect(response.status()).toBe(200);
-
-    const body = await response.text();
+    const body = await fetchFullSitemap(request);
     expect(body).toContain(routes.style(FULL.slug));
     expect(body).not.toContain(routes.style(EMPTY.slug));
   });

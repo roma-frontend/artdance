@@ -408,6 +408,36 @@ export function processImage(input: Buffer, options?: ProcessOptions): Promise<I
 export function describeImage(input: Buffer): Promise<{ width; height; bytes; blurDataUrl }>;
 ```
 
+Приём загрузки и хранение (фактические хелперы):
+
+```ts
+// src/lib/security/uploads.ts
+export function validateUpload(candidate: UploadCandidate): UploadValidation;   // тип, размер, имя, расширение — до разбора содержимого
+export function exceedsDeclaredSize(contentLength: string | null, kind: UploadKind): boolean;
+export function safeObjectName(fileName: string, uniqueId: string): string;     // `<uniqueId>.<расширение>`; маршрут загрузки его не вызывает
+
+// src/config/security.ts
+export const uploadPolicies: Record<UploadKind, UploadPolicy>;                  // лимиты и maxPerEntity по роли
+
+// src/config/media-processing.ts
+export function variantKey(baseKey: string, width: number, format: VariantFormat): string;   // `<base>-<width>.<format>`
+
+// src/lib/media/storage.ts
+export function putMediaObject(key: string, data: Buffer, contentType: string): Promise<StoredObject>;   // публичный бакет R2_BUCKET
+export function putPrivateObject(key: string, data: Buffer, contentType: string): Promise<{ key: string; bytes: number }>;   // приватный R2_PRIVATE_BUCKET
+```
+
+Чтение медиа — `src/server/queries/media.ts`:
+
+```ts
+export const mediaSelect;                                        // select для MediaAsset
+export const trashableMediaSelect;                               // mediaSelect + deletedAt
+export function toMediaRef(row: MediaRow): MediaRef;             // alt по локали с откатом к базовой
+export function firstMediaRef(rows: readonly MediaRow[]): MediaRef | null;
+export function galleryRefs(rows: readonly MediaRow[]): readonly MediaRef[];
+export function liveSingleMedia(row: TrashableMediaRow | null | undefined): TrashableMediaRow | null;   // одиночная связь: null, если в корзине
+```
+
 Отдельный `generateBlurDataUrl` не нужен: плейсхолдер считается конвейером из
 итогового мастера, поэтому он всегда соответствует тому, что реально отдаётся.
 
@@ -567,6 +597,7 @@ export function purgeExpiredTrash(now: Date): Promise<PurgeReport>;
 2. **Вложенная связь — исключение.** До `select: { media: … }` расширения Prisma
    не доходят. Такие связи берутся из `queries/relations.ts` или несут
    `notTrashed` явно, и это проверяет `queries/relations.test.ts`, читая исходники.
+3. **Одиночные связи (to-one) не принимают `where`.** Это `User.avatarMedia`, `Course.media`, `Banner.media`, `BlogPost.media`. Фильтр корзины для них — `liveSingleMedia` (`src/server/queries/media.ts`) на уже прочитанной строке.
 
 Тесты обязательны: `domain/trash.ts` (подмешивание фильтра и срок хранения),
 `config/trash.ts` против `schema.prisma` (колонка, индекс, частичность уникальных

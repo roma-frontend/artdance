@@ -14,3 +14,11 @@ export function nextReliabilityScore(current: number, kind: ReliabilityKind): nu
   const next = current + reliabilityDelta(kind);
   return Math.max(0, Math.min(100, next));
 }
+
+const MS_PER_HOUR = 60 * 60 * 1000;
+
+/** Поздняя отмена: занятие ещё не началось, а до старта меньше окна бесплатной отмены брони. */
+export function isLateCancellation(input: { now: Date; startsAt: Date; cancellationWindowHours: number }): boolean {
+  const untilStart = input.startsAt.getTime() - input.now.getTime();
+  return untilStart >= 0 && untilStart < input.cancellationWindowHours * MS_PER_HOUR;
+}

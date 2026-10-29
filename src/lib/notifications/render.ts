@@ -28,6 +28,11 @@ function interpolate(template: string, data: Record<string, string | number>): s
   return template.replace(/\{(\w+)\}/g, (_, key: string) => String(data[key] ?? `{${key}}`));
 }
 
+/** Письмо без подстановок: тема, заголовок, один абзац и кнопка на href из данных. */
+function plainEmail(copy: { subject: string; heading: string; body: string; cta: string }, href: string): RenderedEmail {
+  return { subject: copy.subject, heading: copy.heading, paragraphs: [copy.body], ctaLabel: copy.cta, ctaHref: href };
+}
+
 export async function renderEmail(input: RenderInput): Promise<RenderedEmail> {
   const messages = await loadMessages(input.locale);
   const d = input.data;
@@ -60,31 +65,44 @@ export async function renderEmail(input: RenderInput): Promise<RenderedEmail> {
         ...(t.cta ? { ctaLabel: t.cta, ctaHref: String(d.href ?? '') } : {}),
       };
     }
-    case 'waitlist.ready': {
-      // переиспользуем строки бронирования — отдельного шаблона нет
+    case 'booking.requestDue': {
+      const t = messages.email.bookingRequestDue;
       return {
-        subject: String(d.subject ?? 'A spot opened up'),
-        heading: 'Your waitlist spot is ready',
-        paragraphs: [String(d.body ?? '')],
-        ...(d.href ? { ctaLabel: 'Claim spot', ctaHref: String(d.href) } : {}),
+        subject: interpolate(t.subject, { title: d.title ?? '' }),
+        heading: t.heading,
+        paragraphs: [interpolate(t.body, d)],
+        ...(t.cta ? { ctaLabel: t.cta, ctaHref: String(d.href ?? '') } : {}),
+      };
+    }
+    case 'cart.abandoned':
+      return plainEmail(messages.email.cartAbandoned, String(d.href ?? ''));
+    case 'onboarding.welcome':
+      return plainEmail(messages.email.onboardingWelcome, String(d.href ?? ''));
+    case 'onboarding.howToBook':
+      return plainEmail(messages.email.onboardingHowToBook, String(d.href ?? ''));
+    case 'onboarding.bonus':
+      return plainEmail(messages.email.onboardingBonus, String(d.href ?? ''));
+    case 'savedSearch.match': {
+      const t = messages.email.savedSearchMatch;
+      return {
+        subject: interpolate(t.subject, { query: d.query ?? '' }),
+        heading: t.heading,
+        paragraphs: [interpolate(t.body, d)],
+        ctaLabel: t.cta,
+        ctaHref: String(d.href ?? ''),
+      };
+    }
+    case 'waitlist.ready': {
+      const t = messages.email.waitlistReady;
+      return {
+        subject: t.subject,
+        heading: t.heading,
+        paragraphs: [interpolate(t.body, d)],
+        ctaLabel: t.cta,
+        ctaHref: String(d.href ?? ''),
       };
     }
     default:
       return { subject: 'Notification', heading: 'Notification', paragraphs: [] };
   }
-}
-
-/**
- * Синхронная обёртка каталога хелперов: `renderEmail(type, locale, data)`.
- * Исторически упоминается как `renderEmail(type, locale, data)` — сохраняем алиас.
- */
-export function renderEmailSync(
-  type: NotificationType,
-  locale: Locale,
-  data: Record<string, string | number>,
-): { subject: string; html: string; text: string } {
-  void type;
-  void locale;
-  void data;
-  return { subject: '', html: '', text: '' };
 }

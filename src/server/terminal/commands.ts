@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 
 import { mediaUrl } from '@/config/media';
 import { db } from '@/lib/db';
-import { browseModel, getOperatorCounts, globalOperatorSearch, modelFields, operatorDelegate, operatorModelName, operatorModels } from '@/server/admin/operator';
+import { browseModel, getOperatorCounts, globalOperatorSearch, modelFields, operatorDelegate, operatorModelName, operatorModels, protectedWriteField } from '@/server/admin/operator';
 import { operatorPulse } from '@/server/admin/operator';
 import { isTrashedModel } from '@/config/trash';
 import { onlyTrashed } from '@/domain/trash';
@@ -556,6 +556,8 @@ function genericWriteGuard(model: string, patch?: Record<string, unknown>): stri
     const unsafe = Object.keys(patch).filter((field) => !USER_SAFE_WRITE_FIELDS.has(field));
     if (unsafe.length) return `User fields blocked in generic terminal: ${unsafe.join(', ')}; use a dedicated workflow`;
   }
+  const protectedField = patch ? protectedWriteField(canonical, patch) : undefined;
+  if (protectedField) return `${canonical} fields blocked in generic terminal: ${protectedField}; use a dedicated workflow`;
   return null;
 }
 

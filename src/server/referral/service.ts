@@ -1,11 +1,12 @@
 import 'server-only';
 
+import { growth } from '@/config/growth';
 import { db } from '@/lib/db';
 import { domainErrors } from '@/domain/errors';
 import { creditWallet } from '@/server/wallet/service';
 import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 
-const BONUS = 3000; // AMD, единый бонус обеим сторонам — измеримый CAC, без процентов
+const BONUS = growth.referral.bonusAmount; // AMD, единый бонус обеим сторонам — измеримый CAC, без процентов; значение в config/growth.ts
 
 async function assertReferralsEnabled(): Promise<void> {
   await assertEntitlementOrThrow('referrals');
@@ -36,7 +37,24 @@ export async function bindReferral(input: { refereeId: string; code: string }) {
   if (r.refereeId) throw domainErrors.validationFailed('code');
   const existing = await db.referral.findFirst({ where: { refereeId: input.refereeId } } as never);
   if (existing) throw domainErrors.validationFailed('code');
-  await db.referral.update({ where: { id: r.id }, data: { refereeId: input.refereeId } as never });
+  /*
+   * Привязка реферала и отметка у приглашённого — одна транзакция. Проверки выше
+   * читают состояние до записи, поэтому условия «ещё не занято» повторены в самих
+   * `updateMany`: если другой запрос успел привязаться между чтением и записью,
+   * `count` будет 0, транзакция откатится, и не останется половинчатой привязки.
+   */
+  await db.$transaction(async (tx) => {
+    const claimed = await tx.referral.updateMany({
+      where: { id: r.id, refereeId: null },
+      data: { refereeId: input.refereeId },
+    });
+    if (claimed.count !== 1) throw domainErrors.validationFailed('code');
+    const marked = await tx.user.updateMany({
+      where: { id: input.refereeId, referredById: null },
+      data: { referredById: r.referrerId },
+    });
+    if (marked.count !== 1) throw domainErrors.validationFailed('code');
+  });
   return { referrerId: r.referrerId, id: r.id };
 }
 

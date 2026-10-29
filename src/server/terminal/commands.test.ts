@@ -4,8 +4,10 @@ const mocks = vi.hoisted(() => ({
   requireOperator: vi.fn(),
   recordAudit: vi.fn(),
   globalOperatorSearch: vi.fn(),
+  protectedWriteField: vi.fn(),
   delegate: {
     findUnique: vi.fn(),
+    create: vi.fn(),
     update: vi.fn(),
   },
 }));
@@ -27,6 +29,7 @@ vi.mock('@/server/admin/operator', () => ({
   operatorModelName: vi.fn((name: string) => name === 'Users' ? 'User' : name),
   operatorModels: vi.fn(() => [{ name: 'User' }]),
   globalOperatorSearch: mocks.globalOperatorSearch,
+  protectedWriteField: mocks.protectedWriteField,
   operatorPulse: vi.fn(),
 }));
 
@@ -59,6 +62,21 @@ describe('terminal command safety', () => {
     const result = await runTerminalCommand('db update Payment payment-1 --set {"status":"PAID"}');
     expect(result.lines.join('\n')).toContain('Payment is protected');
     expect(mocks.delegate.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks protected fields through generic db update', async () => {
+    mocks.protectedWriteField.mockReturnValueOnce('isVerified');
+    const result = await runTerminalCommand('db update InstructorProfile profile-1 --set {"isVerified":true}');
+    expect(result.lines.join('\n')).toContain('InstructorProfile fields blocked in generic terminal: isVerified');
+    expect(mocks.protectedWriteField).toHaveBeenCalledWith('InstructorProfile', { isVerified: true });
+    expect(mocks.delegate.update).not.toHaveBeenCalled();
+  });
+
+  it('blocks protected fields through generic db create', async () => {
+    mocks.protectedWriteField.mockReturnValueOnce('balance');
+    const result = await runTerminalCommand('db create CorporateAccount --data {"balance":100}');
+    expect(result.lines.join('\n')).toContain('CorporateAccount fields blocked in generic terminal: balance');
+    expect(mocks.delegate.create).not.toHaveBeenCalled();
   });
 
   it('searches support entities through the operator index', async () => {

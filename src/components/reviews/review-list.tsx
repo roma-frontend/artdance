@@ -74,6 +74,13 @@ export function ReviewList({ rating, items, locale, title, className }: ReviewLi
 
               <p className="text-body mt-4 text-content-secondary">{item.body}</p>
 
+              {item.reply && (
+                <div className="text-body-sm mt-4 border-s-2 border-border-default ps-4 text-content-secondary">
+                  <p className="text-caption font-semibold text-content-primary">{t('replyTitle')}</p>
+                  <p className="mt-1">{item.reply.body}</p>
+                </div>
+              )}
+
               <footer className="mt-5 flex flex-col gap-3">
                 <Media
                   {...resolveMedia(item.image, locale)}

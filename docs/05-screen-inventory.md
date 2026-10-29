@@ -75,7 +75,7 @@
 | `/api/health` | `app/api/health/route.ts` | ✅ |
 | `/api/search` | `app/api/search/route.ts` | ✅ подсказки поиска: лимит частоты, коды ошибок, `no-store` |
 | `robots.txt` | `app/robots.ts` | ✅ |
-| `sitemap.xml` | `app/sitemap.ts` | ✅ одна запись на страницу с `alternates.languages` |
+| `sitemap.xml` | `app/sitemap.xml/route.ts`, `app/sitemap/[file]/route.ts` | ✅ индекс разделов; одна запись на страницу с `alternates.languages` |
 | `**/opengraph-image` | `app/[locale]/**/opengraph-image.tsx` | ✅ карточки ссылок для соцсетей (A-23). Своя в каждом публичном сегменте: наследования у файлового соглашения нет, покрытие проверяет `sitemap.test.ts`. Кадр пережимается в JPEG (`sharp`), потому что движок отрисовки не читает WebP; шрифты — `src/design/og-fonts/` |
 | 404 | `app/[locale]/not-found.tsx` | ✅ |
 | Ошибка раздела | `app/[locale]/error.tsx` | ✅ |

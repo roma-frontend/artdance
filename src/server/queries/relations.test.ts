@@ -50,6 +50,7 @@ const queryFiles = [
   'src/server/admin/dashboard.ts',
   'src/server/admin/operations.ts',
   'src/server/admin/people.ts',
+  'src/server/cart/service.ts',
 ] as const;
 
 interface Opening {
@@ -60,31 +61,43 @@ interface Opening {
 }
 
 /**
- * Блоки, открывающие связь. Тело собирается до закрывающей скобки того же
- * отступа — этого достаточно: вложенные условия глубже, а закрытие ровно на
- * уровне открытия.
+ * Блоки, открывающие связь: и с начала строки (`rooms: {`), и внутри строки
+ * (`select: { media: { … } }`). Тело — от открывающей скобки до парной закрывающей,
+ * поэтому условие соседней связи в тело не попадает. Строки комментариев
+ * пропускаются: в них пишут примеры запросов. Скобки внутри строковых литералов
+ * не разбираются, поэтому литерал с непарной скобкой может сбить границу блока.
  */
 function relationOpenings(file: string, source: string): Opening[] {
-  const lines = source.split('\n');
+  const opening = new RegExp(`\\b(${softDeletableRelations.join('|')})\\s*:\\s*\\{`, 'g');
   const found: Opening[] = [];
-  const opening = new RegExp(`^(\\s*)(${softDeletableRelations.join('|')})\\s*:\\s*\\{`);
 
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index] ?? '';
-    const match = opening.exec(line);
-    if (!match) continue;
+  for (const match of source.matchAll(opening)) {
+    const start = match.index ?? 0;
+    const lineStart = source.lastIndexOf('\n', start) + 1;
+    const lineEnd = source.indexOf('\n', start);
+    const lineText = source.slice(lineStart, lineEnd === -1 ? source.length : lineEnd);
+    if (/^\s*(\*|\/\/)/.test(lineText)) continue;
 
-    const indent = match[1] ?? '';
-    const relation = match[2] ?? '';
-    const body: string[] = [line];
-
-    for (let next = index + 1; next < lines.length; next += 1) {
-      const bodyLine = lines[next] ?? '';
-      body.push(bodyLine);
-      if (new RegExp(`^${indent}\\}`).test(bodyLine)) break;
+    let depth = 0;
+    let end = source.length;
+    for (let index = start + match[0].length - 1; index < source.length; index += 1) {
+      const char = source[index];
+      if (char === '{') depth += 1;
+      if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          end = index + 1;
+          break;
+        }
+      }
     }
 
-    found.push({ file, line: index + 1, relation, body: body.join('\n') });
+    found.push({
+      file,
+      line: source.slice(0, start).split('\n').length,
+      relation: match[1] ?? '',
+      body: source.slice(start, end),
+    });
   }
 
   return found;

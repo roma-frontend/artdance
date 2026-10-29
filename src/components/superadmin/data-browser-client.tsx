@@ -689,7 +689,7 @@ export function DataBrowserClient({ models, initialModel, initialQuery, initialP
                         </td>
                       );
                     })}
-                  <td className="sticky right-0 px-2 py-1.5 relative bg-[#FFFBF5] dark:bg-surface-card shadow-[-8px_0_12px_#FFFBF5] dark:shadow-[-8px_0_12px_#1F1D1B] before:absolute before:inset-y-0 before:-left-4 before:w-4 before:bg-gradient-to-r before:from-transparent before:to-[#FFFBF5] dark:before:to-[#1F1D1B] before:pointer-events-none">
+                  <td className="sticky right-0 px-2 py-1.5 bg-[#FFFBF5] dark:bg-surface-card shadow-[-8px_0_12px_#FFFBF5] dark:shadow-[-8px_0_12px_#1F1D1B] before:absolute before:inset-y-0 before:-left-4 before:w-4 before:bg-gradient-to-r before:from-transparent before:to-[#FFFBF5] dark:before:to-[#1F1D1B] before:pointer-events-none">
                     <div className="flex items-center justify-end gap-1 transition-opacity duration-200 ease-out motion-reduce:transition-none">
                       <Button
                         variant="ghost"
@@ -703,7 +703,7 @@ export function DataBrowserClient({ models, initialModel, initialQuery, initialP
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 rounded-full text-[#B07A6A] dark:text-content-danger hover:bg-[#FFF0EB] dark:hover:bg-danger-soft hover:text-[#8B3A2B] dark:text-content-danger transition-colors duration-200"
+                        className="h-6 w-6 rounded-full text-[#B07A6A] dark:text-content-danger hover:bg-[#FFF0EB] dark:hover:bg-danger-soft hover:text-[#8B3A2B] transition-colors duration-200"
                         onClick={() => void handleDelete(row)}
                         aria-label="Delete"
                       >

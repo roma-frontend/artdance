@@ -138,6 +138,7 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
         startsAt: true,
         endsAt: true,
         totalPrice: true,
+        requestExpiresAt: true,
         instructor: { select: { user: { select: { name: true } } } },
         session: { select: { danceClass: { select: { title: true } } } },
       },
@@ -163,7 +164,7 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
         <header className="flex min-w-0 flex-wrap items-start justify-between gap-4 sm:gap-6 my-4">
           <div className="min-w-0">
             <p className="text-eyebrow uppercase text-content-tertiary">{tNav('account')}</p>
-            <h1 className="text-heading-2 mt-2 break-words [overflow-wrap:anywhere]">{user.name}</h1>
+            <h1 className="text-heading-2 mt-2 [overflow-wrap:anywhere]">{user.name}</h1>
             <p className="text-body-sm mt-1 break-all text-content-secondary [overflow-wrap:anywhere]">{user.email}</p>
           </div>
 
@@ -253,10 +254,10 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
                         <div className="min-w-0 flex-1">
                           <div className="flex min-w-0 flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                             <span className="min-w-0 break-all font-mono text-body-sm font-semibold">{b.reference}</span>
-                            {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
+                            {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" awaitingResponse={b.requestExpiresAt !== null} /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
                           </div>
-                          {(classTitle || instructorName) && <p className="text-body-sm mt-1 break-words text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
-                          <p className="text-body-sm mt-1 break-words font-medium [overflow-wrap:anywhere]">{when}</p>
+                          {(classTitle || instructorName) && <p className="text-body-sm mt-1 text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
+                          <p className="text-body-sm mt-1 font-medium [overflow-wrap:anywhere]">{when}</p>
                         </div>
                         <Price amount={b.totalPrice} emphasis="total" className="shrink-0 self-end sm:self-start" />
                       </div>
@@ -278,7 +279,7 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
                     return (
                       <li key={b.id} className="flex min-w-0 items-center gap-3 px-4 py-2.5 hover:bg-surface-sunken">
                         <span className="shrink-0 font-mono text-body-sm font-semibold">{b.reference}</span>
-                        {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" /> : <Badge variant="neutral" size="sm">{b.status}</Badge>}
+                        {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" awaitingResponse={b.requestExpiresAt !== null} /> : <Badge variant="neutral" size="sm">{b.status}</Badge>}
                         {classTitle ? <span className="min-w-0 flex-1 truncate text-body-sm text-content-tertiary">{classTitle}</span> : <span className="min-w-0 flex-1" aria-hidden />}
                         <span className="ml-auto shrink-0 text-body-sm font-medium tabular-nums">{whenShort}</span>
                         <Price amount={b.totalPrice} emphasis="total" />
@@ -298,11 +299,11 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
                       <li key={b.id} className="min-w-0 overflow-hidden rounded-xl border border-border-default bg-surface-card p-3 shadow-sm">
                         <div className="flex min-w-0 flex-col items-start gap-2">
                           <span className="min-w-0 break-all font-mono text-caption font-semibold">{b.reference}</span>
-                          {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
+                          {isBookingStatus(b.status) ? <StatusBadge kind="booking" status={b.status} size="sm" className="w-fit max-w-full" awaitingResponse={b.requestExpiresAt !== null} /> : <Badge variant="neutral" size="sm" className="w-fit max-w-full break-words">{b.status}</Badge>}
                         </div>
-                        {(classTitle || instructorName) && <p className="mt-1.5 break-words text-body-sm text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
+                        {(classTitle || instructorName) && <p className="mt-1.5 text-body-sm text-content-secondary [overflow-wrap:anywhere]">{[classTitle, instructorName].filter(Boolean).join(' · ')}</p>}
                         <div className="mt-2 flex min-w-0 items-center justify-between gap-3">
-                          <span className="break-words text-caption font-medium tabular-nums text-content-tertiary [overflow-wrap:anywhere]">{whenShort}</span>
+                          <span className="text-caption font-medium tabular-nums text-content-tertiary [overflow-wrap:anywhere]">{whenShort}</span>
                           <Price amount={b.totalPrice} emphasis="total" />
                         </div>
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -343,7 +344,7 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
                   <li key={o.id} className="flex min-w-0 flex-col gap-3 overflow-hidden rounded-xl border border-border-default bg-surface-card px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 flex-1">
                       <p className="break-all font-mono text-body-sm font-semibold [overflow-wrap:anywhere]">{o.orderNumber}</p>
-                      <p className="break-words text-caption text-content-tertiary [overflow-wrap:anywhere]">{new Date(o.placedAt).toLocaleDateString(locale as Locale)}</p>
+                      <p className="text-caption text-content-tertiary [overflow-wrap:anywhere]">{new Date(o.placedAt).toLocaleDateString(locale as Locale)}</p>
                       <Badge variant="neutral" size="sm" className="mt-2 w-fit max-w-full break-words">{o.status}</Badge>
                     </div>
                     <div className="self-end text-right sm:self-start">

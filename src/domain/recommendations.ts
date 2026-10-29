@@ -1,21 +1,31 @@
 /**
  * RECOMMENDATIONS (C-06) — правила рекомендаций.
- * «Похожие товары» — та же категория, «часто бронируют вместе» — коллаборативная по OrderItem.
+ * «Похожие товары» (та же категория) отдаёт запрос `related` на странице товара: он уже
+ * фильтрует категорию в SQL с пределом. Здесь только «часто покупают вместе» по OrderItem.
  */
 
-export function similarByCategory(currentCategoryId: string | null, candidates: { id: string; categoryId: string | null }[]): string[] {
-  if (!currentCategoryId) return [];
-  return candidates.filter((c) => c.categoryId === currentCategoryId).map((c) => c.id);
-}
-
-export function collaborativeCandidates(orderItems: { orderId: string; productId: string }[], seedProductId: string): string[] {
-  const orderIds = orderItems.filter((i) => i.productId === seedProductId).map((i) => i.orderId);
-  if (orderIds.length === 0) return [];
-  const counts = new Map<string, number>();
-  for (const item of orderItems) {
-    if (item.productId === seedProductId) continue;
-    if (!orderIds.includes(item.orderId)) continue;
-    counts.set(item.productId, (counts.get(item.productId) ?? 0) + 1);
+/**
+ * Совместные покупки seed-товара: товары из тех же заказов, от частых к редким.
+ *
+ * `seedOrderIds` — заказы, где купили этот товар. `lines` — строки заказов с уже
+ * развёрнутым `productId` (из варианта), включая строки самого seed-товара.
+ * Считаем заказы, а не строки: два размера одного товара в одном заказе — одна покупка.
+ * При равном счёте порядок задаёт id, чтобы выдача не менялась от запуска к запуску.
+ */
+export function collaborativeCandidates(
+  lines: readonly { orderId: string; productId: string }[],
+  seedOrderIds: ReadonlySet<string>,
+  seedProductId: string,
+): string[] {
+  const ordersByProduct = new Map<string, Set<string>>();
+  for (const line of lines) {
+    if (line.productId === seedProductId || !seedOrderIds.has(line.orderId)) continue;
+    const orders = ordersByProduct.get(line.productId) ?? new Set<string>();
+    orders.add(line.orderId);
+    ordersByProduct.set(line.productId, orders);
   }
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => id);
+  return [...ordersByProduct.entries()]
+    .map(([productId, orders]) => ({ productId, count: orders.size }))
+    .sort((a, b) => b.count - a.count || a.productId.localeCompare(b.productId))
+    .map((entry) => entry.productId);
 }

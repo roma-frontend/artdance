@@ -77,14 +77,14 @@ export async function BlogCard({ item, locale, featured = false, priority = fals
       <div className="flex min-w-0 flex-1 flex-col p-5">
         <h3
           className={cn(
-            'font-display break-words font-bold leading-tight text-content-primary [overflow-wrap:anywhere]',
+            'font-display font-bold leading-tight text-content-primary [overflow-wrap:anywhere]',
             featured ? 'text-xl md:text-2xl' : 'text-base md:text-lg',
           )}
         >
           {item.title}
         </h3>
 
-        <p className="mt-2 line-clamp-2 break-words text-body-sm text-content-secondary [overflow-wrap:anywhere]">{item.excerpt}</p>
+        <p className="mt-2 line-clamp-2 text-body-sm text-content-secondary [overflow-wrap:anywhere]">{item.excerpt}</p>
 
         <div className="mt-3 flex min-w-0 flex-wrap gap-1.5">
           {item.tags.slice(0, 3).map((tag) => (

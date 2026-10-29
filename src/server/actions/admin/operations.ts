@@ -33,11 +33,14 @@ import { isRefundAllowed, refundableAmount, requiresApproval } from '@/domain/ad
 import { cancellationOutcome, refundAmountFor } from '@/domain/booking/policy';
 import { domainErrors } from '@/domain/errors';
 import { money } from '@/domain/money';
+import { isLateCancellation } from '@/domain/reliability';
 import { recordAudit } from '@/lib/audit';
 import { requireCapability } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
 import { settlePaidOrder } from '@/server/payments/settle';
+import { recordReliabilityEvent } from '@/server/reliability/service';
 import { authedAction } from '@/server/safe-action';
+import { decideVerificationDocument } from '@/server/verification/service';
 
 /* ───────────────────────────── Статус заказа ───────────────────────────── */
 
@@ -276,7 +279,7 @@ export const setBookingStatus = authedAction
 
     const before = await db.booking.findUnique({
       where: { id: parsedInput.id },
-      select: { id: true, status: true, startsAt: true },
+      select: { id: true, status: true, startsAt: true, customerId: true, instructor: { select: { userId: true } } },
     });
     if (!before) throw domainErrors.notFound();
 
@@ -293,6 +296,16 @@ export const setBookingStatus = authedAction
       data: data as { status: typeof parsedInput.status },
       select: { id: true, status: true },
     });
+
+    // Только переход из CONFIRMED: отметка неподтверждённой брони не говорит ни о неявке, ни о проведении.
+    if (before.status === 'CONFIRMED' && parsedInput.status === 'NO_SHOW') {
+      // Неявка засчитывается клиенту: по правилам возврата неявка без отмены — его сторона.
+      await recordReliabilityEvent({ userId: before.customerId, kind: 'NO_SHOW', refId: before.id });
+    }
+    if (before.status === 'CONFIRMED' && parsedInput.status === 'COMPLETED' && before.instructor) {
+      // Проведение засчитывается инструктору; аренда без инструктора не засчитывается.
+      await recordReliabilityEvent({ userId: before.instructor.userId, kind: 'COMPLETED', refId: before.id });
+    }
 
     await recordAudit({
       actor: caller,
@@ -344,11 +357,13 @@ export const cancelBooking = authedAction
         maxReschedules: true,
         rescheduleCount: true,
         updatedAt: true, sessionId: true, participants: true,
+        customerId: true, instructor: { select: { userId: true } },
         payments: { where: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, select: { paidAmount: true } },
       },
     });
     if (!booking) throw domainErrors.notFound();
 
+    const now = new Date();
     const outcome = cancellationOutcome(
       {
         startsAt: booking.startsAt,
@@ -360,7 +375,7 @@ export const cancelBooking = authedAction
         rescheduleCount: booking.rescheduleCount,
         maxReschedules: booking.maxReschedules,
       },
-      new Date(),
+      now,
     );
 
     /*
@@ -383,6 +398,11 @@ export const cancelBooking = authedAction
         },
       });
       if (claimed.count !== 1) throw domainErrors.validationFailed('status');
+      // Поздняя отмена засчитывается стороне, которая отменила: инструктору при byProvider, иначе клиенту.
+      if (outcome.kind !== 'forbidden' && isLateCancellation({ now, startsAt: booking.startsAt, cancellationWindowHours: booking.cancellationWindowHours })) {
+        const party = parsedInput.byProvider ? booking.instructor?.userId : booking.customerId;
+        if (party) await recordReliabilityEvent({ userId: party, kind: 'LATE_CANCEL', refId: booking.id }, tx);
+      }
       if (booking.sessionId && (booking.status === 'PENDING' || booking.status === 'CONFIRMED')) {
         const released = await tx.classSession.updateMany({
           where: { id: booking.sessionId, bookedCount: { gte: booking.participants } },
@@ -509,24 +529,15 @@ export const moderateItem = authedAction
     const now = new Date();
 
     if (parsedInput.kind === 'instructors-verification') {
-      const doc = await db.verificationDocument.findUnique({ where: { id: parsedInput.id }, select: { id: true, status: true, instructorId: true } });
-      if (!doc) throw domainErrors.notFound();
-      const docStatus = (parsedInput.approve ? 'APPROVED' : 'REJECTED') as never;
-      await db.verificationDocument.update({ where: { id: parsedInput.id }, data: { status: docStatus, note: parsedInput.reason ?? null } });
-      if (parsedInput.approve) {
-        await db.instructorProfile.update({ where: { id: doc.instructorId }, data: { isVerified: true } });
-      }
-      await recordAudit({
+      /* Статус документа и isVerified меняются одной транзакцией в сервисе верификации (D-02). */
+      await decideVerificationDocument({
+        documentId: parsedInput.id,
+        decision: moderation,
+        note: parsedInput.reason ?? null,
         actor: caller,
-        action: parsedInput.approve ? 'admin.verification.approve' : 'admin.verification.reject',
-        entityType: 'VerificationDocument',
-        entityId: parsedInput.id,
-        before: { status: doc.status },
-        after: { status: docStatus },
-        ...(parsedInput.reason ? { reason: parsedInput.reason } : {}),
         ipAddress: ctx.identifier,
       });
-      return { moderation: docStatus };
+      return { moderation };
     }
 
     if (parsedInput.kind === 'reviews') {

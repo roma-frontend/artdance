@@ -125,7 +125,7 @@ function venueWhere(query: CatalogQuery) {
   return {
     ...publicVenueWhere,
     ...(query.district ? { district: query.district } : {}),
-    ...(style ? { classes: { some: { style, isActive: true } } } : {}),
+    ...(style ? { classes: { some: { ...notTrashed, style, isActive: true } } } : {}),
     /*
      * Цена фильтруется по залам: условие на площадку целиком было бы неверным —
      * студия с дешёвым и дорогим залом подходит обоим концам диапазона.

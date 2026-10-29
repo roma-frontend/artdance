@@ -27,6 +27,7 @@ import { Suspense } from 'react';
 import { ClassCard } from '@/components/catalog/class-card';
 import { ClassCarousel } from '@/components/catalog/class-carousel';
 import { InstructorCard } from '@/components/catalog/instructor-card';
+import { SaveSearchButton } from '@/components/catalog/save-search-button';
 import { StyleTileGrid } from '@/components/catalog/style-tile-grid';
 import { VenueCard } from '@/components/catalog/venue-card';
 import { CardTilt } from '@/components/fx/card-tilt';
@@ -52,6 +53,7 @@ import {
 } from '@/domain/search';
 import type { Locale } from '@/i18n/config';
 import { getRootTranslate } from '@/i18n/translate';
+import { getCaller } from '@/lib/auth/guards';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { Link } from '@/i18n/routing';
 import { cn } from '@/lib/utils';
@@ -161,13 +163,23 @@ async function SearchResults({
   const countFor = (candidate: SearchScope): number =>
     candidate === 'all' ? all.length : all.filter((hit) => hit.scope === candidate).length;
 
+  const caller = await getCaller();
+
   return (
     <div className="page-container min-w-0 py-12 md:py-16">
       <div className="mb-8 flex min-w-0 flex-wrap items-baseline justify-between gap-3">
         <h2 className="text-heading-3">{t('resultsTitle')}</h2>
-        <p className="text-body-sm text-content-secondary" aria-live="polite">
-          {tCommon('counts.results', { count: visible.length })}
-        </p>
+        <div className="flex flex-wrap items-center gap-4">
+          <p className="text-body-sm text-content-secondary" aria-live="polite">
+            {tCommon('counts.results', { count: visible.length })}
+          </p>
+          <SaveSearchButton
+            query={term}
+            scope={scope}
+            signedIn={Boolean(caller)}
+            signInHref={routes.signIn(routes.discover({ q: term, ...(scope === 'all' ? {} : { scope }) }))}
+          />
+        </div>
       </div>
 
       {/* Переключатель разделов: ссылки, потому что раздел — часть адреса. */}

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getCaller } from '@/lib/auth/guards';
 import { checkRateLimit, clientIdentifier, rateLimitHeaders } from '@/lib/security/rate-limit';
 import { cacheControl } from '@/config/cache';
+import { bookingConsentIds } from '@/config/consents';
 
 import { createRecurringSeries } from '@/server/recurring/service';
 
@@ -15,6 +16,8 @@ const schema = z.object({
   instructorId: z.string().min(1),
   startsAt: z.string().datetime().optional(),
   locationOption: z.enum(['STUDIO', 'CUSTOMER_LOCATION', 'ONLINE']).optional(),
+  consents: z.array(z.enum(bookingConsentIds)).max(bookingConsentIds.length).optional(),
+  participantBirthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
 });
 
 function json(body: object, status: number, extra: Record<string, string> = {}) {
@@ -41,6 +44,7 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(body);
   if (!parsed.success) return json({ error: 'VALIDATION_FAILED' }, 400);
   try {
+    const ip = clientIdentifier(request.headers);
     const result = await createRecurringSeries({
       customerId: caller.id,
       instructorId: parsed.data.instructorId,
@@ -49,6 +53,9 @@ export async function POST(request: Request) {
       durationMinutes: parsed.data.durationMinutes,
       weeks: parsed.data.weeks,
       locationOption: parsed.data.locationOption,
+      consents: parsed.data.consents ?? [],
+      participantBirthDate: parsed.data.participantBirthDate ?? null,
+      ipAddress: ip === 'unknown' ? null : ip,
       firstStartsAt: parsed.data.startsAt ? new Date(parsed.data.startsAt) : null,
       now: new Date(),
     });

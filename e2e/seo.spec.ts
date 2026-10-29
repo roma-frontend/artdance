@@ -15,6 +15,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { demoClasses, demoEvents, demoInstructors, demoVenues } from '../prisma/fixtures/demo';
 import { routes } from '../src/config/routes';
 import { localeMeta, locales } from '../src/i18n/config';
+import { fetchFullSitemap } from './support/sitemap';
 
 const LOCALE = 'en';
 const localized = (path: string): string => `/${LOCALE}${path}`;
@@ -150,13 +151,15 @@ test.describe('карта сайта', () => {
     test.skip(testInfo.project.name !== AUDIT_PROJECT, 'Карта сайта не зависит от ширины окна');
   });
 
-  test('отдаётся XML со всеми разделами и языковыми версиями', async ({ request }) => {
-    const response = await request.get('/sitemap.xml');
+  test('отдаётся индекс разделов и полная карта со всеми языковыми версиями', async ({ request }) => {
+    const index = await request.get('/sitemap.xml');
 
-    expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toContain('xml');
+    expect(index.status()).toBe(200);
+    expect(index.headers()['content-type']).toContain('xml');
+    expect(await index.text()).toContain('<sitemapindex');
 
-    const xml = await response.text();
+    /* Полная карта собрана из разделов: проверки ниже идут по всем записям. */
+    const xml = await fetchFullSitemap(request);
 
     /* Разделы каталога. */
     for (const path of [routes.classes(), routes.instructors(), routes.studios()]) {

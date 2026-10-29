@@ -10,10 +10,11 @@ import 'server-only';
 
 import { homeContentConfig, parseHomeContentBlock } from '@/config/home-content';
 import { cacheTags, dataRevalidate } from '@/config/cache';
-import type {
-  HomeContent,
-  MediaRef,
-  TestimonialItem,
+import {
+  emptyMediaRef,
+  type HomeContent,
+  type MediaRef,
+  type TestimonialItem,
 } from '@/domain/content';
 import { danceStyleSlug } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
@@ -80,6 +81,38 @@ function testimonialFrom(row: ReviewRow): TestimonialItem {
   };
 }
 
+/**
+ * Фоллбэк для главной без опубликованного блока: пустая база или выключенный
+ * ContentBlock не должны давать страницу ошибки. Тексты берутся из i18n-компонентов,
+ * поэтому новых ключей нет. Статистику и подборки не выдумываем, их ведёт CMS.
+ * Направления — из каталога, самые заполненные первыми, не больше лимита блока.
+ */
+async function loadFallbackHomeContent(): Promise<HomeContent> {
+  const summaries = await getStyleSummaries();
+  const styleTiles = [...summaries]
+    .sort((left, right) => right.classCount - left.classCount)
+    .slice(0, homeContentConfig.maxStyleTiles)
+    .map((summary) => ({
+      style: summary.style,
+      slug: summary.slug,
+      image: summary.image ?? emptyMediaRef,
+      classCount: summary.classCount,
+    }));
+
+  return {
+    hero: { video: null, image: emptyMediaRef, stats: [] },
+    editorial: { video: null, image: emptyMediaRef },
+    competition: { video: null, image: emptyMediaRef },
+    styleTiles,
+    popularClasses: [],
+    instructors: [],
+    venues: [],
+    testimonials: [],
+    products: [],
+    events: [],
+  };
+}
+
 async function loadHomeContent(locale: Locale): Promise<HomeContent> {
   const block = await db.contentBlock.findUnique({
     where: { key_locale: { key: homeContentConfig.blockKey, locale } },
@@ -87,7 +120,8 @@ async function loadHomeContent(locale: Locale): Promise<HomeContent> {
   });
 
   if (!block?.isActive) {
-    throw new Error(`home content block is missing or inactive for locale ${locale}`);
+    console.warn('[home] content block missing or inactive, serving code fallback', { locale });
+    return loadFallbackHomeContent();
   }
 
   const config = parseHomeContentBlock(block.body);
@@ -219,12 +253,13 @@ async function loadHomeContent(locale: Locale): Promise<HomeContent> {
   const mediaByNormalized = new Map(
     (mediaRows as MediaRow[]).map((row) => [normalizeStorageKey(row.storageKey), toMediaRef(row)]),
   );
-  const requireMedia = (storageKey: string): MediaRef => {
+  const mediaOrEmpty = (storageKey: string): MediaRef => {
     const direct = mediaByKey.get(storageKey);
     if (direct) return direct;
     const byFile = mediaByNormalized.get(normalizeStorageKey(storageKey));
     if (byFile) return byFile;
-    throw new Error(`home content references missing media ${storageKey}`);
+    console.warn('[home] media not found, rendering without image', { storageKey });
+    return emptyMediaRef;
   };
 
   const summariesByStyle = new Map(styleSummaries.map((summary) => [summary.style, summary]));
@@ -290,21 +325,21 @@ async function loadHomeContent(locale: Locale): Promise<HomeContent> {
   return {
     hero: {
       video: null,
-      image: requireMedia(config.media.heroPosterStorageKey),
+      image: mediaOrEmpty(config.media.heroPosterStorageKey),
       stats: config.stats,
     },
     editorial: {
       video: null,
-      image: requireMedia(config.media.editorialPosterStorageKey),
+      image: mediaOrEmpty(config.media.editorialPosterStorageKey),
     },
     competition: {
       video: null,
-      image: requireMedia(config.media.competitionPosterStorageKey),
+      image: mediaOrEmpty(config.media.competitionPosterStorageKey),
     },
     styleTiles: config.styleTiles.map((tile) => ({
       style: tile.style,
       slug: danceStyleSlug(tile.style),
-      image: styleHeroImageFor(tile.style) ?? requireMedia(tile.mediaStorageKey),
+      image: styleHeroImageFor(tile.style) ?? mediaOrEmpty(tile.mediaStorageKey),
       classCount: summariesByStyle.get(tile.style)?.classCount ?? 0,
     })),
     popularClasses: orderedBy(config.collections.popularClassSlugs, classes, (row) => row.slug),

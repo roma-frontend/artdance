@@ -118,6 +118,7 @@ export default async function BookingPassPage({ params }: PageProps) {
     (await db.booking.findUnique({
       where: { id },
       select: {
+        requestExpiresAt: true,
         id: true,
         reference: true,
         status: true,
@@ -138,6 +139,7 @@ export default async function BookingPassPage({ params }: PageProps) {
     (await db.booking.findUnique({
       where: { reference: id },
       select: {
+        requestExpiresAt: true,
         id: true,
         reference: true,
         status: true,
@@ -189,7 +191,7 @@ export default async function BookingPassPage({ params }: PageProps) {
     if (booking.status === 'CANCELLED_BY_CUSTOMER') return tStatus('booking.cancelledByCustomer');
     if (booking.status === 'CANCELLED_BY_PROVIDER') return tStatus('booking.cancelledByProvider');
     if (booking.status === 'CONFIRMED') return tStatus('booking.confirmed');
-    if (booking.status === 'PENDING') return tStatus('booking.pending');
+    if (booking.status === 'PENDING') return booking.requestExpiresAt ? tStatus('booking.awaitingResponse') : tStatus('booking.pending');
     if (booking.status === 'COMPLETED') return tStatus('booking.completed');
     if (booking.status === 'RESCHEDULED') return tStatus('booking.rescheduled');
     if (booking.status === 'WAITLISTED') return tStatus('booking.waitlisted');

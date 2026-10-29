@@ -1,6 +1,7 @@
 import { catalogFor } from '@/i18n/catalog';
 import { deviceLocale } from '@/lib/i18n';
 
+import type { BookingConsentId } from './booking-consents';
 import { API_URL } from './config';
 import { readServerMessage } from './server-message';
 import { getSessionToken } from './session';
@@ -23,13 +24,17 @@ export class RentalsError extends Error {
     message: string,
     readonly status: number,
     readonly serverMessage: string | null = null,
+    /** Поле, которое сервер отверг (`consents` или `participantBirthDate`); null, если ошибка не про поле. */
+    readonly field: string | null = null,
   ) {
     super(message);
   }
 }
 
 async function failureFor(response: Response): Promise<RentalsError> {
-  return new RentalsError(`HTTP ${response.status}`, response.status, await readServerMessage(response, catalogFor(deviceLocale(undefined))));
+  const body = (await response.clone().json().catch(() => ({}))) as { field?: unknown };
+  const serverMessage = await readServerMessage(response, catalogFor(deviceLocale(undefined)));
+  return new RentalsError(`HTTP ${response.status}`, response.status, serverMessage, typeof body.field === 'string' ? body.field : null);
 }
 
 export async function getRentalOptions(slug: string): Promise<RentalOptions> {
@@ -52,12 +57,19 @@ async function postAuthed<T>(path: string, body: object): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function createRentalBooking(input: {
+/** Согласия и дата рождения участника: пусто, пока у аренды нет правила (D-03). Уходят только в бронь, не в удержание. */
+export type RentalConsentFields = { consents?: BookingConsentId[]; participantBirthDate?: string };
+
+export async function createRentalBooking({
+  consentFields = {},
+  ...slot
+}: {
   roomId: string;
   startsAt: string;
   endsAt: string;
   durationMinutes: number;
+  consentFields?: RentalConsentFields;
 }): Promise<{ booking: { id: string; reference: string; totalPrice: number; startsAt: string; endsAt: string } }> {
-  const hold = await postAuthed<{ hold: { id: string } }>('/api/booking/hold', input);
-  return postAuthed('/api/booking', { holdId: hold.hold.id });
+  const hold = await postAuthed<{ hold: { id: string } }>('/api/booking/hold', slot);
+  return postAuthed('/api/booking', { holdId: hold.hold.id, ...consentFields });
 }

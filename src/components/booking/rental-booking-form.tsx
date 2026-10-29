@@ -12,9 +12,12 @@ import { Loader2Icon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useId, useState, type FormEvent } from 'react';
 
+import { BookingConsentFields } from '@/components/booking/booking-consent-fields';
 import { Button } from '@/components/ui/button';
 import { Price } from '@/components/ui/price';
-import { apiRoutes, routes, site } from '@/config';
+import { apiRoutes, routes, site, type BookingConsentId } from '@/config';
+import { zonedDateKey } from '@/domain/availability/compute';
+import { bookingConsentErrorField, bookingConsentForm, consentRequestFields, type BookingConsentField } from '@/domain/booking/consent-form';
 import { rentalPrice } from '@/domain/rental';
 import { useRouter } from '@/i18n/routing';
 import { fromZonedParts } from '@/lib/time/schedule';
@@ -71,13 +74,18 @@ export function RentalBookingForm({ rooms, minDate, durationOptions }: RentalBoo
   const [duration, setDuration] = useState(durationOptions[0] ?? 60);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<RentError | null>(null);
+  const [now] = useState(() => new Date());
+  const [birthDate, setBirthDate] = useState('');
+  const [consentIds, setConsentIds] = useState<BookingConsentId[]>([]);
+  const [consentError, setConsentError] = useState<BookingConsentField | null>(null);
 
   const room = rooms.find((item) => item.id === roomId);
   const total = room ? rentalPrice(room.pricePerHour, duration) : 0;
+  const consentForm = bookingConsentForm({ subject: 'STUDIO_RENTAL', birthDate, checked: consentIds, now, timeZone: site.timeZone });
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (pending) return;
+    if (pending || !consentForm.ready) return;
     if (!room || !date || !time) {
       setError('invalid');
       return;
@@ -97,6 +105,7 @@ export function RentalBookingForm({ rooms, minDate, durationOptions }: RentalBoo
 
     setPending(true);
     setError(null);
+    setConsentError(null);
     try {
       const holdRes = await fetch(apiRoutes.slotHold(), {
         method: 'POST',
@@ -117,9 +126,14 @@ export function RentalBookingForm({ rooms, minDate, durationOptions }: RentalBoo
       const bookRes = await fetch(apiRoutes.booking(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ holdId: holdBody.hold.id }),
+        body: JSON.stringify({ holdId: holdBody.hold.id, ...consentRequestFields(consentForm, birthDate) }),
       });
-      const bookBody = (await bookRes.json().catch(() => null)) as { booking?: { id: string }; error?: string } | null;
+      const bookBody = (await bookRes.json().catch(() => null)) as { booking?: { id: string }; error?: string; field?: string } | null;
+      const consentField = bookingConsentErrorField(bookBody?.field);
+      if (consentField) {
+        setConsentError(consentField);
+        return;
+      }
       if (!bookRes.ok || !bookBody?.booking) {
         setError(errorFromResponse(bookRes.status, bookBody?.error));
         return;
@@ -200,6 +214,23 @@ export function RentalBookingForm({ rooms, minDate, durationOptions }: RentalBoo
         </select>
       </div>
 
+      {consentForm.active && (
+        <BookingConsentFields
+          form={consentForm}
+          birthDate={birthDate}
+          today={zonedDateKey(now, site.timeZone)}
+          error={consentError}
+          onBirthDateChange={(value) => {
+            setBirthDate(value);
+            setConsentError(null);
+          }}
+          onToggle={(id, checked) => {
+            setConsentError(null);
+            setConsentIds((prev) => (checked ? [...prev.filter((item) => item !== id), id] : prev.filter((item) => item !== id)));
+          }}
+        />
+      )}
+
       <div className="flex items-center justify-between gap-4 border-t border-border-default pt-4">
         <span className="text-body-sm text-content-tertiary">{t('total')}</span>
         <Price amount={total} emphasis="total" />
@@ -213,7 +244,7 @@ export function RentalBookingForm({ rooms, minDate, durationOptions }: RentalBoo
         </p>
       ) : null}
 
-      <Button type="submit" variant="accent" size="lg" block disabled={pending || !room} aria-busy={pending}>
+      <Button type="submit" variant="accent" size="lg" block disabled={pending || !room || !consentForm.ready} aria-busy={pending}>
         {pending ? <Loader2Icon className="size-4 animate-spin" aria-hidden /> : null}
         {pending ? t('submitting') : t('submit')}
       </Button>

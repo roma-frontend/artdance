@@ -17,9 +17,18 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { locales } from '@/i18n/config';
-import { isEnabled, legalDocuments, noIndexPathPrefixes, seo, type FeatureKey } from '@/config';
+import { absoluteUrl, isEnabled, legalDocuments, noIndexPathPrefixes, routes, seo, type FeatureKey } from '@/config';
 
-import { buildSitemap, hreflangAlternates, localeAlternates, sitemapPaths } from './sitemap';
+import {
+  buildSitemap,
+  buildSitemapSection,
+  hreflangAlternates,
+  isSitemapSection,
+  localeAlternates,
+  SITEMAP_SECTIONS,
+  sitemapPaths,
+  sitemapSectionFromFile,
+} from './sitemap';
 
 const slugs = {
   classes: ['latin-fusion', 'street-flow'],
@@ -284,6 +293,55 @@ describe('состав карты сайта', () => {
  * Приватные разделы (корзина, оформление, бронирование) исключены: они закрыты от
  * индексации, и превью для них — обещание показать чужой заказ.
  */
+describe('разделы карты сайта', () => {
+  const withBlog = { ...slugs, blog: ['spring-plan', 'breathing-basics'] };
+  const blogUrls = withBlog.blog.map((slug) =>
+    absoluteUrl(`/${seo.hreflang.xDefault}${routes.blogPost(slug)}`),
+  );
+
+  it('каждая запись попадает ровно в один раздел и ничего не теряется', () => {
+    const sectioned = SITEMAP_SECTIONS.flatMap((section) =>
+      buildSitemapSection(section, withBlog).map((entry) => entry.url),
+    );
+    const flat = buildSitemap(withBlog).map((entry) => entry.url);
+
+    expect(sectioned).toHaveLength(flat.length);
+    expect([...sectioned].sort()).toEqual([...flat].sort());
+  });
+
+  it('блог живёт только в своём разделе', () => {
+    expect(buildSitemapSection('blog', withBlog).map((entry) => entry.url)).toEqual(blogUrls);
+
+    for (const section of SITEMAP_SECTIONS.filter((id) => id !== 'blog')) {
+      const urls = buildSitemapSection(section, withBlog).map((entry) => entry.url);
+      for (const url of blogUrls) expect(urls).not.toContain(url);
+    }
+  });
+
+  it('раздел блога без слагов пуст, а не падает', () => {
+    expect(buildSitemapSection('blog', slugs)).toEqual([]);
+  });
+
+  it('главная остаётся первой в плоской карте', () => {
+    expect(buildSitemap(withBlog)[0]?.url).toBe(absoluteUrl(`/${seo.hreflang.xDefault}`));
+  });
+
+  it('isSitemapSection пропускает только известные разделы', () => {
+    expect(SITEMAP_SECTIONS.every((section) => isSitemapSection(section))).toBe(true);
+    expect(isSitemapSection('nope')).toBe(false);
+    expect(isSitemapSection('')).toBe(false);
+  });
+
+  it('sitemapSectionFromFile берёт раздел только из имени вида <раздел>.xml', () => {
+    expect(sitemapSectionFromFile('pages.xml')).toBe('pages');
+    expect(sitemapSectionFromFile('legal.xml')).toBe('legal');
+    expect(sitemapSectionFromFile('nope.xml')).toBeNull();
+    expect(sitemapSectionFromFile('pages')).toBeNull();
+    expect(sitemapSectionFromFile('pages.xml.xml')).toBeNull();
+    expect(sitemapSectionFromFile('.xml')).toBeNull();
+  });
+});
+
 describe('карточки для соцсетей', () => {
   const routes = routeTemplates();
 

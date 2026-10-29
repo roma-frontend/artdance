@@ -3,7 +3,7 @@ import { revalidateTag } from 'next/cache';
 
 import { recordAudit } from '@/lib/audit';
 import { requireOperator } from '@/lib/auth/guards';
-import { operatorDelegate } from '@/server/admin/operator';
+import { assertWritableFields, operatorDelegate } from '@/server/admin/operator';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     return jsonError('Unknown model', 400);
   }
   try {
+    assertWritableFields(body.model, body.doc);
     const row = (await (delegate as unknown as { create: (a: { data: Record<string, unknown>; select: { id: boolean } }) => Promise<{ id: string }> }).create({
       data: body.doc,
       select: { id: true },
@@ -55,6 +56,7 @@ export async function PATCH(request: Request) {
     return jsonError('Unknown model', 400);
   }
   try {
+    assertWritableFields(body.model, body.patch);
     await (delegate as unknown as { update: (a: { where: { id: string }; data: Record<string, unknown> }) => Promise<unknown> }).update({
       where: { id: body.id },
       data: body.patch,

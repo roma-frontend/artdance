@@ -56,11 +56,41 @@ export function hreflangAlternates(path: string): Record<string, string> {
 
 type ChangeFrequency = MetadataRoute.Sitemap[number]['changeFrequency'];
 
+/**
+ * Разделы карты сайта. Каждый раздел — отдельный файл `/sitemap/<раздел>.xml`,
+ * а `/sitemap.xml` — индекс из них. Раздел только разбивает файлы: состав и
+ * порядок записей от этого не меняются.
+ */
+export const SITEMAP_SECTIONS = ['pages', 'catalog', 'blog', 'legal'] as const;
+
+export type SitemapSection = (typeof SITEMAP_SECTIONS)[number];
+
+export function isSitemapSection(value: string): value is SitemapSection {
+  return (SITEMAP_SECTIONS as readonly string[]).includes(value);
+}
+
+/**
+ * Раздел из имени файла `<раздел>.xml` в адресе `/sitemap/<раздел>.xml`. Для любого
+ * другого имени — `null`: маршрут отвечает 404, не обращаясь к данным.
+ */
+export function sitemapSectionFromFile(file: string): SitemapSection | null {
+  if (!file.endsWith('.xml')) return null;
+  const section = file.slice(0, -'.xml'.length);
+  return isSitemapSection(section) ? section : null;
+}
+
 interface SitemapSpec {
   /** Путь без префикса локали — из `routes`, не строкой. */
   path: string;
   priority: number;
   changeFrequency: ChangeFrequency;
+}
+
+/** Запись с меткой раздела. Метка не влияет на состав карты. */
+type SectionedSpec = SitemapSpec & { section: SitemapSection };
+
+function withSection(section: SitemapSection, specs: readonly SitemapSpec[]): SectionedSpec[] {
+  return specs.map((spec) => ({ ...spec, section }));
 }
 
 /**
@@ -169,18 +199,27 @@ function entitySpecs(slugs: EntitySlugs): SitemapSpec[] {
         }))
       : []),
     ...(isEnabled('shop')
-      ? (slugs as unknown as { products?: readonly string[] }).products?.map((slug) => ({
+      ? slugs.products?.map((slug) => ({
           path: routes.product(slug),
           priority: priorities.shop,
           changeFrequency: entity,
         })) ?? []
       : []),
-    ...(slugs.blog?.map((slug) => ({
-      path: routes.blogPost(slug),
-      priority: priorities.content,
-      changeFrequency: entity,
-    })) ?? []),
   ];
+}
+
+/**
+ * Записи блога — отдельный раздел карты: статьи появляются чаще всего, и
+ * поисковику не нужно перечитывать каталог ради каждой новой статьи.
+ */
+function blogSpecs(slugs: readonly string[] | undefined): SitemapSpec[] {
+  const { priorities, changeFrequency } = seo.sitemap;
+
+  return slugs?.map((slug) => ({
+    path: routes.blogPost(slug),
+    priority: priorities.content,
+    changeFrequency: changeFrequency.entity,
+  })) ?? [];
 }
 
 /**
@@ -288,13 +327,18 @@ export function sitemapPaths(slugs: EntitySlugs): readonly string[] {
   return allSpecs(slugs).map((spec) => spec.path);
 }
 
-function allSpecs(slugs: EntitySlugs): SitemapSpec[] {
+function allSpecs(slugs: EntitySlugs): SectionedSpec[] {
+  /*
+   * Порядок тот же, что был до разбиения на разделы: главная первой, затем
+   * каталог, блог, направления, контент и правовые документы. Раздел — только метка.
+   */
   return [
-    ...sectionSpecs(),
-    ...entitySpecs(slugs),
-    ...styleSpecs(slugs.styles),
-    ...contentSpecs(),
-    ...legalSpecs(),
+    ...withSection('pages', sectionSpecs()),
+    ...withSection('catalog', entitySpecs(slugs)),
+    ...withSection('blog', blogSpecs(slugs.blog)),
+    ...withSection('catalog', styleSpecs(slugs.styles)),
+    ...withSection('pages', contentSpecs()),
+    ...withSection('legal', legalSpecs()),
   ];
 }
 
@@ -307,7 +351,26 @@ function allSpecs(slugs: EntitySlugs): SitemapSpec[] {
  * `x-default`.
  */
 export function buildSitemap(slugs: EntitySlugs, lastModified: Date = new Date()): MetadataRoute.Sitemap {
-  return allSpecs(slugs).map((spec) => ({
+  return toEntries(allSpecs(slugs), lastModified);
+}
+
+/**
+ * Записи одного раздела карты. Пустой раздел (блог без статей) даёт пустой
+ * массив, а не ошибку: его файл отдаётся, но без адресов.
+ */
+export function buildSitemapSection(
+  section: SitemapSection,
+  slugs: EntitySlugs,
+  lastModified: Date = new Date(),
+): MetadataRoute.Sitemap {
+  return toEntries(
+    allSpecs(slugs).filter((spec) => spec.section === section),
+    lastModified,
+  );
+}
+
+function toEntries(specs: readonly SitemapSpec[], lastModified: Date): MetadataRoute.Sitemap {
+  return specs.map((spec) => ({
     url: absoluteUrl(localized(seo.hreflang.xDefault, spec.path)),
     lastModified,
     changeFrequency: spec.changeFrequency,
@@ -322,6 +385,20 @@ export function buildSitemap(slugs: EntitySlugs, lastModified: Date = new Date()
  * в выдачу поисковика не попадают.
  */
 export async function buildSitemapWithEntitlements(slugs: EntitySlugs, lastModified: Date = new Date()): Promise<MetadataRoute.Sitemap> {
+  return withEnabledEntries(buildSitemap(slugs, lastModified));
+}
+
+/** Раздел карты с тем же фильтром по entitlements, что и у полной карты. */
+export async function buildSitemapSectionWithEntitlements(
+  section: SitemapSection,
+  slugs: EntitySlugs,
+  lastModified: Date = new Date(),
+): Promise<MetadataRoute.Sitemap> {
+  return withEnabledEntries(buildSitemapSection(section, slugs, lastModified));
+}
+
+/** Оставляет адреса только включённых модулей. Сбой чтения означает «модуль выключен». */
+async function withEnabledEntries(entries: MetadataRoute.Sitemap): Promise<MetadataRoute.Sitemap> {
   let effective: Partial<Record<FeatureKey, boolean>> = {};
   try {
     const { getEffectiveEntitlements } = await import('@/server/entitlements/service');
@@ -329,7 +406,7 @@ export async function buildSitemapWithEntitlements(slugs: EntitySlugs, lastModif
   } catch {
     effective = {};
   }
-  return buildSitemap(slugs, lastModified).filter((entry) => isSitemapUrlEnabled(entry.url, effective));
+  return entries.filter((entry) => isSitemapUrlEnabled(entry.url, effective));
 }
 
 /** Адрес карты разрешён, только если модуль, которому он принадлежит, включён. */

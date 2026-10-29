@@ -9,6 +9,7 @@
  * финального подтверждения заказчиком — отмечены `@confirm`.
  */
 
+import type { BookingSubject } from '@/generated/prisma/client';
 import { clientEnv } from './env';
 import { site } from './site';
 
@@ -99,7 +100,15 @@ export const booking = {
   recurring: { minWeeks: 2, maxWeeks: 12 },
   /** Окно чекина до/после начала, минуты. */
   checkInWindowMinutes: 30,
+  /** Защита комиссии (D-01): контакты в свободном тексте брони до оплаты. Эвристика, не барьер. */
+  contactGuard: {
+    /** Минимум цифр, с которого последовательность считается телефоном. Короче — даты, суммы, коды. */
+    minPhoneDigits: 9,
+  },
 } as const;
+
+/** Типы броней, где бронь ждёт ответа инструктора (D-04). Пусто: заявки нет, бронь подтверждается сразу. @confirm — решение владельца. */
+export const bookingRequestRules: Partial<Record<BookingSubject, true>> = {};
 
 export const bookingLocationOptions = ['STUDIO', 'CUSTOMER_LOCATION', 'ONLINE'] as const;
 export type BookingLocationOption = (typeof bookingLocationOptions)[number];
@@ -263,6 +272,20 @@ export const limits = {
   query: {
     maxRows: 500,
   },
+  /**
+   * Рекомендации «часто покупают вместе» (C-06). Выборка ограничена, чтобы страница
+   * товара не зависела от размера истории заказов.
+   */
+  recommendations: {
+    /** Сколько товаров показываем в блоке на странице товара. */
+    shop: 4,
+    /** Сколько ранжированных кандидатов проверяем на публичность. */
+    candidates: 12,
+    /** Сколько последних заказов с товаром берём как сигнал. */
+    seedOrders: 200,
+    /** Сколько строк этих заказов читаем для подсчёта. */
+    lines: 2000,
+  },
   search: {
     minQueryLength: 2,
     maxQueryLength: 120,
@@ -370,6 +393,10 @@ export const rateLimits = {
   availability: { requests: 60, windowSeconds: 300 },
   paymentIntent: { requests: 10, windowSeconds: 600 },
   reviewSubmit: { requests: 5, windowSeconds: 3_600 },
+  /** Ответ владельца на отзыв: правок немного, но всплеск негатива требует запаса, а не сотен ответов в минуту. */
+  reviewReply: { requests: 20, windowSeconds: 3_600 },
+  /** Спор по броне открывают редко; лимит защищает модераторскую очередь от спама. */
+  disputeOpen: { requests: 5, windowSeconds: 86_400 },
   /** Подтверждение и отписка по токену из письма: публичные, лимит против перебора и спама. */
   newsletterToken: { requests: 10, windowSeconds: 600 },
   contactForm: { requests: 3, windowSeconds: 3_600 },

@@ -349,6 +349,11 @@
 }
 
 /* Semantic text styles — используйте data-text="heading-2" или класс .text-heading-2 */
+/*
+ * Внутри @layer components, а не нелейерно: нелейерный CSS перебивает утилиты
+ * Tailwind (font-semibold, font-mono, leading-*, tracking-*), и они молча не работали.
+ */
+@layer components {
 [data-text="display-hero"], .text-display-hero {
   font-family: var(--font-family-display);
   font-size: var(--text-5xl);
@@ -496,6 +501,7 @@
   line-height: var(--leading-none);
   letter-spacing: var(--tracking-normal);
   font-variant-numeric: tabular-nums;
+}
 }
 
 /* Шкалы без theme-namespace в Tailwind v4 — объявлены утилитами явно. */

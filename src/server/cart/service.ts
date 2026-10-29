@@ -17,6 +17,7 @@ import { commerce, promotions } from '@/config/business';
 import { domainErrors } from '@/domain/errors';
 import { cartTotals, clampQuantity, type CartLine, type CartTotals, type DeliveryZone } from '@/domain/cart';
 import { cartExpiresAt } from '@/domain/cart-abandonment';
+import { notTrashed } from '@/domain/trash';
 import { db } from '@/lib/db';
 
 // ── Типы ───────────────────────────────────────────────────────────────
@@ -110,7 +111,7 @@ async function buildSnapshot(cart: ResolvedCart, deliveryZone: DeliveryZone | nu
               title: true,
               brand: true,
               slug: true,
-              media: { select: { storageKey: true, width: true, height: true, blurDataUrl: true, focalPoint: true, translations: { select: { locale: true, altText: true } } }, where: { productId: { not: undefined } } as never, orderBy: { sortOrder: 'asc' } as never, take: 1 },
+              media: { select: { storageKey: true, width: true, height: true, blurDataUrl: true, focalPoint: true, translations: { select: { locale: true, altText: true } } }, where: notTrashed, orderBy: { sortOrder: 'asc' } as never, take: 1 },
             },
           },
         },
@@ -224,7 +225,7 @@ async function buildSnapshot(cart: ResolvedCart, deliveryZone: DeliveryZone | nu
       const categoryIds = [...new Set(variants0.map((v) => (v as unknown as { product: { categoryId: string } }).product.categoryId))];
       const candidates = await db.product.findMany({
         where: { categoryId: { in: categoryIds }, isActive: true, deletedAt: null },
-        select: { slug: true, title: true, basePrice: true, media: { select: { storageKey: true }, take: 1, orderBy: { sortOrder: 'asc' } as never } },
+        select: { slug: true, title: true, basePrice: true, media: { where: notTrashed, select: { storageKey: true }, take: 1, orderBy: { sortOrder: 'asc' } as never } },
         take: 12,
       });
       crossSell = candidates.slice(0, 3).map((p) => ({

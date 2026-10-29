@@ -552,6 +552,26 @@ export const auth = betterAuth({
     }),
   },
 
+  /*
+   * Реферал привязывается при регистрации. Ошибка здесь не должна отменить регистрацию,
+   * поэтому всё обёрнуто в try/catch. Модуль грузится лениво, как `mergeGuestCartFor`:
+   * он тянет базу и сервисы, а `auth` собирается при загрузке приложения.
+   */
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          try {
+            const { bindReferralFromCookie } = await import('@/server/referral/signup');
+            await bindReferralFromCookie(user.id);
+          } catch (error) {
+            console.warn('[referral] signup hook failed', error);
+          }
+        },
+      },
+    },
+  },
+
   advanced: {
     cookiePrefix: 'artdance',
     cookies: {

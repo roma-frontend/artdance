@@ -333,7 +333,7 @@ export function GodQueue({ tickets: initialTickets, operators, templates, locale
                 {attachments.length ? (
                   <div className="mt-3 grid gap-2">
                     {attachments.map((a) => (
-                      <a key={a.id} href={`/api/media-proxy/${a.storageKey}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 hover:bg-white dark:bg-zinc-900 dark:border-white/10 dark:hover:bg-white/[0.06]">
+                      <a key={a.id} href={`/media-proxy/${a.storageKey}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 hover:bg-white dark:bg-zinc-900 dark:border-white/10 dark:hover:bg-white/[0.06]">
                         <FileText className="h-4 w-4 shrink-0 text-zinc-500" />
                         <span className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-900 dark:text-white">{a.fileName}</span>
                         <span className="text-xs text-zinc-500">{Math.round(a.bytes / 1024)} KB</span>

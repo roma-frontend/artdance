@@ -117,3 +117,19 @@ export function heroMediaRef(rows: readonly MediaRow[]): MediaRef | null {
 export function galleryRefs(rows: readonly MediaRow[]): readonly MediaRef[] {
   return [...rows].sort((left, right) => left.sortOrder - right.sortOrder).map(toMediaRef);
 }
+
+/**
+ * Выборка кадра для связей «один к одному» (`Course.media`, `BlogPost.media`, `User.avatarMedia`).
+ *
+ * У такой связи Prisma не принимает `where`, поэтому фильтр мягкого удаления в неё не
+ * встроить. `deletedAt` читается вместе с кадром и проверяется в `liveSingleMedia`.
+ * Без этого удалённая администратором обложка продолжала бы показываться на сайте.
+ */
+export const trashableMediaSelect = { ...mediaSelect, deletedAt: true } as const;
+
+export type TrashableMediaRow = MediaRow & { deletedAt: Date | null };
+
+/** Кадр связи «один к одному», если он не удалён; иначе `null`. */
+export function liveSingleMedia(row: TrashableMediaRow | null | undefined): TrashableMediaRow | null {
+  return row && row.deletedAt === null ? row : null;
+}

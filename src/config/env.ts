@@ -37,6 +37,20 @@ const optionalEmail = z.preprocess(
   z.string().email().optional(),
 );
 
+/**
+ * Контакт для VAPID (RFC 8292): `mailto:` или `https:`. Пустая строка — «не задан».
+ * Неверный префикс падает на старте вместе с остальной схемой сервера.
+ */
+const optionalVapidSubject = z.preprocess(
+  (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+  z
+    .string()
+    .refine((v) => v.startsWith('mailto:') || v.startsWith('https:'), {
+      message: 'VAPID_SUBJECT должен начинаться с mailto: или https:',
+    })
+    .optional(),
+);
+
 const requiredString = z.string().min(1);
 
 /**
@@ -84,6 +98,8 @@ const clientSchema = z.object({
   NEXT_PUBLIC_FEATURE_EVENTS: requiredBoolFlag,
   NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS: requiredBoolFlag,
   NEXT_PUBLIC_FEATURE_VIDEO: requiredBoolFlag,
+  /** Публичный VAPID-ключ для подписки в браузере (тот же, что VAPID_PUBLIC_KEY). Встраивается при сборке. */
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: optionalString,
 });
 
 /**
@@ -108,6 +124,7 @@ const rawClientEnv = {
   NEXT_PUBLIC_FEATURE_EVENTS: process.env.NEXT_PUBLIC_FEATURE_EVENTS,
   NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS: process.env.NEXT_PUBLIC_FEATURE_SUBSCRIPTIONS,
   NEXT_PUBLIC_FEATURE_VIDEO: process.env.NEXT_PUBLIC_FEATURE_VIDEO,
+  NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
 } as const;
 
 /* ──────────────────────────── SERVER ──────────────────────────── */
@@ -213,6 +230,11 @@ const serverSchema = z.object({
   /* Ссылки из писем открываются в приложении. Без значений файлы .well-known не отдаются (404). */
   APPLE_APP_ID: optionalString, // "<TeamID>.am.artdance.app"
   ANDROID_APP_SHA256_FINGERPRINTS: optionalString, // SHA-256 сертификатов через запятую
+
+  /* Web Push (C-07): три значения нужны вместе, иначе push выключен. Ключи: `npx web-push generate-vapid-keys`. */
+  VAPID_PUBLIC_KEY: optionalString,
+  VAPID_PRIVATE_KEY: optionalString,
+  VAPID_SUBJECT: optionalVapidSubject,
 });
 
 /* ──────────────────────────── PARSE ──────────────────────────── */

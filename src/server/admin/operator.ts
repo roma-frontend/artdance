@@ -3,7 +3,7 @@ import 'server-only';
 import { adminResourceSpecs } from '@/config/admin';
 import { features } from '@/config/features';
 import { getServerEnv } from '@/config/env';
-import { operatorEditableModels, operatorExportLimit, operatorPageSize } from '@/config/operator';
+import { operatorEditableModels, operatorExportLimit, operatorPageSize, operatorProtectedFields } from '@/config/operator';
 import { routes } from '@/config/routes';
 import { domainErrors } from '@/domain/errors';
 import { flattenMessages, jsonSafe, messageParameters, messageTags, redactRecord, secretFields } from '@/domain/operator';
@@ -66,6 +66,48 @@ export function operatorDelegate(name: string, client: unknown = db): OperatorDe
   const delegate = (client as Record<string, OperatorDelegate | undefined>)[canonicalName.charAt(0).toLowerCase() + canonicalName.slice(1)];
   if (!delegate) throw domainErrors.validationFailed('model');
   return delegate;
+}
+
+/** Ключи Prisma, под которыми лежат вложенные записи, а не поля модели. */
+const nestedWriteKeys = new Set(['create', 'update', 'upsert', 'connectOrCreate', 'createMany', 'updateMany', 'data']);
+
+function runtimeFieldsOf(modelName: string): RuntimeField[] {
+  return runtimeModels().find((m) => m.name === modelName)?.fields ?? [];
+}
+
+/** Ищет защищённое поле в записи, включая вложенные relation-записи (путь через точку). */
+function findProtectedWrite(modelName: string, data: unknown, path: string[]): string | undefined {
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      const found = findProtectedWrite(modelName, item, path);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  if (typeof data !== 'object' || data === null) return undefined;
+
+  const protectedKeys = operatorProtectedFields[modelName] ?? [];
+  const fields = runtimeFieldsOf(modelName);
+  for (const [key, value] of Object.entries(data)) {
+    if (protectedKeys.includes(key)) return [...path, key].join('.');
+    const field = fields.find((f) => f.name === key);
+    let found: string | undefined;
+    if (field?.kind === 'object') found = findProtectedWrite(field.type, value, [...path, key]);
+    else if (!field && nestedWriteKeys.has(key)) found = findProtectedWrite(modelName, value, path);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+/** Путь первого защищённого поля в записи (например `instructor.isVerified`) или `undefined`. */
+export function protectedWriteField(name: string, data: unknown): string | undefined {
+  return findProtectedWrite(operatorModelName(name), data, []);
+}
+
+/** Бросает ошибку, если в данных записи есть поле, которое пишет только сервис. */
+export function assertWritableFields(name: string, data: Record<string, unknown>): void {
+  const blocked = protectedWriteField(name, data);
+  if (blocked) throw domainErrors.validationFailed(blocked);
 }
 
 export function modelFields(name: string) {

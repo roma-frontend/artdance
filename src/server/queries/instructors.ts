@@ -183,7 +183,7 @@ function instructorWhere(query: CatalogQuery) {
      * приезжает в зал. Условие через связь, а не через денормализованное поле:
      * поле пришлось бы поддерживать при каждом изменении расписания.
      */
-    ...(query.district ? { classes: { some: { venue: { district: query.district } } } } : {}),
+    ...(query.district ? { classes: { some: { ...notTrashed, venue: { district: query.district } } } } : {}),
     ...(query.priceMin !== undefined || query.priceMax !== undefined
       ? {
           hourlyRateFrom: {

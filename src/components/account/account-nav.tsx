@@ -45,6 +45,7 @@ const entries: readonly AccountNavEntry[] = [
   { href: routes.accountBookings(), labelKey: 'account.nav.bookings' },
   { href: routes.accountOrders(), labelKey: 'account.nav.orders' },
   { href: routes.accountFavorites(), labelKey: 'account.nav.favorites' },
+  { href: routes.accountSavedSearches(), labelKey: 'account.nav.savedSearches' },
   { href: routes.accountSubscription(), labelKey: 'account.nav.subscription', feature: 'subscriptions' },
   { href: routes.accountWallet(), labelKey: 'account.nav.wallet', feature: 'wallet' },
   { href: routes.accountReferrals(), labelKey: 'account.nav.referrals', feature: 'referrals' },

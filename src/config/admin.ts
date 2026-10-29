@@ -497,7 +497,7 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
         kind: 'multiselect',
         options: localeOptions,
       },
-      { name: 'isVerified', labelKey: 'admin.fields.isVerified', kind: 'switch' },
+      /* isVerified не редактируется из админки: бейдж меняет только решение по документу (D-02). */
       {
         name: 'moderation',
         labelKey: 'admin.fields.moderation',
@@ -937,8 +937,7 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
         hintKey: 'admin.form.listHint',
         full: true,
       },
-      // coverKey deprecated — теперь MediaAsset(courseId) upload
-      { name: 'coverKey', labelKey: 'admin.fields.cover', kind: 'text', hintKey: 'admin.fields.coverHint' },
+      // Обложка — только через медиатеку (MediaSection, owner courseId). Строки coverKey здесь нет.
       { name: 'isPublished', labelKey: 'admin.fields.isPublished', kind: 'switch' },
     ],
   },
@@ -1173,9 +1172,7 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
       },
       { name: 'category', labelKey: 'admin.fields.category', kind: 'text', hintKey: 'admin.fields.categoryHint' },
       { name: 'tags', labelKey: 'admin.fields.tags', kind: 'list', hintKey: 'admin.form.listHint', full: true },
-      // coverKey/coverAlt deprecated — теперь MediaAsset(blogPostId), но оставляем одно релиз для фоллбэка
-      { name: 'coverKey', labelKey: 'admin.fields.cover', kind: 'text', hintKey: 'admin.fields.coverHint' },
-      { name: 'coverAlt', labelKey: 'admin.fields.coverAlt', kind: 'text' },
+      // Обложка — только через медиатеку (MediaSection, owner blogPostId). Строк coverKey/coverAlt здесь нет.
       { name: 'authorName', labelKey: 'admin.fields.author', kind: 'text' },
       { name: 'isPublished', labelKey: 'admin.fields.isPublished', kind: 'switch' },
     ],
@@ -1234,7 +1231,7 @@ export const adminResourceSpecs: Record<AdminResource, AdminResourceSpec> = {
     fields: [
       { name: 'name', labelKey: 'admin.fields.name', kind: 'text', required: true },
       { name: 'email', labelKey: 'admin.fields.email', kind: 'email', required: true },
-      { name: 'avatarKey', labelKey: 'admin.fields.avatar', kind: 'text', hintKey: 'admin.fields.coverHint' },
+      // Аватар — только через медиатеку (MediaSection, owner avatarOwnerId). Строки avatarKey здесь нет.
     ],
   },
 
@@ -1512,6 +1509,7 @@ export const adminNavigation: readonly AdminNavGroupSpec[] = [
       { labelKey: 'admin.nav.approvals', href: routes.adminApprovals(), capability: 'settings.edit' },
       { labelKey: 'admin.nav.auditLog', href: routes.adminAuditLog(), capability: 'audit.view' },
       { labelKey: 'admin.nav.integrations', href: routes.adminIntegrations(), capability: 'settings.edit' },
+      { labelKey: 'admin.nav.emails', href: routes.adminEmails(), capability: 'settings.edit' },
       /*
        * Корзина в системном разделе, а не в каталоге: она общая на все разделы
        * каталога, и повторять её в каждом значило бы предлагать четырнадцать

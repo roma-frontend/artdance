@@ -28,6 +28,8 @@ export const reviewSelect = {
   authorRole: true,
   isVerifiedPurchase: true,
   author: { select: { name: true } },
+  /** Ответ владельца: одна запись на отзыв (`reviewId` уникален), показывается вместе с одобренным отзывом. */
+  response: { select: { body: true } },
   /*
    * Кадр берётся у того, О КОМ отзыв, а не у автора.
    *
@@ -49,6 +51,7 @@ export interface ReviewRow {
   authorRole: string | null;
   isVerifiedPurchase: boolean;
   author: { name: string };
+  response?: { body: string } | null;
   instructor: { media: MediaRow[] } | null;
   danceClass: { media: MediaRow[] } | null;
   venue: { media: MediaRow[] } | null;
@@ -75,6 +78,7 @@ export function toReview(row: ReviewRow): ReviewItem {
      */
     isVerifiedPurchase: reviewRules.requireVerifiedPurchase || row.isVerifiedPurchase,
     image: targetMedia ?? { key: '', alt: { hy: '', ru: '', en: '' } },
+    reply: row.response ? { body: row.response.body } : null,
   };
 }
 

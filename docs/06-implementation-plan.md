@@ -57,16 +57,16 @@
 | D-07 | P1 | `recordReliabilityEvent` вызывается только из `resolveDispute`, который никто не вызывает; `NO_SHOW`, `LATE_CANCEL`, `COMPLETED` не пишутся; `reliabilityScore` нигде не читается | `src/server/reliability/service.ts` |
 | D-08 | P1 | `openDispute` и `resolveDispute` не вызываются; UI и API нет | `src/server/disputes/service.ts` |
 | 2.10 | — | Карты нет: `map-view.tsx`, `static-map-image.tsx`, `src/lib/geo.ts` не созданы | новые файлы; ключ `NEXT_PUBLIC_MAPS_API_KEY` уже в `src/config/env.ts` |
-| 8.3 | — | Шага LHCI в `.github/workflows/ci.yml` нет; `lighthouserc.json` готов | `.github/workflows/ci.yml` |
-| DS-01 | P0 | Модели `DanceDiscipline` и дисциплины Social нет; есть только домен | `src/domain/dancesport.ts`, `prisma/schema.prisma` |
+| 8.3 | — | Шага LHCI в `.github/workflows/ci.yml` нет. Блокер: `@lhci/cli` не в зависимостях; пороги не проверены (нужна БД); `upload.target` `temporary-public-storage` публикует отчёты — решение владельца. `lighthouserc.json` готов | `.github/workflows/ci.yml` |
+| DS-01 | P0 | Модель `DanceDiscipline` (DANCESPORT, SOCIAL) есть в схеме; миграция `20261031120000_dance_discipline_taxonomy` не сверена и не применена на базу в этом проходе; связь стилей с дисциплинами — не проверена | `src/domain/dancesport.ts`, `prisma/schema.prisma` |
 | DS-04 | P1 | Роль Athlete в схеме не начата; страница `/athletes` есть | `src/app/[locale]/athletes/page.tsx` |
 | DS-06 | P1 | Список партнёров появится с первыми договорами; страница `/partners` есть | `src/app/[locale]/partners/page.tsx` |
 | DS-08 | P2 | Баннерные слоты не начаты; страница `/advertise` есть | `src/app/[locale]/advertise/page.tsx` |
 | DS-10 | P2 | Не начато: мульти-стиль пары | `src/domain/dancesport.ts` |
 | A-12 | P1 | Нет `/account/payment-methods` | `src/app/[locale]/account/` |
-| A-24 | P1 | Один sitemap, разбивки по разделам нет | `src/app/sitemap.ts` |
-| A-25 | P2 | Есть `/help`, нет `/help/[topic]` | `src/app/[locale]/help/` |
-| E-02 | — | Нет `/admin/emails`: предпросмотр шаблонов и тестовая отправка | `src/app/[locale]/admin/` |
+| A-24 | — | ✅ Сделано: sitemap по разделам (`/sitemap/<раздел>.xml`), индекс `/sitemap.xml`, `/feed.xml` | `src/app/sitemap/[file]/route.ts`, `src/app/sitemap.xml/route.ts`, `src/app/feed.xml/route.ts` |
+| A-25 | P2 | Есть `/help` с поиском по `?q=`; `/help/[topic]` нет. Отдельные статьи по темам — решение владельца (контент) | `src/app/[locale]/help/` |
+| E-02 | — | ✅ Сделано: `/admin/emails` — превью на трёх языках и тестовая отправка | `src/app/[locale]/admin/emails/page.tsx` |
 | E-06 | — | `runDailyDigest` вызывается только вручную из админки, расписания нет | `src/server/cron/tasks.ts`, `src/server/actions/admin/operator.ts` |
 
 Вне MVP и не начато: автовыплаты исполнителям. Сейчас выплату выпускает администратор вручную (`releasePayout` в `src/server/actions/admin/operations.ts`); автовыплаты — Фаза 3 по `docs/01`.
@@ -170,9 +170,7 @@
 - Полный GitHub Actions на `e73c0ed` (CI#324, run `40734574704`) прошёл все пять
   job, включая «Поведение в браузере» (e2e). После `e73c0ed` код не менялся,
   коммиты после него только docs с `[skip ci]`.
-- Главная читает строку `ContentBlock` из базы. На пустой схеме `next build` падает
-  на `/en` (проверено 2026-10-28, кеш данных очищен). Для прода нужен путь к
-  контенту главной: см. `docs/04-security-and-infrastructure.md`, §1.17.
+- Главная читает строку `ContentBlock` из базы. Если строки нет, работает фоллбэк из кода (с предупреждением в логе), сборка на пустой схеме не падает. Контент из CMS заводится в админке: см. `docs/04-security-and-infrastructure.md`, §1.17.
 
 Итог: весь публичный каталог, индексируемый и кешируемый CDN.
 

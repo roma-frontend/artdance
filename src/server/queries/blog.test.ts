@@ -40,7 +40,7 @@ describe('public blog queries', () => {
       category: null, tags: [], authorName: null, readingMinutes: null, viewCount: 0,
       isPublished: true, publishedAt: new Date('2026-10-09'),
       createdAt: new Date('2026-10-09'), updatedAt: new Date('2026-10-09'),
-      translations: [translated], media: [],
+      translations: [translated], media: null,
     };
     mocks.findMany.mockResolvedValueOnce([source]).mockResolvedValueOnce([]);
     mocks.findFirst.mockResolvedValue(source);

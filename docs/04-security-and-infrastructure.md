@@ -260,17 +260,18 @@ best practices блокирует мерж, метрики скорости на
 Порядок операций не произвольный. `next build` пререндерит каталог, страницы
 направлений, главную и OG-картинки — то есть **обращается к базе во время сборки**.
 Проверено 2026-10-28 на пустой схеме PostgreSQL 17 (26 миграций, без сида, кеш
-данных очищен): миграции проходят, `next build` падает на `/en` с ошибкой
-`home content block is missing or inactive for locale en`. До первого деплоя в базе
-должны быть активный `ContentBlock` с ключом главной для `hy`, `ru`, `en` и
-`MediaAsset`, на которые он ссылается (см. `loadHomeContent` в `src/server/queries/home.ts`).
+данных очищен): до изменения `next build` падал на `/en` с ошибкой
+`home content block is missing or inactive for locale en`. Теперь, если строки
+`ContentBlock` для главной нет или она неактивна, `loadFallbackHomeContent()` отдаёт
+контент из кода и пишет предупреждение `[home] content block missing or inactive,
+serving code fallback` (см. `src/server/queries/home.ts`, тест в `home.test.ts`).
+Сборка на пустой базе проходит, но главная показывает контент из кода, а не из CMS,
+пока строку не заведут в админке.
 
 1. миграции: `npm run db:deploy` (по `DIRECT_DATABASE_URL`, session mode);
-2. **блокер первого деплоя:** контент главной и её медиа создаёт только
-   `npm run db:seed`, а он на прод не запускается (демо-аккаунты с общим паролем,
-   см. `docs/launch/production-setup.md`). Нужно решение: отдельный сид только
-   контента главной либо fallback в коде, если строки нет. Пока оно не принято,
-   первый деплой на пустую базу не соберётся;
+2. контент главной: заводится в админке (`ContentBlock` для `hy`, `ru`, `en` и
+   `MediaAsset`). `npm run db:seed` на прод не запускается (демо-аккаунты с общим паролем,
+   см. `docs/launch/production-setup.md`);
 3. переменные в проекте Vercel;
 4. деплой.
 

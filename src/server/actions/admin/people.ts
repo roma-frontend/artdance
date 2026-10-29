@@ -27,12 +27,16 @@
 import { z } from 'zod';
 
 import { grantLimits, isCapability, nonGrantableCapabilities } from '@/config/capabilities';
+import { notificationTypes } from '@/config/notifications';
 import { userRoles } from '@/domain/enums';
 import { domainErrors } from '@/domain/errors';
+import { locales } from '@/i18n/config';
 import type { Caller } from '@/lib/auth/guards';
 import { markAuditReverted, recordAudit } from '@/lib/audit';
 import { requireCapability } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
+import { sendEmail } from '@/lib/email/send';
+import { buildPreview } from '@/lib/notifications/preview';
 import { toCsv } from '@/lib/security/export-safety';
 import { activeAdminCount, ordersForExport } from '@/server/admin/people';
 import { authedAction } from '@/server/safe-action';
@@ -540,79 +544,19 @@ export const importCatalogCsv = authedAction
 
 /* ───────────────────── Предпросмотр писем (E-02) ───────────────────── */
 
-export type PreviewTemplate = 'verify' | 'booking';
-export type PreviewLocale = 'hy' | 'ru' | 'en';
-
-export interface PreviewOutcome {
-  subject: string;
-  heading: string;
-  paragraphs: readonly string[];
-}
-
-export const previewEmail = authedAction
-  .metadata({ rateLimit: 'adminExport', audit: 'admin.email.preview' })
-  .inputSchema(z.object({ template: z.enum(['verify', 'booking'] as const), locale: z.enum(['hy', 'ru', 'en'] as const) }))
-  .action(async ({ parsedInput, ctx }): Promise<PreviewOutcome> => {
-    const caller = await requireCapability('settings.edit');
-    const { loadMessages } = await import('@/i18n/messages');
-    const messages = await loadMessages(parsedInput.locale);
-
-    const preview: Record<PreviewTemplate, PreviewOutcome> = {
-      verify: {
-        subject: messages.email.verifyEmail.subject,
-        heading: messages.email.verifyEmail.heading,
-        paragraphs: [messages.email.verifyEmail.body],
-      },
-      booking: {
-        subject: messages.email.bookingConfirmed.subject.replace('{title}', 'Bachata Basics'),
-        heading: messages.email.bookingConfirmed.heading,
-        paragraphs: [messages.email.bookingConfirmed.body.replace('{title}', 'Bachata Basics').replace('{when}', '12.09.2026 19:00')],
-      },
-    };
-
-    await recordAudit({
-      actor: caller,
-      action: 'admin.email.preview',
-      entityType: 'Email',
-      entityId: `${parsedInput.template}:${parsedInput.locale}`,
-      ipAddress: ctx.identifier,
-    });
-
-    return preview[parsedInput.template];
-  });
-
 export const sendPreviewEmail = authedAction
   .metadata({ rateLimit: 'adminExport', audit: 'admin.email.testSend' })
-  .inputSchema(z.object({ template: z.enum(['verify', 'booking'] as const), locale: z.enum(['hy', 'ru', 'en'] as const) }))
+  .inputSchema(z.object({ type: z.enum(notificationTypes), locale: z.enum(locales) }))
   .action(async ({ parsedInput, ctx }): Promise<{ sent: boolean }> => {
     const caller = await requireCapability('settings.edit');
-    const { loadMessages } = await import('@/i18n/messages');
-    const messages = await loadMessages(parsedInput.locale);
-    const { sendEmail } = await import('@/lib/email/send');
-
-    const map: Record<PreviewTemplate, { subject: string; heading: string; paragraphs: readonly string[] }> = {
-      verify: { subject: messages.email.verifyEmail.subject, heading: messages.email.verifyEmail.heading, paragraphs: [messages.email.verifyEmail.body] },
-      booking: {
-        subject: messages.email.bookingConfirmed.subject.replace('{title}', 'Bachata Basics'),
-        heading: messages.email.bookingConfirmed.heading,
-        paragraphs: [messages.email.bookingConfirmed.body.replace('{title}', 'Bachata Basics').replace('{when}', '12.09.2026 19:00')],
-      },
-    };
-
-    const t = map[parsedInput.template];
-    const result = await sendEmail({
-      to: caller.email,
-      locale: parsedInput.locale as never,
-      subject: t.subject,
-      heading: t.heading,
-      paragraphs: t.paragraphs,
-    });
+    const content = await buildPreview(parsedInput.type, parsedInput.locale);
+    const result = await sendEmail({ to: caller.email, ...content });
 
     await recordAudit({
       actor: caller,
       action: 'admin.email.testSend',
       entityType: 'Email',
-      entityId: `${parsedInput.template}:${parsedInput.locale}`,
+      entityId: `${parsedInput.type}:${parsedInput.locale}`,
       after: { sent: result.delivered },
       ipAddress: ctx.identifier,
     });

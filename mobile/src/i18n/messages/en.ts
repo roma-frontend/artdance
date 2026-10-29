@@ -930,6 +930,18 @@ const en = {
     cancelForbidden: 'This booking can no longer be cancelled online — contact support.',
     refundNotAllowed: 'This booking is not eligible for a refund.',
     duplicateEnrollment: 'You are already booked for this session.',
+    consent: {
+      title: 'Confirmations',
+      birthDateLabel: 'Participant’s date of birth',
+      birthDateHint: 'Used only to check whether a parent or guardian must confirm the booking. The date is not stored.',
+      draftNotice: 'Draft wording. The texts are awaiting review by a lawyer.',
+      required: 'Confirm the items below to continue.',
+      items: {
+        healthWaiver: 'I confirm that the participant is fit to take part in dance classes.',
+        shootingConsent: 'I agree that the studio may photograph and film the participant during classes.',
+        minorParentalConsent: 'I am the parent or legal guardian of the participant and I confirm this booking on their behalf.',
+      },
+    },
   },
 
   auth: {

@@ -22,6 +22,7 @@ import { JsonLdScript } from '@/components/seo/json-ld';
 import type { Crumb } from '@/lib/seo/jsonld';
 import { getCatalogSlugs, getProductDetail } from '@/server/content/catalog';
 import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
+import { productRecommendations } from '@/server/recommendations/service';
 
 interface PageProps {
   params: Promise<{ locale: string; slug: string }>;
@@ -53,6 +54,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
   if (!item) notFound();
 
   const tNav = await getTranslations('nav');
+  const tShop = await getTranslations('shop');
+  const recommended = await productRecommendations(slug);
   const trail: Crumb[] = [
     { name: tNav('shop'), path: routes.shop() },
     { name: item.title, path: routes.product(item.slug) },
@@ -88,9 +91,24 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
         {item.related.length > 0 && (
           <section className="mt-16">
-            <h2 className="text-heading-3 mb-6">{(await getTranslations({ locale: locale as never, namespace: 'shop' }))('relatedTitle')}</h2>
+            <h2 className="text-heading-3 mb-6">{tShop('relatedTitle')}</h2>
             <ul className="grid gap-5 xs:grid-cols-2 lg:grid-cols-4">
               {item.related.map((rel) => (
+                <li key={rel.slug}>
+                  <CardTilt>
+                    <ProductCard item={rel} locale={locale as Locale} />
+                  </CardTilt>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {recommended.length > 0 && (
+          <section className="mt-16">
+            <h2 className="text-heading-3 mb-6">{tShop('recommendedTitle')}</h2>
+            <ul className="grid gap-5 xs:grid-cols-2 lg:grid-cols-4">
+              {recommended.map((rel) => (
                 <li key={rel.slug}>
                   <CardTilt>
                     <ProductCard item={rel} locale={locale as Locale} />

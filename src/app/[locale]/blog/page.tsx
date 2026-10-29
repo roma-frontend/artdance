@@ -11,7 +11,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { BlogCard } from '@/components/blog/blog-card';
 import { BlogFilter } from '@/components/blog/blog-filter';
 import { EmptyState } from '@/components/ui/empty-state';
-import { routes, site } from '@/config';
+import { absoluteUrl, routes, site } from '@/config';
 import { buildMetadata } from '@/lib/seo/metadata';
 import type { Locale } from '@/i18n/config';
 import { getRootTranslate } from '@/i18n/translate';
@@ -26,13 +26,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale } = await params;
   const t = await getTranslations({ locale: locale as Locale });
   const tt = t as unknown as (k: string) => string;
-  return buildMetadata({
+  const base = buildMetadata({
     locale: locale as Locale,
     path: routes.blog(),
     title: tt('blog.title'),
     description: tt('blog.subtitle'),
     openGraphType: 'website',
   });
+
+  /* RSS-лента блога: читалки находят её по ссылке в `<head>`. */
+  return {
+    ...base,
+    alternates: {
+      ...base.alternates,
+      types: { 'application/rss+xml': absoluteUrl(routes.feed(locale)) },
+    },
+  };
 }
 
 export default async function BlogPage({ params, searchParams }: PageProps) {

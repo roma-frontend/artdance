@@ -183,6 +183,7 @@ export const routes = {
   accountOrders: () => '/account/orders',
   accountOrder: (orderNumber: string) => `/account/orders/${orderNumber}`,
   accountFavorites: () => '/account/favorites',
+  accountSavedSearches: () => '/account/saved-searches',
   accountReviews: () => '/account/reviews',
   accountSubscription: () => '/account/subscription',
   accountWallet: () => '/account/wallet',
@@ -210,6 +211,7 @@ export const routes = {
   instructorEarnings: () => '/studio/earnings',
   instructorProfile: () => '/studio/profile',
   instructorCheckIn: () => '/studio/check-in',
+  instructorStudioReviews: () => '/studio/reviews',
 
   /* Кабинет владельца площадки */
   venueDashboard: () => '/venue',
@@ -253,6 +255,7 @@ export const routes = {
   adminApprovals: () => adminPath('approvals'),
   adminSettings: () => adminPath('settings'),
   adminIntegrations: () => adminPath('integrations'),
+  adminEmails: (params?: { type?: string; lang?: string }) => withQuery(adminPath('emails'), params),
   adminTrash: (params?: AdminListParams) => withQuery(adminPath('trash'), params),
 
   /* Совместимость с ранее объявленными адресами разделов каталога. */
@@ -266,6 +269,8 @@ export const routes = {
   help: () => '/help',
   blog: () => '/blog',
   blogPost: (slug: string) => `/blog/${slug}`,
+  /** RSS-лента блога. Без `locale` — лента на языке по умолчанию. */
+  feed: (locale?: string) => (locale ? `/feed.xml?locale=${locale}` : '/feed.xml'),
   becomeInstructor: () => '/become-instructor',
   becomeInstructorApply: () => '/become-instructor/apply',
   listYourStudio: () => '/list-your-studio',
@@ -307,10 +312,15 @@ export const routes = {
 export const apiRoutes = {
   auth: (segments: string) => `/api/auth/${segments}`,
   search: () => '/api/search',
+  savedSearches: () => '/api/saved-searches',
+  savedSearch: (id: string) => `/api/saved-searches/${encodeURIComponent(id)}`,
   availability: () => '/api/availability',
   slotHold: () => '/api/booking/hold',
   booking: () => '/api/booking',
   bookingPay: (bookingId: string) => `/api/booking/${encodeURIComponent(bookingId)}/pay`,
+  bookingDispute: (bookingId: string) => `/api/booking/${encodeURIComponent(bookingId)}/dispute`,
+  studioBookingRespond: (bookingId: string) => `/api/studio/bookings/${encodeURIComponent(bookingId)}/respond`,
+  reviewReply: (reviewId: string) => `/api/reviews/${encodeURIComponent(reviewId)}/reply`,
   paymentIntent: () => '/api/payments/intent',
   paymentDevConfirm: () => '/api/payments/dev-confirm',
   paymentWebhook: (provider: string) => `/api/webhooks/payments/${provider}`,

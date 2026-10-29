@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 
+import { DomainError } from '@/domain/errors';
 import { recordAudit } from '@/lib/audit';
 import { requireOperator } from '@/lib/auth/guards';
-import { operatorDelegate } from '@/server/admin/operator';
+import { assertWritableFields, operatorDelegate } from '@/server/admin/operator';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,19 @@ export async function POST(request: Request) {
     delegate = operatorDelegate(model);
   } catch {
     return NextResponse.json({ error: 'Unknown model' }, { status: 400 });
+  }
+
+  // Проверяем все документы до записи: защищённое поле отклоняет весь импорт целиком.
+  for (const [index, doc] of body.docs.entries()) {
+    if (!doc || typeof doc !== 'object' || Array.isArray(doc)) continue;
+    try {
+      assertWritableFields(model, doc as Record<string, unknown>);
+    } catch (error) {
+      if (error instanceof DomainError) {
+        return NextResponse.json({ error: `protected field: ${error.field}`, field: error.field, row: index + 1 }, { status: 400 });
+      }
+      throw error;
+    }
   }
 
   let inserted = 0;

@@ -12,12 +12,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BookingCalendar } from '@/components/booking/booking-calendar';
+import { BookingConsentFields } from '@/components/booking/booking-consent-fields';
 import { BookingSummary } from '@/components/booking/booking-summary';
 import { LocationOptionPicker } from '@/components/booking/location-option-picker';
 import { TimeSlotPicker } from '@/components/booking/time-slot-picker';
-import { apiRoutes, booking, routes, site, type BookingLocationOption } from '@/config';
+import { apiRoutes, booking, routes, site, type BookingConsentId, type BookingLocationOption } from '@/config';
 import { useEntitlementsSnapshot } from '@/lib/entitlements/use-entitlements';
 import { zonedDateKey } from '@/domain/availability/compute';
+import { bookingConsentErrorField, bookingConsentForm, consentRequestFields, type BookingConsentField } from '@/domain/booking/consent-form';
 import { useRouter } from '@/i18n/routing';
 import { getAnonymousId } from '@/lib/client/anonymous-id';
 import { parseClock } from '@/lib/time/clock';
@@ -44,9 +46,15 @@ export function BookingScreen({ content }: BookingScreenProps) {
   const [location, setLocation] = useState<BookingLocationOption>('STUDIO');
   const [useClassPass, setUseClassPass] = useState(false);
   const [partnerName, setPartnerName] = useState('');
+  const [promoCode, setPromoCode] = useState('');
+  const [promoInvalid, setPromoInvalid] = useState(false);
   const [weeks, setWeeks] = useState(1);
   const [hold, setHold] = useState<HoldState>({ status: 'idle' });
   const [submitting, setSubmitting] = useState(false);
+  const [birthDate, setBirthDate] = useState('');
+  const [consentIds, setConsentIds] = useState<BookingConsentId[]>([]);
+  const [consentError, setConsentError] = useState<BookingConsentField | null>(null);
+  const [now] = useState(() => new Date());
   const prevHoldRef = useRef<string | null>(null);
   const preselectedHeldRef = useRef(false);
   useEffect(() => { if (hold.status === 'holding') prevHoldRef.current = hold.holdId; }, [hold]);
@@ -159,16 +167,25 @@ export function BookingScreen({ content }: BookingScreenProps) {
   const effectiveHoldExpiresAt = hold.status === 'holding' ? hold.expiresAt : null;
   const rateLimitedSeconds = hold.status === 'rateLimited' ? hold.retryAfterSeconds : null;
   const recurringOpts = booking.recurring;
+  const isRecurringSeries = recurringEnabled && !content.sessionBooking && weeks > 1;
+  const consentForm = bookingConsentForm({
+    subject: content.sessionBooking && content.lessonType !== 'PRIVATE' ? 'CLASS_SESSION' : 'PRIVATE_SESSION',
+    birthDate,
+    checked: consentIds,
+    now,
+    timeZone: site.timeZone,
+  });
   const handleContinue = async () => {
-    if (submitting || (content.lessonType === 'PAIR' && !partnerName.trim())) return;
+    if (submitting || !consentForm.ready || (content.lessonType === 'PAIR' && !partnerName.trim())) return;
     if (hold.status !== 'holding' || !hold.holdId || !date || !startTime) return;
+    setConsentError(null);
     setSubmitting(true);
     try {
       if (recurringEnabled && !content.sessionBooking && weeks > 1) {
         const { zonedParts: zp } = await import('@/lib/time/schedule');
         const { site: siteCfg } = await import('@/config/site');
         const weekday = zp(date, siteCfg.timeZone).weekday;
-        const res = await fetch('/api/booking/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ weekday, startTime, durationMinutes: content.durationMinutes, weeks, instructorId: content.instructorId, locationOption: location }) });
+        const res = await fetch('/api/booking/recurring', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ weekday, startTime, durationMinutes: content.durationMinutes, weeks, instructorId: content.instructorId, locationOption: location, ...consentRequestFields(consentForm, birthDate) }) });
         if (res.status === 401) {
           // Гостей переводим на вход; используем жёсткий переход как fallback для iOS Safari,
           // где client-side router.push может не сработать из-за keepalive/race.
@@ -180,7 +197,12 @@ export function BookingScreen({ content }: BookingScreenProps) {
           }, 400);
           return;
         }
-        const body = (await res.json().catch(() => null)) as { seriesId?: string; bookings?: { id: string; reference?: string }[]; error?: string } | null;
+        const body = (await res.json().catch(() => null)) as { seriesId?: string; bookings?: { id: string; reference?: string }[]; error?: string; field?: string } | null;
+        const consentField = bookingConsentErrorField(body?.field);
+        if (consentField) {
+          setConsentError(consentField);
+          return;
+        }
         if (!res.ok || !body?.seriesId) { setHold({ status: 'error', justTaken: null }); return; }
         if (!body.bookings || body.bookings.length === 0) { setHold({ status: 'error', justTaken: null }); return; }
         const first = body.bookings[0] as { reference?: string; id?: string };
@@ -188,7 +210,7 @@ export function BookingScreen({ content }: BookingScreenProps) {
         return;
       }
       const effectiveUsePass = packagesEnabled && useClassPass;
-      const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ holdId: hold.holdId, locationOption: location, anonymousId: getAnonymousId(), useClassPass: effectiveUsePass, partnerName: content.lessonType === 'PAIR' ? partnerName.trim() : undefined }) });
+      const res = await fetch('/api/booking', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ holdId: hold.holdId, locationOption: location, anonymousId: getAnonymousId(), useClassPass: effectiveUsePass, promoCode: effectiveUsePass ? undefined : promoCode.trim() || undefined, partnerName: content.lessonType === 'PAIR' ? partnerName.trim() : undefined, ...consentRequestFields(consentForm, birthDate) }) });
       if (res.status === 401) {
         const target = routes.signIn(`/instructors/${content.instructorSlug}/book`);
         try { router.push(target); } catch {}
@@ -197,7 +219,18 @@ export function BookingScreen({ content }: BookingScreenProps) {
         }, 400);
         return;
       }
-      const body = (await res.json().catch(() => null)) as { booking?: { id: string; reference: string }; error?: string } | null;
+      const body = (await res.json().catch(() => null)) as { booking?: { id: string; reference: string }; error?: string; field?: string } | null;
+      if (body?.field === 'promoCode') {
+        // Промокод проверяется внутри транзакции брони: откат сохраняет удержание, поэтому setHold не вызываем.
+        setPromoInvalid(true);
+        return;
+      }
+      const consentField = bookingConsentErrorField(body?.field);
+      if (consentField) {
+        // Проверка согласий идёт до транзакции: удержание не потрачено, повтор использует его же.
+        setConsentError(consentField);
+        return;
+      }
       if (!res.ok || !body?.booking) { const taken = body?.error === 'SLOT_CONFLICT' || body?.error === 'HOLD_EXPIRED' ? startTime ?? null : null; setHold({ status: 'error', justTaken: taken }); return; }
       router.push(routes.bookingConfirm(body.booking.reference ?? body.booking.id));
     } finally { setSubmitting(false); }
@@ -231,6 +264,28 @@ export function BookingScreen({ content }: BookingScreenProps) {
           </div>
         )}
         <LocationOptionPicker value={location} onChange={setLocation} studioName={content.studioName} acceptsTravel={content.acceptsTravel} acceptsOnline={content.acceptsOnline} />
+        {!isRecurringSeries && (
+          <div className="rounded-xl border border-border-default bg-surface-card p-5">
+            <label className="text-body-sm block font-semibold">
+              {tBooking('promoLabel')}
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(event) => { setPromoCode(event.target.value); setPromoInvalid(false); }}
+                disabled={useClassPass}
+                maxLength={32}
+                autoComplete="off"
+                autoCapitalize="characters"
+                aria-invalid={promoInvalid}
+                className="mt-2 block w-full rounded-md border border-border-default bg-surface-raised p-3"
+              />
+            </label>
+            <p className="text-caption mt-2 text-content-secondary">{tBooking('promoHint')}</p>
+            {promoInvalid && (
+              <p role="alert" className="text-caption mt-2 font-semibold text-content-signal">{tBooking('promoInvalid')}</p>
+            )}
+          </div>
+        )}
         {packagesEnabled && content.lessonType === 'GROUP' && content.classPasses && content.classPasses.length > 0 && (
           <div className="rounded-xl border border-border-default bg-surface-card p-5">
             <label className="flex cursor-pointer items-start gap-3">
@@ -261,8 +316,24 @@ export function BookingScreen({ content }: BookingScreenProps) {
           </label>
           <p className="text-caption mt-1 text-content-tertiary">{weeks === 1 ? tBooking('recurring.singleHint' as never) as string : (tBooking('recurring.hint' as never, { weeks } as never) as string)}</p>
         </div>}
+        {consentForm.active && (
+          <BookingConsentFields
+            form={consentForm}
+            birthDate={birthDate}
+            today={zonedDateKey(now, site.timeZone)}
+            error={consentError}
+            onBirthDateChange={(value) => {
+              setBirthDate(value);
+              setConsentError(null);
+            }}
+            onToggle={(id, checked) => {
+              setConsentError(null);
+              setConsentIds((prev) => (checked ? [...prev.filter((item) => item !== id), id] : prev.filter((item) => item !== id)));
+            }}
+          />
+        )}
       </div>
-      <BookingSummary classTitle={content.classTitle} instructorName={content.instructorName} date={date} startTime={startTime} durationMinutes={content.durationMinutes} location={{ option: location, name: content.studioName }} fee={useClassPass ? 0 : content.fee} travelFee={travelFee} partnerName={content.lessonType === 'PAIR' ? partnerName : undefined} participants={content.lessonType === 'PAIR' ? 2 : 1} incomplete={content.lessonType === 'PAIR' && !partnerName.trim()} holdExpiresAt={effectiveHoldExpiresAt} onHoldExpired={handleHoldExpired} submitting={submitting} onContinue={handleContinue} />
+      <BookingSummary classTitle={content.classTitle} instructorName={content.instructorName} date={date} startTime={startTime} durationMinutes={content.durationMinutes} location={{ option: location, name: content.studioName }} fee={useClassPass ? 0 : content.fee} travelFee={travelFee} partnerName={content.lessonType === 'PAIR' ? partnerName : undefined} participants={content.lessonType === 'PAIR' ? 2 : 1} incomplete={(content.lessonType === 'PAIR' && !partnerName.trim()) || !consentForm.ready} holdExpiresAt={effectiveHoldExpiresAt} onHoldExpired={handleHoldExpired} submitting={submitting} onContinue={handleContinue} />
     </div>
   );
 }

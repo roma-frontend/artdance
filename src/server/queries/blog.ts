@@ -17,7 +17,7 @@ import { toReadingMinutes } from '@/domain/blog';
 import { db } from '@/lib/db';
 import { defineQuery } from '@/server/query';
 
-import { firstMediaRef, type MediaRow } from './media';
+import { liveSingleMedia, toMediaRef, trashableMediaSelect, type MediaRow, type TrashableMediaRow } from './media';
 
 /* ── Переводы ── */
 
@@ -62,10 +62,10 @@ interface BlogRow {
   createdAt: Date;
   updatedAt: Date;
   translations: BlogTranslationRow[];
-  // cover media if matched — optional join via coverKey ~ storageKey OR via MediaAsset.blogPostId
+  /* Кадр медиатеки (связь `MediaAsset.blogPostId`, один к одному). Удалённость проверяет `liveSingleMedia`. */
+  media?: TrashableMediaRow | null;
+  /* Кадр, найденный по `coverKey` = `storageKey`: мост для статей, загруженных до медиатеки. */
   coverMedia?: MediaRow | null;
-  blogCoverMedia?: MediaRow | null;
-  media?: MediaRow[] | null;
 }
 
 const blogSelect = {
@@ -76,7 +76,7 @@ const blogSelect = {
   body: true,
   coverKey: true,
   coverAlt: true,
-  media: { where: { deletedAt: null }, select: { storageKey: true, altText: true, width: true, height: true, blurDataUrl: true, focalPoint: true, sortOrder: true, translations: { select: { locale: true, altText: true } } } },
+  media: { select: trashableMediaSelect },
   category: true,
   tags: true,
   authorName: true,
@@ -94,10 +94,11 @@ function toCard(row: BlogRow, locale: Locale): BlogCardItem {
   const reading = row.readingMinutes ?? toReadingMinutes(t.body);
 
   let image: BlogCardItem['image'] = null;
-  if (row.media?.length) {
-    image = firstMediaRef(row.media);
+  const owned = liveSingleMedia(row.media);
+  if (owned) {
+    image = toMediaRef(owned);
   } else if (row.coverMedia) {
-    image = firstMediaRef([row.coverMedia]);
+    image = toMediaRef(row.coverMedia);
   } else if (row.coverKey) {
     image = { key: row.coverKey, alt: { hy: row.coverAlt ?? t.title, ru: row.coverAlt ?? t.title, en: row.coverAlt ?? t.title } };
   }

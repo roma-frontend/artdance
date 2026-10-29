@@ -1,11 +1,13 @@
 import 'server-only';
 
-import { domainErrors } from '@/domain/errors';
+import { domainErrors, isDomainError } from '@/domain/errors';
 import { nextOccurrences } from '@/domain/recurring';
 import { booking } from '@/config/business';
+import type { BookingConsentId } from '@/config/consents';
 import { site } from '@/config/site';
 import { db } from '@/lib/db';
 import { createBookingFromHold, type CreateBookingInput } from '@/server/booking/service';
+import { checkBookingConsents } from '@/server/booking/consents';
 import { assertEntitlementOrThrow } from '@/server/entitlements/guard';
 import { publicInstructorWhere } from '@/server/queries/instructors';
 
@@ -22,6 +24,11 @@ export interface CreateRecurringSeriesInput {
   weeks: number;
   locationOption?: 'STUDIO' | 'CUSTOMER_LOCATION' | 'ONLINE';
   customerAddress?: string | null;
+  /** Согласия, отмеченные клиентом; проверяются до создания серии (D-03). */
+  consents?: readonly BookingConsentId[];
+  /** Дата рождения участника, `YYYY-MM-DD`. Нужна, если у предмета есть правило (D-03). */
+  participantBirthDate?: string | null;
+  ipAddress?: string | null;
   /** Первое занятие серии, выбранное клиентом; без него серия начинается с ближайшей даты. */
   firstStartsAt?: Date | null;
   now: Date;
@@ -44,6 +51,16 @@ export async function createRecurringSeries(input: CreateRecurringSeriesInput) {
   if (input.firstStartsAt && occurrences[0]?.startsAt.getTime() !== input.firstStartsAt.getTime()) {
     throw domainErrors.validationFailed('startsAt');
   }
+
+  // Повторы бронируются как приватные: у их holds нет занятия (см. createBookingFromHold).
+  // Согласия проверяем до создания серии, иначе отказ оставил бы пустую серию.
+  await checkBookingConsents({
+    customerId,
+    subject: 'PRIVATE_SESSION',
+    accepted: input.consents,
+    participantBirthDate: input.participantBirthDate,
+    now,
+  });
 
   // Создаём серию
   const series = await db.recurringSeries.create({
@@ -79,13 +96,18 @@ export async function createRecurringSeries(input: CreateRecurringSeriesInput) {
         now,
         locationOption: input.locationOption,
         customerAddress: input.customerAddress ?? null,
+        consents: input.consents,
+        participantBirthDate: input.participantBirthDate,
+        ipAddress: input.ipAddress ?? null,
       };
       const created = await createBookingFromHold(payload);
       // Bind series
       await db.booking.update({ where: { id: created.id }, data: { seriesId: series.id } });
       bookings.push({ id: created.id, startsAt: occ.startsAt });
     } catch (e) {
-      // Slot conflict or outside availability — skip, owner sees in series view
+      // Конфликт слота или дата вне доступности — дату пропускаем. Согласия не пропускаем:
+      // иначе серия осталась бы пустой молча.
+      if (isDomainError(e) && (e.field === 'consents' || e.field === 'participantBirthDate')) throw e;
       void e;
     }
   }

@@ -69,6 +69,56 @@ describe('validateUpload', () => {
   });
 });
 
+describe('validateUpload: границы политик по ролям', () => {
+  it('аватар принимает ровно 2 MB и отклоняет байтом больше; фото инструктора тот же размер принимает', () => {
+    const avatarMax = uploadPolicies.avatar.maxBytes;
+
+    expect(validateUpload({ ...valid, kind: 'avatar', sizeBytes: avatarMax })).toEqual({ ok: true });
+    expect(validateUpload({ ...valid, kind: 'avatar', sizeBytes: avatarMax + 1 })).toEqual({
+      ok: false,
+      rejection: { code: 'FILE_TOO_LARGE', params: { max: '2 MB' } },
+    });
+    expect(validateUpload({ ...valid, sizeBytes: avatarMax + 1 })).toEqual({ ok: true });
+  });
+
+  it.each(['avatar', 'bannerImage', 'blogCover', 'courseCover'] as const)(
+    '%s: первый файл на сущность проходит, второй отклоняется',
+    (kind) => {
+      expect(validateUpload({ ...valid, kind, existingCount: 0 })).toEqual({ ok: true });
+      expect(validateUpload({ ...valid, kind, existingCount: 1 })).toEqual({
+        ok: false,
+        rejection: { code: 'TOO_MANY_FILES', params: { max: 1 } },
+      });
+    },
+  );
+
+  it.each([
+    'avatar',
+    'instructorPhoto',
+    'venuePhoto',
+    'classPhoto',
+    'eventPhoto',
+    'productImage',
+    'bannerImage',
+    'blogCover',
+    'courseCover',
+  ] as const)('%s не принимает видео ни в mp4, ни в quicktime', (kind) => {
+    for (const mimeType of ['video/mp4', 'video/quicktime'] as const) {
+      expect(validateUpload({ ...valid, kind, mimeType, fileName: 'clip.mp4' }), `${kind} / ${mimeType}`).toEqual({
+        ok: false,
+        rejection: { code: 'UNSUPPORTED_TYPE', params: { type: mimeType } },
+      });
+    }
+  });
+
+  it('PDF под именем .jpg отклоняется по заявленному MIME, а не по расширению', () => {
+    expect(validateUpload({ ...valid, mimeType: 'application/pdf', fileName: 'scan.jpg' })).toEqual({
+      ok: false,
+      rejection: { code: 'UNSUPPORTED_TYPE', params: { type: 'application/pdf' } },
+    });
+  });
+});
+
 describe('exceedsDeclaredSize', () => {
   it('отсекает по Content-Length до чтения тела', () => {
     const max = uploadPolicies.courseVideo.maxBytes;

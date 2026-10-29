@@ -119,9 +119,15 @@ export const presetBudget: Record<ImagePresetKey, MediaBudgetGroup> = {
   thumbnail: 'thumbnail',
 };
 
-/** Ключ производной в бакете: `<base>/<width>.<format>`. Хеш содержимого — в базовом ключе. */
-export function variantKey(baseKey: string, width: number, format: MediaOutputFormat): string {
-  return `${baseKey}/${width}.${format}`;
+/** Форматы, в которых пайплайн пишет производные: AVIF и WebP, для аватара ещё JPEG. */
+export type VariantFormat = MediaOutputFormat | 'jpeg';
+
+/**
+ * Ключ производной: `<base>-<width>.<format>`. Дефис — имя, под которым уже записаны
+ * объекты (маршрут загрузки и аватар). Хеш содержимого — в базовом ключе.
+ */
+export function variantKey(baseKey: string, width: number, format: VariantFormat): string {
+  return `${baseKey}-${width}.${format}`;
 }
 
 /* ────────────────────────────────────────────────────────────────────────────

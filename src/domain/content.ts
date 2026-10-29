@@ -26,7 +26,8 @@ export type LocalizedText = Record<Locale, string>;
 export interface MediaRef {
   /**
    * Ключ файла: имя сид-ассета на этапе разработки, ключ объекта в бакете
-   * в production. Компонент `Media` различает их сам.
+   * в production. Компонент `Media` различает их сам. Пустой ключ — файла нет,
+   * см. `emptyMediaRef`.
    */
   key: string;
   /** Описание изображения на трёх языках. Пустая строка = декоративное. */
@@ -47,6 +48,13 @@ export interface MediaRef {
   height?: number;
   blurDataUrl?: string;
 }
+
+/**
+ * Изображение без файла: фото не загружено или ссылка в контенте битая. Пустой
+ * `key` — тот же сигнал, что пустой `src` у `<Media>`: картинка не выводится, а
+ * страница не падает.
+ */
+export const emptyMediaRef: MediaRef = { key: '', alt: { hy: '', ru: '', en: '' } };
 
 export type VideoFormat = 'av1' | 'vp9' | 'h264';
 
@@ -372,6 +380,8 @@ export interface ReviewItem {
    */
   isVerifiedPurchase: boolean;
   image: MediaRef;
+  /** Ответ владельца. Показывается только вместе с опубликованным отзывом. */
+  reply?: { body: string } | null;
 }
 
 /**

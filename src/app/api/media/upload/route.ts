@@ -26,7 +26,7 @@
 import { NextResponse } from 'next/server';
 
 import { imagePresets, type ImagePresetKey } from '@/config/media';
-import { mediaPaths } from '@/config/media';
+import { mediaPaths, variantKey } from '@/config/media';
 import { uploadKinds, type UploadKind } from '@/config/security';
 import { isDomainError, domainErrors, httpStatusFor } from '@/domain/errors';
 import { recordAudit } from '@/lib/audit';
@@ -52,8 +52,14 @@ const ownerFields = [
 ] as const;
 type OwnerField = (typeof ownerFields)[number];
 
+/**
+ * Видео сюда не попадает: sharp читает только изображения, а видео идёт отдельным путём
+ * (см. docs/11-media-upload-plan.md). Поэтому после проверки тип сужается до изображений.
+ */
+type ImageUploadKind = Exclude<UploadKind, 'courseVideo'>;
+
 /** Какой каталог хранилища и какой пресет соответствуют роли загрузки. */
-function storageKeyFor(kind: UploadKind, ownerId: string, fileId: string): string {
+function storageKeyFor(kind: ImageUploadKind, ownerId: string, fileId: string): string {
   switch (kind) {
     case 'instructorPhoto':
       return mediaPaths.instructorPhoto(ownerId, fileId);
@@ -67,8 +73,6 @@ function storageKeyFor(kind: UploadKind, ownerId: string, fileId: string): strin
       return mediaPaths.productImage(ownerId, fileId);
     case 'avatar':
       return mediaPaths.avatar(ownerId, fileId);
-    case 'courseVideo':
-      return mediaPaths.courseCover(ownerId, fileId);
     case 'bannerImage':
       return mediaPaths.bannerImage(ownerId, fileId);
     case 'blogCover':
@@ -78,7 +82,7 @@ function storageKeyFor(kind: UploadKind, ownerId: string, fileId: string): strin
   }
 }
 
-function presetFor(kind: UploadKind): ImagePresetKey {
+function presetFor(kind: ImageUploadKind): ImagePresetKey {
   switch (kind) {
     case 'instructorPhoto':
       return 'instructorCard';
@@ -92,14 +96,66 @@ function presetFor(kind: UploadKind): ImagePresetKey {
       return 'productCard';
     case 'avatar':
       return 'avatar';
-    case 'courseVideo':
-      return 'classCard';
     case 'bannerImage':
       return 'heroFullBleed';
     case 'blogCover':
       return 'editorialFullBleed';
     case 'courseCover':
       return 'classCard';
+  }
+}
+
+/**
+ * Есть ли владелец с таким id. Для каждого поля отдельный запрос, без «по умолчанию
+ * считаем, что есть». Мягко удалённая строка `findUnique` не видит: фильтр расширения `db`.
+ */
+function findOwner(entry: { field: OwnerField; id: string }): Promise<{ id: string } | null> {
+  const where = { id: entry.id };
+  const select = { id: true } as const;
+  switch (entry.field) {
+    case 'instructorId':
+      return db.instructorProfile.findUnique({ where, select });
+    case 'venueId':
+      return db.venue.findUnique({ where, select });
+    case 'roomId':
+      return db.room.findUnique({ where, select });
+    case 'classId':
+      return db.danceClass.findUnique({ where, select });
+    case 'eventId':
+      return db.event.findUnique({ where, select });
+    case 'productId':
+      return db.product.findUnique({ where, select });
+    case 'bannerId':
+      return db.banner.findUnique({ where, select });
+    case 'blogPostId':
+      return db.blogPost.findUnique({ where, select });
+    case 'courseId':
+      return db.course.findUnique({ where, select });
+    case 'avatarOwnerId':
+      return db.user.findUnique({ where, select });
+  }
+}
+
+/**
+ * Загрузка через медиатеку вытесняет строковый ключ, который раньше вёл туда же.
+ * Иначе после мягкого удаления кадра фоллбэк на строку вернул бы старый файл.
+ */
+async function retireLegacyKey(entry: { field: OwnerField; id: string }): Promise<void> {
+  switch (entry.field) {
+    case 'courseId':
+      await db.course.update({ where: { id: entry.id }, data: { coverKey: null } });
+      return;
+    case 'blogPostId':
+      await db.blogPost.update({ where: { id: entry.id }, data: { coverKey: null, coverAlt: null } });
+      return;
+    case 'bannerId':
+      await db.banner.update({ where: { id: entry.id }, data: { imageKey: null } });
+      return;
+    case 'avatarOwnerId':
+      await db.user.update({ where: { id: entry.id }, data: { avatarKey: null } });
+      return;
+    default:
+      return;
   }
 }
 
@@ -118,7 +174,8 @@ export async function POST(request: Request): Promise<Response> {
 
     const kindValue = String(form.get('kind') ?? '');
     const kind = uploadKinds.find((value) => value === kindValue);
-    if (!kind) throw domainErrors.validationFailed('kind');
+    /* Видео отклоняется до validateUpload: sharp его читать не умеет. */
+    if (!kind || kind === 'courseVideo') throw domainErrors.validationFailed('kind');
 
     const altText = String(form.get('altText') ?? '').trim();
     if (altText.length === 0) throw domainErrors.validationFailed('altText');
@@ -139,19 +196,8 @@ export async function POST(request: Request): Promise<Response> {
     if (owner.length !== 1) throw domainErrors.validationFailed('owner');
     const ownerEntry = owner[0] as { field: OwnerField; id: string };
 
-    // Owner must exist — не пишем orphan-активы в R2
-    const ownerExists = await (() => {
-      switch (ownerEntry.field) {
-        case 'instructorId': return db.instructorProfile.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
-        case 'venueId': return db.venue.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
-        case 'classId': return db.danceClass.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
-        case 'eventId': return db.event.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
-        case 'productId': return db.product.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
-        case 'courseId': return db.course.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
-        case 'avatarOwnerId': return db.user.findUnique({ where: { id: ownerEntry.id }, select: { id: true } });
-        default: return Promise.resolve({ id: ownerEntry.id } as unknown as { id: string } | null);
-      }
-    })();
+    /* Владелец обязан существовать: иначе кадр уже лежит в хранилище, а строка падает на внешнем ключе (500). */
+    const ownerExists = await findOwner(ownerEntry);
     if (!ownerExists) throw domainErrors.notFound();
 
     const replacingAsset = replaceAssetId
@@ -191,7 +237,11 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const input = Buffer.from(await file.arrayBuffer());
-    const processed = await processImage(input, { preset: presetFor(kind) });
+    /* Аватар кодируется в JPEG: тот же формат, что у собственного аватара (api/account/avatar). */
+    const processed = await processImage(input, {
+      preset: presetFor(kind),
+      ...(kind === 'avatar' ? { formats: ['jpeg'] as const } : {}),
+    });
 
     if (!processed.ok) {
       return NextResponse.json(
@@ -205,9 +255,9 @@ export async function POST(request: Request): Promise<Response> {
     const baseKey = storageKeyFor(kind, ownerEntry.id, fileId);
 
     /*
-     * Мастер и производные пишутся под одним базовым ключом с суффиксом ширины.
-     * Единый порядок важен: `Media` собирает `srcset` по тем же правилам, и
-     * разъехавшиеся имена означают битые картинки в каталоге.
+     * Мастер и производные пишутся под одним базовым ключом. Имя производной задаёт
+     * `variantKey` — единственный источник формата. Читателя производных пока нет:
+     * `Media` передаёт в `next/image` только мастер, а srcset строит оптимизатор.
      */
     const master = await putMediaObject(
       `${baseKey}.${image.master.format}`,
@@ -217,61 +267,57 @@ export async function POST(request: Request): Promise<Response> {
 
     for (const variant of image.variants) {
       await putMediaObject(
-        `${baseKey}-${variant.width}.${variant.format}`,
+        variantKey(baseKey, variant.width, variant.format),
         variant.data,
         `image/${variant.format}`,
       );
     }
 
+    /* Кадр пишется одной строкой на владельца там, где предел один. */
+    const assetFields = {
+      storageKey: master.key,
+      mimeType: `image/${image.master.format}`,
+      bytes: image.master.bytes,
+      width: image.width,
+      height: image.height,
+      altText,
+      blurDataUrl: image.blurDataUrl,
+      ...(purpose ? { purpose } : {}),
+      ...(focalPoint ? { focalPoint } : {}),
+    };
+    const assetSelect = { id: true, storageKey: true, width: true, height: true, bytes: true } as const;
+
     const asset = replacingAsset
       ? await db.mediaAsset.update({
           where: { id: replacingAsset.id },
-          data: {
-            storageKey: master.key,
-            mimeType: `image/${image.master.format}`,
-            bytes: image.master.bytes,
-            width: image.width,
-            height: image.height,
-            altText,
-            blurDataUrl: image.blurDataUrl,
-            ...(purpose ? { purpose } : {}),
-            ...(focalPoint ? { focalPoint } : {}),
-          },
-          select: { id: true, storageKey: true, width: true, height: true, bytes: true },
+          data: assetFields,
+          select: assetSelect,
         })
-      : isSingleOwner && rawExistingCount > 0
-        ? await db.mediaAsset.update({
+      : isSingleOwner
+        ? /* upsert: мягко удалённая строка держит уникальный слот владельца, и create упал бы на P2002. */
+          await db.mediaAsset.upsert({
             where: { [ownerEntry.field]: ownerEntry.id } as never,
-            data: {
-              storageKey: master.key,
-              mimeType: `image/${image.master.format}`,
-              bytes: image.master.bytes,
-              width: image.width,
-              height: image.height,
-              altText,
-              blurDataUrl: image.blurDataUrl,
-              ...(purpose ? { purpose } : {}),
-              ...(focalPoint ? { focalPoint } : {}),
+            update: { ...assetFields, deletedAt: null },
+            create: {
+              ...assetFields,
+              sortOrder: 0,
+              uploadedById: caller.id,
+              [ownerEntry.field]: ownerEntry.id,
             },
-            select: { id: true, storageKey: true, width: true, height: true, bytes: true },
+            select: assetSelect,
           })
         : await db.mediaAsset.create({
             data: {
-              storageKey: master.key,
-              mimeType: `image/${image.master.format}`,
-              bytes: image.master.bytes,
-              width: image.width,
-              height: image.height,
-              altText,
-              blurDataUrl: image.blurDataUrl,
+              ...assetFields,
               sortOrder: existingCount,
               uploadedById: caller.id,
-              ...(purpose ? { purpose } : {}),
-              ...(focalPoint ? { focalPoint } : {}),
               [ownerEntry.field]: ownerEntry.id,
             },
-            select: { id: true, storageKey: true, width: true, height: true, bytes: true },
+            select: assetSelect,
           });
+
+    /* Строковый ключ, который вёл сюда раньше, не должен перебивать кадр медиатеки. */
+    await retireLegacyKey(ownerEntry);
 
     await recordAudit({
       actor: caller,

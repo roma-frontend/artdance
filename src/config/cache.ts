@@ -229,9 +229,15 @@ export function buildCacheHeaderRules(): HeaderRule[] {
     /*
      * Карта сайта собирается из тех же тумблеров, а её маршрут не ведёт
      * префикс локали — поэтому отдельное правило, не через `withLocales`.
+     * Индекс `/sitemap.xml` и разделы `/sitemap/<раздел>.xml` — одна карта,
+     * поэтому оба без кеша.
      */
     {
       source: '/sitemap.xml',
+      headers: [{ key: 'Cache-Control', value: cacheControl.none }],
+    },
+    {
+      source: '/sitemap/:path*',
       headers: [{ key: 'Cache-Control', value: cacheControl.none }],
     },
   ];
