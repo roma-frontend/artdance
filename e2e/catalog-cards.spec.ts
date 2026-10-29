@@ -12,7 +12,7 @@ import en from '../src/i18n/messages/en';
 import { demoClasses, demoInstructors, demoVenues } from '../prisma/fixtures/demo';
 import { commerce } from '../src/config/business';
 import { carouselScroll } from '../src/design/motion';
-import { settleAndHover } from './support/settle';
+import { settleAndHover, waitUntilStill } from './support/settle';
 
 const { edgeTolerancePx, minHiddenStepRatio } = carouselScroll;
 
@@ -44,6 +44,24 @@ test.describe('ClassCard', () => {
     const card = carousel(page).locator('li').first();
     /* Клик по подписи, а не по ссылке: за это отвечает растянутый псевдоэлемент. */
     await card.getByText(firstClass.title).click();
+    await expect(page).toHaveURL(new RegExp(`/en/classes/${firstClass.slug}$`), {
+      timeout: NAVIGATION_TIMEOUT,
+    });
+  });
+
+  test('цена и места в подвале карточки тоже открывают занятие', async ({ page }) => {
+    const card = carousel(page).locator('li').first();
+    const foot = card.locator('.card-foot-line').first();
+    await expect(foot).toBeVisible();
+    await foot.scrollIntoViewIfNeeded();
+    await waitUntilStill(foot);
+    const box = (await foot.boundingBox())!;
+    /*
+     * Реальный клик мышью по координатам. locator.click() ждёт, что в точке клика
+     * получит нажатие сам подвал или его потомок, и из-за растянутой ссылки
+     * карточки не дождётся. Здесь браузер сам выбирает, кто получит нажатие.
+     */
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await expect(page).toHaveURL(new RegExp(`/en/classes/${firstClass.slug}$`), {
       timeout: NAVIGATION_TIMEOUT,
     });

@@ -109,7 +109,8 @@ export function EventCard({ item, locale, className }: EventCardProps) {
           {item.locationName} · {item.startTime}—{item.endTime}
         </p>
 
-        <div className="ticket-divider relative my-3 flex items-center justify-between">
+        {/* Декоративный разделитель не перехватывает клик, иначе полоса между названием и подвалом не ведёт на страницу. */}
+        <div className="ticket-divider pointer-events-none relative my-3 flex items-center justify-between">
           <div className="ticket-notch -left-6" />
           <div className="ticket-perforation w-full border-t-2 border-dashed border-border-default" />
           <div className="ticket-notch -right-6" />
