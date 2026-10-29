@@ -175,6 +175,8 @@ export interface ClassCardItem {
   /** Значение `SkillLevel`: подпись берётся из i18n. */
   level: string;
   instructorName: string;
+  /** Для ссылки на запись; в кешированных карточках без него подвал ведёт на занятие. */
+  instructorSlug?: string;
   /** День недели: 0 — воскресенье, как в `Date.getDay()`. */
   weekday: number;
   /** Время начала в формате `HH:mm` — 24 часа, без локали. */

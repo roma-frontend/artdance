@@ -215,6 +215,7 @@ export function toClassCard(row: ClassRow): ClassCardItem {
     lessonType: row.lessonType,
     level: row.level,
     instructorName: row.instructor.user.name,
+    instructorSlug: row.instructor.slug,
     /*
      * Проведений нет — карточка честно показывает «-1» вместо дня недели? Нет:
      * такого занятия в каталоге быть не должно, но если оно есть, день недели

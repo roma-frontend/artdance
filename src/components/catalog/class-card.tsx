@@ -3,10 +3,10 @@
  *
  * Что в этой карточке решено осознанно.
  *
- * **Ссылка одна на всю карточку, а не на каждый элемент.** В прототипе кликается
+ * **Название — ссылка на занятие, подвал — ссылка на запись.** В прототипе кликается
  * `div` через `onclick` — такая карточка недоступна с клавиатуры и не открывается
- * в новой вкладке. Здесь якорь растянут на карточку псевдоэлементом, поэтому
- * доступное имя ссылки — название занятия, а не весь текст блока.
+ * в новой вкладке. Якорь названия растянут на карточку псевдоэлементом, поэтому
+ * его доступное имя — название занятия, а не весь текст блока.
  *
  * **Бейджи взаимоисключающие.** «В тренде» и «мест нет» одновременно —
  * противоречие: то, что нельзя купить, не рекламируют. Приоритет у «мест нет»:
@@ -35,6 +35,7 @@ import { resolveMedia, type ClassCardItem } from '@/domain/content';
 import { danceStyleLabelKey, lessonTypeLabelKey, skillLevelLabelKey } from '@/domain/enums';
 import { disciplineLabelKey } from '@/domain/dancesport';
 import type { Locale } from '@/i18n/config';
+import { Link } from '@/i18n/routing';
 import { dateForWeekday } from '@/lib/format/weekday';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +50,11 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
   const format = useFormatter();
 
   const soldOut = item.spotsLeft <= 0;
+  // Как кнопка на странице занятия; карточка из старого кеша без instructorSlug ведёт на занятие.
+  const footHref = item.instructorSlug
+    ? routes.instructorBooking(item.instructorSlug, item.slug)
+    : routes.class(item.slug);
+  const bookAction = t(soldOut ? 'common.actions.joinWaitlist' : 'common.actions.book');
   const directionLabel = item.danceSportDiscipline
     ? t(disciplineLabelKey(item.danceSportDiscipline as never))
     : t(danceStyleLabelKey(item.style as never));
@@ -133,7 +139,7 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
 
         <h3 className="text-card-title mt-2">
           {/*
-            Растянутый якорь: кликается вся карточка, но доступное имя ссылки —
+            Растянутый якорь: кликается карточка, кроме подвала. Доступное имя —
             только название занятия. `focus-visible` виден на всей карточке через
             `focus-within` выше.
           */}
@@ -160,7 +166,12 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
             Цена и доступность остаются видимыми; справа проявляется стрелка.
             Её место зарезервировано — hover не меняет высоту карточки.
           */}
-          <div className="card-foot border-t border-border-default pt-3">
+          <Link
+            href={footHref}
+            aria-label={`${bookAction}: ${item.title}`}
+            data-cursor-label={bookAction}
+            className="card-foot card-foot-link border-t border-border-default pt-3"
+          >
             <div className="card-foot-line flex flex-wrap items-center justify-between gap-3">
               <Price amount={item.price} unit="perClass" />
               <SpotsLeft spots={item.spotsLeft} waitlistOpen={item.waitlistOpen} />
@@ -168,14 +179,14 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
 
             <div className="card-foot-line card-cta flex flex-wrap items-center justify-between gap-3" aria-hidden="true">
               <span className="text-label font-semibold text-content-accent">
-                {t('common.actions.book')}
+                {bookAction}
               </span>
               <ChevronRightIcon
                 aria-hidden
                 className="card-cta-chevron size-4 text-content-accent"
               />
             </div>
-          </div>
+          </Link>
         </div>
       </div>
     </article>

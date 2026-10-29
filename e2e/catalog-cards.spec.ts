@@ -12,7 +12,7 @@ import en from '../src/i18n/messages/en';
 import { demoClasses, demoInstructors, demoVenues } from '../prisma/fixtures/demo';
 import { commerce } from '../src/config/business';
 import { carouselScroll } from '../src/design/motion';
-import { settleAndHover, waitUntilStill } from './support/settle';
+import { settleAndHover } from './support/settle';
 
 const { edgeTolerancePx, minHiddenStepRatio } = carouselScroll;
 
@@ -49,22 +49,18 @@ test.describe('ClassCard', () => {
     });
   });
 
-  test('цена и места в подвале карточки тоже открывают занятие', async ({ page }) => {
+  test('подвал карточки ведёт на запись на это занятие', async ({ page }) => {
     const card = carousel(page).locator('li').first();
-    const foot = card.locator('.card-foot-line').first();
-    await expect(foot).toBeVisible();
-    await foot.scrollIntoViewIfNeeded();
-    await waitUntilStill(foot);
-    const box = (await foot.boundingBox())!;
-    /*
-     * Реальный клик мышью по координатам. locator.click() ждёт, что в точке клика
-     * получит нажатие сам подвал или его потомок, и из-за растянутой ссылки
-     * карточки не дождётся. Здесь браузер сам выбирает, кто получит нажатие.
-     */
-    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-    await expect(page).toHaveURL(new RegExp(`/en/classes/${firstClass.slug}$`), {
-      timeout: NAVIGATION_TIMEOUT,
-    });
+    const bookPath = `/en/instructors/${firstClass.instructorSlug}/book?class=${firstClass.slug}`;
+    const footLink = card.locator(`a[href="${bookPath}"]`);
+    const action = firstClass.spotsLeft > 0 ? en.common.actions.book : en.common.actions.joinWaitlist;
+
+    await expect(footLink).toHaveAccessibleName(`${action}: ${firstClass.title}`);
+    await footLink.click();
+    await expect(page).toHaveURL(
+      new RegExp(`/en/instructors/${firstClass.instructorSlug}/book\\?class=${firstClass.slug}$`),
+      { timeout: NAVIGATION_TIMEOUT },
+    );
   });
 
   test('карточка достижима с клавиатуры', async ({ page }) => {
