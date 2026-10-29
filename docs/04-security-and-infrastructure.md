@@ -265,7 +265,7 @@ best practices блокирует мерж, метрики скорости на
 `ContentBlock` для главной нет или она неактивна, `loadFallbackHomeContent()` отдаёт
 контент из кода и пишет предупреждение `[home] content block missing or inactive,
 serving code fallback` (см. `src/server/queries/home.ts`, тест в `home.test.ts`).
-Сборка на пустой базе проходит, но главная показывает контент из кода, а не из CMS,
+CI собирает проект после миграций и `db:seed`. Фоллбэк главной без строки `ContentBlock` работает по коду, но сборкой не проверен. Главная показывает контент из кода, а не из CMS,
 пока строку не заведут в админке.
 
 1. миграции: `npm run db:deploy` (по `DIRECT_DATABASE_URL`, session mode);

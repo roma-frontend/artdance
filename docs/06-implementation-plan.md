@@ -43,8 +43,8 @@
 | D-03 | P0 | Частично, выключено: проверка согласий и запись `Booking.consentVersion` подключены в оба пути брони (`src/server/booking/service.ts`), но правил нет (`bookingConsentRules` пуст), поведение прежнее. Не сделано: тексты `healthWaiver`, `shootingConsent`, `minorParentalConsent` (версия `draft-1`) от юриста (блокер 0.8); галочки в web и mobile; правило возраста для несовершеннолетних. Включать правило без галочек нельзя: бронь станет недоступна | `src/config/consents.ts`, `src/server/booking/consents.ts`, `src/server/booking/service.ts`, `src/app/api/booking/route.ts` |
 | D-04 | P0 | SLA 24 ч и авто-отклонение 48 ч не работают: ключи из `business.ts` не читаются, `Booking.requestExpiresAt` не заполняется; потока заявки нет: бронь занятия сразу `CONFIRMED`, исполнитель не принимает и не отклоняет бронь. Нужно решение владельца, какие брони требуют ответа | `src/config/business.ts`, `src/server/cron/tasks.ts`; нужен 3.10 |
 | D-05 | P0 | Частично: модели `SmsDispatch` и `ReviewQueueEntry`, миграция `20261028120000_sms_budget_review_queue` и бюджет SMS (`checkSmsBudget`, временные лимиты 200 в сутки и 3000 за 30 дней) есть; при исчерпании ставится запись в очередь проверки. SMS-провайдера нет: ветка отправки недостижима, `SmsDispatch` никто не пишет, миграция в репозитории, на базу не применялась (`npm run db:deploy`). Не сделано: лимиты от заказчика; запись `SmsDispatch` при реальной отправке; лимиты по карте и устройству (нет источника данных); провайдер SMS (блокер 0.7) | `src/lib/sms/budget.ts`, `src/lib/sms/send.ts`, `src/config/sms.ts`, `prisma/schema.prisma` |
-| 3.10 | P0 (через D-04) | Код расписания есть: `.github/workflows/booking-cron.yml` вызывает `POST /api/cron/booking` каждые 15 мин. Не закрыто: в GitHub нужны секрет `CRON_SECRET` и переменная `APP_URL` (тот же секрет, что в продакшене), первый прогон не проверен. Vercel Hobby даёт один ежедневный cron, поэтому расписание вне `vercel.json` | `.github/workflows/booking-cron.yml`, `src/app/api/cron/booking/route.ts` |
-| C-07 | P1 | Push не отправляется: `web-push` не установлен, `send.ts` пропускает канал PUSH, `preferredChannel` не вызывается. SMS — заглушка | `src/lib/notifications/send.ts`, `src/lib/notifications/push.ts`, `src/lib/sms/send.ts` |
+| 3.10 | P0 (через D-04) | Код расписания есть: `.github/workflows/booking-cron.yml` вызывает `POST /api/cron/booking` каждые 15 мин. Закрыто 2026-10-29: секрет `CRON_SECRET` и переменная `APP_URL` заданы в GitHub (тот же секрет, что в продакшене), первый прогон прошёл. Vercel Hobby даёт один ежедневный cron, поэтому расписание вне `vercel.json` | `.github/workflows/booking-cron.yml`, `src/app/api/cron/booking/route.ts` |
+| C-07 | P1 | Push отправляется через `web-push` (`notify` → `preferredChannel` → `deliverByPush`) при заданных VAPID-ключах; проверка в production — smoke test. SMS — заглушка | `src/lib/notifications/send.ts`, `src/lib/notifications/push.ts`, `src/lib/sms/send.ts` |
 | C-04 | P1 | `findAbandonedCarts` и `remindAbandonedCart` не вызываются | `src/server/cart/abandonment.ts` |
 | C-05 | P1 | Нет страницы `/account/saved-searches`; задача алертов по `SavedSearch` не написана | `src/app/[locale]/account/`, `src/server/saved-search/service.ts` |
 | C-06 | P1 | `productRecommendations` не вызывается на странице товара | `src/server/recommendations/service.ts`, `src/app/[locale]/shop/[slug]/page.tsx` |
@@ -168,9 +168,9 @@
   БД перенесена в отдельную долгоживущую сессию; затронутые проверки повторены.
   Тест геометрии меню разделён по ширинам без увеличения общего таймаута.
 - Полный GitHub Actions на `e73c0ed` (CI#324, run `40734574704`) прошёл все пять
-  job, включая «Поведение в браузере» (e2e). После `e73c0ed` код не менялся,
-  коммиты после него только docs с `[skip ci]`.
-- Главная читает строку `ContentBlock` из базы. Если строки нет, работает фоллбэк из кода (с предупреждением в логе), сборка на пустой схеме не падает. Контент из CMS заводится в админке: см. `docs/04-security-and-infrastructure.md`, §1.17.
+  job, включая «Поведение в браузере» (e2e). После `e73c0ed` код менялся (`4ca27a2`, `8990182`);
+  этот прогон их не проверял.
+- Главная читает строку `ContentBlock` из базы. Если строки нет, работает фоллбэк из кода (с предупреждением в логе), сборка на пустой схеме не проверена: CI выполняет миграции и `db:seed` до `npm run build`. Контент из CMS заводится в админке: см. `docs/04-security-and-infrastructure.md`, §1.17.
 
 Итог: весь публичный каталог, индексируемый и кешируемый CDN.
 
@@ -303,7 +303,7 @@
 - **Всё из `docs/07-feature-backlog.md` сверх помеченного P0** — кошелёк,
   рефералки, абонементы, рекуррентные оплаты, push, бусты и прочее. Эти
   не входят в пресет MVP; как их продавать (в пресет или отдельным пакетом) — не решено, нужно согласовать с заказчиком.
-  **Состояние на 28.10.2026** (полный список и точки входа — раздел «Не реализовано — начинать отсюда» в начале файла): статусы модулей сверены с кодом и отмечены в `docs/07`: не подключены push (отправка), бусты, корпоративные счета,
+  **Состояние на 28.10.2026** (полный список и точки входа — раздел «Не реализовано — начинать отсюда» в начале файла): статусы модулей сверены с кодом и отмечены в `docs/07`: не подключены бусты, корпоративные счета,
   скидка на первое занятие и онбординг-серия; ответ на отзыв, споры, индекс надёжности и привязка реферала не подключены (вызовов нет), алерты сохранённых поисков не реализованы. Состав пресетов (`src/server/entitlements/catalog.ts`): кошелёк, рефералки,
   абонементы, пакеты, бусты, рекуррентные брони и push входят в пресет PREMIUM;
   рекуррентные брони и push — в FULL. Продавать их в пресете или отдельным пакетом — не решено (см. `docs/07` §8).
@@ -311,7 +311,7 @@
   Цены пакетов в `docs/07` §8 — предложение, не согласованное с заказчиком.
 - **SMS-уведомления** — шлюза нет ни в коде, ни у заказчика
   (`SMS_SENDER_ID` — 2–3 недели на регистрацию). Канал убран из состава
-  FULL/PREMIUM и из `deliveryPhases`; Email работает; Push — подписка и тумблер есть, отправка не подключена (`src/lib/notifications/push.ts`). SMS возвращается
+  FULL/PREMIUM и из `deliveryPhases`; Email работает; Push — подписка и тумблер есть, отправка подключена через `web-push` (`src/lib/notifications/send.ts`, `push.ts`), работает при заданных VAPID-ключах. SMS возвращается
   одной веткой в `src/lib/notifications/send.ts` вместе с провайдером.
 - Доработки после закрытия этапа 6 — по гарантии 30 дней (дефекты) или
   новым соглашением (новая функциональность).
