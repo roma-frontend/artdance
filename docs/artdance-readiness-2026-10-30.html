@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ArtDance — Production readiness 30.10.2026</title>
+<style>
+  body { font-family: "Segoe UI", system-ui, sans-serif; margin: 2em; color: #1a1a2e; line-height: 1.55; max-width: 960px; }
+  h1 { color: #8B1A2B; border-bottom: 3px solid #8B1A2B; padding-bottom: .4em; }
+  h2 { color: #8B1A2B; margin-top: 1.6em; }
+  h3 { color: #2e2e3c; margin-top: 1.1em; }
+  table { border-collapse: collapse; width: 100%; margin: .8em 0 1.4em; font-size: .92em; }
+  th, td { border: 1px solid #c9c2b8; padding: .45em .7em; text-align: left; vertical-align: top; }
+  th { background: #f4ede4; color: #5a3e36; }
+  .done { background: #e8f5e9; }
+  .partial { background: #fff8e1; }
+  .blocked { background: #fdecea; }
+  code { background: #f0ece4; padding: .1em .35em; border-radius: 3px; font-size: .9em; }
+  ul { margin: .4em 0; }
+  .note { font-size: .85em; color: #666; border-left: 3px solid #c9c2b8; padding-left: .8em; margin: 1em 0; }
+</style>
+</head>
+<body>
+
+<h1>ArtDance — Production readiness (обновление от 30.10.2026)</h1>
+<p>Свежая дата. Изменения с 29.10.2026 зафиксированы коммитом <code>01137e8</code> на <code>main</code> (pushed).</p>
+
+<h2>1. P0 задачи: статус с учётом коммита 01137e8</h2>
+
+<table>
+<tr><th>ID</th><th>Статус</th><th>Что изменилось</th></tr>
+<tr class="done"><td>D-01</td><td>✅ Закрыто</td><td>Маскировка контактов: <code>bookingGuardrails</code> + <code>flagBookingContactText</code>; до-оплата partnerName в маскировке на /api/account/bookings/[id] и /account/bookings/[id], после — открыт. Тесты: guardrails.test.ts, route.test.ts</td></tr>
+<tr class="done"><td>D-02</td><td>✅ Закрыто</td><td><code>decideVerificationDocument</code> — документ + бейдж <code>isVerified</code> в одной транзакции через <code>canGoVerified</code>, аудит; вызывается из admin-операций. Тесты: service.test.ts</td></tr>
+<tr class="partial"><td>D-03</td><td>🔶 Механизм локально готов</td><td>Серверная проверка согласий + запись <code>Booking.consentVersion</code> в оба пути брони. Галочки в web (BookingConsentFields) и mobile (getBookingConsents). Правила пусты (<code>bookingConsentRules</code> = {}), тексты draft-1 ждут юриста (блокер 0.8). Включать без утверждённого текста нельзя. Тесты: consents.test.ts, consent-form.test.ts</td></tr>
+<tr class="done"><td>D-04</td><td>✅ Закрыто</td><td>SLA 24ч / авто-отклонение 48ч: <code>requestExpiresAt</code> заполняется, accept/decline/expire + напоминание в cron. Открытая заявка (PENDING + requestExpiresAt) не оплачивается — <code>createBookingPayment</code> отклоняет. Активируется правилом <code>bookingRequestRules</code> (сейчас пусто — решение владельца). Тесты: request.test.ts, requests.test.ts, booking-payment.test.ts, e2e/mvp-gaps.spec.ts</td></tr>
+<tr class="partial"><td>D-05</td><td>🔶 Код локально закрыт, ждёт провайдера</td><td>Модели SmsDispatch/ReviewQueueEntry + бюджет SMS (200/сутки, 3000/30 дней) + запись в очередь проверки работают, тесты зелёные. SMS-провайдера нет: sendSms честно отвечает «не настроено», реальная отправка недостижима. Не сделано: лимиты от заказчика, источник данных по карте/устройству для антифрода, провайдер (блокер 0.7)</td></tr>
+<tr class="done"><td>DS-01</td><td>✅ Закрыто</td><td>Миграция dance_discipline_taxonomy сверена с доменными константами тестом <code>dancesport-parity.test.ts</code>. Применить на базе: <code>npm run db:deploy</code> (CI делает в джобах schema/build)</td></tr>
+<tr class="done"><td>2.10</td><td>✅ Закрыто</td><td>MapView (iframe Google, 0 KB кастомного JS, заглушка без ключа) + StaticMapImage (Google Static Maps через Media, preset mapThumb). i18n-ключи map.* (hy/ru/en), remotePattern maps.googleapis.com. Подключено на странице студии. E2E: e2e/mvp-gaps.spec.ts</td></tr>
+<tr class="done"><td>8.3</td><td>✅ Закрыто</td><td>Джоб lighthouse в .github/workflows/ci.yml (Postgres + миграции + сид + next build + @lhci/cli autorun). upload.target=filesystem в lighthouserc.json (отчёты в lighthouse-ci-reports/, без публичного upload), артефакт при падении. @lhci/cli в devDependencies</td></tr>
+</table>
+
+<p class="note">Итого: P0-блок, который был оценён в 62 часа в отчёте от 29.10, сокращён. Локально закрыты: D-01, D-02, D-04, DS-01, 2.10, 8.3. Осталось D-03 (ждёт текста юриста) и D-05 (ждёт SMS-провайдера и лимитов от заказчика).</p>
+
+<h2>2. Что НЕ закрыто и требует внешнего входа</h2>
+<table>
+<tr><th>Задача</th><th>Что ждёт</th></tr>
+<tr class="blocked"><td>8.4 (основной E2E покупки)</td><td>Ждёт прод-env (0.3) и 5.5 (тестовый эквайринг с банком). Локальные моки и расширенные спеки (mvp-gaps.spec.ts) уже есть</td></tr>
+<tr class="blocked"><td>8.5 (домен/SSL/Upstash/Sentry)</td><td>Ждёт аккаунты заказчика (0.4, 0.5). Код зелёный, fail-fast на неполном env работает</td></tr>
+<tr class="blocked"><td>8.6 (PITR + pg_dump)</td><td>Ждёт прод-БД (0.3)</td></tr>
+<tr class="blocked"><td>8.7 (обучение заказчика)</td><td>По приёмке</td></tr>
+<tr class="blocked"><td>8.8 (приёмка по deliveryPhases)</td><td>По плану</td></tr>
+<tr class="blocked"><td>Д-03 (активация согласий)</td><td>Тексты юриста (0.8) + включение bookingConsentRules</td></tr>
+<tr class="blocked"><td>Д-05 (реальный SMS)</td><td>SMS-провайдер (0.7) + лимиты от заказчика + источник данных для антифрода</td></tr>
+</table>
+
+<h2>3. Что НЕ требуется для 100% MVP по запросу</h2>
+<p>По запросу заказчик исключил: договоры, environment variables и ответы заказчика. Поэтому из списка «нужно для 100%» убраны все пункты, зависящие от этих трёх. Ниже — только то, что остаётся внутри кода и CI.</p>
+
+</body>
+</html>
