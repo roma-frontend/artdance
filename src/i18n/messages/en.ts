@@ -1319,6 +1319,13 @@ const en = {
     statusApproved: 'Decided: the claim was upheld.',
     statusRejected: 'Decided: the claim was rejected.',
   },
+  map: {
+    loading: 'Loading the map…',
+    load: 'Show the map',
+    loadFailed: 'Could not load the map',
+    noKey: 'Map unavailable: set the Maps API key in the project config.',
+    openInMaps: 'Open in Google Maps',
+  },
     push: {
       title: 'Push notifications',
       enable: 'Enable',
@@ -4194,6 +4201,47 @@ const en = {
     categoryLabel: 'Category',
     tagsLabel: 'Tags',
     viewsLabel: '{count, plural, one {# view} other {# views}}',
+  },
+
+  /* ── Telegram bot ────────────────────────────────────────────── */
+  bot: {
+    name: 'ArtDance Bot',
+    tagline: 'Platform control from your phone',
+    welcome:
+      '👋 *Welcome to ArtDance Bot!*\n\n' +
+      'I manage the platform while you are away: CI status, repo info, and a dev assistant that knows the codebase.\n\n' +
+      'Type /help to see all commands.',
+    help: {
+      title: 'ArtDance bot — control from your phone',
+      commands:
+        '**Commands:**\n' +
+        '/help — this help\n' +
+        '/status — latest CI runs (GitHub Actions)\n' +
+        '/repo — repo info\n' +
+        '/ask <question> — ask the dev assistant\n' +
+        '/task <task> — give a task to the bot agent',
+      examples:
+        '**Examples:**\n' +
+        '/ask how does the cart work?\n' +
+        '/task check CI and clean up empty carts',
+      footer: 'Secrets are read from .env.local / Vercel — they never appear in chat.',
+    },
+    status: {
+      title: 'CI runs',
+      empty: 'No CI runs found.',
+    },
+    repo: {
+      title: 'Repo',
+    },
+    ask: {
+      notConfigured: 'ABHIBOTS not configured: set ABHIBOTS_BASE_URL and ABHIBOTS_API_KEY in .env.local / Vercel, then redeploy.',
+      error: 'ask error',
+    },
+    task: {
+      notConfigured: 'ABHIBOTS not configured: set ABHIBOTS_BASE_URL and ABHIBOTS_API_KEY in .env.local / Vercel, then redeploy.',
+      error: 'task error',
+    },
+    generalError: 'error',
   },
 } as const;
 

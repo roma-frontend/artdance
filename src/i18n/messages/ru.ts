@@ -1307,6 +1307,13 @@ const ru: Messages = {
     statusApproved: 'Решение принято: заявка признана обоснованной.',
     statusRejected: 'Решение принято: заявка отклонена.',
   },
+  map: {
+    loading: 'Загрузка карты…',
+    load: 'Показать карту',
+    loadFailed: 'Не удалось загрузить карту',
+    noKey: 'Карта недоступна: настройте ключ Maps API в конфиге проекта.',
+    openInMaps: 'Открыть в Google Maps',
+  },
   push: {
     title: 'Push-уведомления',
     enable: 'Подписаться',
@@ -4080,6 +4087,47 @@ const ru: Messages = {
     categoryLabel: 'Категория',
     tagsLabel: 'Теги',
     viewsLabel: '{count, plural, one {# просмотр} few {# просмотра} many {# просмотров} other {# просмотра}}',
+  },
+
+  /* ── Telegram bot ────────────────────────────────────────────── */
+  bot: {
+    name: 'ArtDance Bot',
+    tagline: 'Управление платформой с телефона',
+    welcome:
+      '👋 *Добро пожаловать в ArtDance Bot!*\n\n' +
+      'Я управляю платформой, пока ты занят: статус CI, инфо о репо и AI-ассистент, который знает код.\n\n' +
+      'Напиши /help, чтобы увидеть все команды.',
+    help: {
+      title: '🕺 ArtDance Bot',
+      commands:
+        '**Команды:**\n' +
+        '/help — эта справка\n' +
+        '/status — последние CI прогоны (GitHub Actions)\n' +
+        '/repo — инфо о репозитории\n' +
+        '/ask <вопрос> — спросить AI-ассистента\n' +
+        '/task <задание> — дать задание боту',
+      examples:
+        '**Примеры:**\n' +
+        '/ask как работает корзина Cart?\n' +
+        '/task проверь CI и удали пустые корзины',
+      footer: '🔒 Секреты берутся из .env.local / Vercel — в чате не светятся.',
+    },
+    status: {
+      title: '📊 CI прогоны',
+      empty: 'Прогоны CI не найдены.',
+    },
+    repo: {
+      title: '📁 Репозиторий',
+    },
+    ask: {
+      notConfigured: '⚠️ ABHIBOTS не настроен: поставь ABHIBOTS_BASE_URL и ABHIBOTS_API_KEY в .env.local / Vercel и redeploy.',
+      error: '❌ Ошибка ask:',
+    },
+    task: {
+      notConfigured: '⚠️ ABHIBOTS не настроен: поставь ABHIBOTS_BASE_URL и ABHIBOTS_API_KEY в .env.local / Vercel и redeploy.',
+      error: '❌ Ошибка task:',
+    },
+    generalError: '❌ Ошибка:',
   },
 };
 

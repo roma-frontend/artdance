@@ -1314,6 +1314,13 @@ const hy: Messages = {
     statusApproved: "Որոշումը կայացված է․ պահանջը ճանաչվել է հիմնավոր։",
     statusRejected: "Որոշումը կայացված է․ պահանջը մերժվել է։",
   },
+  map: {
+    loading: "Քարտեզը բեռնվում է…",
+    load: "Ցույց տալ քարտեզը",
+    loadFailed: "Քարտեզը չի բեռնվել",
+    noKey: "Քարտեզը հասանելի չէ․ նախագծի կոնֆիգուրացիայում սահմանեք Maps API բանալին։",
+    openInMaps: "Բացել Google Maps-ում",
+  },
   push: {
     title: "Push ծանուցումներ",
     enable: "Միացնել",
@@ -4092,6 +4099,47 @@ const hy: Messages = {
     categoryLabel: "Կատեգորիա",
     tagsLabel: "Թեգեր",
     viewsLabel: "{count} դիտում",
+  },
+
+  /* ── Telegram bot ────────────────────────────────────────────── */
+  bot: {
+    name: "ArtDance Bot",
+    tagline: "Կառավարում հարթակից սմարթֆոնից",
+    welcome:
+      "👋 *Բարի գալուտ ArtDance Bot!*\n\n" +
+      "Ես կառավարում եմ հարթակը, քո բացակայության ընթացքում: CI-ի դրվաԳվում էժեքը, ռեփոյի տեղեկությունները և AI-ի օգնականը, որը ճանաչում է կոդը:\n\n" +
+      "Գրեք /help՝ բոլոր հրամանները դիտելու համար:",
+    help: {
+      title: "🕺 ArtDance Bot",
+      commands:
+        "**Հրամաններ:**\n" +
+        "/help — այս փաստատ\n" +
+        "/status — վերջին CI գործընթացները (GitHub Actions)\n" +
+        "/repo — թղթի տեղեկություն\n" +
+        "/ask <հարց> — հարցնել AI օգնականին\n" +
+        "/task <առաջադրանք> — տալ առաջադրանք բոտին",
+      examples:
+        "**Օրինակներ:**\n" +
+        "/ask ինչպես է աշխատում բազարը Cart?\n" +
+        "/task ստուգիր CI-ը և մաքրի դատարկ բազարները",
+      footer: "🔒 Գաղտնիքները վերցվում են .env.local / Vercel-ից — խոսափոխության մեջ չեն երևում։",
+    },
+    status: {
+      title: "📊 CI գործընթացներ",
+      empty: "CI գործընթացներ չեն հաճախվել։",
+    },
+    repo: {
+      title: "📁 Տվյալների բազա",
+    },
+    ask: {
+      notConfigured: "⚠️ ABHIBOTS-ը չի կարգավորվել: Տեղադրեք ABHIBOTS_BASE_URL և ABHIBOTS_API_KEY .env.local / Vercel-ում և redeploy-եք։",
+      error: "❌ ask սխալ:",
+    },
+    task: {
+      notConfigured: "⚠️ ABHIBOTS-ը չի կարգավորվել: Տեղադրեք ABHIBOTS_BASE_URL և ABHIBOTS_API_KEY .env.local / Vercel-ում և redeploy-եք։",
+      error: "❌ task սխալ:",
+    },
+    generalError: "❌ Սխալ:",
   },
 };
 

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 
 import { getServerEnv } from '@/config/env';
+import { translateForSnapshot } from '@/i18n/snapshot';
 import { handleTelegramCommand } from '@/server/bot/handler';
-import { tgIsAllowed, tgSendMessage } from '@/server/bot/telegram';
+import { tgIsAllowed, tgSendMessage, tgSetMyCommands } from '@/server/bot/telegram';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -54,19 +55,41 @@ export async function POST(request: Request): Promise<NextResponse> {
     return json({ ok: true });
   }
 
-  // отвечаем быстро: Telegram ждёт 200, а работу делаем и шлём follow-up сообщением
-  // для простоты делаем синхронно, но с таймаутом Vercel (10s) — CodeCraft обычно укладывается
+  const lower = text.trim().toLowerCase();
+
+  // /start — первая встреча: welcome + устанавливаем меню команд (идемпотентно, ок повторно)
+  if (lower === '/start' || lower === 'start') {
+    try {
+      await tgSetMyCommands(token);
+    } catch {
+      // non-fatal: бот всё ещё отвечает текстом
+    }
+    try {
+      const welcome = translateForSnapshot('ru', 'bot.welcome');
+      await tgSendMessage(token, String(chatId), welcome, { parseMode: 'Markdown' });
+      return json({ ok: true });
+    } catch (e) {
+      return json({ ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+  }
+
+  // help / status / repo / ask / task / plain text
   let reply: string;
   try {
     reply = await handleTelegramCommand(text);
   } catch (e) {
-    reply = `error: ${e instanceof Error ? e.message : String(e)}`.slice(0, 3800);
+    reply = `❌ Ошибка: ${e instanceof Error ? e.message : String(e)}`.slice(0, 3800);
   }
 
   try {
-    await tgSendMessage(token, String(chatId), reply);
-  } catch (e) {
-    return json({ ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
+    await tgSendMessage(token, String(chatId), reply, { parseMode: 'Markdown' });
+  } catch {
+    // Markdown может упасть на спецсимволах — шлём plain как fallback
+    try {
+      await tgSendMessage(token, String(chatId), reply, { parseMode: undefined });
+    } catch (e) {
+      return json({ ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
+    }
   }
 
   return json({ ok: true });

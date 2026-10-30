@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Фон: скруглённый квадрат, бордовый градиент ArtDance -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7A1B26"/>
+      <stop offset="100%" stop-color="#4A0E14"/>
+    </linearGradient>
+    <linearGradient id="figure" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E8D5D0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Фон -->
+  <rect x="0" y="0" width="512" height="512" rx="96" fill="url(#bg)"/>
+
+  <!-- Декоративные дуги-ритм -->
+  <circle cx="256" cy="256" r="190" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  <circle cx="256" cy="256" r="160" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="2"/>
+
+  <!-- Стилизованный силуэт танцора -->
+  <!-- Голова -->
+  <circle cx="256" cy="155" r="38" fill="url(#figure)"/>
+  <!-- Тело -->
+  <rect x="236" y="195" width="40" height="100" rx="20" fill="url(#figure)"/>
+  <!-- Левая рука — высоко, изгиб -->
+  <path d="M240 210 Q180 160 150 100" stroke="url(#figure)" stroke-width="28" stroke-linecap="round" fill="none"/>
+  <!-- Правая рука — в сторону -->
+  <path d="M272 210 Q350 230 400 190" stroke="url(#figure)" stroke-width="28" stroke-linecap="round" fill="none"/>
+  <!-- Левая нога -->
+  <path d="M240 295 Q200 380 170 420" stroke="url(#figure)" stroke-width="32" stroke-linecap="round" fill="none"/>
+  <!-- Правая нога -->
+  <path d="M272 295 Q340 360 390 400" stroke="url(#figure)" stroke-width="32" stroke-linecap="round" fill="none"/>
+
+  <!-- Имя под фигурой -->
+  <text x="256" y="470" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif"
+        font-size="28" font-weight="700" fill="rgba(255,255,255,0.85)">
+    ArtDance
+  </text>
+</svg>
