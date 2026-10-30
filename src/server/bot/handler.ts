@@ -86,6 +86,29 @@ export async function handleTelegramCommand(textRaw: string): Promise<string> {
     }
   }
 
+  // Авто-роутинг: если в сообщении про CI/GitHub/репо — не отправляем в AI, а вызываем GitHub API
+  const hasCiKeywords = /\b(ci|прогон|github actions|пайплайн)\b/i.test(lower);
+  const hasRepoKeywords = /\b(репо|репозитори|repo|github|gh)\b/i.test(lower);
+  if (hasCiKeywords || hasRepoKeywords) {
+    const [owner, repo] = repoFromEnv().split('/') as [string, string];
+    const parts: string[] = [];
+    if (hasRepoKeywords) {
+      try {
+        parts.push(formatRepo(await ghRepoInfo(owner, repo)));
+      } catch (e) {
+        parts.push(`${translateForSnapshot(LOCALE, 'bot.generalError')} (repo): ${e instanceof Error ? e.message : String(e)}`.slice(0, 500));
+      }
+    }
+    if (hasCiKeywords) {
+      try {
+        parts.push(formatStatus(await ghListRuns(owner, repo, 5)));
+      } catch (e) {
+        parts.push(`${translateForSnapshot(LOCALE, 'bot.generalError')} (CI): ${e instanceof Error ? e.message : String(e)}`.slice(0, 500));
+      }
+    }
+    return parts.join('\n\n') || 'GitHub недоступен.';
+  }
+
   // ask / task / plain text → ABHIBOTS
   let prompt = text;
   let isTask = false;
@@ -102,7 +125,7 @@ export async function handleTelegramCommand(textRaw: string): Promise<string> {
   if (isTask) {
     system =
       'Ты — агент разработки ArtDance. Пользователь дал задание с телефона через Telegram-бота. ' +
-      'Сформируй план выполнения: какие ��айлы править, какие команды запустить (typecheck/lint/test), как проверить. ' +
+      'Сформируй план выполнения: какие файлы править, какие команды запустить (typecheck/lint/test), как проверить. ' +
       'Отвечай на языке пользователя, кратко, без лишней воды. Если задание требует git/push — укажи что бот сделает пуш в main после проверок.';
   } else {
     system =
