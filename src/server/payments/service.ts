@@ -151,6 +151,7 @@ export async function createBookingPayment(input: CreateBookingPaymentInput): Pr
       status: true,
       totalPrice: true,
       subject: true,
+      requestExpiresAt: true,
       customer: { select: { email: true, phone: true, name: true } },
       payments: { where: { status: { in: ['AUTHORIZED', 'PAID', 'PARTIALLY_REFUNDED'] } }, select: { id: true }, take: 1 },
     },
@@ -158,6 +159,8 @@ export async function createBookingPayment(input: CreateBookingPaymentInput): Pr
   if (!booking) throw domainErrors.notFound();
   if (booking.customerId !== input.userId) throw domainErrors.forbidden();
   if (booking.status !== 'PENDING' && booking.status !== 'CONFIRMED') throw domainErrors.validationFailed('status');
+  /* D-04: заявка ждёт ответа инструктора — оплату не пропускаем, пока её не решили. */
+  if (booking.status === 'PENDING' && booking.requestExpiresAt !== null) throw domainErrors.bookingRequestNotPending();
   if (booking.payments.length > 0) throw domainErrors.validationFailed('status');
 
   const amount = booking.totalPrice;

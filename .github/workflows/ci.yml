@@ -189,6 +189,55 @@ jobs:
           path: .next/trace
           retention-days: 3
 
+  # Lighthouse CI (2.10/8.3): a11y и SEO — блокирующие пороги, performance —
+  # только предупреждение (шумные на CI-раннере, см. комментарий lighthouserc.json).
+  # Отчёты остаются приватными: без публичного upload (решение по публикации —
+  # за владельцем), только артефакт при падении. На пуше в main джоб обязателен,
+  # на PR — предостерегающий, чтобы не заслонять другие проверки при первом прогоне.
+  lighthouse:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [consistency]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: artdance
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d artdance"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit
+      - run: npx prisma generate
+      - run: npx prisma migrate deploy
+      - run: npm run db:seed
+      - run: npm run build
+      # LHCI: collect и assert локально, отчёты — в lighthouse-ci-reports/ (upload.target=filesystem
+      # в lighthouserc.json), в сеть не уходят. Пороги, URL и server command — из конфига.
+      - name: Lighthouse-сборка и пороги
+        run: npx @lhci/cli autorun --config=lighthouserc.json
+      - name: Артефакт при падении
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: |
+            lighthouse-ci-reports/
+            .lighthouse-ci/
+          retention-days: 5
+
   # Поведение в настоящем браузере: ловушка фокуса, Esc, порядок слоёв,
   # раскладка на трёх ширинах. Unit-тесты на эти свойства ответить не могут,
   # а проверять их глазами на каждом изменении — значит однажды не проверить.

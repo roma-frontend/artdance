@@ -27,6 +27,7 @@ const pendingBooking = {
   totalPrice: 17_000,
   subject: 'CLASS_SESSION',
   customer: { email: 'a@example.com', phone: null, name: 'Anna' },
+  requestExpiresAt: null,
   payments: [] as { id: string }[],
 };
 
@@ -69,6 +70,16 @@ describe('createBookingPayment', () => {
   it('refuses to pay a booking that already has a settled payment', async () => {
     mocks.db.booking.findUnique.mockResolvedValue({ ...pendingBooking, status: 'CONFIRMED', payments: [{ id: 'payment-0' }] });
     await expect(createBookingPayment(input)).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    expect(mocks.provider.createPayment).not.toHaveBeenCalled();
+  });
+
+  it('refuses to pay an open instructor request (D-04)', async () => {
+    mocks.db.booking.findUnique.mockResolvedValue({
+      ...pendingBooking,
+      requestExpiresAt: new Date('2026-10-03T08:00:00Z'),
+    });
+    await expect(createBookingPayment(input)).rejects.toMatchObject({ code: 'VALIDATION_FAILED' });
+    expect(mocks.db.payment.create).not.toHaveBeenCalled();
     expect(mocks.provider.createPayment).not.toHaveBeenCalled();
   });
 

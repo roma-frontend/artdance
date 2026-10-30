@@ -129,6 +129,17 @@ export const imagePresets = {
     quality: imageQuality.thumbnail,
     priority: false,
   },
+  /*
+   * 2.10: статическая картинка карты (Google Static Maps) в карточке площадки.
+   * Широкоформатный кадр — как в листинге, где интерактив не нужен, а Maps SDK
+   * (docs/10 §4) стоил бы секунду и деньги.
+   */
+  mapThumb: {
+    aspectRatio: raw.aspectRatio.landscape,
+    sizes: `(max-width: ${raw.breakpoint.md}px) 100vw, 480px`,
+    quality: imageQuality.standard,
+    priority: false,
+  },
 } as const;
 
 export type ImagePresetKey = keyof typeof imagePresets;

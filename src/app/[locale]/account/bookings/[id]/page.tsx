@@ -11,6 +11,7 @@ import { DisputeOpenForm } from '@/components/booking/dispute-open-form';
 import { RescheduleBookingButton } from '@/components/booking/reschedule-booking-button';
 import { routes, site } from '@/config';
 import { disputeOpenable } from '@/domain/dispute';
+import { bookingGuardrails } from '@/domain/booking/policy';
 import { bookingStatuses, type BookingStatus } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
 import { Link, redirect } from '@/i18n/routing';
@@ -44,6 +45,7 @@ export default async function AccountBookingPage({ params }: PageProps) {
       id: true, reference: true, status: true, startsAt: true, endsAt: true, totalPrice: true, basePrice: true, travelFee: true,
       createdAt: true, cancelledAt: true, cancellationReason: true, rescheduleCount: true, maxReschedules: true,
       customerId: true, instructorId: true, lessonType: true, participants: true, partnerName: true, sessionId: true,
+      payments: { where: { status: { in: ['AUTHORIZED', 'PAID', 'PARTIALLY_REFUNDED'] } }, select: { id: true }, take: 1 },
       instructor: { select: { slug: true, user: { select: { name: true } } } },
       venue: { select: { name: true, slug: true } },
       session: { select: { danceClass: { select: { title: true, slug: true } } } },
@@ -55,6 +57,7 @@ export default async function AccountBookingPage({ params }: PageProps) {
       id: true, reference: true, status: true, startsAt: true, endsAt: true, totalPrice: true, basePrice: true, travelFee: true,
       createdAt: true, cancelledAt: true, cancellationReason: true, rescheduleCount: true, maxReschedules: true,
       customerId: true, instructorId: true, lessonType: true, participants: true, partnerName: true, sessionId: true,
+      payments: { where: { status: { in: ['AUTHORIZED', 'PAID', 'PARTIALLY_REFUNDED'] } }, select: { id: true }, take: 1 },
       instructor: { select: { slug: true, user: { select: { name: true } } } },
       venue: { select: { name: true, slug: true } },
       session: { select: { danceClass: { select: { title: true, slug: true } } } },
@@ -64,6 +67,13 @@ export default async function AccountBookingPage({ params }: PageProps) {
   const isOwner = booking.customerId === caller.id;
   const isStaff = caller.role === 'ADMIN' || caller.role === 'SUPPORT';
   if (!isOwner && !isStaff) notFound();
+
+  const displayPartnerName = isStaff
+    ? booking.partnerName
+    : bookingGuardrails({
+        paid: booking.payments.length > 0,
+        text: { partnerName: booking.partnerName },
+      }).display.partnerName;
 
   const t = await getTranslations({ locale: locale as Locale, namespace: 'account' });
   const tBooking = await getTranslations({ locale: locale as Locale, namespace: 'booking' });
@@ -117,7 +127,7 @@ export default async function AccountBookingPage({ params }: PageProps) {
               {booking.lessonType === 'PAIR' && (
                 <div className="px-3 py-2.5 sm:px-4">
                   <dt className="text-caption text-content-tertiary">{tBooking('partnerName')}</dt>
-                  <dd className="text-body-sm">{booking.partnerName}</dd>
+                  <dd className="text-body-sm">{displayPartnerName}</dd>
                   <p className="text-caption text-content-secondary">{tBooking('pairHint')}</p>
                 </div>
               )}

@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 
 import { cacheControl } from '@/config/cache';
+import { bookingGuardrails } from '@/domain/booking/policy';
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
 
@@ -59,6 +60,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     select: { moderation: true },
   });
 
+  const contactDisplay = bookingGuardrails({
+    paid: row.payments.length > 0,
+    text: { partnerName: row.partnerName },
+  });
   const booking = {
     id: row.id,
     reference: row.reference,
@@ -71,7 +76,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     currencyCode: row.currencyCode,
     paid: row.payments.length > 0,
     lessonType: row.lessonType,
-    partnerName: row.partnerName,
+    partnerName: contactDisplay.display.partnerName,
     venueName: row.venue?.name ?? row.event?.venue?.name ?? row.event?.locationName ?? null,
     cancelledAt: row.cancelledAt?.toISOString() ?? null,
     cancellationReason: row.cancellationReason,

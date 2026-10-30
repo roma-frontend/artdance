@@ -63,6 +63,8 @@ const nextConfig: NextConfig = {
       const patterns: Array<{ protocol: 'https'; hostname: string }> = [
         { protocol: 'https', hostname: '*.r2.dev' },
         { protocol: 'https', hostname: '*.r2.cloudflarestorage.com' },
+        /* Static Maps (2.10): статическая картинка карты через next/image. */
+        { protocol: 'https', hostname: 'maps.googleapis.com' },
       ];
       // mediaBaseUrl читается на этапе загрузки next.config — в Vercel он уже
       // доступен, но для локальной разработки без CDN wildcard-ов достаточно.

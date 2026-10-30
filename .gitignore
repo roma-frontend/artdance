@@ -20,6 +20,8 @@ src/generated/
 playwright-report/
 test-results/
 .vitest/
+.lighthouse-ci/
+lighthouse-ci-reports/
 
 # Инструменты / локальные кэши (не попадают в CI)
 .kilo/

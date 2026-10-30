@@ -117,6 +117,9 @@ export const presetBudget: Record<ImagePresetKey, MediaBudgetGroup> = {
   avatar: 'thumbnail',
   avatarLarge: 'thumbnail',
   thumbnail: 'thumbnail',
+  /* 2.10: статическая картинка карты Google (удалённый URL) — в группы сид-бюджета
+   * не входит, по размеру идёт как «карточка». */
+  mapThumb: 'card',
 };
 
 /** Форматы, в которых пайплайн пишет производные: AVIF и WebP, для аватара ещё JPEG. */

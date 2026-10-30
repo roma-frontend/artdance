@@ -27,6 +27,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 import { ClassCard } from '@/components/catalog/class-card';
 import { EventCard } from '@/components/catalog/event-card';
+import { MapView } from '@/components/media/map-view';
 import { CardTilt } from '@/components/fx/card-tilt';
 import { PageHero, breadcrumbsFromTrail } from '@/components/layout/page-hero';
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -214,6 +215,18 @@ export default async function StudioDetailPage({ params }: PageProps) {
                   {' · '}
                   {site.address.city}
                 </p>
+
+                {/*
+                 * 2.10: интерактивная карта — без ключа `NEXT_PUBLIC_MAPS_API_KEY`
+                 * рендерится заглушка с тем же адресом и ссылкой, без битой вёрстки.
+                 */}
+                <div className="mt-4">
+                  <MapView
+                    latitude={item.latitude}
+                    longitude={item.longitude}
+                    label={item.name}
+                  />
+                </div>
 
                 <a
                   href={directionsUrl(item.latitude, item.longitude)}
