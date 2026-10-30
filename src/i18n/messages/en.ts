@@ -4218,8 +4218,8 @@ const en = {
         '/help — this help\n' +
         '/status — latest CI runs (GitHub Actions)\n' +
         '/repo — repo info\n' +
-        '/ask <question> — ask the dev assistant\n' +
-        '/task <task> — give a task to the bot agent',
+        '/ask [question] — ask the dev assistant\n' +
+        '/task [task] — give a task to the bot agent',
       examples:
         '**Examples:**\n' +
         '/ask how does the cart work?\n' +

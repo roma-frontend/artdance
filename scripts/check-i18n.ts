@@ -128,6 +128,7 @@ for (const locale of locales) {
 /** Ключи, где совпадение с английским — норма (бренд, техтермины, форматы). */
 const ALLOWED_IDENTICAL = [
   /^brand\.name$/,
+  /^bot\.name$/,
   /^danceStyles\.(heels|kpop)$/,
   /^checkout\.payment\.method(Arca|Idram|Telcell|Qr)$/,
   /^checkout\.trust\.arcaVerified$/,
