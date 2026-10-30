@@ -12,40 +12,57 @@ export interface AbhibotsCallOptions {
   maxTokens?: number;
 }
 
+/**
+ * ABHIBOTS (opus.abhibots.com) — прокси к Anthropic.
+ * Эндпоинт: POST {base}/messages, базовый URL = .../v1
+ * Аутентификация: x-api-key + anthropic-version (не Bearer).
+ */
 export async function abhibotsChat(opts: AbhibotsCallOptions): Promise<string> {
   const env = getServerEnv();
   const base = (env.ABHIBOTS_BASE_URL ?? '').replace(/\/$/, '');
   const key = env.ABHIBOTS_API_KEY;
-  const model = env.ABHIBOTS_MODEL ?? 'gpt-5.5';
+  const model = env.ABHIBOTS_MODEL ?? 'claude-opus-5-5';
   if (!base || !key) throw new Error('ABHIBOTS not configured: ABHIBOTS_BASE_URL / ABHIBOTS_API_KEY missing');
 
-  const url = `${base}/chat/completions`;
-  const headers: Record<string, string> = {
-    'content-type': 'application/json',
-    accept: 'application/json',
-    authorization: `Bearer ${key}`,
+  // Сепаруем system-сообщения от user/assistant (Anthropic API требует отдельного system-поля)
+  const systemMsg = opts.messages.find((m) => m.role === 'system');
+  const nonSystem = opts.messages.filter((m) => m.role !== 'system');
+
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: opts.maxTokens ?? 1600,
+    messages: nonSystem,
   };
-  const res = await fetch(url, {
+  if (systemMsg?.content) body.system = systemMsg.content;
+
+  const res = await fetch(`${base}/messages`, {
     method: 'POST',
-    headers,
-    body: JSON.stringify({
-      model,
-      messages: opts.messages,
-      max_tokens: opts.maxTokens ?? 1600,
-      temperature: 0.2,
-    }),
+    headers: {
+      'content-type': 'application/json',
+      accept: 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify(body),
   });
+
   const text = await res.text();
   if (!res.ok) throw new Error(`abhibots ${res.status}: ${text.slice(0, 900)}`);
+
   let j: unknown;
   try {
     j = JSON.parse(text) as unknown;
   } catch {
     throw new Error(`abhibots invalid json: ${text.slice(0, 900)}`);
   }
-  const choice = (j as { choices?: Array<{ message?: { content?: string } }> })?.choices?.[0]?.message?.content;
-  if (typeof choice === 'string' && choice.trim()) return choice;
-  const alt = (j as Record<string, unknown>).output ?? (j as Record<string, unknown>).text;
+
+  // Anthropic: content — массив блоков { type: 'text', text: '...' }
+  const raw = j as { content?: Array<{ type?: string; text?: string }> };
+  const textBlock = raw.content?.find((b) => b.type === 'text');
+  if (typeof textBlock?.text === 'string' && textBlock.text.trim()) return textBlock.text;
+
+  // Fallback: plain string content
+  const alt = (j as Record<string, unknown>).text;
   if (typeof alt === 'string') return alt;
   return JSON.stringify(j).slice(0, 4000);
 }
