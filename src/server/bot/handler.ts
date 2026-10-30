@@ -87,8 +87,9 @@ export async function handleTelegramCommand(textRaw: string): Promise<string> {
   }
 
   // Авто-роутинг: если в сообщении про CI/GitHub/репо — не отправляем в AI, а вызываем GitHub API
+  // (без завершающего \b — русские падежи: «репозиторию», «репозитория», «репозитории»)
   const hasCiKeywords = /\b(ci|прогон|github actions|пайплайн)\b/i.test(lower);
-  const hasRepoKeywords = /\b(репо|репозитори|repo|github|gh)\b/i.test(lower);
+  const hasRepoKeywords = /(^|\s|\/)(репо|репозитори|repo|github|gh)/i.test(lower);
   if (hasCiKeywords || hasRepoKeywords) {
     const [owner, repo] = repoFromEnv().split('/') as [string, string];
     const parts: string[] = [];
