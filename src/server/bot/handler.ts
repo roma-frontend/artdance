@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { getServerEnv } from '@/config/env';
-import { codecraftChat } from './codecraft';
+import { abhibotsChat } from './abhibots';
 import { ghListRuns, ghRepoInfo } from './github';
 
 const DEFAULT_REPO = 'roma-frontend/artdance';
@@ -19,8 +19,8 @@ function helpText(): string {
     '  /help — эта справка',
     '  /status — последние CI прогоны (GitHub Actions)',
     '  /repo — инфо о репозитории',
-    '  ask <вопрос> — спросить CodeCraft (как в чате)',
-    '  task <задание> — дать задание боту (через CodeCraft, как ты со мной)',
+    '  ask <вопрос> — спросить ABHIBOTS (как в чате)',
+    '  task <задание> — дать задание боту (через ABHIBOTS, как ты со мной)',
     '',
     'Примеры:',
     '  ask как работает корзина Cart?',
@@ -55,7 +55,7 @@ export async function handleTelegramCommand(textRaw: string): Promise<string> {
     }
   }
 
-  // ask / task / plain text → CodeCraft
+  // ask / task / plain text → ABHIBOTS
   let prompt = text;
   let system = 'Ты — помощник разработчика ArtDance (Next.js, Prisma, Vercel). Отвечай кратко, по делу, на языке пользователя. Если просят сделать задачу — предложи план и команды.';
   if (/^(ask\s+)/i.test(text)) {
@@ -68,14 +68,14 @@ export async function handleTelegramCommand(textRaw: string): Promise<string> {
       'Отвечай на языке пользователя, кратко, без лишней воды. Если задание требует git/push — укажи что бот сделает пуш в main после проверок.';
   }
 
-  // Guard: если CodeCraft не настроен — честно сказать
+  // Guard: если ABHIBOTS не настроен — честно сказать
   const env = getServerEnv();
-  if (!env.CODECRAFT_BASE_URL || !env.CODECRAFT_API_KEY) {
-    return 'CodeCraft не настроен: поставь CODECRAFT_BASE_URL и CODECRAFT_API_KEY в .env.local / Vercel и redeploy.';
+  if (!env.ABHIBOTS_BASE_URL || !env.ABHIBOTS_API_KEY) {
+    return 'ABHIBOTS не настроен: поставь ABHIBOTS_BASE_URL и ABHIBOTS_API_KEY в .env.local / Vercel и redeploy.';
   }
 
   try {
-    const answer = await codecraftChat({
+    const answer = await abhibotsChat({
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: prompt },
@@ -85,11 +85,11 @@ export async function handleTelegramCommand(textRaw: string): Promise<string> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg.includes('403') || msg.includes('Just a moment') || msg.includes('challenges.cloudflare')) {
-      return 'CodeCraft защищён Cloudflare (Vercel IP под челленджем). Пробую снова — если повторится, напиши провайдеру codecraftapi чтобы вынести Vercel 216.198.79.67 из Turnstile, либо дай прямой base URL без Cloudflare.';
+      return 'ABHIBOTS защищён Cloudflare. Попробуй позже или проверь base URL в ABHIBOTS_BASE_URL.';
     }
-    if (msg.includes('503') || msg.includes('service_upgrading') || msg.includes('maintenance')) {
-      return 'CodeCraft на техобслуживании (503 service_upgrading). Попробуй через пару минут — /status и /repo уже работают.';
+    if (msg.includes('503') || msg.includes('maintenance')) {
+      return 'ABHIBOTS на техобслуживании (503). Попробуй через пару минут — /status и /repo уже работают.';
     }
-    return `codecraft error: ${msg.slice(0, 800)}`;
+    return `abhibots error: ${msg.slice(0, 800)}`;
   }
 }

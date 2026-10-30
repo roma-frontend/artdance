@@ -217,15 +217,14 @@ const serverSchema = z.object({
   MAPS_SERVER_API_KEY: optionalString,
   EXCHANGE_RATE_API_URL: optionalUrl,
 
-  /* Bot — управление с телефона (Telegram + CodeCraft + GitHub). Всё optional: без токенов бот просто не активен. */
+  /* Bot — управление с телефона (Telegram + ABHIBOTS + GitHub). Всё optional: без токенов бот просто не активен. */
   TELEGRAM_BOT_TOKEN: optionalString,
   TELEGRAM_CHAT_ID: optionalString,
   TELEGRAM_WEBHOOK_SECRET: optionalString,
   GITHUB_TOKEN: optionalString,
-  CODECRAFT_BASE_URL: optionalUrl,
-  CODECRAFT_API_KEY: optionalString,
-  CODECRAFT_MODEL: optionalString,
-  CODECRAFT_PROVIDER: optionalString,
+  ABHIBOTS_BASE_URL: optionalUrl,
+  ABHIBOTS_API_KEY: optionalString,
+  ABHIBOTS_MODEL: optionalString,
 
   /* Ссылки из писем открываются в приложении. Без значений файлы .well-known не отдаются (404). */
   APPLE_APP_ID: optionalString, // "<TeamID>.am.artdance.app"
