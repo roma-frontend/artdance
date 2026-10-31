@@ -230,8 +230,8 @@
 
       <tr class="group"><td colspan="4">Бронирование и оплата</td></tr>
       <tr><td>Доступность, создание, отмена, перенос</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
-      <tr><td>Лист ожидания</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">В ветке full/closeout. Место предлагается при любой отмене, отказе и истечении брони; страница «Занять место»</td></tr>
-      <tr><td>Массовая отмена броней (админка)</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">В PR #2. Через согласование; деньги — отдельной операцией</td></tr>
+      <tr><td>Лист ожидания</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">В ветке full/closeout. Место предлагается при любой отмене, отказе и истечении брони. E2E: вход клиента, кнопка «Занять место», переход на подтверждение брони. По ходу найден и исправлен баг удержания (ограничение SlotHold)</td></tr>
+      <tr><td>Массовая отмена броней (админка)</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">В PR #2. E2E: админ отправляет выбранную бронь на согласование, заявка создаётся. Одобрение вторым админом не проверено. Деньги — отдельной операцией</td></tr>
       <tr><td>Подтверждение брони исполнителем (SLA 24 ч, авто-отказ 48 ч)</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Механизм готов; правило пусто, решение владельца (D-04)</td></tr>
       <tr><td>Согласия при брони</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Правила выключены, тексты у юриста (D-03)</td></tr>
       <tr><td>Онлайн-оплата занятий</td><td>MVP</td><td><span class="pill dec">Решено</span></td><td class="muted">Оплата на месте, решение 31.10; онлайн — после эквайринга</td></tr>
@@ -250,15 +250,15 @@
       <tr><td>Отзывы, избранное, ответ инструктора на отзыв</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">Ответ подключён (D-06)</td></tr>
       <tr><td>Напоминание о брошенной корзине</td><td>FULL</td><td><span class="pill part">Частично</span></td><td class="muted">Восстановление работает; SMS-звена нет</td></tr>
       <tr><td>Способы оплаты в кабинете</td><td>PREMIUM</td><td><span class="pill no">Нет</span></td><td class="muted">Страницы /account/payment-methods нет (A-12)</td></tr>
-      <tr><td>Push-уведомления</td><td>FULL</td><td><span class="pill part">Частично</span></td><td class="muted">VAPID-ключи в .env.local заданы. Отправка реального push не проверялась: нужна подписка браузера</td></tr>
+      <tr><td>Push-уведомления</td><td>FULL</td><td><span class="pill part">Частично</span></td><td class="muted">VAPID-ключи в .env.local заданы. В headless Chromium подписка не создаётся (permission denied), реальная отправка не проверена: нужен браузер или телефон</td></tr>
       <tr><td>SMS</td><td>—</td><td><span class="pill out">Вне пакетов</span></td><td class="muted">Шлюза нет (0.7)</td></tr>
 
       <tr class="group"><td colspan="4">Платформа и запуск</td></tr>
       <tr><td>Офлайн-PWA: манифест, заглушка /offline, service worker</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">В PR #2. Проверено в Chromium: воркер активен, заглушка кешируется, при выключенной сети открывается «Offline»</td></tr>
       <tr><td>Языки hy, ru, en</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">hy ждёт вычитки носителем (8.1)</td></tr>
       <tr><td>Безопасность: CSP, rate limit, аудит</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">WAF — настройка хостинга, не проверено</td></tr>
-      <tr><td>Lighthouse CI</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">SEO-фикс (is-crawlable) в PR #3 и в PR #4. CLS /en на CI 0.117 при пороге 0.1: виновник — hero-depth, на main не воспроизводился; регистрация service worker перенесена после загрузки, результат ждёт прогона CI</td></tr>
-      <tr><td>E2E (Playwright), ключевые наборы</td><td>MVP</td><td><span class="pill ok">Прошли</span></td><td class="muted">На локальной БД artdance_e2e после миграций и сида: 156 прошли, 66 пропущены, падений нет. QA 375 / 768 / 1440 px — в составе наборов layout-integrity</td></tr>
+      <tr><td>Lighthouse CI</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">SEO-фикс (is-crawlable) в PR #3 и PR #4: SEO 1. CLS /en на CI 0.117 при пороге 0.1. Причина: подмена шрифта Playfair (font-display: swap) после первого экрана. Исправлено на optional (0bf952d): при замедлении CPU 0.109 → 0.001–0.011. Результат CI по последнему коммиту ещё не пришёл, Autofix следит</td></tr>
+      <tr><td>E2E (Playwright), все 36 наборов</td><td>MVP</td><td><span class="pill ok">Прошли</span></td><td class="muted">На локальной БД artdance_e2e после миграций и сида. Наборы 1–9: 156 прошли, 66 пропущены. Наборы 10–36: 763 прошли, 190 пропущены, 4 упали из-за параллельной нагрузки; перепроверены, прошли. Новые: waitlist-claim и admin-bulk-cancel прошли. QA 375 / 768 / 1440 px — в составе layout-integrity</td></tr>
     </tbody>
   </table>
 </section>
@@ -332,11 +332,10 @@
     <thead><tr><th style="width:34%">Что</th><th>Почему не проверено и как проверить</th></tr></thead>
     <tbody>
       <tr><td>Установка на домашний экран</td><td>Офлайн-заглушка проверена в Chromium, а сценарий «установить приложение» требует интерактивного запроса браузера. Проверить руками на телефоне</td></tr>
-      <tr><td>Массовая отмена: интерфейс и исполнитель</td><td>Автотест покрывает разбор заявки и одиночную отмену, но не исполнитель в <code>people.ts</code> и не таблицу выбора</td></tr>
-      <tr><td>Лист ожидания: страница «Занять место» и письмо</td><td>Автотесты покрывают предложение места и окно удержания. Страница и ссылка из письма — в браузере</td></tr>
+      <tr><td>Массовая отмена: одобрение и исполнение</td><td>E2E проверяет выбор брони и отправку на согласование. Одобрение вторым админом и исполнитель в <code>people.ts</code> не проверены: нужен второй администратор с правом <code>settings.edit</code></td></tr>
+      <tr><td>Лист ожидания: ссылка из письма</td><td>Страница и кнопка проверены e2e. Ссылку из реального письма не проверяли: почтовый провайдер в тестовом окружении не настроен</td></tr>
       <tr><td>Подборка «Для тебя»</td><td>Проверить на стенде с анкетой и опубликованными занятиями выбранного стиля</td></tr>
-      <tr><td>E2E: полный прогон всех наборов</td><td>Запущены 9 из 36 наборов (mvp-gaps, auth, seo, open-graph, layout-integrity, dance-experience, hydration, static-rendering, admin-panels). Остальные 27 — на следующем прогоне</td></tr>
-      <tr><td>Страница «Занять место» с реальной сессией</td><td>Анонимный переход уводит на вход с <code>redirectTo</code> (проверено). Выдача удержания и переход на подтверждение брони — с тестовым пользователем</td></tr>
+      <tr><td>Подборка «Для тебя» на реальных анкетах</td><td>Проверено юнит-тестами. На стенде с анкетами и опубликованными занятиями не проверяли</td></tr>
       <tr><td>WAF</td><td>Настраивается на уровне хостинга, в коде не проверяется</td></tr>
     </tbody>
   </table>
