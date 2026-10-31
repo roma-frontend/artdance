@@ -12,6 +12,7 @@ import { isLateCancellation } from '@/domain/reliability';
 import { recordAudit } from '@/lib/audit';
 import type { Caller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
+import { offerFreedSeat } from '@/server/booking/waitlist-offer';
 import { recordReliabilityEvent } from '@/server/reliability/service';
 
 export interface CancelBookingOutcome {
@@ -127,6 +128,11 @@ export async function cancelBookingAsStaff(input: CancelBookingInput): Promise<C
     reason,
     ipAddress,
   });
+
+  // Место возвращается в занятие только для занятых броней; иначе очередь не трогаем.
+  if (booking.sessionId && (booking.status === 'PENDING' || booking.status === 'CONFIRMED')) {
+    await offerFreedSeat(booking.sessionId, now);
+  }
 
   return { fee, refund };
 }

@@ -14,6 +14,7 @@ import { domainErrors } from '@/domain/errors';
 import { isLateCancellation } from '@/domain/reliability';
 import { db } from '@/lib/db';
 import { notifyBookingCancelled, notifyBookingConfirmed, notifyBookingRequestDue } from '@/server/booking/notify';
+import { offerFreedSeat } from '@/server/booking/waitlist-offer';
 import { recordReliabilityEvent } from '@/server/reliability/service';
 
 /** Поля брони, по которым возвращаются место и урок абонемента. */
@@ -106,6 +107,7 @@ export async function respondToBookingRequest(
       await recordReliabilityEvent({ userId: b.instructor.userId, kind: 'LATE_CANCEL', refId: b.id }, tx);
     }
   });
+  if (!accepted && b.sessionId) await offerFreedSeat(b.sessionId, input.now);
 
   if (accepted) void notifyBookingConfirmed(b.id).catch(() => {});
   else void notifyBookingCancelled(b.id, 0).catch(() => {});
@@ -176,6 +178,7 @@ export async function expireBookingRequests(now: Date): Promise<{ expired: numbe
     if (!claimed) continue;
     expired += 1;
     void notifyBookingCancelled(b.id, 0).catch(() => {});
+    if (b.sessionId) await offerFreedSeat(b.sessionId, now);
   }
   return { expired };
 }

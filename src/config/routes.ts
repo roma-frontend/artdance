@@ -158,6 +158,8 @@ export const routes = {
   booking: () => '/booking',
   bookingConfirm: (holdId: string) => `/booking/${holdId}/confirm`,
   bookingPass: (id: string) => `/booking/${id}/pass`,
+  /** Занять место, которое освободилось в листе ожидания (ссылка из письма). */
+  waitlistClaim: (sessionId: string) => `/waitlist/${encodeURIComponent(sessionId)}`,
   search: (params?: ListingParams) => withQuery('/search', params),
 
   /* Аутентификация */
@@ -316,6 +318,7 @@ export const apiRoutes = {
   savedSearch: (id: string) => `/api/saved-searches/${encodeURIComponent(id)}`,
   availability: () => '/api/availability',
   slotHold: () => '/api/booking/hold',
+  waitlistClaim: () => '/api/waitlist/claim',
   booking: () => '/api/booking',
   bookingPay: (bookingId: string) => `/api/booking/${encodeURIComponent(bookingId)}/pay`,
   bookingDispute: (bookingId: string) => `/api/booking/${encodeURIComponent(bookingId)}/dispute`,
@@ -483,6 +486,7 @@ export const noIndexPathPrefixes = [
   '/checkout',
   '/cart',
   '/booking',
+  '/waitlist',
   '/orders',
   '/reviews/new',
   '/unsubscribe',
