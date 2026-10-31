@@ -4,7 +4,13 @@ import { PrismaClient } from '../src/generated/prisma/client';
 import { randomUUID } from 'node:crypto';
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Холды идут через общую корзину `bookingHold` (20 за 10 минут): у каждого теста свой адрес. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
 
 for (const locale of ['en', 'ru', 'hy']) {
   /*
