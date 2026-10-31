@@ -89,7 +89,7 @@ export async function handleTelegramCommand(textRaw: string): Promise<string> {
   // Авто-роутинг: если в сообщении про CI/GitHub/репо — не отправляем в AI, а вызываем GitHub API
   // (без завершающего \b — русские падежи: «репозиторию», «репозитория», «репозитории»)
   const hasCiKeywords = /\b(ci|прогон|github actions|пайплайн)\b/i.test(lower);
-  const hasRepoKeywords = /(^|\s|\/)(репо|репозитори|repo|github|gh)/i.test(lower);
+  const hasRepoKeywords = /(^|\s|\/)(репо|репозитори|repo|github|gh|artdance|art dance)/i.test(lower);
   if (hasCiKeywords || hasRepoKeywords) {
     const [owner, repo] = repoFromEnv().split('/') as [string, string];
     const parts: string[] = [];
@@ -123,15 +123,23 @@ export async function handleTelegramCommand(textRaw: string): Promise<string> {
   }
 
   let system: string;
+  const projectContext =
+    'Контекст проекта ArtDance:\n' +
+    '- Next.js (App Router) + TypeScript, Prisma, Vercel\n' +
+    '- Репозиторий: github.com/roma-frontend/artdance\n' +
+    '- Бот имеет доступ к GitHub API (может показать /status и /repo)\n' +
+    '- Имя бота: ArtDance Bot — ты НЕ обычный Claude, ты специализированный ассистент проекта ArtDance\n' +
+    '- Когда спрашивают «что ты можешь» — перечисли конкретные команды бота (/status, /repo, /ask, /task), а не общие AI-возможности';
   if (isTask) {
     system =
-      'Ты — агент разработки ArtDance. Пользователь дал задание с телефона через Telegram-бота. ' +
+      projectContext +
+      '\n\nЗадание от пользователя (через Telegram):\n' +
       'Сформируй план выполнения: какие файлы править, какие команды запустить (typecheck/lint/test), как проверить. ' +
       'Отвечай на языке пользователя, кратко, без лишней воды. Если задание требует git/push — укажи что бот сделает пуш в main после проверок.';
   } else {
     system =
-      'Ты — помощник разработчика ArtDance (Next.js, Prisma, Vercel). ' +
-      'Отвечай кратко, по делу, на языке пользователя. Если просят сделать задачу — предложи план и команды.';
+      projectContext +
+      '\n\nПользователь задаёт вопрос через Telegram-бота. Отвечай как бот ArtDance, а не как generic Claude. Кратко, по делу, на языке пользователя.';
   }
 
   // Guard
