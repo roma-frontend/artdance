@@ -81,12 +81,20 @@ test.describe('Открытая заявка не оплачивается (D-04
     try {
       bookingId = booking.id;
 
+      /*
+       * Каждый шаг — со своим уникальным x-forwarded-for (см. e2e/commerce-screens.spec.ts,
+       * «каждый запрос с собственным адресом»). Лимит paymentIntent (10/600 с)
+       * считается по IP; если все /pay-вызовы идут с одного адреса, первые
+       * десять уходят в общий бакет и возвращают 429 вместо 401 — так упал тест
+       * в CI на первом прогоне d47be15.
+       */
+      const payHeaders = { headers: { 'x-forwarded-for': `10.243.${testInfo.workerIndex % 250}.${(Date.now() % 1000) + 10}` } };
+
       /* Без авторизации — 401: маршрут требует caller. */
-      const unauthed = await page.request.post(`/api/booking/${bookingId}/pay`, { data: { method: 'CARD' } });
+      const unauthed = await page.request.post(`/api/booking/${bookingId}/pay`, { data: { method: 'CARD' }, ...payHeaders });
       expect(unauthed.status()).toBe(401);
 
       /* Логинимся и повторяем: сервис обязан отклонить открытую заявку (D-04). */
-      await page.context().setExtraHTTPHeaders({ 'x-forwarded-for': `10.243.${testInfo.workerIndex % 250}.9` });
       await page.goto('/en/sign-in');
       await page.getByLabel(en.auth.signIn.emailLabel).fill(customer.email);
       await page.getByLabel(en.auth.signIn.passwordLabel).fill(demoPassword);
@@ -94,7 +102,7 @@ test.describe('Открытая заявка не оплачивается (D-04
       await completeTwoFactor(page);
       await page.waitForURL(/\/account$/);
 
-      const authedPay = await page.request.post(`/api/booking/${bookingId}/pay`, { data: { method: 'CARD' } });
+      const authedPay = await page.request.post(`/api/booking/${bookingId}/pay`, { data: { method: 'CARD' }, ...payHeaders });
       expect(authedPay.status()).toBe(422);
       expect(await authedPay.json()).toMatchObject({ error: 'VALIDATION_FAILED' });
     } finally {
