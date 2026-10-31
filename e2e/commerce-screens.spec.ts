@@ -16,6 +16,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 import ru from '../src/i18n/messages/ru';
 import hy from '../src/i18n/messages/hy';
@@ -34,6 +35,11 @@ import { zonedParts } from '../src/lib/time/schedule';
 
 const CART = '/en/cart';
 const BOOKING_START = '/en/booking';
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Холды идут через общую корзину `bookingHold` (20 за 10 минут): у каждого теста свой адрес. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
 
 const cartItemCount = demoCartTotals.items.reduce((sum, item) => sum + item.quantity, 0);
 const firstInstructor = demoInstructors[0]!;

@@ -215,6 +215,7 @@ export const routes = {
   instructorCheckIn: () => '/studio/check-in',
   instructorStudioReviews: () => '/studio/reviews',
   instructorStudioBoost: () => '/studio/boost',
+  instructorStudioAnalytics: () => '/studio/analytics',
 
   /* Кабинет владельца площадки */
   venueDashboard: () => '/venue',
