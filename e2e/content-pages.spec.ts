@@ -22,6 +22,7 @@ import { orderedSubscriptionPlans } from '../src/config/pricing';
 import { routes } from '../src/config/routes';
 import { site } from '../src/config/site';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 
 const LOCALE = 'en';
 const localized = (path: string): string => `/${LOCALE}${path}`;
@@ -241,26 +242,6 @@ test('контактная форма не отправляет пустое с�
   await expect(page.getByLabel(en.contact.form.emailLabel)).toHaveAttribute('aria-invalid', 'true');
   await expect(page.getByText(en.contact.form.successTitle)).toHaveCount(0);
 });
-
-/**
- * Отдельный адрес клиента на тест и на проект.
- *
- * Ограничение частоты у контактной формы — три обращения в час на адрес, и это
- * правильное продакшен-правило. Но три проекта Playwright (desktop, tablet,
- * mobile) приходят с одного и того же адреса, поэтому шестая отправка в наборе
- * законно получала 429 — и тест «форма не отправила письмо» падал не потому, что
- * форма сломана, а потому что лимитер работает.
- *
- * Заголовок подменяет идентификатор клиента (`clientIdentifier` читает
- * `x-forwarded-for`), то есть тест изображает разных посетителей — а не отключает
- * защиту, ради которой она стоит. В ключ входит имя проекта: иначе повтор
- * упавшего теста в CI становится четвёртой отправкой с того же адреса.
- */
-async function isolateRateLimit(page: Page, seed: string): Promise<void> {
-  /* Адрес из блока для документации (RFC 5737): в сеть он не уйдёт. */
-  const octet = ([...seed].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 250) + 1;
-  await page.setExtraHTTPHeaders({ 'x-forwarded-for': `198.51.100.${octet}` });
-}
 
 async function fillContactForm(page: Page): Promise<void> {
   await page.getByLabel(en.contact.form.nameLabel).fill('Nare Grigoryan');
