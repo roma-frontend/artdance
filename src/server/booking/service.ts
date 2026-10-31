@@ -22,6 +22,7 @@ import { checkBookingConsents, storeBookingConsents } from '@/server/booking/con
 import { flagBookingContactText } from '@/server/booking/guardrails';
 import { isLateCancellation } from '@/domain/reliability';
 import { recordReliabilityEvent } from '@/server/reliability/service';
+import { offerFreedSeat } from '@/server/booking/waitlist-offer';
 import { applyFirstBookingPromo, consumeFirstBookingPromo } from '@/server/promo/first-booking';
 function isUniqueViolation(error: unknown): boolean { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'; }
 function refFromId(id: string): string { return 'BK-' + id.slice(-8).toUpperCase(); }
@@ -361,6 +362,7 @@ export async function expireUnpaidBookings(now: Date): Promise<{ expired: number
       return true;
     });
     if (claimed) expired += 1;
+    if (claimed && b.sessionId) await offerFreedSeat(b.sessionId, now);
   }
   return { expired };
 }

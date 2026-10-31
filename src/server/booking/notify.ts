@@ -186,6 +186,6 @@ export async function notifyWaitlistReady(sessionId: string, userId: string, cla
     locale,
     data: { when },
     dedupeKey: `waitlist:${sessionId}:${userId}:${claimUntil.toISOString()}`,
-    href: absoluteUrl(`/${locale}/classes`),
+    href: absoluteUrl(`/${locale}${routes.waitlistClaim(sessionId)}`),
   });
 }

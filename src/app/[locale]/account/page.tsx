@@ -38,9 +38,11 @@ import { Link, redirect } from '@/i18n/routing';
 import { getCaller } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
 import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
+import { forYouClasses } from '@/server/recommendations/for-you';
 import { buildMetadata } from '@/lib/seo/metadata';
 
 import { AccountNav } from '@/components/account/account-nav';
+import { ClassCard } from '@/components/catalog/class-card';
 import { ViewToggle } from '@/components/account/view-toggle';
 import { resolveAccountView } from '@/components/account/view-toggle.helpers';
 
@@ -126,6 +128,7 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
   /* Один снимок тарифов: он решает и пакеты, и состав меню кабинета. */
   const entitlements = await getEffectiveEntitlementsSafe();
   const packagesEnabled = entitlements.packages;
+  const forYou = entitlements.forYou ? await forYouClasses(caller.id) : [];
   const [bookings, orders, classPasses] = await Promise.all([
     db.booking.findMany({
       where: { customerId: caller.id },
@@ -191,6 +194,27 @@ export default async function AccountPage({ params, searchParams }: PageProps) {
         <div className="mt-4 flex min-w-0 items-center justify-end">
           <ViewToggle value={view} />
         </div>
+
+        {entitlements.forYou && (
+          <section aria-labelledby="account-for-you" className="mt-6 rounded-xl border border-border-default bg-surface-card p-5 shadow-sm">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+              <h2 id="account-for-you" className="text-card-title">{tRoot('forYou.title')}</h2>
+              <Button asChild variant="outline" size="sm"><Link href={routes.accountDancerProfile()}>{tRoot('forYou.editProfile')}</Link></Button>
+            </div>
+            {forYou.length > 0 ? (
+              <>
+                <p className="text-body-sm mb-4 text-content-secondary">{tRoot('forYou.intro')}</p>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {forYou.map((item) => (
+                    <ClassCard key={item.slug} item={item} locale={locale as Locale} />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-body-sm text-content-secondary">{tRoot('forYou.empty')}</p>
+            )}
+          </section>
+        )}
 
         {classPasses.length > 0 && (
           <section aria-labelledby="account-class-passes" className="mt-6 rounded-xl border border-border-default bg-surface-card p-5 shadow-sm">
