@@ -214,6 +214,7 @@ export const routes = {
   instructorProfile: () => '/studio/profile',
   instructorCheckIn: () => '/studio/check-in',
   instructorStudioReviews: () => '/studio/reviews',
+  instructorStudioBoost: () => '/studio/boost',
 
   /* Кабинет владельца площадки */
   venueDashboard: () => '/venue',
@@ -235,6 +236,7 @@ export const routes = {
    */
   admin: () => adminRoot,
   adminSupport: () => adminPath('support'),
+  adminBoosts: () => adminPath('boosts'),
   adminOperatorTool: (tool: string, params?: Record<string, string | number | undefined>) => withQuery(`${adminPath('support')}/${tool}`, params),
   adminResource: (resource: AdminResource, params?: AdminListParams) =>
     withQuery(adminPath(resource), params),
