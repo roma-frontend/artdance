@@ -2,92 +2,344 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<title>ArtDance — Production readiness 31.10.2026</title>
+<title>ArtDance — Что осталось до продакшна, 31.10.2026</title>
 <style>
-  body { font-family: "Segoe UI", system-ui, sans-serif; margin: 2em; color: #1a1a2e; line-height: 1.55; max-width: 960px; }
-  h1 { color: #8B1A2B; border-bottom: 3px solid #8B1A2B; padding-bottom: .4em; }
-  h2 { color: #8B1A2B; margin-top: 1.6em; }
-  h3 { color: #2e2e3c; margin-top: 1.1em; }
-  table { border-collapse: collapse; width: 100%; margin: .8em 0 1.4em; font-size: .92em; }
-  th, td { border: 1px solid #c9c2b8; padding: .45em .7em; text-align: left; vertical-align: top; }
-  th { background: #f4ede4; color: #5a3e36; }
-  .done { background: #e8f5e9; }
-  .partial { background: #fff8e1; }
-  .blocked { background: #fdecea; }
-  code { background: #f0ece4; padding: .1em .35em; border-radius: 3px; font-size: .9em; }
-  ul, ol { margin: .4em 0; }
-  .note { font-size: .85em; color: #666; border-left: 3px solid #c9c2b8; padding-left: .8em; margin: 1em 0; }
+  :root {
+    --burgundy: #8B1A2B;
+    --burgundy-dark: #4a0d17;
+    --ink: #1d1d24;
+    --muted: #6b6b76;
+    --line: #e7e1d8;
+    --tint: #fbf1f2;
+    --paper: #fbf8f4;
+    --head: #1f1f24;
+    --green: #2f7d4f;
+    --amber: #b7791f;
+    --red: #b42318;
+    --blue: #3b49c0;
+    --grey: #8a8a94;
+    --navy: #1f2a3c;
+    --gold: #b7892e;
+  }
+
+  @page { size: A4; margin: 18mm 15mm 20mm 15mm;
+    @bottom-left { content: "ArtDance · что осталось до продакшна"; font-size: 8.5px; color: var(--muted); font-family: "Segoe UI", sans-serif; }
+    @bottom-right { content: counter(page) " / " counter(pages); font-size: 8.5px; color: var(--muted); font-family: "Segoe UI", sans-serif; }
+  }
+  @page cover { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink); font-size: 10.5px; line-height: 1.45;
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .eyebrow { font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--burgundy); font-weight: 700; margin: 0 0 6px; }
+  h1 { font-size: 21px; font-weight: 800; line-height: 1.2; margin: 0 0 10px; letter-spacing: -.01em; }
+  h2 { font-size: 12.5px; font-weight: 800; margin: 16px 0 6px; }
+  .lede { color: var(--muted); font-size: 10.5px; margin: 0 0 12px; }
+  .section { break-before: page; }
+  .section.first { break-before: auto; }
+
+  /* Обложка */
+  .cover { page: cover; break-after: page; height: 297mm; width: 210mm; padding: 16mm 16mm 14mm; color: #fff; display: flex; flex-direction: column;
+    background:
+      radial-gradient(ellipse at 85% 10%, rgba(255,255,255,.18), transparent 45%),
+      radial-gradient(ellipse at 20% 100%, rgba(232,80,60,.45), transparent 50%),
+      linear-gradient(160deg, #3d0b15 0%, #7c1626 45%, #a52334 100%); }
+  .cover .top { display: flex; justify-content: space-between; font-size: 9px; letter-spacing: .25em; font-weight: 700; }
+  .cover .kicker { margin-top: 150px; font-size: 9px; letter-spacing: .3em; font-weight: 700; text-transform: uppercase; opacity: .9; }
+  .cover h1 { font-size: 46px; line-height: 1.04; font-weight: 900; margin: 10px 0 14px; letter-spacing: -.02em; }
+  .cover .sub { font-size: 13px; line-height: 1.5; max-width: 150mm; opacity: .92; }
+  .cover .stats { margin-top: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .cover .stat { background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.22); border-radius: 10px; padding: 12px 12px 10px; }
+  .cover .stat b { display: block; font-size: 24px; font-weight: 900; }
+  .cover .stat span { display: block; font-size: 8.5px; line-height: 1.35; opacity: .9; margin-top: 3px; }
+  .cover .foot { margin-top: 18px; border-top: 1px solid rgba(255,255,255,.25); padding-top: 9px; font-size: 8px; line-height: 1.5; opacity: .85; }
+
+  /* Выноска и карточки */
+  .callout { background: var(--tint); border-left: 4px solid var(--burgundy); border-radius: 6px; padding: 11px 14px; font-size: 10.5px; margin: 10px 0; }
+  .callout p { margin: 0 0 6px; }
+  .callout p:last-child { margin: 0; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin: 12px 0; }
+  .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px; background: #fff; }
+  .kpi b { display: block; font-size: 20px; font-weight: 900; }
+  .kpi span { display: block; font-size: 8.5px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+
+  .packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin: 8px 0 4px; }
+  .pack { border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 10px; padding: 11px 11px 9px; background: #fff; }
+  .pack h3 { font-size: 11px; letter-spacing: .1em; margin: 0; font-weight: 800; }
+  .pack .price { font-size: 9px; color: var(--muted); margin: 2px 0 6px; }
+  .pack ul { margin: 0; padding-left: 13px; font-size: 9.5px; }
+  .pack li { margin: 2px 0; }
+  .pack .tag { font-size: 8px; letter-spacing: .12em; font-weight: 800; text-transform: uppercase; margin-top: 7px; color: var(--c); }
+
+  .steps { list-style: none; margin: 6px 0 0; padding: 0; counter-reset: step; }
+  .steps li { counter-increment: step; display: flex; gap: 9px; margin: 6px 0; font-size: 10.5px; }
+  .steps li::before { content: counter(step); flex: none; width: 19px; height: 19px; border-radius: 50%; background: var(--burgundy);
+    color: #fff; font-size: 9.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+
+  /* Таблицы */
+  table { width: 100%; border-collapse: collapse; font-size: 9.5px; margin: 6px 0 10px; }
+  thead th { background: var(--head); color: #fff; text-align: left; font-weight: 700; padding: 6px 7px; font-size: 9px; }
+  td { padding: 5px 7px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: var(--paper); }
+  tr.group td { background: #f5e7ea; color: var(--burgundy); font-size: 8px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; border-bottom: none; }
+  tr { break-inside: avoid; }
+  td.muted { color: var(--muted); }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 8px; font-weight: 800; color: #fff; white-space: nowrap; }
+  .pill.ok { background: var(--green); }
+  .pill.part { background: var(--amber); }
+  .pill.no { background: var(--red); }
+  .pill.dec { background: var(--blue); }
+  .pill.out { background: var(--grey); }
+  .pill.ext { background: #5b3a8c; }
+  code { font-family: Consolas, monospace; font-size: 8.5px; background: #efe9e1; padding: 0 3px; border-radius: 3px; }
+
+  ul.plain { margin: 4px 0 0; padding-left: 15px; }
+  ul.plain li { margin: 3px 0; }
+  .note { font-size: 9px; color: var(--muted); margin-top: 6px; }
 </style>
 </head>
 <body>
 
-<h1>ArtDance — Production readiness (обновление от 31.10.2026)</h1>
-<p>Изменения с 30.10.2026 лежат в двух ветках, в <code>main</code> пока не смержены:
-<code>mvp/closeout</code> (PWA, массовая отмена броней, статусы документации) и
-<code>fix/lighthouse-skip-is-crawlable</code> (фикс CI).</p>
+<!-- ОБЛОЖКА -->
+<section class="cover">
+  <div class="top"><span>ARTDANCE</span><span>31.10.2026</span></div>
+  <div class="kicker">Производственная готовность</div>
+  <h1>Что осталось<br>до продакшна</h1>
+  <div class="sub">Пакеты MVP, FULL и PREMIUM: работы, блокеры, решения и открытые PR по состоянию на 31 октября 2026</div>
+  <div class="stats">
+    <div class="stat"><b>9</b><span>внешних блокеров: аккаунты, договоры, вычитка</span></div>
+    <div class="stat"><b>2</b><span>PR открыты и ждут слияния: MVP и фикс CI</span></div>
+    <div class="stat"><b>1 766</b><span>тестов в полном прогоне npm run verify</span></div>
+    <div class="stat"><b>20.12</b><span>договорный срок MVP (3 месяца)</span></div>
+  </div>
+  <div class="foot">Цены пакетов из коммерческого предложения от 01.09.2026: MVP 5 000 000 AMD, FULL 9 200 000 AMD, PREMIUM 13 000 000 AMD.
+    Состояние кода и документов на 31.10.2026. Источники: docs/01, docs/06, docs/07, src/server/entitlements/catalog.ts.</div>
+</section>
 
-<h2>0. Что изменилось с 30.10</h2>
-<table>
-<tr><th>Пункт</th><th>Статус</th><th>Что сделано и где</th></tr>
-<tr class="done"><td>Lighthouse CI: аудит is-crawlable</td><td>✅ Исправлено в ветке</td><td>Аудит пропущен через <code>settings.skipAudits</code> в <code>lighthouserc.json</code> (<code>47ddb3b</code>, <code>fix/lighthouse-skip-is-crawlable</code>). Причина: CI-сборка non-production закрывает индексацию в <code>robots.txt</code>, аудит весил около 31% SEO, отсюда 0.69 при пороге 0.95. После мерджа CI должен стать зелёным</td></tr>
-<tr class="done"><td>A-20 PWA: офлайн-заглушка</td><td>✅ Сделано в ветке</td><td>Service worker (<code>public/push-sw.js</code>) кеширует <code>/&lt;локаль&gt;/offline</code> для hy, ru и en и отдаёт её при сбое сети. Регистрация — на каждой странице (<code>PwaRegister</code>). Тест скрипта — 5 случаев (<code>c9d042c</code>). В браузере офлайн не проверялось</td></tr>
-<tr class="done"><td>E-01 массовая отмена броней</td><td>✅ Сделано в ветке</td><td>На <code>/admin/bookings</code> выбираются брони и отправляется заявка на согласование (<code>booking.bulkCancel</code>). После одобрения каждая бронь отменяется функцией <code>cancelBookingAsStaff</code>, которую теперь использует и одиночная отмена. Деньги не двигаются: возврат остаётся отдельной операцией по заказу (<code>388086f</code>). Интерфейс и исполнение через e2e не проверялись</td></tr>
-<tr class="done"><td>Статусы в <code>docs/06</code> и <code>docs/07</code></td><td>✅ Приведены к коду</td><td>Подключены и убраны из списка открытых: C-04, C-05, C-06, C-08, C-09, B-05, D-06, D-08, E-06. D-07 — частично: индекс надёжности пишется, но нигде не читается (<code>b7a082a</code>)</td></tr>
-</table>
-<p class="note">Проверка ветки <code>mvp/closeout</code>: <code>npm run verify</code> завершился с кодом 0. Тестовых файлов — 164, тестов — 1756. Зелёные typecheck, lint, i18n, tokens, css, media, video и design.</p>
+<!-- 01 ИТОГ -->
+<section class="section first">
+  <div class="eyebrow">01 · Итог</div>
+  <h1>Код MVP и FULL собран. До продакшна держат внешние решения</h1>
 
-<h2>1. P0 задачи</h2>
-<table>
-<tr><th>ID</th><th>Статус</th><th>Что сделано</th></tr>
-<tr class="done"><td>D-01</td><td>✅ Закрыто</td><td>Маскировка контактов до оплаты: <code>bookingGuardrails</code>, <code>flagBookingContactText</code>. Тесты: guardrails.test.ts, route.test.ts</td></tr>
-<tr class="done"><td>D-02</td><td>✅ Закрыто</td><td>Документ верификации и бейдж <code>isVerified</code> меняются в одной транзакции (<code>decideVerificationDocument</code>), с аудитом</td></tr>
-<tr class="partial"><td>D-03</td><td>🔶 Механизм готов, правила пусты</td><td>Серверная проверка согласий и запись <code>Booking.consentVersion</code> подключены в оба пути брони. Тексты (<code>draft-1</code>) ждут юриста (0.8). Включать правило без утверждённого текста нельзя: бронь станет недоступна</td></tr>
-<tr class="done"><td>D-04</td><td>✅ Закрыто</td><td>SLA 24 ч и авто-отклонение через 48 ч. Открытая заявка не оплачивается. Включение правила <code>bookingRequestRules</code> — решение владельца</td></tr>
-<tr class="partial"><td>D-05</td><td>🔶 Код готов, провайдера нет</td><td>Модели <code>SmsDispatch</code> и <code>ReviewQueueEntry</code>, бюджет SMS (200 в сутки, 3000 за 30 дней). <code>sendSms</code> честно отвечает «не настроено». Ждёт провайдера (0.7) и лимитов от заказчика</td></tr>
-<tr class="done"><td>DS-01</td><td>✅ Закрыто</td><td>Миграция таксономии дисциплин сверена с доменными константами тестом <code>dancesport-parity.test.ts</code>. Применяется через <code>npm run db:deploy</code></td></tr>
-<tr class="done"><td>2.10</td><td>✅ Закрыто</td><td>Карта студии: <code>MapView</code> без своего JS и заглушка без ключа, <code>StaticMapImage</code>, i18n <code>map.*</code>. E2E — <code>e2e/mvp-gaps.spec.ts</code></td></tr>
-<tr class="done"><td>8.3</td><td>✅ Закрыто</td><td>Джоб Lighthouse в <code>ci.yml</code>. Отчёты — в артефакт, без публичной выгрузки. После фикса is-crawlable — зелёный (см. раздел 0)</td></tr>
-<tr class="done"><td>A-20 / 8.1b</td><td>✅ Сделано в ветке</td><td>Манифест, <code>/offline</code> и service worker с офлайн-заглушкой (раздел 0)</td></tr>
-</table>
+  <div class="callout">
+    <p>В коде работают: бронирование (создание, отмена, перенос, лист ожидания, cron), каталог и SEO, поиск, корзина и магазин с промокодами и подарочными картами, кабинеты клиента, инструктора и площадки, админка с аудитом и согласованиями, PWA с офлайн-заглушкой, массовая отмена броней через согласование и подборка «Для тебя».</p>
+    <p>Не хватает внешних аккаунтов и договоров: домен, Supabase, R2, банк, юрист, имя отправителя SMS, ключ Resend. Нужна вычитка армянского. Самые длинные пути сейчас не в разработке, а в банке, у юриста и в регистрации SMS.</p>
+  </div>
 
-<h2>2. Внешние блокеры — что ждёт и кто закрывает</h2>
-<p>Эти пункты не закрываются из кода: нужны аккаунты, договоры или решения третьих сторон.</p>
-<table>
-<tr><th>ID</th><th>Что нужно</th><th>Кто закрывает</th><th>Что стоит на нём</th></tr>
-<tr class="blocked"><td>0.1</td><td>Подтвердить комиссию 15% / 12%, окно отмены 24 ч, удержание 50%, выезд 5 000 AMD (<code>src/config/business.ts</code>, поля <code>@confirm</code>)</td><td>Заказчик</td><td>Цены, отмены, комиссии. Работают значения по умолчанию из сообщения заказчику; дедлайн 28.09 прошёл</td></tr>
-<tr class="blocked"><td>0.3</td><td>Проект Supabase и <code>DATABASE_URL</code></td><td>Заказчик</td><td>Прод-БД: 8.4, 8.6</td></tr>
-<tr class="blocked"><td>0.4</td><td>Бакет R2 и ключи доступа</td><td>Заказчик</td><td>Драйвер R2 в проде (1.6)</td></tr>
-<tr class="blocked"><td>0.5</td><td>Домен <code>artdance.am</code>: DNS сейчас у GoDaddy</td><td>Заказчик</td><td>8.5: SSL, деплой, Sentry, Upstash</td></tr>
-<tr class="blocked"><td>0.6</td><td>Договор с банком на эквайринг</td><td>Заказчик, банк</td><td>5.1 и 5.5: сейчас только mock-адаптер; приём платежей; DS-07</td></tr>
-<tr class="blocked"><td>0.7</td><td>Регистрация SMS-имени отправителя (2–3 недели)</td><td>Заказчик</td><td>SMS (D-05). SMS в пакеты не входит</td></tr>
-<tr class="blocked"><td>0.8</td><td>Оферта, privacy, политика возврата; тексты согласий</td><td>Юрист</td><td>8.2, приём платежей, D-03</td></tr>
-<tr class="blocked"><td>1.7</td><td><code>RESEND_API_KEY</code></td><td>Заказчик</td><td>Письма входа и сброса пароля</td></tr>
-<tr class="blocked"><td>8.1</td><td>Вычитка армянского (<code>hy</code>) носителем языка</td><td>Носитель языка</td><td>Выпуск <code>hy</code> на прод. Строки массовой отмены — черновик, тоже нужна вычитка</td></tr>
-<tr class="blocked"><td>Хостинг</td><td>Выбрать Vercel (<code>vercel.json</code>) или Cloudflare (<code>wrangler.jsonc</code>)</td><td>Владелец</td><td>Cron сейчас идёт через GitHub Actions (<code>booking-cron.yml</code>), это работает</td></tr>
-<tr class="blocked"><td>DS-03, DS-07, DS-09</td><td>Календарь WDSF — согласовать с федерацией. Донаты — после банка (0.6). Клип и канал WDSF — от заказчика</td><td>Заказчик, федерация</td><td>Календарь, донаты, видео на главной</td></tr>
-</table>
+  <div class="kpis">
+    <div class="kpi"><b>9</b><span>внешних блокеров не закрыты</span></div>
+    <div class="kpi"><b>2</b><span>P0 в коде ждут внешних данных: D-03, D-05</span></div>
+    <div class="kpi"><b>3</b><span>ветки с работой: mvp/closeout, fix/lighthouse, full/closeout</span></div>
+    <div class="kpi"><b>20.12</b><span>календарный срок MVP по mvp-schedule.md</span></div>
+  </div>
 
-<h2>3. Решение: оплата занятий</h2>
-<p><strong>Принято владельцем 31.10.2026: занятия оплачиваются на месте.</strong> Бронь занятия подтверждается сразу, как и раньше (<code>CONFIRMED</code>), банк для этого не нужен. Аренда зала по-прежнему создаётся <code>PENDING</code> и подтверждается после оплаты.</p>
-<p>Онлайн-оплату занятий можно включить позже, когда подключён эквайринг (0.6). Варианты «онлайн при брони» (занятие ждёт оплаты, неоплаченные снимаются по <code>unpaidExpiryMinutes</code>) и «выбор клиента» в MVP не входят.</p>
+  <h2>Три пакета одним взглядом</h2>
+  <div class="packs">
+    <div class="pack" style="--c: var(--burgundy)">
+      <h3>MVP</h3>
+      <div class="price">5 000 000 AMD · договор, 3 месяца, срок 20.12.2026</div>
+      <ul>
+        <li>Готово: каталог, бронирование с листом ожидания, корзина и магазин, кабинеты трёх ролей, админка, 3 языка, SEO, PWA</li>
+        <li>Открыто: адаптер банка и тестовые платежи, вычитка hy, юридические страницы, приёмка</li>
+      </ul>
+      <div class="tag">Ядро договора</div>
+    </div>
+    <div class="pack" style="--c: var(--navy)">
+      <h3>FULL</h3>
+      <div class="price">9 200 000 AMD · предложение, отдельного договора нет</div>
+      <ul>
+        <li>Готово: переносы, мероприятия, рекуррентные брони, отзывы, «Для тебя», массовая отмена, карты</li>
+        <li>Открыто: локальные способы оплаты (после банков), SMS (шлюз), push (VAPID-ключи)</li>
+      </ul>
+      <div class="tag">Рекомендуемый пакет</div>
+    </div>
+    <div class="pack" style="--c: var(--gold)">
+      <h3>PREMIUM</h3>
+      <div class="price">13 000 000 AMD · предложение, отдельного договора нет</div>
+      <ul>
+        <li>Готово в коде: пакеты занятий, кошелёк и кредит вместо возврата, рефералы</li>
+        <li>Открыто: видеокурсы, автовыплаты, подписки, Google Calendar, CRM</li>
+      </ul>
+      <div class="tag">Цель после FULL</div>
+    </div>
+  </div>
 
-<h2>4. Остаётся в коде</h2>
-<table>
-<tr><th>ID</th><th>Что не сделано</th><th>Приоритет</th></tr>
-<tr class="partial"><td>A-12</td><td><code>/account/payment-methods</code> — нет страницы способов оплаты</td><td>P1, в пакете PREMIUM</td></tr>
-<tr class="partial"><td>B-06</td><td>Корпоративные счета: код есть, маршрутов и кнопок нет</td><td>P1, не входит в каталог пакетов</td></tr>
-<tr class="partial"><td>B-07</td><td>Бусты: код есть, маршрутов нет</td><td>P2, PREMIUM</td></tr>
-<tr class="partial"><td>DS-04</td><td>Роль спортсмена в схеме не начата. Страница <code>/athletes</code> есть</td><td>P1</td></tr>
-<tr class="partial"><td>D-07</td><td><code>reliabilityScore</code> пишется, но никто его не читает. <code>reliabilityFor</code> без вызовов</td><td>P1</td></tr>
-<tr class="blocked"><td>8.4</td><td>E2E полного цикла покупки. Нужны прод-среда (0.3) и банк (0.6)</td><td>MVP, внешний вход</td></tr>
-</table>
+  <h2>Первые шаги на этой неделе</h2>
+  <ol class="steps">
+    <li><span>Смержить PR #3 (фикс CI), затем PR #2 (MVP), после зелёных проверок. Слияние подтверждает владелец.</span></li>
+    <li><span>Заказчик: подтвердить параметры 0.1, создать проект Supabase (0.3), бакет R2 (0.4), направить домен artdance.am (0.5).</span></li>
+    <li><span>Банк: договор на эквайринг (0.6). Без него локальные способы оплаты не подключаются.</span></li>
+    <li><span>Юрист: оферта, политика конфиденциальности, политика возврата, тексты согласий (0.8).</span></li>
+    <li><span>Владелец: состав пакетов для рекуррентных броней и push; правило подтверждения броней исполнителем (D-04).</span></li>
+    <li><span>Разработка: e2e и QA 375 / 768 / 1440 px на стенде с БД; проверить офлайн-PWA, массовую отмену и лист ожидания в браузере.</span></li>
+  </ol>
+</section>
 
-<h2>5. Что не проверено</h2>
-<ul>
-<li>Офлайн-заглушка PWA в браузере и установка на домашний экран.</li>
-<li>Интерфейс массовой отмены и исполнение одобренной заявки. Автоматический тест покрывает разбор заявки и одиночную отмену, но не исполнитель в <code>people.ts</code>.</li>
-<li>E2E-набор (Playwright) на этой ветке не запускался: он требует базу и сид.</li>
-</ul>
+<!-- 02 ПАКЕТЫ -->
+<section class="section">
+  <div class="eyebrow">02 · Пакеты</div>
+  <h1>Что входит в каждый пакет и где документы расходятся</h1>
+  <table>
+    <thead><tr><th style="width:22%">Параметр</th><th style="width:26%">MVP</th><th style="width:26%">FULL</th><th>PREMIUM</th></tr></thead>
+    <tbody>
+      <tr><td><b>Цена по предложению</b></td><td>5 000 000 AMD (≈ USD 13 700)</td><td>9 200 000 AMD (≈ USD 25 100)</td><td>13 000 000 AMD (≈ USD 35 500)</td></tr>
+      <tr><td><b>Срок по предложению</b></td><td>2–2,5 мес.</td><td>3,5–4,5 мес.</td><td>6–7 мес.</td></tr>
+      <tr><td><b>Договор</b></td><td>5 000 000 AMD, 3 месяца, 6 этапов</td><td>Отдельного договора нет</td><td>Отдельного договора нет</td></tr>
+      <tr><td><b>Пресет в коде</b> (catalog.ts)</td><td><code>shop</code>, <code>cms</code></td><td>+ <code>events</code>, <code>recurring</code>, <code>push</code>, <code>forYou</code></td><td>все 17 флагов</td></tr>
+      <tr><td><b>Бронирование</b></td><td>полное по договору (фазы 3.1–3.4)</td><td>полное: переносы, отмены, лист ожидания</td><td>+ Google Calendar</td></tr>
+      <tr><td><b>Онлайн-оплата</b></td><td>провайдер; сейчас mock и Stripe</td><td>все локальные способы, после договоров с банками</td><td>+ подписки и рекуррентные платежи</td></tr>
+      <tr><td><b>Языки</b></td><td>hy, ru, en</td><td>hy, ru, en</td><td>hy, ru, en</td></tr>
+      <tr><td><b>Магазин и корзина</b></td><td>да</td><td>да</td><td>да</td></tr>
+      <tr><td><b>Кабинеты</b></td><td>клиент, инструктор, площадка</td><td>клиент, инструктор, площадка</td><td>+ аналитика инструктора</td></tr>
+      <tr><td><b>Админка</b></td><td>полная (фаза 7)</td><td>полная</td><td>+ CRM и отчёты</td></tr>
+      <tr><td><b>Курсы с видео</b></td><td>нет</td><td>нет</td><td>да</td></tr>
+      <tr><td><b>Выплаты исполнителям</b></td><td>нет</td><td>заложено в БД; выплата вручную</td><td>вручную; автовыплаты — фаза 3</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Расхождения, которые нужно закрыть</h2>
+  <table>
+    <thead><tr><th style="width:4%">№</th><th style="width:36%">Расхождение</th><th style="width:14%">Статус</th><th>Что сделать</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>Объём MVP.</b> В договоре 5 млн AMD включает магазин, три языка, движок и кабинеты трёх ролей</td><td><span class="pill ok">Решено в коде</span></td><td>Зафиксировать состав MVP письмом заказчику</td></tr>
+      <tr><td>2</td><td><b>Магазин в пресете MVP.</b> <code>catalog.ts</code> включает <code>shop</code> в MVP</td><td><span class="pill ok">Решено</span></td><td>Согласовано с договором, см. строку 1</td></tr>
+      <tr><td>3</td><td><b>SMS.</b> В предложении обещаны email и SMS. В коде шлюза нет</td><td><span class="pill ok">Решено</span></td><td>SMS вне пакетов (catalog.ts), вернётся с провайдером (0.7)</td></tr>
+      <tr><td>4</td><td><b>Платёжный провайдер.</b> Есть Stripe и mock. Адаптеров Paynet, ArCa, Ameria и Idram нет</td><td><span class="pill no">Открыто</span></td><td>Договоры с банками (0.6). Адаптеры подключаются через один интерфейс</td></tr>
+      <tr><td>5</td><td><b>Мобильное приложение</b> исключено из цен, но есть в репозитории (67 экранов)</td><td><span class="pill part">Открыто</span></td><td>Признать отдельным треком с отдельной оценкой</td></tr>
+      <tr><td>6</td><td><b>Допродажа 5,5 млн AMD</b> включает уже сделанные модули</td><td><span class="pill part">Открыто</span></td><td>Пересчитать цены с учётом готового</td></tr>
+      <tr><td>7</td><td><b>Одни и те же пункты</b> (C-04, C-07, D-06…D-08, B-05) входят в FULL и PREMIUM</td><td><span class="pill part">Открыто</span></td><td>Не суммировать дважды</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 03 СТАТУС ФУНКЦИЙ -->
+<section class="section">
+  <div class="eyebrow">03 · Статус функций</div>
+  <h1>Статус каждой функции по пакетам</h1>
+  <p class="lede">Готово: есть код, маршрут и проверка. Частично: функция работает, но не до конца. Нет: кода или вызова нет. Решено: вопрос закрыт владельцем. Вне пакетов: исключено из договора.</p>
+  <table>
+    <thead><tr><th style="width:34%">Функция</th><th style="width:9%">Пакет</th><th style="width:13%">Статус</th><th>Что осталось</th></tr></thead>
+    <tbody>
+      <tr class="group"><td colspan="4">Каталог, поиск, SEO</td></tr>
+      <tr><td>Занятия, инструкторы, площадки, товары, события</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
+      <tr><td>Поиск и страница /search</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
+      <tr><td>Карта площадок</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">Без ключа показывается заглушка; ключ <code>NEXT_PUBLIC_MAPS_API_KEY</code> — внешний</td></tr>
+      <tr><td>Лента «Для тебя» в кабинете</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">В ветке full/closeout. По анкете танцора; проверить на стенде</td></tr>
+
+      <tr class="group"><td colspan="4">Бронирование и оплата</td></tr>
+      <tr><td>Доступность, создание, отмена, перенос</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
+      <tr><td>Лист ожидания</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">В ветке full/closeout. Место предлагается при любой отмене, отказе и истечении брони. E2E: вход клиента, кнопка «Занять место», переход на подтверждение брони. По ходу найден и исправлен баг удержания (ограничение SlotHold)</td></tr>
+      <tr><td>Массовая отмена броней (админка)</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">В PR #2. E2E: админ отправляет выбранную бронь на согласование, заявка создаётся. Одобрение вторым админом не проверено. Деньги — отдельной операцией</td></tr>
+      <tr><td>Подтверждение брони исполнителем (SLA 24 ч, авто-отказ 48 ч)</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Механизм готов; правило пусто, решение владельца (D-04)</td></tr>
+      <tr><td>Согласия при брони</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Правила выключены, тексты у юриста (D-03)</td></tr>
+      <tr><td>Онлайн-оплата занятий</td><td>MVP</td><td><span class="pill dec">Решено</span></td><td class="muted">Оплата на месте, решение 31.10; онлайн — после эквайринга</td></tr>
+      <tr><td>Оплата заказов через провайдера</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Stripe и mock; банк не подключён (5.1, 5.5)</td></tr>
+      <tr><td>Несколько локальных способов оплаты</td><td>FULL</td><td><span class="pill no">Нет</span></td><td class="muted">Адаптеры Paynet, ArCa, Ameria, Idram — после договоров (0.6)</td></tr>
+      <tr><td>Рекуррентные брони</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">Из экрана бронирования</td></tr>
+      <tr><td>Подписки и рекуррентные платежи</td><td>PREMIUM</td><td><span class="pill part">Частично</span></td><td class="muted">Страница и API есть; списание ждёт банка</td></tr>
+      <tr><td>Пакеты занятий</td><td>PREMIUM</td><td><span class="pill part">Частично</span></td><td class="muted">Код готов; продажа — после решения о составе пакета</td></tr>
+      <tr><td>Кошелёк и кредит вместо возврата</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
+      <tr><td>Рефералы</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Привязка при регистрации</td></tr>
+      <tr><td>Бусты (промо-размещение)</td><td>PREMIUM</td><td><span class="pill no">Нет</span></td><td class="muted">Код есть, маршрутов нет (B-07)</td></tr>
+
+      <tr class="group"><td colspan="4">Магазин и клиент</td></tr>
+      <tr><td>Корзина, чекаут, заказы, склад, промокоды, подарочные карты</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
+      <tr><td>Скидка на первое занятие</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">Подключена в потоке брони (C-08)</td></tr>
+      <tr><td>Отзывы, избранное, ответ инструктора на отзыв</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">Ответ подключён (D-06)</td></tr>
+      <tr><td>Напоминание о брошенной корзине</td><td>FULL</td><td><span class="pill part">Частично</span></td><td class="muted">Восстановление работает; SMS-звена нет</td></tr>
+      <tr><td>Способы оплаты в кабинете</td><td>PREMIUM</td><td><span class="pill no">Нет</span></td><td class="muted">Страницы /account/payment-methods нет (A-12)</td></tr>
+      <tr><td>Push-уведомления</td><td>FULL</td><td><span class="pill part">Частично</span></td><td class="muted">VAPID-ключи в .env.local заданы. В headless Chromium подписка не создаётся (permission denied), реальная отправка не проверена: нужен браузер или телефон</td></tr>
+      <tr><td>SMS</td><td>—</td><td><span class="pill out">Вне пакетов</span></td><td class="muted">Шлюза нет (0.7)</td></tr>
+
+      <tr class="group"><td colspan="4">Платформа и запуск</td></tr>
+      <tr><td>Офлайн-PWA: манифест, заглушка /offline, service worker</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">В PR #2. Проверено в Chromium: воркер активен, заглушка кешируется, при выключенной сети открывается «Offline»</td></tr>
+      <tr><td>Языки hy, ru, en</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">hy ждёт вычитки носителем (8.1)</td></tr>
+      <tr><td>Безопасность: CSP, rate limit, аудит</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">WAF — настройка хостинга, не проверено</td></tr>
+      <tr><td>Lighthouse CI</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">SEO-фикс (is-crawlable) в PR #3 и PR #4: SEO 1. CLS /en на CI 0.117 при пороге 0.1. Причина: подмена шрифта Playfair (font-display: swap) после первого экрана. Исправлено на optional (0bf952d): при замедлении CPU 0.109 → 0.001–0.011. Результат CI по последнему коммиту ещё не пришёл, Autofix следит</td></tr>
+      <tr><td>E2E (Playwright), все 36 наборов</td><td>MVP</td><td><span class="pill ok">Прошли</span></td><td class="muted">На локальной БД artdance_e2e после миграций и сида. Наборы 1–9: 156 прошли, 66 пропущены. Наборы 10–36: 763 прошли, 190 пропущены, 4 упали из-за параллельной нагрузки; перепроверены, прошли. Новые: waitlist-claim и admin-bulk-cancel прошли. QA 375 / 768 / 1440 px — в составе layout-integrity</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 04 БЛОКЕРЫ -->
+<section class="section">
+  <div class="eyebrow">04 · Внешние блокеры</div>
+  <h1>Что ждёт внешнего входа и кто его закрывает</h1>
+  <p class="lede">Эти пункты не закрываются из кода: нужны аккаунты, договоры или решения третьих сторон. Аккаунты и ключи в проект не создаются от имени заказчика.</p>
+  <table>
+    <thead><tr><th style="width:7%">ID</th><th style="width:34%">Что нужно</th><th style="width:15%">Кто закрывает</th><th>Что стоит на нём</th><th style="width:10%">Статус</th></tr></thead>
+    <tbody>
+      <tr><td>0.1</td><td>Подтвердить комиссии 15% / 12%, отмену за 24 ч с удержанием 50%, выезд 5 000 AMD (<code>business.ts</code>, поля @confirm)</td><td>Заказчик</td><td>Цены, отмены, комиссии. Работают значения по умолчанию; дедлайн 28.09 прошёл</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.3</td><td>Проект Supabase и <code>DATABASE_URL</code></td><td>Заказчик</td><td>Прод-БД, e2e, бэкапы (8.4, 8.6)</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.4</td><td>Бакет R2 и ключи доступа</td><td>Заказчик</td><td>Драйвер R2 в проде (1.6)</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.5</td><td>Домен <code>artdance.am</code>: DNS сейчас у GoDaddy</td><td>Заказчик</td><td>SSL, Sentry, Upstash (8.5)</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.6</td><td>Договор с банком на эквайринг</td><td>Заказчик, банк</td><td>Локальные способы оплаты, тестовые платежи (5.1, 5.5), DS-07</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.7</td><td>Регистрация имени отправителя SMS (2–3 недели)</td><td>Заказчик</td><td>SMS и D-05</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.8</td><td>Оферта, политика конфиденциальности, политика возврата, тексты согласий</td><td>Юрист</td><td>Страницы /legal, приём платежей, D-03 (8.2)</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>1.7</td><td><code>RESEND_API_KEY</code></td><td>Заказчик</td><td>Письма входа и сброса пароля</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>8.1</td><td>Вычитка армянского (hy) носителем языка</td><td>Носитель языка</td><td>Выпуск hy на прод. Строки массовой отмены и «Для тебя» — черновики</td><td><span class="pill no">Ждёт</span></td></tr>
+    </tbody>
+  </table>
+  <p class="note">Хостинг: Vercel подключён и деплоит превью каждой ветки и прод из main. Решение по хостингу в <code>docs/06</code> нужно зафиксировать.</p>
+</section>
+
+<!-- 05 РЕШЕНИЯ ВЛАДЕЛЬЦА -->
+<section class="section">
+  <div class="eyebrow">05 · Решения владельца</div>
+  <h1>Что решено, что ждёт решения</h1>
+  <table>
+    <thead><tr><th style="width:36%">Вопрос</th><th style="width:14%">Статус</th><th>Что изменилось</th></tr></thead>
+    <tbody>
+      <tr><td><b>Оплата занятий:</b> онлайн или на месте</td><td><span class="pill dec">Решено 31.10</span></td><td>Занятия оплачиваются на месте, бронь сразу подтверждается. Аренда зала ждёт оплату. Онлайн — после эквайринга (0.6)</td></tr>
+      <tr><td><b>Хостинг:</b> Vercel или Cloudflare</td><td><span class="pill dec">Решено по факту</span></td><td>Vercel подключён, превью и прод деплоятся. Зафиксировать в <code>docs/06</code></td></tr>
+      <tr><td><b>Состав пакетов:</b> рекуррентные брони и push</td><td><span class="pill no">Открыто</span></td><td>В коде это FULL (<code>catalog.ts</code>). В <code>docs/06</code> не решено</td></tr>
+      <tr><td><b>Подтверждение брони исполнителем</b> (<code>bookingRequestRules</code>)</td><td><span class="pill no">Открыто</span></td><td>Механизм SLA 24 ч и авто-отказа 48 ч готов; правило пусто (D-04)</td></tr>
+      <tr><td><b>Бизнес-параметры</b> 0.1: комиссии, отмена, выезд</td><td><span class="pill no">Открыто</span></td><td>Работают значения по умолчанию из сообщения заказчику</td></tr>
+      <tr><td><b>Антифрод SMS:</b> источник данных по карте и устройству</td><td><span class="pill no">Открыто</span></td><td>Нужен для D-05 вместе с провайдером</td></tr>
+      <tr><td><b>Порог ручного возврата</b> 200 000 AMD</td><td><span class="pill part">Действует</span></td><td>Значение из конфига. Подтверждение заказчика в документах не записано</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 06 ЧТО СДЕЛАНО -->
+<section class="section">
+  <div class="eyebrow">06 · Изменения с 30.10</div>
+  <h1>Ветки, PR и что в них</h1>
+  <table>
+    <thead><tr><th style="width:27%">Ветка и PR</th><th>Что внутри</th><th style="width:20%">Статус</th></tr></thead>
+    <tbody>
+      <tr><td><code>fix/lighthouse-skip-is-crawlable</code><br><b>PR #3</b></td><td>Lighthouse CI: аудит is-crawlable пропущен через <code>settings.skipAudits</code>. Причина: CI-сборка non-production закрывает индексацию через robots.txt</td><td><span class="pill part">Открыт, не смержен</span></td></tr>
+      <tr><td><code>mvp/closeout</code><br><b>PR #2</b></td><td>Офлайн-PWA (service worker, заглушка по локалям). Массовая отмена броней через согласование. Статусы docs/06 и docs/07. Readiness-отчёт</td><td><span class="pill part">Открыт, не смержен</span></td></tr>
+      <tr><td><code>full/closeout</code><br>от mvp/closeout</td><td>Лист ожидания: предложение места при любой отмене, страница «Занять место», письмо со ссылкой. Подборка «Для тебя» в кабинете. Исключение /waitlist из карты сайта и индексации</td><td><span class="pill part">В работе</span></td></tr>
+    </tbody>
+  </table>
+  <h2>Подробнее по изменениям</h2>
+  <ul class="plain">
+    <li><b>Лист ожидания.</b> Раньше место предлагалось только при отмене клиентом и при истечении окон удержания. Теперь то же происходит при отмене администратором, истечении неоплаченной брони и отказе или истечении заявки инструктора.</li>
+    <li><b>«Для тебя».</b> Подборка только по направлениям из анкеты танцора и только опубликованные занятия. Без анкеты подборки нет.</li>
+    <li><b>Массовая отмена.</b> Одобренная заявка отменяет брони по одной через общую функцию, как одиночная отмена. Сбой одной брони не останавливает остальные; неудачи пишутся в журнал.</li>
+    <li><b>Документация.</b> Закрытые пункты из «Не реализовано» убраны, статусы в docs/07 приведены к коду. D-07 остаётся частичным: индекс надёжности не читается.</li>
+  </ul>
+</section>
+
+<!-- 07 НЕ ПРОВЕРЕНО -->
+<section class="section">
+  <div class="eyebrow">07 · Что не проверено</div>
+  <h1>Что ещё нужно увидеть глазами</h1>
+  <table>
+    <thead><tr><th style="width:34%">Что</th><th>Почему не проверено и как проверить</th></tr></thead>
+    <tbody>
+      <tr><td>Установка на домашний экран</td><td>Офлайн-заглушка проверена в Chromium, а сценарий «установить приложение» требует интерактивного запроса браузера. Проверить руками на телефоне</td></tr>
+      <tr><td>Массовая отмена: одобрение и исполнение</td><td>E2E проверяет выбор брони и отправку на согласование. Одобрение вторым админом и исполнитель в <code>people.ts</code> не проверены: нужен второй администратор с правом <code>settings.edit</code></td></tr>
+      <tr><td>Лист ожидания: ссылка из письма</td><td>Страница и кнопка проверены e2e. Ссылку из реального письма не проверяли: почтовый провайдер в тестовом окружении не настроен</td></tr>
+      <tr><td>Подборка «Для тебя»</td><td>Проверить на стенде с анкетой и опубликованными занятиями выбранного стиля</td></tr>
+      <tr><td>Подборка «Для тебя» на реальных анкетах</td><td>Проверено юнит-тестами. На стенде с анкетами и опубликованными занятиями не проверяли</td></tr>
+      <tr><td>WAF</td><td>Настраивается на уровне хостинга, в коде не проверяется</td></tr>
+    </tbody>
+  </table>
+</section>
 
 </body>
 </html>

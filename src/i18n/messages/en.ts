@@ -856,6 +856,22 @@ const en = {
       'By placing this order you accept the <terms>Terms of Service</terms> and <refund>Refund Policy</refund>.',
   },
 
+  forYou: {
+    title: 'For you',
+    intro: 'Classes in the styles from your profile. You can change your profile at any time.',
+    empty: 'No classes in your styles yet. Check back later or browse all classes.',
+    editProfile: 'Edit profile',
+  },
+
+  waitlistClaim: {
+    title: 'A spot opened up',
+    body: 'The spot is free. You can claim it until {when}.',
+    cta: 'Claim the spot',
+    failed: 'Could not claim the spot. Please try again.',
+    expired: 'The claim window has expired or the spot is taken. Browse other classes.',
+    otherClasses: 'All classes',
+  },
+
   booking: {
     title: 'Choose date & time',
     /** Страница входа в бронирование: сначала инструктор, потом дата и время. */

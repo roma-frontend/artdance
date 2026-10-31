@@ -23,6 +23,7 @@ vi.mock('@/lib/db', () => ({
 }));
 vi.mock('@/lib/audit', () => ({ recordAudit: h.recordAudit }));
 vi.mock('@/server/reliability/service', () => ({ recordReliabilityEvent: h.recordReliabilityEvent }));
+vi.mock('@/server/booking/waitlist-offer', () => ({ offerFreedSeat: vi.fn() }));
 
 import { cancelBookingAsStaff } from './staff-cancel';
 

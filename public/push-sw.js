@@ -68,10 +68,10 @@ const DEFAULT_LOCALE = 'hy';
 const OFFLINE_REFRESH_MS = 60 * 60 * 1000;
 const lastOfflineRefresh = new Map();
 
+// Заглушки при установке не качаем: установка не должна конкурировать с первой загрузкой страницы.
+// Первая успешная навигация сама положит заглушку локали в кеш (см. fetch ниже).
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    Promise.all(LOCALES.map((locale) => refreshOfflinePage(locale, true))).then(() => self.skipWaiting()),
-  );
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', (event) => {
@@ -85,7 +85,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
-        if (response.ok) event.waitUntil(refreshOfflinePage(localeOf(request.url), false));
+        if (response.ok) event.waitUntil(refreshOfflinePage(localeOf(request.url)));
         return response;
       })
       .catch(() => offlineResponse(request.url)),
@@ -93,12 +93,12 @@ self.addEventListener('fetch', (event) => {
 });
 
 /**
- * Перекладывает заглушку в кеш. При установке — всегда, при навигации — не чаще раза в час,
+ * Перекладывает заглушку в кеш. Вызывается после успешной навигации, но не чаще раза в час:
  * иначе каждый переход по сайту тянул бы страницу заново.
  */
-async function refreshOfflinePage(locale, force) {
+async function refreshOfflinePage(locale) {
   const last = lastOfflineRefresh.get(locale) || 0;
-  if (!force && Date.now() - last < OFFLINE_REFRESH_MS) return;
+  if (Date.now() - last < OFFLINE_REFRESH_MS) return;
   lastOfflineRefresh.set(locale, Date.now());
   try {
     const response = await fetch(`/${locale}/offline`, { cache: 'reload' });
