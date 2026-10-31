@@ -5,6 +5,8 @@
  * сайта. Если в точке нет действующего баннера, ничего не рисуется, и страница
  * выглядит так же, как без слота.
  *
+ * Модуль `cms` в entitlements выключает слот целиком: подпись и баннер не выводятся.
+ *
  * Внешние ссылки помечаются `sponsored`: поисковик должен видеть их как оплаченные
  * и не передавать им вес страницы.
  */
@@ -19,6 +21,7 @@ import { resolveMedia } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import { getAdSlotBanner } from '@/server/content/ad-slots';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 
 interface AdSlotBannerProps {
   slotKey: AdSlotKey;
@@ -28,6 +31,7 @@ interface AdSlotBannerProps {
 const CARD = 'flex items-center gap-4 rounded-md border border-border-default p-4';
 
 export async function AdSlotBanner({ slotKey, locale }: AdSlotBannerProps) {
+  if (!(await getEffectiveEntitlementsSafe()).cms) return null;
   const banner = await getAdSlotBanner({ slotKey, locale });
   if (!banner) return null;
 
