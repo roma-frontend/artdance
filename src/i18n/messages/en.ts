@@ -3895,6 +3895,13 @@ const en = {
       cancelTitle: 'Cancel booking',
       cancelReasonLabel: 'Cancellation reason',
       cancelCta: 'Cancel booking',
+      bulkCancelCta: 'Cancel selected',
+      bulkCancelTitle: 'Cancel selected bookings',
+      bulkCancelDescription:
+        'Nothing is cancelled right away: the request goes to a second administrator in approvals. After approval each booking is cancelled the same way as a single cancellation.',
+      bulkCancelByProvider: 'Cancelled by the venue or instructor, not the customer',
+      bulkCancelSubmit: 'Send for approval',
+      bulkCancelRequested: 'Cancellation request for {count} bookings sent for approval',
       cancelled: 'Booking cancelled',
       statusChanged: 'Status updated',
       feeNotice: 'Late cancellation fee: {amount}',

@@ -30,14 +30,13 @@ import { z } from 'zod';
 import { security } from '@/config/business';
 import { bookingStatuses, orderStatuses } from '@/domain/enums';
 import { isRefundAllowed, refundableAmount, requiresApproval } from '@/domain/admin/refund';
-import { cancellationOutcome, refundAmountFor } from '@/domain/booking/policy';
 import { domainErrors } from '@/domain/errors';
 import { money } from '@/domain/money';
-import { isLateCancellation } from '@/domain/reliability';
 import { recordAudit } from '@/lib/audit';
 import { requireCapability } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
 import { settlePaidOrder } from '@/server/payments/settle';
+import { cancelBookingAsStaff, type CancelBookingOutcome } from '@/server/booking/staff-cancel';
 import { recordReliabilityEvent } from '@/server/reliability/service';
 import { authedAction } from '@/server/safe-action';
 import { decideVerificationDocument } from '@/server/verification/service';
@@ -320,118 +319,73 @@ export const setBookingStatus = authedAction
     return { status: after.status };
   });
 
-export interface CancelBookingOutcome {
-  /** Удержание за позднюю отмену. */
-  fee: number;
-  /** Сумма к возврату клиенту. */
-  refund: number;
-}
-
 export const cancelBooking = authedAction
   .metadata({ rateLimit: 'adminMutation', audit: 'admin.booking.cancel' })
   .inputSchema(
     z.object({
       id: z.string().trim().min(1).max(64),
       reason: z.string().trim().min(3).max(500),
-      /**
-       * Отмена по инициативе исполнителя. Разные статусы — разные последствия:
-       * отмена площадкой не должна выглядеть как отказ клиента ни в отчётах, ни в
-       * рейтинге.
-       */
+      /** Отмена по инициативе исполнителя — см. `cancelBookingAsStaff`. */
       byProvider: z.boolean(),
     }),
   )
   .action(async ({ parsedInput, ctx }): Promise<CancelBookingOutcome> => {
     const caller = await requireCapability('bookings.cancel');
-
-    const booking = await db.booking.findUnique({
-      where: { id: parsedInput.id },
-      select: {
-        id: true,
-        status: true,
-        startsAt: true,
-        totalPrice: true,
-        cancellationWindowHours: true,
-        lateCancellationRate: true,
-        rescheduleWindowHours: true,
-        maxReschedules: true,
-        rescheduleCount: true,
-        updatedAt: true, sessionId: true, participants: true,
-        customerId: true, instructor: { select: { userId: true } },
-        payments: { where: { status: { in: ['PAID', 'PARTIALLY_REFUNDED'] } }, select: { paidAmount: true } },
-      },
+    return cancelBookingAsStaff({
+      id: parsedInput.id,
+      reason: parsedInput.reason,
+      byProvider: parsedInput.byProvider,
+      actor: caller,
+      ipAddress: ctx.identifier,
     });
-    if (!booking) throw domainErrors.notFound();
+  });
 
-    const now = new Date();
-    const outcome = cancellationOutcome(
-      {
-        startsAt: booking.startsAt,
-        status: booking.status,
-        totalPrice: booking.totalPrice,
-        cancellationWindowHours: booking.cancellationWindowHours,
-        lateCancellationRate: Number(booking.lateCancellationRate),
-        rescheduleWindowHours: booking.rescheduleWindowHours,
-        rescheduleCount: booking.rescheduleCount,
-        maxReschedules: booking.maxReschedules,
+/**
+ * Массовая отмена — только заявкой. Отмена сразу нескольких броней (закрытие зала,
+ * сорванная выездная группа) — тот же шаг, что одиночная отмена, но в масштабе,
+ * поэтому второй администратор подтверждает список до того, как он станет отменами.
+ * Исполнение — в `executeApprovedRequest` (`people.ts`).
+ */
+export const requestBulkBookingCancel = authedAction
+  .metadata({ rateLimit: 'adminMutation', audit: 'admin.booking.bulkCancel.requested' })
+  .inputSchema(
+    z.object({
+      ids: z.array(z.string().trim().min(1).max(64)).min(1).max(security.guardrails.maxBulkActionItems),
+      reason: z.string().trim().min(3).max(500),
+      byProvider: z.boolean(),
+    }),
+  )
+  .action(async ({ parsedInput, ctx }): Promise<{ count: number }> => {
+    const caller = await requireCapability('bookings.cancel');
+    const ids = [...new Set(parsedInput.ids)];
+
+    const bookings = await db.booking.findMany({ where: { id: { in: ids } }, select: { id: true, status: true } });
+    if (bookings.length !== ids.length) throw domainErrors.notFound();
+    if (bookings.some((b) => b.status === 'CANCELLED_BY_CUSTOMER' || b.status === 'CANCELLED_BY_PROVIDER')) {
+      throw domainErrors.validationFailed('status');
+    }
+
+    const request = await db.approvalRequest.create({
+      data: {
+        action: 'booking.bulkCancel',
+        payload: { bookingIds: ids, reason: parsedInput.reason, byProvider: parsedInput.byProvider },
+        requestedById: caller.id,
+        expiresAt: new Date(Date.now() + security.guardrails.approvalTtlHours * 60 * 60 * 1000),
       },
-      now,
-    );
-
-    /*
-     * Администратор может отменить бронь, которую клиенту отменять уже нельзя
-     * (началась, завершена) — это часть работы поддержки. Но удержание считается
-     * по зафиксированным условиям, а не «по договорённости»: иначе в отчётности
-     * появляются суммы, которых нет ни в одном правиле.
-     */
-    const paid = booking.payments.reduce((sum, payment) => sum + payment.paidAmount, 0);
-    const fee = outcome.kind === 'fee' ? outcome.amount : 0;
-    const refund = outcome.kind === 'forbidden' ? 0 : refundAmountFor(outcome, paid);
-
-    if (booking.status === 'CANCELLED_BY_CUSTOMER' || booking.status === 'CANCELLED_BY_PROVIDER') throw domainErrors.validationFailed('status');
-    const after = await db.$transaction(async (tx) => {
-      const claimed = await tx.booking.updateMany({
-        where: { id: booking.id, status: booking.status, updatedAt: booking.updatedAt },
-        data: {
-          status: parsedInput.byProvider ? 'CANCELLED_BY_PROVIDER' : 'CANCELLED_BY_CUSTOMER',
-          cancelledAt: new Date(), cancellationReason: parsedInput.reason,
-        },
-      });
-      if (claimed.count !== 1) throw domainErrors.validationFailed('status');
-      // Поздняя отмена засчитывается стороне, которая отменила: инструктору при byProvider, иначе клиенту.
-      if (outcome.kind !== 'forbidden' && isLateCancellation({ now, startsAt: booking.startsAt, cancellationWindowHours: booking.cancellationWindowHours })) {
-        const party = parsedInput.byProvider ? booking.instructor?.userId : booking.customerId;
-        if (party) await recordReliabilityEvent({ userId: party, kind: 'LATE_CANCEL', refId: booking.id }, tx);
-      }
-      if (booking.sessionId && (booking.status === 'PENDING' || booking.status === 'CONFIRMED')) {
-        const released = await tx.classSession.updateMany({
-          where: { id: booking.sessionId, bookedCount: { gte: booking.participants } },
-          data: { bookedCount: { decrement: booking.participants } },
-        });
-        if (released.count !== 1) throw domainErrors.validationFailed('sessionId');
-      }
-      if (outcome.kind === 'free' || (parsedInput.byProvider && outcome.kind !== 'forbidden')) {
-        const redemption = await tx.classPassRedemption.findUnique({ where: { bookingId: booking.id } });
-        if (redemption) {
-          await tx.classPass.update({ where: { id: redemption.passId }, data: { lessonsRemaining: { increment: 1 } } });
-          await tx.classPassRedemption.delete({ where: { id: redemption.id } });
-        }
-      }
-      return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, select: { id: true, status: true, cancelledAt: true } });
+      select: { id: true },
     });
 
     await recordAudit({
       actor: caller,
-      action: 'admin.booking.cancel',
-      entityType: 'Booking',
-      entityId: parsedInput.id,
-      before: { status: booking.status },
-      after: { ...after, fee, refund },
+      action: 'admin.booking.bulkCancel.requested',
+      entityType: 'ApprovalRequest',
+      entityId: request.id,
+      after: { count: ids.length, byProvider: parsedInput.byProvider },
       reason: parsedInput.reason,
       ipAddress: ctx.identifier,
     });
 
-    return { fee, refund };
+    return { count: ids.length };
   });
 
 /* ─────────────────────────────── Выплаты ─────────────────────────────── */
