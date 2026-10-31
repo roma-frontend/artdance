@@ -29,6 +29,7 @@ import { z } from 'zod';
 import { grantLimits, isCapability, nonGrantableCapabilities } from '@/config/capabilities';
 import { notificationTypes } from '@/config/notifications';
 import { userRoles } from '@/domain/enums';
+import { parseBulkCancelPayload } from '@/domain/booking/bulk-cancel';
 import { domainErrors } from '@/domain/errors';
 import { locales } from '@/i18n/config';
 import type { Caller } from '@/lib/auth/guards';
@@ -38,6 +39,7 @@ import { db } from '@/lib/db';
 import { sendEmail } from '@/lib/email/send';
 import { buildPreview } from '@/lib/notifications/preview';
 import { toCsv } from '@/lib/security/export-safety';
+import { cancelBookingAsStaff } from '@/server/booking/staff-cancel';
 import { activeAdminCount, ordersForExport } from '@/server/admin/people';
 import { authedAction } from '@/server/safe-action';
 
@@ -572,6 +574,57 @@ interface ApprovalRequestRef {
   requestedById: string;
 }
 
+/**
+ * Одобренная массовая отмена. Каждая бронь отменяется отдельно, как одиночная: сбой одной
+ * не останавливает остальные, и неудачи попадают в журнал. Право `bookings.cancel`
+ * проверяется у одобрившего, а не у автора заявки: одобрение не расширяет чужие полномочия.
+ */
+async function executeBulkBookingCancel(
+  request: ApprovalRequestRef,
+  payload: unknown,
+  approver: Caller,
+  ipAddress: string | undefined,
+): Promise<void> {
+  const { security } = await import('@/config/business');
+  const parsed = parseBulkCancelPayload(payload, security.guardrails.maxBulkActionItems);
+  if (!parsed) {
+    console.error('[approval] заявка на массовую отмену не прошла разбор', { requestId: request.id });
+    return;
+  }
+
+  const { hasCapability } = await import('@/lib/auth/capabilities');
+  if (!(await hasCapability(approver.role, 'bookings.cancel', approver.email))) {
+    console.error('[approval] у одобрившего нет права bookings.cancel', { requestId: request.id });
+    return;
+  }
+
+  const failed: string[] = [];
+  for (const bookingId of parsed.bookingIds) {
+    try {
+      await cancelBookingAsStaff({
+        id: bookingId,
+        reason: parsed.reason,
+        byProvider: parsed.byProvider,
+        actor: approver,
+        ipAddress,
+      });
+    } catch (error) {
+      failed.push(bookingId);
+      console.error('[approval] отмена брони не выполнена', { requestId: request.id, bookingId, error });
+    }
+  }
+
+  await recordAudit({
+    actor: approver,
+    action: 'admin.booking.bulkCancel.executed',
+    entityType: 'ApprovalRequest',
+    entityId: request.id,
+    after: { requested: parsed.bookingIds.length, failed },
+    reason: parsed.reason,
+    ipAddress,
+  });
+}
+
 async function executeApprovedRequest(
   request: ApprovalRequestRef,
   approver: Caller,
@@ -584,6 +637,11 @@ async function executeApprovedRequest(
   if (!raw || raw.status !== 'APPROVED') return;
 
   const payload = (raw.payload ?? {}) as Record<string, unknown>;
+
+  if (raw.action === 'booking.bulkCancel') {
+    await executeBulkBookingCancel(request, raw.payload, approver, ipAddress);
+    return;
+  }
 
   if (raw.action === 'payments.refund' || raw.action === 'payment.manualRefund') {
     const orderId = typeof payload.orderId === 'string' ? payload.orderId : null;

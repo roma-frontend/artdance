@@ -8,6 +8,7 @@
 import { setRequestLocale } from 'next-intl/server';
 
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
+import { BookingBulkCancelBar } from '@/components/admin/booking-bulk-cancel-bar';
 import { DataTable } from '@/components/data/data-table';
 import { TableFilters } from '@/components/data/table-filters';
 import { AccessDenied } from '@/components/ui/access-denied';
@@ -35,6 +36,20 @@ export default async function AdminBookingsPage({ params, searchParams }: PagePr
   const { rows, total } = await listBookings(query);
   const tRoot = await getRootTranslate();
 
+  /* Выбор строк и массовая отмена — только с правом отмены; без него таблица обычная. */
+  const canCancel = can('bookings.cancel');
+  const table = (
+    <DataTable
+      selectable={canCancel}
+      rowLink={{ kind: 'booking' }}
+      columns={adminBookingColumns}
+      rows={rows}
+      primaryKey="reference"
+      resourceLabel={tRoot('admin.bookings.title')}
+      filtered={Boolean(query.q ?? query.status)}
+    />
+  );
+
   return (
     <>
       <AdminPageHeader titleKey="admin.bookings.title" subtitleKey="admin.bookings.subtitle" />
@@ -48,14 +63,7 @@ export default async function AdminBookingsPage({ params, searchParams }: PagePr
           }))}
         />
 
-        <DataTable
-          rowLink={{ kind: 'booking' }}
-          columns={adminBookingColumns}
-          rows={rows}
-          primaryKey="reference"
-          resourceLabel={tRoot('admin.bookings.title')}
-          filtered={Boolean(query.q ?? query.status)}
-        />
+        {canCancel ? <BookingBulkCancelBar>{table}</BookingBulkCancelBar> : table}
 
         <p className="text-body-sm text-content-secondary">
           {tRoot('admin.list.resultsCount', { count: total })}
