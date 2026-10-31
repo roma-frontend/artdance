@@ -1,5 +1,5 @@
 {
-  "//": "Lighthouse CI. Разделение error/warn осознанное: регресс качества (a11y, SEO, best practices) блокирует мерж, а метрики скорости на CI-раннере шумные и только предупреждают. Иначе команда привыкает игнорировать красный CI. canonical/hreflang — warn (не error): Lighthouse сверяет rel=canonical с URL точечно, а тег берётся из NEXT_PUBLIC_APP_URL, зашитой в бандл на сборке; локальный раннер поднимает next start на том же порту, что и build-env, иначе «порт-смещение» красит CI вразнобой, хотя тег в разметке корректный. Порог categories:seo ≥ 0.95 ловит реальные провалы (нет title/description/robots). Если заказчик захочет строгий аудит canonical — вернуть error после стабилизации NEXT_PUBLIC_APP_URL под CI-раннер.",
+  "//": "Lighthouse CI. Разделение error/warn осознанное: регресс качества (a11y, SEO, best practices) блокирует мерж, а метрики скорости на CI-раннере шумные и только предупреждают. Иначе команда привыкает игнорировать красный CI. canonical/hreflang — warn (не error): Lighthouse сверяет rel=canonical с URL точечно, а тег берётся из NEXT_PUBLIC_APP_URL, зашитой в бандл на сборке; локальный раннер поднимает next start на том же порту, что и build-env, иначе «порт-смещение» красит CI вразнобой, хотя тег в разметке корректный. Порог categories:seo ≥ 0.95 ловит реальные провалы (нет title/description/robots). is-crawlable пропущен: CI-сборка non-production (NEXT_PUBLIC_APP_ENV=local), robots.ts по дизайну отдаёт Disallow: / и закрывает индексацию, поэтому аудит там всегда красный и весит ~31% категории SEO. Валидность robots.txt по-прежнему проверяет robots-txt; meta noindex и x-robots-tag в CI не проверяются. Если заказчик захочет строгий аудит canonical — вернуть error после стабилизации NEXT_PUBLIC_APP_URL под CI-раннер.",
   "ci": {
     "collect": {
       "startServerCommand": "npm run start",
@@ -11,7 +11,8 @@
       ],
       "numberOfRuns": 3,
       "settings": {
-        "preset": "desktop"
+        "preset": "desktop",
+        "skipAudits": ["is-crawlable"]
       }
     },
     "assert": {
