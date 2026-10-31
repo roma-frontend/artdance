@@ -14,12 +14,15 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import { PrismaClient } from '../src/generated/prisma/client';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 const client = demoAccounts.find((account) => account.role === 'CUSTOMER')!;
 
 test('клиент из письма занимает место и попадает на подтверждение брони', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'одна тестовая сессия: только в desktop');
+  /* Клейм идёт через общую корзину `bookingHold`: без своего адреса тест получает 429, когда соседи её исчерпали. */
+  await isolateRateLimit(page, `waitlist-${test.info().project.name}`);
 
   const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
   try {
