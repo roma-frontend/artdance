@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ArtDance — Production readiness 31.10.2026</title>
+<style>
+  body { font-family: "Segoe UI", system-ui, sans-serif; margin: 2em; color: #1a1a2e; line-height: 1.55; max-width: 960px; }
+  h1 { color: #8B1A2B; border-bottom: 3px solid #8B1A2B; padding-bottom: .4em; }
+  h2 { color: #8B1A2B; margin-top: 1.6em; }
+  h3 { color: #2e2e3c; margin-top: 1.1em; }
+  table { border-collapse: collapse; width: 100%; margin: .8em 0 1.4em; font-size: .92em; }
+  th, td { border: 1px solid #c9c2b8; padding: .45em .7em; text-align: left; vertical-align: top; }
+  th { background: #f4ede4; color: #5a3e36; }
+  .done { background: #e8f5e9; }
+  .partial { background: #fff8e1; }
+  .blocked { background: #fdecea; }
+  code { background: #f0ece4; padding: .1em .35em; border-radius: 3px; font-size: .9em; }
+  ul, ol { margin: .4em 0; }
+  .note { font-size: .85em; color: #666; border-left: 3px solid #c9c2b8; padding-left: .8em; margin: 1em 0; }
+</style>
+</head>
+<body>
+
+<h1>ArtDance — Production readiness (обновление от 31.10.2026)</h1>
+<p>Изменения с 30.10.2026 лежат в двух ветках, в <code>main</code> пока не смержены:
+<code>mvp/closeout</code> (PWA, массовая отмена броней, статусы документации) и
+<code>fix/lighthouse-skip-is-crawlable</code> (фикс CI).</p>
+
+<h2>0. Что изменилось с 30.10</h2>
+<table>
+<tr><th>Пункт</th><th>Статус</th><th>Что сделано и где</th></tr>
+<tr class="done"><td>Lighthouse CI: аудит is-crawlable</td><td>✅ Исправлено в ветке</td><td>Аудит пропущен через <code>settings.skipAudits</code> в <code>lighthouserc.json</code> (<code>47ddb3b</code>, <code>fix/lighthouse-skip-is-crawlable</code>). Причина: CI-сборка non-production закрывает индексацию в <code>robots.txt</code>, аудит весил около 31% SEO, отсюда 0.69 при пороге 0.95. После мерджа CI должен стать зелёным</td></tr>
+<tr class="done"><td>A-20 PWA: офлайн-заглушка</td><td>✅ Сделано в ветке</td><td>Service worker (<code>public/push-sw.js</code>) кеширует <code>/&lt;локаль&gt;/offline</code> для hy, ru и en и отдаёт её при сбое сети. Регистрация — на каждой странице (<code>PwaRegister</code>). Тест скрипта — 5 случаев (<code>c9d042c</code>). В браузере офлайн не проверялось</td></tr>
+<tr class="done"><td>E-01 массовая отмена броней</td><td>✅ Сделано в ветке</td><td>На <code>/admin/bookings</code> выбираются брони и отправляется заявка на согласование (<code>booking.bulkCancel</code>). После одобрения каждая бронь отменяется функцией <code>cancelBookingAsStaff</code>, которую теперь использует и одиночная отмена. Деньги не двигаются: возврат остаётся отдельной операцией по заказу (<code>388086f</code>). Интерфейс и исполнение через e2e не проверялись</td></tr>
+<tr class="done"><td>Статусы в <code>docs/06</code> и <code>docs/07</code></td><td>✅ Приведены к коду</td><td>Подключены и убраны из списка открытых: C-04, C-05, C-06, C-08, C-09, B-05, D-06, D-08, E-06. D-07 — частично: индекс надёжности пишется, но нигде не читается (<code>b7a082a</code>)</td></tr>
+</table>
+<p class="note">Проверка ветки <code>mvp/closeout</code>: <code>npm run verify</code> завершился с кодом 0. Тестовых файлов — 164, тестов — 1756. Зелёные typecheck, lint, i18n, tokens, css, media, video и design.</p>
+
+<h2>1. P0 задачи</h2>
+<table>
+<tr><th>ID</th><th>Статус</th><th>Что сделано</th></tr>
+<tr class="done"><td>D-01</td><td>✅ Закрыто</td><td>Маскировка контактов до оплаты: <code>bookingGuardrails</code>, <code>flagBookingContactText</code>. Тесты: guardrails.test.ts, route.test.ts</td></tr>
+<tr class="done"><td>D-02</td><td>✅ Закрыто</td><td>Документ верификации и бейдж <code>isVerified</code> меняются в одной транзакции (<code>decideVerificationDocument</code>), с аудитом</td></tr>
+<tr class="partial"><td>D-03</td><td>🔶 Механизм готов, правила пусты</td><td>Серверная проверка согласий и запись <code>Booking.consentVersion</code> подключены в оба пути брони. Тексты (<code>draft-1</code>) ждут юриста (0.8). Включать правило без утверждённого текста нельзя: бронь станет недоступна</td></tr>
+<tr class="done"><td>D-04</td><td>✅ Закрыто</td><td>SLA 24 ч и авто-отклонение через 48 ч. Открытая заявка не оплачивается. Включение правила <code>bookingRequestRules</code> — решение владельца</td></tr>
+<tr class="partial"><td>D-05</td><td>🔶 Код готов, провайдера нет</td><td>Модели <code>SmsDispatch</code> и <code>ReviewQueueEntry</code>, бюджет SMS (200 в сутки, 3000 за 30 дней). <code>sendSms</code> честно отвечает «не настроено». Ждёт провайдера (0.7) и лимитов от заказчика</td></tr>
+<tr class="done"><td>DS-01</td><td>✅ Закрыто</td><td>Миграция таксономии дисциплин сверена с доменными константами тестом <code>dancesport-parity.test.ts</code>. Применяется через <code>npm run db:deploy</code></td></tr>
+<tr class="done"><td>2.10</td><td>✅ Закрыто</td><td>Карта студии: <code>MapView</code> без своего JS и заглушка без ключа, <code>StaticMapImage</code>, i18n <code>map.*</code>. E2E — <code>e2e/mvp-gaps.spec.ts</code></td></tr>
+<tr class="done"><td>8.3</td><td>✅ Закрыто</td><td>Джоб Lighthouse в <code>ci.yml</code>. Отчёты — в артефакт, без публичной выгрузки. После фикса is-crawlable — зелёный (см. раздел 0)</td></tr>
+<tr class="done"><td>A-20 / 8.1b</td><td>✅ Сделано в ветке</td><td>Манифест, <code>/offline</code> и service worker с офлайн-заглушкой (раздел 0)</td></tr>
+</table>
+
+<h2>2. Внешние блокеры — что ждёт и кто закрывает</h2>
+<p>Эти пункты не закрываются из кода: нужны аккаунты, договоры или решения третьих сторон.</p>
+<table>
+<tr><th>ID</th><th>Что нужно</th><th>Кто закрывает</th><th>Что стоит на нём</th></tr>
+<tr class="blocked"><td>0.1</td><td>Подтвердить комиссию 15% / 12%, окно отмены 24 ч, удержание 50%, выезд 5 000 AMD (<code>src/config/business.ts</code>, поля <code>@confirm</code>)</td><td>Заказчик</td><td>Цены, отмены, комиссии. Работают значения по умолчанию из сообщения заказчику; дедлайн 28.09 прошёл</td></tr>
+<tr class="blocked"><td>0.3</td><td>Проект Supabase и <code>DATABASE_URL</code></td><td>Заказчик</td><td>Прод-БД: 8.4, 8.6</td></tr>
+<tr class="blocked"><td>0.4</td><td>Бакет R2 и ключи доступа</td><td>Заказчик</td><td>Драйвер R2 в проде (1.6)</td></tr>
+<tr class="blocked"><td>0.5</td><td>Домен <code>artdance.am</code>: DNS сейчас у GoDaddy</td><td>Заказчик</td><td>8.5: SSL, деплой, Sentry, Upstash</td></tr>
+<tr class="blocked"><td>0.6</td><td>Договор с банком на эквайринг</td><td>Заказчик, банк</td><td>5.1 и 5.5: сейчас только mock-адаптер; приём платежей; DS-07</td></tr>
+<tr class="blocked"><td>0.7</td><td>Регистрация SMS-имени отправителя (2–3 недели)</td><td>Заказчик</td><td>SMS (D-05). SMS в пакеты не входит</td></tr>
+<tr class="blocked"><td>0.8</td><td>Оферта, privacy, политика возврата; тексты согласий</td><td>Юрист</td><td>8.2, приём платежей, D-03</td></tr>
+<tr class="blocked"><td>1.7</td><td><code>RESEND_API_KEY</code></td><td>Заказчик</td><td>Письма входа и сброса пароля</td></tr>
+<tr class="blocked"><td>8.1</td><td>Вычитка армянского (<code>hy</code>) носителем языка</td><td>Носитель языка</td><td>Выпуск <code>hy</code> на прод. Строки массовой отмены — черновик, тоже нужна вычитка</td></tr>
+<tr class="blocked"><td>Хостинг</td><td>Выбрать Vercel (<code>vercel.json</code>) или Cloudflare (<code>wrangler.jsonc</code>)</td><td>Владелец</td><td>Cron сейчас идёт через GitHub Actions (<code>booking-cron.yml</code>), это работает</td></tr>
+<tr class="blocked"><td>DS-03, DS-07, DS-09</td><td>Календарь WDSF — согласовать с федерацией. Донаты — после банка (0.6). Клип и канал WDSF — от заказчика</td><td>Заказчик, федерация</td><td>Календарь, донаты, видео на главной</td></tr>
+</table>
+
+<h2>3. Открытое решение: оплата занятий</h2>
+<p>Сейчас бронь занятия создаётся сразу <code>CONFIRMED</code> без оплаты. Аренда зала создаётся <code>PENDING</code> и подтверждается после оплаты. Варианты:</p>
+<ol>
+<li><strong>На месте (рекомендовано для MVP).</strong> Текущее поведение, код менять не нужно. Онлайн-оплату занятий можно включить позже, когда подключён банк.</li>
+<li><strong>Онлайн при брони.</strong> Занятие остаётся <code>PENDING</code> до оплаты, неоплаченные снимаются по <code>unpaidExpiryMinutes</code>. Нужен рабочий эквайринг (0.6). Сейчас есть только mock, поэтому реальные деньги не пройдут.</li>
+<li><strong>Выбор клиента.</strong> Оба способа. Больше работы в букинге и интерфейсе. Тоже требует банк.</li>
+</ol>
+
+<h2>4. Остаётся в коде</h2>
+<table>
+<tr><th>ID</th><th>Что не сделано</th><th>Приоритет</th></tr>
+<tr class="partial"><td>A-12</td><td><code>/account/payment-methods</code> — нет страницы способов оплаты</td><td>P1, в пакете PREMIUM</td></tr>
+<tr class="partial"><td>B-06</td><td>Корпоративные счета: код есть, маршрутов и кнопок нет</td><td>P1, не входит в каталог пакетов</td></tr>
+<tr class="partial"><td>B-07</td><td>Бусты: код есть, маршрутов нет</td><td>P2, PREMIUM</td></tr>
+<tr class="partial"><td>DS-04</td><td>Роль спортсмена в схеме не начата. Страница <code>/athletes</code> есть</td><td>P1</td></tr>
+<tr class="partial"><td>D-07</td><td><code>reliabilityScore</code> пишется, но никто его не читает. <code>reliabilityFor</code> без вызовов</td><td>P1</td></tr>
+<tr class="blocked"><td>8.4</td><td>E2E полного цикла покупки. Нужны прод-среда (0.3) и банк (0.6)</td><td>MVP, внешний вход</td></tr>
+</table>
+
+<h2>5. Что не проверено</h2>
+<ul>
+<li>Офлайн-заглушка PWA в браузере и установка на домашний экран.</li>
+<li>Интерфейс массовой отмены и исполнение одобренной заявки. Автоматический тест покрывает разбор заявки и одиночную отмену, но не исполнитель в <code>people.ts</code>.</li>
+<li>E2E-набор (Playwright) на этой ветке не запускался: он требует базу и сид.</li>
+</ul>
+
+</body>
+</html>

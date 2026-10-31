@@ -7,24 +7,24 @@
 ## Production readiness
 
 Статус готовности к запуску — отдельный отчёт, обновляемый по мере закрытия
-задач (последний срез — 30.10.2026):
+задач (последний срез — 31.10.2026):
 
 | | |
 |---|---|
-| [Production readiness 30.10.2026 (HTML)](./docs/artdance-readiness-2026-10-30.html) | P0-задачи, что закрыто и что ждёт внешнего входа |
+| [Production readiness 31.10.2026 (HTML)](./docs/artdance-readiness-2026-10-31.html) | P0-задачи, что закрыто и что ждёт внешнего входа |
 
 Для печати/обмена PDF собирается из HTML одним скриптом и не попадает в репозиторий
 (артефакт кладётся в `~/Downloads` или передаётся заказчику):
 
 ```bash
-node scripts/html-to-pdf.mjs docs/artdance-readiness-2026-10-30.html ~/Downloads/ArtDance-production-readiness-2026-10-30.pdf
+node scripts/html-to-pdf.mjs docs/artdance-readiness-2026-10-31.html ~/Downloads/ArtDance-production-readiness-2026-10-31.pdf
 ```
 
 ## Документы
 
 | | |
 |---|---|
-| [Production readiness 30.10.2026](./docs/artdance-readiness-2026-10-30.html) | живой срез готовности: P0, что закрыто, что ждёт внешнего входа |
+| [Production readiness 31.10.2026](./docs/artdance-readiness-2026-10-31.html) | живой срез готовности: P0, что закрыто, что ждёт внешнего входа |
 | [Решения по проекту](./docs/00-decision-record.md) | какая смета и брендгайд выбраны, стек и обоснование отклонений |
 | [Коммерческое предложение](./docs/01-commercial-proposal.md) | смета, три варианта объёма, окупаемость |
 | [Брендовая система](./docs/02-brand-system.md) | палитра, типографика, реконсиляция гайда и прототипа |
