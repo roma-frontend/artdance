@@ -15,9 +15,9 @@
 import { BadgeCheckIcon, ChevronRightIcon } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { CardQuickActions } from '@/components/catalog/card-quick-actions';
 import { PortalLink } from '@/components/fx/portal-link';
 import { Media } from '@/components/ui/media';
+import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Price } from '@/components/ui/price';
 import { RatingStars } from '@/components/ui/rating-stars';
 import { instructorLanguageKeys, routes } from '@/config';
@@ -73,15 +73,13 @@ export function InstructorCard({ item, locale, href, className }: InstructorCard
           Сердечко справа, знак верификации слева: в прототипе знак стоял справа,
           но сохранить фаворитом инструктора важнее, чем видеть галочку именно в
           этом углу, а две круглые метки в одном углу читаются как одна.
-          Тулбар «Explore / Book» у сердечка — см. CardQuickActions.
         */}
-        <CardQuickActions
+        <FavoriteButton
           target="instructor"
           slug={item.slug}
           name={item.name}
-          exploreHref={href ?? routes.instructor(item.slug)}
-          bookHref={routes.instructorBooking(item.slug)}
-          bookLabel={t('common.actions.book')}
+          onMedia
+          className="absolute top-2.5 right-2.5 z-20"
         />
       </div>
 
