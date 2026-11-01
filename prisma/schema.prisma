@@ -1866,9 +1866,32 @@ model CompetitionRegistration {
   athleteProfile        AthleteProfile      @relation("CompetitionRegistrationAthlete", fields: [athleteProfileId], references: [id], onDelete: Cascade)
   partnerAthleteProfile AthleteProfile?     @relation("CompetitionRegistrationPartner", fields: [partnerAthleteProfileId], references: [id], onDelete: SetNull)
 
+  result                  CompetitionResult?
   @@unique([eventId, categoryId, athleteProfileId])
   @@index([eventId, status])
   @@index([athleteProfileId, createdAt])
+}
+
+/// Место атлета в категории соревнования. Вносит админ после соревнования (DS-04).
+enum CompetitionPlace {
+  GOLD
+  SILVER
+  BRONZE
+  FINALIST
+  PARTICIPANT
+}
+
+model CompetitionResult {
+  id             String           @id @default(cuid())
+  registrationId String           @unique
+  place          CompetitionPlace
+  recordedById   String?
+  recordedAt     DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  registration CompetitionRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@index([place])
 }
 
 model EventTranslation {

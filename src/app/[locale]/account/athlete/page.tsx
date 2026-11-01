@@ -10,6 +10,7 @@ import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/serve
 
 import { AccountNav } from '@/components/account/account-nav';
 import { AthleteProfileForm } from '@/components/account/athlete-profile-form';
+import { ratingWindowMonths } from '@/domain/athlete-rating';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { EmptyState } from '@/components/ui/empty-state';
 import { routes, site } from '@/config';
@@ -39,6 +40,7 @@ export default async function AccountAthletePage({ params }: PageProps) {
   }
 
   const t = await getTranslations('athlete.cabinet');
+  const tPlace = await getTranslations('competitionPlace');
   const format = await getFormatter({ locale: locale as Locale });
   const entitlements = await getEffectiveEntitlementsSafe();
   const athlete = await athleteCabinetFor(caller.id);
@@ -67,6 +69,31 @@ export default async function AccountAthletePage({ params }: PageProps) {
                   initial={{ programs: athlete.programs, clubName: athlete.clubName, rank: athlete.rank }}
                 />
               </div>
+            </section>
+
+            <section aria-labelledby="athlete-rating" className="mt-6 rounded-xl border border-border-default bg-surface-card p-6 shadow-sm">
+              <h2 id="athlete-rating" className="text-card-title">{t('ratingTitle')}</h2>
+              <p className="mt-2 text-heading-3">{athlete.rating}</p>
+              <p className="text-body-sm mt-1 text-content-secondary">{t('ratingNote', { months: ratingWindowMonths })}</p>
+
+              <h3 className="text-label mt-6 text-content-secondary">{t('achievementsTitle')}</h3>
+              {athlete.achievements.length === 0 ? (
+                <p className="text-body-sm mt-2 text-content-tertiary">{t('noAchievements')}</p>
+              ) : (
+                <ul className="mt-2 divide-y divide-border-default">
+                  {athlete.achievements.map((item) => (
+                    <li key={`${item.eventSlug}-${item.categoryName}`} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                      <span className="text-body-sm">
+                        {item.eventTitle} · {item.categoryName}
+                        <span className="text-caption block text-content-tertiary">
+                          {format.dateTime(item.eventStartsAt, { dateStyle: 'medium' })}
+                        </span>
+                      </span>
+                      <span className="text-body-sm font-medium">{tPlace(item.place)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
 
             <section aria-labelledby="athlete-registrations" className="mt-6">

@@ -1458,6 +1458,7 @@ export const adminNavigation: readonly AdminNavGroupSpec[] = [
       { labelKey: 'admin.nav.support', href: routes.adminSupport(), capability: 'support.manage' },
       { labelKey: 'boost.nav.admin', href: routes.adminBoosts(), capability: 'boost.manage' },
       { labelKey: 'corporate.nav.admin', href: routes.adminCorporate(), capability: 'corporate.manage' },
+      { labelKey: 'competitionResults.nav.admin', href: routes.adminCompetitionResults(), capability: 'content.manage' },
     ],
   },
   {
