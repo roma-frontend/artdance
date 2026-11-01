@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const h = vi.hoisted(() => ({
   db: {
     athleteProfile: { findUnique: vi.fn(), update: vi.fn() },
+    competitionResult: { findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
 

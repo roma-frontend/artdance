@@ -241,6 +241,7 @@ export const routes = {
   adminSupport: () => adminPath('support'),
   adminBoosts: () => adminPath('boosts'),
   adminCorporate: () => adminPath('corporate'),
+  adminCompetitionResults: () => adminPath('competition-results'),
   adminOperatorTool: (tool: string, params?: Record<string, string | number | undefined>) => withQuery(`${adminPath('support')}/${tool}`, params),
   adminResource: (resource: AdminResource, params?: AdminListParams) =>
     withQuery(adminPath(resource), params),

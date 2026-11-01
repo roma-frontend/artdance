@@ -11,6 +11,7 @@ import 'server-only';
 import { domainErrors } from '@/domain/errors';
 import { type AthleteProfileInput } from '@/domain/athlete';
 import { db } from '@/lib/db';
+import { athleteResultsFor } from '@/server/athlete/results';
 
 /** Кабинет атлета: программы, клуб, разряд и его регистрации; `null`, если профиля нет. */
 export async function athleteCabinetFor(userId: string) {
@@ -37,7 +38,8 @@ export async function athleteCabinetFor(userId: string) {
   });
   if (!profile) return null;
   const { competitionRegistrations, ...fields } = profile;
-  return { ...fields, registrations: competitionRegistrations };
+  const { rating, achievements } = await athleteResultsFor(profile.id);
+  return { ...fields, registrations: competitionRegistrations, rating, achievements };
 }
 
 /** Сохраняет программы, клуб и разряд. Пустые строки становятся `null`. */
