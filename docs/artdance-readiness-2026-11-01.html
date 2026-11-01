@@ -85,6 +85,7 @@
   tbody tr:nth-child(even) td { background: var(--paper); }
   tr.group td { background: #f5e7ea; color: var(--burgundy); font-size: 8px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; border-bottom: none; }
   tr { break-inside: avoid; }
+  tr.group { break-after: avoid; page-break-after: avoid; }
   td.muted { color: var(--muted); }
   .pill { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 8px; font-weight: 800; color: #fff; white-space: nowrap; }
   .pill.ok { background: var(--green); }
@@ -187,7 +188,7 @@
       <tr><td><b>Цена по предложению</b></td><td>5 000 000 AMD (≈ USD 13 700)</td><td>9 200 000 AMD (≈ USD 25 100)</td><td>13 000 000 AMD (≈ USD 35 500)</td></tr>
       <tr><td><b>Срок по предложению</b></td><td>2–2,5 мес.</td><td>3,5–4,5 мес.</td><td>6–7 мес.</td></tr>
       <tr><td><b>Договор</b></td><td>5 000 000 AMD, 3 месяца, 6 этапов</td><td>Отдельного договора нет</td><td>Отдельного договора нет</td></tr>
-      <tr><td><b>Пресет в коде</b> (catalog.ts)</td><td><code>shop</code>, <code>cms</code></td><td>+ <code>events</code>, <code>recurring</code>, <code>push</code>, <code>forYou</code></td><td>все 17 флагов</td></tr>
+      <tr><td><b>Пресет в коде</b> (catalog.ts)</td><td><code>shop</code>, <code>cms</code></td><td>+ <code>events</code>, <code>recurring</code>, <code>push</code>, <code>forYou</code></td><td>все 19 флагов</td></tr>
       <tr><td><b>Бронирование</b></td><td>полное по договору (фазы 3.1–3.4)</td><td>полное: переносы, отмены, лист ожидания</td><td>+ Google Calendar</td></tr>
       <tr><td><b>Онлайн-оплата</b></td><td>провайдер; сейчас mock и Stripe</td><td>все локальные способы, после договоров с банками</td><td>+ подписки и рекуррентные платежи</td></tr>
       <tr><td><b>Языки</b></td><td>hy, ru, en</td><td>hy, ru, en</td><td>hy, ru, en</td></tr>
@@ -232,7 +233,7 @@
       <tr><td>Доступность, создание, отмена, перенос</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
       <tr><td>Лист ожидания</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">Слит в mvp/closeout (PR #4). Место предлагается при любой отмене, отказе и истечении брони. E2E: вход клиента, кнопка «Занять место», переход на подтверждение брони. По ходу найден и исправлен баг удержания (ограничение SlotHold)</td></tr>
       <tr><td>Массовая отмена броней (админка)</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">В main (PR #2). E2E проходит: полный прогон 31.10, отдельно 01.11 (1 passed). Одобрение вторым админом — тест в PR #12 (слит 01.11). Деньги — отдельной операцией</td></tr>
-      <tr><td>Подтверждение брони исполнителем (SLA 24 ч, авто-отказ 48 ч)</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Механизм готов; правило пусто, решение владельца (D-04)</td></tr>
+      <tr><td>Подтверждение брони исполнителем (SLA 24 ч, авто-отказ 48 ч)</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Механизм готов; правило выключено до эквайринга (решено 01.11, D-04)</td></tr>
       <tr><td>Согласия при брони</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Правила выключены, тексты у юриста (D-03)</td></tr>
       <tr><td>Онлайн-оплата занятий</td><td>MVP</td><td><span class="pill dec">Решено</span></td><td class="muted">Оплата на месте, решение 31.10; онлайн — после эквайринга</td></tr>
       <tr><td>Оплата заказов через провайдера</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Stripe и mock; банк не подключён (5.1, 5.5)</td></tr>
@@ -242,13 +243,13 @@
       <tr><td>Пакеты занятий</td><td>PREMIUM</td><td><span class="pill part">Частично</span></td><td class="muted">Код готов; продажа — после решения о составе пакета</td></tr>
       <tr><td>Кошелёк и кредит вместо возврата</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
       <tr><td>Рефералы</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Привязка при регистрации</td></tr>
-      <tr><td>Бусты (промо-размещение)</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Слит в mvp/closeout (PR #5). Студия подаёт заявку, админка одобряет, одобрение поднимает инструктора в выдаче. Кеш выдачи сбрасывается при одобрении (PR #13, в main), e2e проверяет подъём. Пакет не решён (B-07)</td></tr>
+      <tr><td>Бусты (промо-размещение)</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Слит в mvp/closeout (PR #5). Студия подаёт заявку, админка одобряет, одобрение поднимает инструктора в выдаче. Кеш выдачи сбрасывается при одобрении (PR #13, в main), e2e проверяет подъём. Пакет: PREMIUM (решено 01.11, B-07)</td></tr>
       <tr><td>Аналитика инструктора (/studio/analytics)</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Слита в mvp/closeout (PR #6). Карточки за 30 дней, гейт по entitlements. Не смотрели на заполненных данных</td></tr>
       <tr><td>Корпоративные счета (админка, B-06)</td><td>PREMIUM (решено 01.11)</td><td><span class="pill ok">Сделано</span></td><td class="muted">Счёт на заказ, привязка сотрудника, списание с баланса через второго админа (PR #21, #22). Кабинет компании <code>/account/company</code> — баланс и счета, только чтение, за пакетом PREMIUM (PR #23). Просрочка счёта 120 ч ждёт бухгалтера</td></tr>
 
       <tr class="group"><td colspan="4">Атлет и соревнования</td></tr>
       <tr><td>Кабинет атлета: программы, клуб, разряд, регистрации (DS-04)</td><td>допсоглашение</td><td><span class="pill part">Частично</span></td><td class="muted">Кабинет <code>/account/athlete</code> (PR #24). Профиль появляется после первой регистрации на соревнование. Публичная страница атлетов не сделана</td></tr>
-      <tr><td>Места соревнований, рейтинг и достижения (DS-04)</td><td>допсоглашение</td><td><span class="pill part">Частично</span></td><td class="muted">Админ вносит место по утверждённой регистрации после начала соревнования (PR #25). Рейтинг за 24 месяца. Показ рейтинга на сайте не решён. E2E не написан</td></tr>
+      <tr><td>Места соревнований, рейтинг и достижения (DS-04)</td><td>допсоглашение</td><td><span class="pill part">Частично</span></td><td class="muted">Админ вносит место по утверждённой регистрации после начала соревнования (PR #25). Рейтинг за 24 месяца. Показ рейтинга на сайте не решён. E2E: athlete-results.spec.ts, прошёл на текущем коде</td></tr>
 
       <tr class="group"><td colspan="4">Магазин и клиент</td></tr>
       <tr><td>Корзина, чекаут, заказы, склад, промокоды, подарочные карты</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
@@ -378,7 +379,7 @@
       <tr><td>Аналитика инструктора на реальных данных</td><td>Проверено юнит-тестами и e2e на демо-инструкторе. На заказах с отметками результата и опубликованными отзывами не смотрели</td></tr>
       <tr><td>Корпоративные счета: деньги</td><td>E2E создаёт аккаунт, счёт на 50 000 AMD и отметку оплаты, затем сверяет баланс в БД. Реальный перевод и сверка с выпиской банка не проверяются: нужен банк (0.6)</td></tr>
       <tr><td>Бусты: показ на сайте</td><td>Проверено e2e (PR #13): одобренный буст поднимает инструктора в выдаче. Вид карточки и порядок в реальном трафике не смотрели</td></tr>
-      <tr><td>Кабинет атлета и места соревнований</td><td>Юнит-тесты: service.test.ts, results.test.ts, athlete-rating.test.ts. E2E нет: нужна прошедшая регистрация в тестовой базе. Рейтинг и достижения на реальных регистрациях не смотрели</td></tr>
+      <tr><td>Кабинет атлета и места соревнований</td><td>Юнит-тесты: service.test.ts, results.test.ts, athlete-rating.test.ts. E2E: athlete-results.spec.ts — админ записывает место, атлет видит его в кабинете и в рейтинге. Профиль (программы, клуб, разряд) в e2e не проверен. Рейтинг и достижения на реальных регистрациях не смотрели</td></tr>
       <tr><td>WAF</td><td>Настраивается на уровне хостинга, в коде не проверяется</td></tr>
     </tbody>
   </table>
