@@ -52,8 +52,7 @@ test.describe('ClassCard', () => {
   test('подвал карточки ведёт на запись на это занятие', async ({ page }) => {
     const card = carousel(page).locator('li').first();
     const bookPath = `/en/instructors/${firstClass.instructorSlug}/book?class=${firstClass.slug}`;
-    /* Тулбар у сердечка ведёт на ту же запись: берём ссылку подвала, а не первую подходящую. */
-    const footLink = card.locator(`a.card-foot-link[href="${bookPath}"]`);
+    const footLink = card.locator(`a[href="${bookPath}"]`);
     const action = firstClass.spotsLeft > 0 ? en.common.actions.book : en.common.actions.joinWaitlist;
 
     await expect(footLink).toHaveAccessibleName(`${action}: ${firstClass.title}`);

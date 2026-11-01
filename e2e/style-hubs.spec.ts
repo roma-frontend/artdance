@@ -216,14 +216,11 @@ test.describe('хаб направления: данные не расходят
     await page.goto(localized(routes.style(FULL.slug)));
 
     /*
-     * Карточки считаются по адресам занятий: у карточки нет своего признака в разметке.
-     * Ссылок на одно занятие две — название и «Explore» у сердечка, поэтому считаем
-     * уникальные адреса, а не ссылки.
+     * Карточки считаются по ссылкам на занятия: у карточки нет своего признака в
+     * разметке, а ссылка на `/classes/<slug>` есть ровно одна на карточку.
      */
-    const hrefs = await page
-      .locator(`main a[href^="${localized('/classes/')}"]`)
-      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')));
-    const shown = new Set(hrefs).size;
+    const cards = page.locator(`main a[href^="${localized('/classes/')}"]`);
+    const shown = await cards.count();
     expect(shown).toBeGreaterThan(0);
 
     /* Счётчик может быть больше показанного: хаб ограничен лимитом карточек. */
