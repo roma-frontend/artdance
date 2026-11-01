@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ArtDance — Что осталось до продакшна, 01.11.2026</title>
+<style>
+  :root {
+    --burgundy: #8B1A2B;
+    --burgundy-dark: #4a0d17;
+    --ink: #1d1d24;
+    --muted: #6b6b76;
+    --line: #e7e1d8;
+    --tint: #fbf1f2;
+    --paper: #fbf8f4;
+    --head: #1f1f24;
+    --green: #2f7d4f;
+    --amber: #b7791f;
+    --red: #b42318;
+    --blue: #3b49c0;
+    --grey: #8a8a94;
+    --navy: #1f2a3c;
+    --gold: #b7892e;
+  }
+
+  @page { size: A4; margin: 18mm 15mm 20mm 15mm;
+    @bottom-left { content: "ArtDance · что осталось до продакшна"; font-size: 8.5px; color: var(--muted); font-family: "Segoe UI", sans-serif; }
+    @bottom-right { content: counter(page) " / " counter(pages); font-size: 8.5px; color: var(--muted); font-family: "Segoe UI", sans-serif; }
+  }
+  @page cover { margin: 0; @bottom-left { content: none; } @bottom-right { content: none; } }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", system-ui, sans-serif; color: var(--ink); font-size: 10.5px; line-height: 1.45;
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .eyebrow { font-size: 8.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--burgundy); font-weight: 700; margin: 0 0 6px; }
+  h1 { font-size: 21px; font-weight: 800; line-height: 1.2; margin: 0 0 10px; letter-spacing: -.01em; }
+  h2 { font-size: 12.5px; font-weight: 800; margin: 16px 0 6px; }
+  .lede { color: var(--muted); font-size: 10.5px; margin: 0 0 12px; }
+  .section { break-before: page; }
+  .section.first { break-before: auto; }
+
+  /* Обложка */
+  .cover { page: cover; break-after: page; height: 297mm; width: 210mm; padding: 16mm 16mm 14mm; color: #fff; display: flex; flex-direction: column;
+    background:
+      radial-gradient(ellipse at 85% 10%, rgba(255,255,255,.18), transparent 45%),
+      radial-gradient(ellipse at 20% 100%, rgba(232,80,60,.45), transparent 50%),
+      linear-gradient(160deg, #3d0b15 0%, #7c1626 45%, #a52334 100%); }
+  .cover .top { display: flex; justify-content: space-between; font-size: 9px; letter-spacing: .25em; font-weight: 700; }
+  .cover .kicker { margin-top: 150px; font-size: 9px; letter-spacing: .3em; font-weight: 700; text-transform: uppercase; opacity: .9; }
+  .cover h1 { font-size: 46px; line-height: 1.04; font-weight: 900; margin: 10px 0 14px; letter-spacing: -.02em; }
+  .cover .sub { font-size: 13px; line-height: 1.5; max-width: 150mm; opacity: .92; }
+  .cover .stats { margin-top: auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .cover .stat { background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.22); border-radius: 10px; padding: 12px 12px 10px; }
+  .cover .stat b { display: block; font-size: 24px; font-weight: 900; }
+  .cover .stat span { display: block; font-size: 8.5px; line-height: 1.35; opacity: .9; margin-top: 3px; }
+  .cover .foot { margin-top: 18px; border-top: 1px solid rgba(255,255,255,.25); padding-top: 9px; font-size: 8px; line-height: 1.5; opacity: .85; }
+
+  /* Выноска и карточки */
+  .callout { background: var(--tint); border-left: 4px solid var(--burgundy); border-radius: 6px; padding: 11px 14px; font-size: 10.5px; margin: 10px 0; }
+  .callout p { margin: 0 0 6px; }
+  .callout p:last-child { margin: 0; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin: 12px 0; }
+  .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px; background: #fff; }
+  .kpi b { display: block; font-size: 20px; font-weight: 900; }
+  .kpi span { display: block; font-size: 8.5px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+
+  .packs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin: 8px 0 4px; }
+  .pack { border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 10px; padding: 11px 11px 9px; background: #fff; }
+  .pack h3 { font-size: 11px; letter-spacing: .1em; margin: 0; font-weight: 800; }
+  .pack .price { font-size: 9px; color: var(--muted); margin: 2px 0 6px; }
+  .pack ul { margin: 0; padding-left: 13px; font-size: 9.5px; }
+  .pack li { margin: 2px 0; }
+  .pack .tag { font-size: 8px; letter-spacing: .12em; font-weight: 800; text-transform: uppercase; margin-top: 7px; color: var(--c); }
+
+  .steps { list-style: none; margin: 6px 0 0; padding: 0; counter-reset: step; }
+  .steps li { counter-increment: step; display: flex; gap: 9px; margin: 6px 0; font-size: 10.5px; }
+  .steps li::before { content: counter(step); flex: none; width: 19px; height: 19px; border-radius: 50%; background: var(--burgundy);
+    color: #fff; font-size: 9.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+
+  /* Таблицы */
+  table { width: 100%; border-collapse: collapse; font-size: 9.5px; margin: 6px 0 10px; }
+  thead th { background: var(--head); color: #fff; text-align: left; font-weight: 700; padding: 6px 7px; font-size: 9px; }
+  td { padding: 5px 7px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:nth-child(even) td { background: var(--paper); }
+  tr.group td { background: #f5e7ea; color: var(--burgundy); font-size: 8px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; border-bottom: none; }
+  tr { break-inside: avoid; }
+  td.muted { color: var(--muted); }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 8px; font-weight: 800; color: #fff; white-space: nowrap; }
+  .pill.ok { background: var(--green); }
+  .pill.part { background: var(--amber); }
+  .pill.no { background: var(--red); }
+  .pill.dec { background: var(--blue); }
+  .pill.out { background: var(--grey); }
+  .pill.ext { background: #5b3a8c; }
+  code { font-family: Consolas, monospace; font-size: 8.5px; background: #efe9e1; padding: 0 3px; border-radius: 3px; }
+
+  ul.plain { margin: 4px 0 0; padding-left: 15px; }
+  ul.plain li { margin: 3px 0; }
+  .note { font-size: 9px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<!-- ОБЛОЖКА -->
+<section class="cover">
+  <div class="top"><span>ARTDANCE</span><span>01.11.2026</span></div>
+  <div class="kicker">Производственная готовность</div>
+  <h1>Что осталось<br>до продакшна</h1>
+  <div class="sub">Пакеты MVP, FULL и PREMIUM: работы, блокеры, решения и открытые PR по состоянию на 1 ноября 2026</div>
+  <div class="stats">
+    <div class="stat"><b>9</b><span>внешних блокеров: аккаунты, договоры, вычитка</span></div>
+    <div class="stat"><b>1</b><span>PR открыт: #12 (тест одобрения второго админа)</span></div>
+    <div class="stat"><b>1 785</b><span>unit-тестов зелёные (vitest, 01.11)</span></div>
+    <div class="stat"><b>20.12</b><span>договорный срок MVP (3 месяца)</span></div>
+  </div>
+  <div class="foot">Цены пакетов из коммерческого предложения от 01.09.2026: MVP 5 000 000 AMD, FULL 9 200 000 AMD, PREMIUM 13 000 000 AMD.
+    Состояние кода и документов на 01.11.2026. Источники: docs/01, docs/06, docs/07, src/server/entitlements/catalog.ts.</div>
+</section>
+
+<!-- 01 ИТОГ -->
+<section class="section first">
+  <div class="eyebrow">01 · Итог</div>
+  <h1>Код MVP и FULL собран. До продакшна держат внешние решения</h1>
+
+  <div class="callout">
+    <p>В коде работают: бронирование (создание, отмена, перенос, лист ожидания, cron), каталог и SEO, поиск, корзина и магазин с промокодами и подарочными картами, кабинеты клиента, инструктора и площадки, админка с аудитом и согласованиями, PWA с офлайн-заглушкой, массовая отмена броней через согласование и подборка «Для тебя». После 31.10 добавлены аналитика инструктора, бусты (одобрение сбрасывает кеш выдачи), выключение CMS и магазина тумблерами в entitlements и корпоративные счета в админке. Тулбар у сердечка появился и убран: сердечко стоит как было, подпись курсора осталась.</p>
+    <p>Не хватает внешних аккаунтов и договоров: домен, Supabase, R2, банк, юрист, имя отправителя SMS, ключ Resend. Нужна вычитка армянского. Самые длинные пути сейчас не в разработке, а в банке, у юриста и в регистрации SMS.</p>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><b>9</b><span>внешних блокеров не закрыты</span></div>
+    <div class="kpi"><b>2</b><span>P0 в коде ждут внешних данных: D-03, D-05</span></div>
+    <div class="kpi"><b>5</b><span>PR слиты в mvp/closeout: #4–#8</span></div>
+    <div class="kpi"><b>20.12</b><span>календарный срок MVP по mvp-schedule.md</span></div>
+  </div>
+
+  <h2>Три пакета одним взглядом</h2>
+  <div class="packs">
+    <div class="pack" style="--c: var(--burgundy)">
+      <h3>MVP</h3>
+      <div class="price">5 000 000 AMD · договор, 3 месяца, срок 20.12.2026</div>
+      <ul>
+        <li>Готово: каталог, бронирование с листом ожидания, корзина и магазин, кабинеты трёх ролей, админка, 3 языка, SEO, PWA</li>
+        <li>Открыто: адаптер банка и тестовые платежи, вычитка hy, юридические страницы, приёмка</li>
+      </ul>
+      <div class="tag">Ядро договора</div>
+    </div>
+    <div class="pack" style="--c: var(--navy)">
+      <h3>FULL</h3>
+      <div class="price">9 200 000 AMD · предложение, отдельного договора нет</div>
+      <ul>
+        <li>Готово: переносы, мероприятия, рекуррентные брони, отзывы, «Для тебя», массовая отмена, карты</li>
+        <li>Открыто: локальные способы оплаты (после банков), SMS (шлюз), push (VAPID-ключи)</li>
+      </ul>
+      <div class="tag">Рекомендуемый пакет</div>
+    </div>
+    <div class="pack" style="--c: var(--gold)">
+      <h3>PREMIUM</h3>
+      <div class="price">13 000 000 AMD · предложение, отдельного договора нет</div>
+      <ul>
+        <li>Готово в коде: пакеты занятий, кошелёк и кредит вместо возврата, рефералы, аналитика инструктора, бусты</li>
+        <li>Открыто: видеокурсы, автовыплаты, подписки, Google Calendar, CRM. Корпоративные счета (B-06) в админке, пакет не решён</li>
+      </ul>
+      <div class="tag">Цель после FULL</div>
+    </div>
+  </div>
+
+  <h2>Первые шаги на этой неделе</h2>
+  <ol class="steps">
+    <li><span>PR #2 (MVP) и #3 (фикс CI) слиты в main. Осталось: PR #12 (тест одобрения второго админа): разобрать падение входа в CI на instructor-analytics и mvp-gaps, затем слить.</span></li>
+    <li><span>Заказчик: подтвердить параметры 0.1, создать проект Supabase (0.3), бакет R2 (0.4), направить домен artdance.am (0.5).</span></li>
+    <li><span>Банк: договор на эквайринг (0.6). Без него локальные способы оплаты не подключаются.</span></li>
+    <li><span>Юрист: оферта, политика конфиденциальности, политика возврата, тексты согласий (0.8).</span></li>
+    <li><span>Владелец: состав пакетов для рекуррентных броней и push; правило подтверждения броней исполнителем (D-04); пакет для корпоративных счетов (B-06) и бустов (B-07); просрочка счёта 120 ч — подтвердить у бухгалтера.</span></li>
+    <li><span>Разработка: разобрать падение входа в CI на тесте одобрения (PR #12); проверить на стенде лист ожидания, корпоративный счёт и офлайн-PWA. QA 375 / 768 / 1440 px прошёл (layout-integrity, 15 тестов).</span></li>
+  </ol>
+</section>
+
+<!-- 02 ПАКЕТЫ -->
+<section class="section">
+  <div class="eyebrow">02 · Пакеты</div>
+  <h1>Что входит в каждый пакет и где документы расходятся</h1>
+  <table>
+    <thead><tr><th style="width:22%">Параметр</th><th style="width:26%">MVP</th><th style="width:26%">FULL</th><th>PREMIUM</th></tr></thead>
+    <tbody>
+      <tr><td><b>Цена по предложению</b></td><td>5 000 000 AMD (≈ USD 13 700)</td><td>9 200 000 AMD (≈ USD 25 100)</td><td>13 000 000 AMD (≈ USD 35 500)</td></tr>
+      <tr><td><b>Срок по предложению</b></td><td>2–2,5 мес.</td><td>3,5–4,5 мес.</td><td>6–7 мес.</td></tr>
+      <tr><td><b>Договор</b></td><td>5 000 000 AMD, 3 месяца, 6 этапов</td><td>Отдельного договора нет</td><td>Отдельного договора нет</td></tr>
+      <tr><td><b>Пресет в коде</b> (catalog.ts)</td><td><code>shop</code>, <code>cms</code></td><td>+ <code>events</code>, <code>recurring</code>, <code>push</code>, <code>forYou</code></td><td>все 17 флагов</td></tr>
+      <tr><td><b>Бронирование</b></td><td>полное по договору (фазы 3.1–3.4)</td><td>полное: переносы, отмены, лист ожидания</td><td>+ Google Calendar</td></tr>
+      <tr><td><b>Онлайн-оплата</b></td><td>провайдер; сейчас mock и Stripe</td><td>все локальные способы, после договоров с банками</td><td>+ подписки и рекуррентные платежи</td></tr>
+      <tr><td><b>Языки</b></td><td>hy, ru, en</td><td>hy, ru, en</td><td>hy, ru, en</td></tr>
+      <tr><td><b>Магазин и корзина</b></td><td>да</td><td>да</td><td>да</td></tr>
+      <tr><td><b>Кабинеты</b></td><td>клиент, инструктор, площадка</td><td>клиент, инструктор, площадка</td><td>+ аналитика инструктора</td></tr>
+      <tr><td><b>Админка</b></td><td>полная (фаза 7)</td><td>полная</td><td>+ CRM и отчёты</td></tr>
+      <tr><td><b>Курсы с видео</b></td><td>нет</td><td>нет</td><td>да</td></tr>
+      <tr><td><b>Выплаты исполнителям</b></td><td>нет</td><td>заложено в БД; выплата вручную</td><td>вручную; автовыплаты — фаза 3</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Расхождения, которые нужно закрыть</h2>
+  <table>
+    <thead><tr><th style="width:4%">№</th><th style="width:36%">Расхождение</th><th style="width:14%">Статус</th><th>Что сделать</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>Объём MVP.</b> В договоре 5 млн AMD включает магазин, три языка, движок и кабинеты трёх ролей</td><td><span class="pill ok">Решено в коде</span></td><td>Зафиксировать состав MVP письмом заказчику</td></tr>
+      <tr><td>2</td><td><b>Магазин в пресете MVP.</b> <code>catalog.ts</code> включает <code>shop</code> в MVP</td><td><span class="pill ok">Решено</span></td><td>Согласовано с договором, см. строку 1</td></tr>
+      <tr><td>3</td><td><b>SMS.</b> В предложении обещаны email и SMS. В коде шлюза нет</td><td><span class="pill ok">Решено</span></td><td>SMS вне пакетов (catalog.ts), вернётся с провайдером (0.7)</td></tr>
+      <tr><td>4</td><td><b>Платёжный провайдер.</b> Есть Stripe и mock. Адаптеров Paynet, ArCa, Ameria и Idram нет</td><td><span class="pill no">Открыто</span></td><td>Договоры с банками (0.6). Адаптеры подключаются через один интерфейс</td></tr>
+      <tr><td>5</td><td><b>Мобильное приложение</b> исключено из цен, но есть в репозитории (67 экранов)</td><td><span class="pill part">Открыто</span></td><td>Признать отдельным треком с отдельной оценкой</td></tr>
+      <tr><td>6</td><td><b>Допродажа 5,5 млн AMD</b> включает уже сделанные модули</td><td><span class="pill part">Открыто</span></td><td>Пересчитать цены с учётом готового</td></tr>
+      <tr><td>7</td><td><b>Одни и те же пункты</b> (C-04, C-07, D-06…D-08, B-05) входят в FULL и PREMIUM</td><td><span class="pill part">Открыто</span></td><td>Не суммировать дважды</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 03 СТАТУС ФУНКЦИЙ -->
+<section class="section">
+  <div class="eyebrow">03 · Статус функций</div>
+  <h1>Статус каждой функции по пакетам</h1>
+  <p class="lede">Готово: есть код, маршрут и проверка. Частично: функция работает, но не до конца. Нет: кода или вызова нет. Решено: вопрос закрыт владельцем. Вне пакетов: исключено из договора.</p>
+  <table>
+    <thead><tr><th style="width:34%">Функция</th><th style="width:9%">Пакет</th><th style="width:13%">Статус</th><th>Что осталось</th></tr></thead>
+    <tbody>
+      <tr class="group"><td colspan="4">Каталог, поиск, SEO</td></tr>
+      <tr><td>Занятия, инструкторы, площадки, товары, события</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
+      <tr><td>Поиск и страница /search</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
+      <tr><td>Карта площадок</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">Без ключа показывается заглушка; ключ <code>NEXT_PUBLIC_MAPS_API_KEY</code> — внешний</td></tr>
+      <tr><td>Лента «Для тебя» в кабинете</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">Слита в mvp/closeout (PR #4). E2E (PR #13, в main): с направлением — только его занятия; без направлений — пояснение вместо подборки</td></tr>
+
+      <tr class="group"><td colspan="4">Бронирование и оплата</td></tr>
+      <tr><td>Доступность, создание, отмена, перенос</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
+      <tr><td>Лист ожидания</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">Слит в mvp/closeout (PR #4). Место предлагается при любой отмене, отказе и истечении брони. E2E: вход клиента, кнопка «Занять место», переход на подтверждение брони. По ходу найден и исправлен баг удержания (ограничение SlotHold)</td></tr>
+      <tr><td>Массовая отмена броней (админка)</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">В main (PR #2). E2E проходит: полный прогон 31.10, отдельно 01.11 (1 passed). Одобрение вторым админом — отдельный тест в PR #12, пока не слит: в CI падает на соседних входах. Деньги — отдельной операцией</td></tr>
+      <tr><td>Подтверждение брони исполнителем (SLA 24 ч, авто-отказ 48 ч)</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Механизм готов; правило пусто, решение владельца (D-04)</td></tr>
+      <tr><td>Согласия при брони</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Правила выключены, тексты у юриста (D-03)</td></tr>
+      <tr><td>Онлайн-оплата занятий</td><td>MVP</td><td><span class="pill dec">Решено</span></td><td class="muted">Оплата на месте, решение 31.10; онлайн — после эквайринга</td></tr>
+      <tr><td>Оплата заказов через провайдера</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">Stripe и mock; банк не подключён (5.1, 5.5)</td></tr>
+      <tr><td>Несколько локальных способов оплаты</td><td>FULL</td><td><span class="pill no">Нет</span></td><td class="muted">Адаптеры Paynet, ArCa, Ameria, Idram — после договоров (0.6)</td></tr>
+      <tr><td>Рекуррентные брони</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">Из экрана бронирования</td></tr>
+      <tr><td>Подписки и рекуррентные платежи</td><td>PREMIUM</td><td><span class="pill part">Частично</span></td><td class="muted">Страница и API есть; списание ждёт банка</td></tr>
+      <tr><td>Пакеты занятий</td><td>PREMIUM</td><td><span class="pill part">Частично</span></td><td class="muted">Код готов; продажа — после решения о составе пакета</td></tr>
+      <tr><td>Кошелёк и кредит вместо возврата</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
+      <tr><td>Рефералы</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Привязка при регистрации</td></tr>
+      <tr><td>Бусты (промо-размещение)</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Слит в mvp/closeout (PR #5). Студия подаёт заявку, админка одобряет, одобрение поднимает инструктора в выдаче. Кеш выдачи сбрасывается при одобрении (PR #13, в main), e2e проверяет подъём. Пакет не решён (B-07)</td></tr>
+      <tr><td>Аналитика инструктора (/studio/analytics)</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Слита в mvp/closeout (PR #6). Карточки за 30 дней, гейт по entitlements. Не смотрели на заполненных данных</td></tr>
+      <tr><td>Корпоративные счета (админка, B-06)</td><td>не решён</td><td><span class="pill part">Частично</span></td><td class="muted">Слита в mvp/closeout (PR #7): аккаунт компании, счёт, оплата переводом с ростом баланса. Счёт к заказу и кабинет с балансом ждут правил владельца; просрочка 120 ч ждёт бухгалтера</td></tr>
+
+      <tr class="group"><td colspan="4">Магазин и клиент</td></tr>
+      <tr><td>Корзина, чекаут, заказы, склад, промокоды, подарочные карты</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
+      <tr><td>Скидка на первое занятие</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">Подключена в потоке брони (C-08)</td></tr>
+      <tr><td>Отзывы, избранное, ответ инструктора на отзыв</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">Ответ подключён (D-06)</td></tr>
+      <tr><td>Напоминание о брошенной корзине</td><td>FULL</td><td><span class="pill part">Частично</span></td><td class="muted">Восстановление работает; SMS-звена нет</td></tr>
+      <tr><td>Способы оплаты в кабинете</td><td>PREMIUM</td><td><span class="pill no">Нет</span></td><td class="muted">Страницы /account/payment-methods нет (A-12)</td></tr>
+      <tr><td>Push-уведомления</td><td>FULL</td><td><span class="pill part">Частично</span></td><td class="muted">VAPID-ключи в .env.local заданы. В headless Chromium подписка не создаётся (permission denied), реальная отправка не проверена: нужен браузер или телефон</td></tr>
+      <tr><td>SMS</td><td>—</td><td><span class="pill out">Вне пакетов</span></td><td class="muted">Шлюза нет (0.7)</td></tr>
+
+      <tr class="group"><td colspan="4">Платформа и запуск</td></tr>
+      <tr><td>Офлайн-PWA: манифест, заглушка /offline, service worker</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">В PR #2. Проверено в Chromium: воркер активен, заглушка кешируется, при выключенной сети открывается «Offline»</td></tr>
+      <tr><td>Выключение CMS и магазина тумблерами</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">Выключенный CMS скрывает промо-полосу и рекламный слот (PR #5). Выключенный магазин не показывается на сайте. E2E проверяет публичный сайт</td></tr>
+      <tr><td>Языки hy, ru, en</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">hy ждёт вычитки носителем (8.1)</td></tr>
+      <tr><td>Безопасность: CSP, rate limit, аудит</td><td>FULL</td><td><span class="pill ok">Готово</span></td><td class="muted">WAF — настройка хостинга, не проверено</td></tr>
+      <tr><td>Lighthouse CI</td><td>MVP</td><td><span class="pill ok">Зелёный</span></td><td class="muted">Зелёный на PR #6, #7 и #8 (01.11). CLS /en исправлен: шрифт Playfair переведён на <code>font-display: optional</code>. Фикс is-crawlable (PR #3) ещё не в main</td></tr>
+      <tr><td>E2E (Playwright)</td><td>MVP</td><td><span class="pill part">Частично</span></td><td class="muted">CI на main зелёный (прогон #371 после слияния PR #11). Изоляция от общей корзины лимитера (PR #8) закрыла падения клейма листа и холдов. Тест одобрения (PR #12) в CI падает на входах instructor-analytics и mvp-gaps; при отключённом тесте прогон проходит, причина в разборе. Полный прогон 31.10: наборы 1–9 — 156 прошли, 66 пропущены; наборы 10–36 — 763 прошли, 190 пропущены, 4 упали из-за параллельной нагрузки и прошли при перепроверке</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 04 БЛОКЕРЫ -->
+<section class="section">
+  <div class="eyebrow">04 · Внешние блокеры</div>
+  <h1>Что ждёт внешнего входа и кто его закрывает</h1>
+  <p class="lede">Эти пункты не закрываются из кода: нужны аккаунты, договоры или решения третьих сторон. Аккаунты и ключи в проект не создаются от имени заказчика.</p>
+  <table>
+    <thead><tr><th style="width:7%">ID</th><th style="width:34%">Что нужно</th><th style="width:15%">Кто закрывает</th><th>Что стоит на нём</th><th style="width:10%">Статус</th></tr></thead>
+    <tbody>
+      <tr><td>0.1</td><td>Подтвердить комиссии 15% / 12%, отмену за 24 ч с удержанием 50%, выезд 5 000 AMD (<code>business.ts</code>, поля @confirm)</td><td>Заказчик</td><td>Цены, отмены, комиссии. Работают значения по умолчанию; дедлайн 28.09 прошёл</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.3</td><td>Проект Supabase и <code>DATABASE_URL</code></td><td>Заказчик</td><td>Прод-БД, e2e, бэкапы (8.4, 8.6)</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.4</td><td>Бакет R2 и ключи доступа</td><td>Заказчик</td><td>Драйвер R2 в проде (1.6)</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.5</td><td>Домен <code>artdance.am</code>: DNS сейчас у GoDaddy</td><td>Заказчик</td><td>SSL, Sentry, Upstash (8.5)</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.6</td><td>Договор с банком на эквайринг</td><td>Заказчик, банк</td><td>Локальные способы оплаты, тестовые платежи (5.1, 5.5), DS-07</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.7</td><td>Регистрация имени отправителя SMS (2–3 недели)</td><td>Заказчик</td><td>SMS и D-05</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>0.8</td><td>Оферта, политика конфиденциальности, политика возврата, тексты согласий</td><td>Юрист</td><td>Страницы /legal, приём платежей, D-03 (8.2)</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>1.7</td><td><code>RESEND_API_KEY</code></td><td>Заказчик</td><td>Письма входа и сброса пароля</td><td><span class="pill no">Ждёт</span></td></tr>
+      <tr><td>8.1</td><td>Вычитка армянского (hy) носителем языка</td><td>Носитель языка</td><td>Выпуск hy на прод. Строки массовой отмены, «Для тебя», аналитики и корпоративных счетов — черновики</td><td><span class="pill no">Ждёт</span></td></tr>
+    </tbody>
+  </table>
+  <p class="note">Хостинг: Vercel подключён и деплоит превью каждой ветки и прод из main. Решение по хостингу в <code>docs/06</code> нужно зафиксировать.</p>
+</section>
+
+<!-- 05 РЕШЕНИЯ ВЛАДЕЛЬЦА -->
+<section class="section">
+  <div class="eyebrow">05 · Решения владельца</div>
+  <h1>Что решено, что ждёт решения</h1>
+  <table>
+    <thead><tr><th style="width:36%">Вопрос</th><th style="width:14%">Статус</th><th>Что изменилось</th></tr></thead>
+    <tbody>
+      <tr><td><b>Оплата занятий:</b> онлайн или на месте</td><td><span class="pill dec">Решено 31.10</span></td><td>Занятия оплачиваются на месте, бронь сразу подтверждается. Аренда зала ждёт оплату. Онлайн — после эквайринга (0.6)</td></tr>
+      <tr><td><b>Хостинг:</b> Vercel или Cloudflare</td><td><span class="pill dec">Решено по факту</span></td><td>Vercel подключён, превью и прод деплоятся. Зафиксировать в <code>docs/06</code></td></tr>
+      <tr><td><b>Состав пакетов:</b> рекуррентные брони и push</td><td><span class="pill no">Открыто</span></td><td>В коде это FULL (<code>catalog.ts</code>). В <code>docs/06</code> не решено</td></tr>
+      <tr><td><b>Пакет для корпоративных счетов (B-06) и бустов (B-07)</b></td><td><span class="pill no">Открыто</span></td><td>Код подключён в админке и студии. В <code>docs/06</code> у обоих «решение по пакету». Правила счёта к заказу и баланса — отдельно</td></tr>
+      <tr><td><b>Подтверждение брони исполнителем</b> (<code>bookingRequestRules</code>)</td><td><span class="pill no">Открыто</span></td><td>Механизм SLA 24 ч и авто-отказа 48 ч готов; правило пусто (D-04)</td></tr>
+      <tr><td><b>Бизнес-параметры</b> 0.1: комиссии, отмена, выезд</td><td><span class="pill no">Открыто</span></td><td>Работают значения по умолчанию из сообщения заказчику</td></tr>
+      <tr><td><b>Просрочка счёта</b> 120 часов (<code>invoiceDueHours</code>)</td><td><span class="pill no">Открыто</span></td><td>Значение по умолчанию в <code>business.ts</code>, поле помечено @confirm. Нужно подтверждение бухгалтера</td></tr>
+      <tr><td><b>Второе согласование оплаты счёта</b></td><td><span class="pill no">Открыто</span></td><td>Сейчас отметить счёт оплаченным может любой с правом <code>corporate.manage</code> (по умолчанию ADMIN и SUPPORT). Решения владельца нет</td></tr>
+      <tr><td><b>Антифрод SMS:</b> источник данных по карте и устройству</td><td><span class="pill no">Открыто</span></td><td>Нужен для D-05 вместе с провайдером</td></tr>
+      <tr><td><b>Порог ручного возврата</b> 200 000 AMD</td><td><span class="pill part">Действует</span></td><td>Значение из конфига. Подтверждение заказчика в документах не записано</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 06 ЧТО СДЕЛАНО -->
+<section class="section">
+  <div class="eyebrow">06 · Изменения с 30.10 по 01.11</div>
+  <h1>Ветки, PR и что в них</h1>
+  <table>
+    <thead><tr><th style="width:27%">Ветка и PR</th><th>Что внутри</th><th style="width:20%">Статус</th></tr></thead>
+    <tbody>
+      <tr><td><code>fix/lighthouse-skip-is-crawlable</code><br><b>PR #3</b></td><td>Lighthouse CI: аудит is-crawlable пропущен через <code>settings.skipAudits</code>. Причина: CI-сборка non-production закрывает индексацию через robots.txt</td><td><span class="pill ok">Слит в main (8e39b90)</span></td></tr>
+      <tr><td><code>mvp/closeout</code><br><b>PR #2</b></td><td>Офлайн-PWA (service worker, заглушка по локалям). Массовая отмена броней через согласование. Статусы docs/06 и docs/07. Readiness-отчёт. В ветке уже PR #4–#8</td><td><span class="pill ok">Слит в main (871c58a)</span></td></tr>
+      <tr><td><code>full/closeout</code><br><b>PR #4</b></td><td>Лист ожидания до конца: предложение места при любой отмене, страница «Занять место», письмо со ссылкой. Подборка «Для тебя» в кабинете. Исключение /waitlist из карты сайта и индексации. Readiness 31.10 в новом оформлении</td><td><span class="pill ok">Слит в mvp/closeout</span></td></tr>
+      <tr><td><code>premium/closeout</code><br><b>PR #5</b></td><td>Бусты инструктора и студия. Гейт CMS: промо-полоса и рекламный слот скрываются. E2E entitlements: магазин и CMS выключаются тумблером</td><td><span class="pill ok">Слит в mvp/closeout</span></td></tr>
+      <tr><td><code>feat/instructor-analytics</code><br><b>PR #6</b></td><td>PREMIUM: аналитика инструктора на /studio/analytics. Карточки за 30 дней, отзывы только опубликованные</td><td><span class="pill ok">Слит в mvp/closeout</span></td></tr>
+      <tr><td><code>feat/corporate-invoices</code><br><b>PR #7</b></td><td>B2B: корпоративные счета в админке (B-06). Аккаунт компании, счёт, оплата переводом. Отметка оплаты в одной транзакции, баланс растёт на сумму счёта</td><td><span class="pill ok">Слит в mvp/closeout</span></td></tr>
+      <tr><td><code>fix/e2e-waitlist-ratelimit</code><br><b>PR #8</b></td><td>Изоляция e2e от общей корзины лимитера: клейм листа ожидания и холды в commerce и pair-booking идут с отдельного адреса на тест</td><td><span class="pill ok">Слит в mvp/closeout</span></td></tr>
+      <tr><td><code>docs/sync-status-06-07</code><br><b>PR #10</b></td><td>Синхронизация docs/06 и docs/07: B-06 и B-07 описаны по коду</td><td><span class="pill ok">Слит в main (bd580ee)</span></td></tr>
+      <tr><td><code>docs/readiness-2026-11-01</code><br><b>PR #9</b></td><td>Исправление отчёта: сбой admin-bulk-cancel был на 31.10, до фикса локатора</td><td><span class="pill ok">Слит в mvp/closeout (a363257)</span></td></tr>
+      <tr><td><b>PR #11</b></td><td>Тулбар «Explore / Book» у сердечка на карточках и подписи «Add to favorite» / «Remove from favorite»</td><td><span class="pill ok">Слит в main (87b5ce9)</span></td></tr>
+      <tr><td><code>test/bulk-cancel-second-approver</code><br><b>PR #12</b></td><td>E2E: массовую отмену одобряет второй админ. Тест временно отключали и вернули; в CI падает на входах соседних тестов</td><td><span class="pill part">Открыт, CI не зелёный</span></td></tr>
+      <tr><td><code>test/for-you-and-boost</code><br><b>PR #13</b></td><td>Буст: одобрение сбрасывает кеш выдачи (<code>updateTag</code>). E2E «Для тебя» и буст</td><td><span class="pill ok">Слит в main (750cfc7)</span></td></tr>
+      <tr><td><b>PR #14</b></td><td>Тулбар убран по выбору владельца; сердечко стоит как было, подпись курсора осталась</td><td><span class="pill ok">Слит в main (e20d01a)</span></td></tr>
+    </tbody>
+  </table>
+  <h2>Подробнее по изменениям</h2>
+  <ul class="plain">
+    <li><b>Лист ожидания.</b> Раньше место предлагалось только при отмене клиентом и при истечении окон удержания. Теперь то же происходит при отмене администратором, истечении неоплаченной брони и отказе или истечении заявки инструктора.</li>
+    <li><b>«Для тебя».</b> Подборка только по направлениям из анкеты танцора и только опубликованные занятия. Без анкеты подборки нет.</li>
+    <li><b>Массовая отмена.</b> Одобренная заявка отменяет брони по одной через общую функцию, как одиночная отмена. Сбой одной брони не останавливает остальные; неудачи пишутся в журнал.</li>
+    <li><b>Аналитика инструктора.</b> Проведённые занятия, выручка до комиссии, средний чек, посещаемость, отмены, неявки, клиенты и возвращающиеся клиенты за 30 дней. Занятие попадает в статистику после отметки результата.</li>
+    <li><b>Корпоративные счета.</b> Админка создаёт аккаунт компании и счёт, отмечает оплату переводом. Оплаченный счёт меняет статус один раз, баланс компании растёт на его сумму в одной транзакции.</li>
+    <li><b>Бусты.</b> Инструктор подаёт заявку в студии, админка одобряет или отклоняет. Одобрение поднимает размещение инструктора. Выдача кешируется, поэтому одобрение сбрасывает кеш (PR #13).</li>
+    <li><b>Выключение CMS и магазина.</b> Тумблеры в entitlements. Выключенный CMS скрывает промо-полосу и рекламный слот; выключенный магазин не показывается на публичном сайте.</li>
+    <li><b>Документация.</b> docs/06 и docs/07 обновлены по B-06 и B-07 (PR #10). D-07 остаётся частичным: индекс надёжности не читается.</li>
+  </ul>
+</section>
+
+<!-- 07 НЕ ПРОВЕРЕНО -->
+<section class="section">
+  <div class="eyebrow">07 · Что не проверено</div>
+  <h1>Что ещё нужно увидеть глазами</h1>
+  <table>
+    <thead><tr><th style="width:34%">Что</th><th>Почему не проверено и как проверить</th></tr></thead>
+    <tbody>
+      <tr><td>Установка на домашний экран</td><td>Офлайн-заглушка проверена в Chromium, а сценарий «установить приложение» требует интерактивного запроса браузера. Проверить руками на телефоне</td></tr>
+      <tr><td>Массовая отмена: одобрение и исполнение</td><td>E2E в PR #12 проверяет одобрение вторым админом и отмену брони. PR не слит: тест в CI падает на входах соседних тестов. Причина в разборе</td></tr>
+      <tr><td>Лист ожидания: ссылка из письма</td><td>Страница и кнопка проверены e2e. Ссылку из реального письма не проверяли: почтовый провайдер в тестовом окружении не настроен</td></tr>
+      <tr><td>Подборка «Для тебя»</td><td>Проверено e2e (PR #13, в main): с направлением — только его занятия, без направлений — пояснение. Реальные анкеты на стенде не смотрели</td></tr>
+      <tr><td>Аналитика инструктора на реальных данных</td><td>Проверено юнит-тестами и e2e на демо-инструкторе. На заказах с отметками результата и опубликованными отзывами не смотрели</td></tr>
+      <tr><td>Корпоративные счета: деньги</td><td>E2E создаёт аккаунт, счёт на 50 000 AMD и отметку оплаты, затем сверяет баланс в БД. Реальный перевод и сверка с выпиской банка не проверяются: нужен банк (0.6)</td></tr>
+      <tr><td>Бусты: показ на сайте</td><td>Проверено e2e (PR #13): одобренный буст поднимает инструктора в выдаче. Вид карточки и порядок в реальном трафике не смотрели</td></tr>
+      <tr><td>WAF</td><td>Настраивается на уровне хостинга, в коде не проверяется</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>
