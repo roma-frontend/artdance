@@ -134,8 +134,8 @@ export function mediaUri(key: string): string {
   return `${API_URL}/media-proxy/${key.replace(/^\//, '')}`;
 }
 
-/** Логотип ассистента: объект R2 `brand/apple-icon.png`. */
-export const ASSISTANT_LOGO_URI = mediaUri('brand/apple-icon.png');
+/** Иконка ассистента: объект R2 `brand/assistant-icon.png` (1024 px, чтобы большая иконка на экране не мылилась). */
+export const ASSISTANT_LOGO_URI = mediaUri('brand/assistant-icon.png');
 
 /** Файлы с отпечатком из R2; обновляется вместе с `scripts/upload-instructor-videos.ts`. */
 const INSTRUCTOR_PEEK_FILES: Readonly<Record<string, string>> = {

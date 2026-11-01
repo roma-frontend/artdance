@@ -1,13 +1,15 @@
 /**
- * Генерация иконок бренда для PWA / favicon / apple touch.
+ * Генерация иконок бренда: PWA (в R2), иконка ассистента (в R2), favicon и apple touch веба.
+ * Иконки мобильного приложения (заставка, нативные) этим скриптом не трогаются.
  *
- * Источник формы — `src/components/brand/brand-mark.tsx` (силуэт танцовщицы).
- * Все PNG рендерятся из SVG через sharp, никаких внешних ассетов.
+ * Источник формы — буква «A» из логотипа (танцовщица): `design/brand/letter-a.svg`, вектор.
+ * Буква вписывается в квадрат на бордовом фоне бренда. PNG рендерятся через sharp, растра нет.
  *
  * Запуск: `npx tsx scripts/generate-icons.ts`
  */
 
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
 
@@ -17,30 +19,42 @@ const ROOT = process.cwd();
 const CRIMSON = '#8B1A2B';
 const IVORY = '#F7F4EF';
 
-const BRAND_PATHS = `
-  <circle cx="16" cy="6" r="3.2" fill="${IVORY}" />
-  <path d="M16 10.5C16 10.5 9 13.8 7.5 21C6 28 11.5 29.5 14.5 28C17.5 26.5 16 22.5 16 22.5C16 22.5 14.5 26.5 17.5 28C20.5 29.5 26 28 24.5 21C23 13.8 16 10.5 16 10.5Z" fill="${IVORY}" />
-  <path d="M11 15.5C11 15.5 8 12.5 5 14" stroke="${IVORY}" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-  <path d="M21 15.5C21 15.5 24 12.5 27 14" stroke="${IVORY}" stroke-width="1.6" stroke-linecap="round" fill="none"/>
-`;
+interface IconOptions {
+  maskable?: boolean;
+  withRadius?: boolean;
+  /** Бордовый квадрат под буквой; без него иконка прозрачная (переднего плана для Android). */
+  background?: boolean;
+  /** Буква; для фона Android без неё. */
+  glyph?: boolean;
+}
 
-function iconSvg(size: number, opts: { maskable?: boolean; withRadius?: boolean } = {}): string {
-  const { maskable = false, withRadius = false } = opts;
-  // maskable — оставляем safe area 20% по кругу (icon внутри 80% центра)
-  // поэтому фигура меньше и фон без скруглений (маску наложит система)
-  const scaleFactor = maskable ? 0.46 : 0.58;
-  const iconScale = (size * scaleFactor) / 32;
-  const cx = size / 2;
-  // визуальный центр чуть ниже геометрического — фигура вытянута вниз
-  const cy = size / 2 + (maskable ? size * 0.015 : size * 0.02);
+interface Glyph {
+  viewBox: string;
+  d: string;
+}
+
+/** Контур буквы из `design/brand/letter-a.svg`: viewBox и данные одного пути. */
+function parseGlyph(svg: string): Glyph {
+  const viewBox = svg.match(/viewBox="([^"]+)"/)?.[1];
+  const d = svg.match(/ d="([^"]+)"/)?.[1];
+  if (!viewBox || !d) throw new Error('letter-a.svg: нет viewBox или контура');
+  return { viewBox, d };
+}
+
+function iconSvg(glyphShape: Glyph, size: number, opts: IconOptions = {}): string {
+  const { maskable = false, withRadius = false, background = true, glyph = true } = opts;
+  // Маскируемые иконки кладут букву в безопасную зону 80%, обычные — крупнее.
+  const glyphSize = size * (maskable ? 0.5 : 0.62);
+  const offset = (size - glyphSize) / 2;
   const radius = withRadius ? Math.round(size * 0.22) : 0;
-
+  const rect = background ? `<rect width="${size}" height="${size}" rx="${radius}" ry="${radius}" fill="${CRIMSON}" />` : '';
+  const letter = glyph
+    ? `<svg x="${offset}" y="${offset}" width="${glyphSize}" height="${glyphSize}" viewBox="${glyphShape.viewBox}" preserveAspectRatio="xMidYMid meet"><path fill="${IVORY}" fill-rule="evenodd" d="${glyphShape.d}" /></svg>`
+    : '';
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" role="img">
-  <rect width="${size}" height="${size}" rx="${radius}" ry="${radius}" fill="${CRIMSON}" />
-  <g transform="translate(${cx}, ${cy}) scale(${iconScale}) translate(-16, -16)">
-    ${BRAND_PATHS}
-  </g>
+<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" role="img">
+  ${rect}
+  ${letter}
 </svg>`;
 }
 
@@ -49,97 +63,82 @@ async function renderPng(svg: string): Promise<Buffer> {
 }
 
 function pngToIco(pngBuffers: Buffer[], sizes: number[]): Buffer {
-  // ICO с PNG внутри (Vista+). Заголовок + записи + данные.
+  // ICO с PNG внутри (Vista+): заголовок, записи каталога, затем данные.
   const count = pngBuffers.length;
   const headerSize = 6 + count * 16;
-  let offset = headerSize;
   const header = Buffer.alloc(headerSize);
   header.writeUInt16LE(0, 0); // reserved
   header.writeUInt16LE(1, 2); // type = icon
   header.writeUInt16LE(count, 4);
-  const parts: Buffer[] = [header];
+  let offset = headerSize;
   for (let i = 0; i < count; i++) {
     const png = pngBuffers[i]!;
     const size = sizes[i]!;
-    const entry = Buffer.alloc(16);
-    entry.writeUInt8(size === 256 ? 0 : size, 0); // width
-    entry.writeUInt8(size === 256 ? 0 : size, 1); // height
-    entry.writeUInt8(0, 2); // colors
-    entry.writeUInt8(0, 3); // reserved
-    entry.writeUInt16LE(1, 4); // planes
-    entry.writeUInt16LE(32, 6); // bpp
-    entry.writeUInt32LE(png.length, 8); // bytes
-    entry.writeUInt32LE(offset, 12); // offset
-    // overwrite header entry
-    entry.copy(header, 6 + i * 16);
+    const base = 6 + i * 16;
+    header.writeUInt8(size === 256 ? 0 : size, base);
+    header.writeUInt8(size === 256 ? 0 : size, base + 1);
+    header.writeUInt8(0, base + 2);
+    header.writeUInt8(0, base + 3);
+    header.writeUInt16LE(1, base + 4);
+    header.writeUInt16LE(32, base + 6);
+    header.writeUInt32LE(png.length, base + 8);
+    header.writeUInt32LE(offset, base + 12);
     offset += png.length;
-    parts.push(png);
   }
-  // header already includes entries, but we pushed pngs separately — need to build final
-  // Actually header buffer already contains entries, so we just concat header + pngs
   return Buffer.concat([header, ...pngBuffers]);
 }
 
 async function main() {
-  const appDir = join(ROOT, 'src', 'app');
-  const mediaDir = join(ROOT, 'public', 'media');
+  const glyphShape = parseGlyph(await readFile(join(ROOT, 'design', 'brand', 'letter-a.svg'), 'utf8'));
 
+  const appDir = join(ROOT, 'src', 'app');
+  // PWA-иконки не кладём в public: они уходят в R2 (media/app-icon-*.png), манифест читает их оттуда.
+  const mediaDir = join(tmpdir(), 'artdance-icons');
   await mkdir(mediaDir, { recursive: true });
 
-  // ——— PWA icons ———
-  const targets = [
+  // ——— PWA icons (в R2 под ключами media/app-icon-*.png) ———
+  const pwa = [
     { size: 192, file: 'app-icon-192.png', maskable: false, radius: true },
     { size: 192, file: 'app-icon-192-maskable.png', maskable: true, radius: false },
     { size: 512, file: 'app-icon-512.png', maskable: false, radius: true },
     { size: 512, file: 'app-icon-512-maskable.png', maskable: true, radius: false },
   ] as const;
-
-  for (const t of targets) {
-    const svg = iconSvg(t.size, { maskable: t.maskable, withRadius: t.radius });
-    const png = await renderPng(svg);
+  for (const t of pwa) {
+    const png = await renderPng(iconSvg(glyphShape, t.size, { maskable: t.maskable, withRadius: t.radius }));
     await writeFile(join(mediaDir, t.file), png);
-    console.log(`✓ public/media/${t.file} (${png.length} bytes)`);
+    console.log(`✓ ${join(mediaDir, t.file)} (${png.length} bytes) — загрузить в R2 как media/${t.file}`);
   }
 
-  // ——— app/icon.png (32) + high-res variants для /icon routes ———
-  // Next file convention: icon.png → /icon , icon1.png → второй вариант и т.д.
-  // Генерируем 32, 192, 512 как отдельные файлы для полноты.
-  const appIcons = [
-    { size: 32, file: 'icon.png', maskable: false, radius: true },
-  ];
-  for (const t of appIcons) {
-    const svg = iconSvg(t.size, { maskable: t.maskable, withRadius: t.radius });
-    const png = await renderPng(svg);
-    await writeFile(join(appDir, t.file), png);
-    console.log(`✓ src/app/${t.file} (${png.length} bytes)`);
-  }
-
-  // ——— Apple touch icon — 180×180, без скруглений (iOS округляет сам) ———
+  // ——— favicon веба: 32px; app/icon.png отдаётся как /icon ———
   {
-    const size = 180;
-    const svg = iconSvg(size, { maskable: true, withRadius: false });
-    const png = await renderPng(svg);
+    const png = await renderPng(iconSvg(glyphShape, 32, { withRadius: true }));
+    await writeFile(join(appDir, 'icon.png'), png);
+    console.log(`✓ src/app/icon.png (${png.length} bytes)`);
+  }
+
+  // ——— Apple touch icon 180: без скруглений, iOS округляет сам. Тот же файл — аватар ассистента в R2 ———
+  {
+    const png = await renderPng(iconSvg(glyphShape, 180, { maskable: true, withRadius: false }));
     await writeFile(join(appDir, 'apple-icon.png'), png);
     console.log(`✓ src/app/apple-icon.png (${png.length} bytes)`);
   }
 
-  // ——— Apple icon 180 maskable не нужен, но для консистентности оставляем 180 any ———
-  // ——— favicon.ico — 16/32/48 PNG-in-ICO ———
+  // ——— favicon.ico: 16/32/48 PNG внутри ICO ———
   {
     const sizes = [16, 32, 48];
     const pngs: Buffer[] = [];
-    for (const s of sizes) {
-      const svg = iconSvg(s, { maskable: false, withRadius: false });
-      // favicon — без скруглений, плотная фигура
-      const png = await sharp(Buffer.from(svg)).png().toBuffer();
-      pngs.push(png);
-    }
+    for (const s of sizes) pngs.push(await renderPng(iconSvg(glyphShape, s)));
     const ico = pngToIco(pngs, sizes);
     await writeFile(join(appDir, 'favicon.ico'), ico);
     console.log(`✓ src/app/favicon.ico (${ico.length} bytes, ${sizes.join('/')}px)`);
   }
 
-  // public/favicon.ico не создаём — app/favicon.ico покрывает /favicon.ico
+  // ——— Иконка ассистента в приложении (R2 brand/assistant-icon.png): 1024, чтобы большая иконка на экране не мылилась ———
+  {
+    const png = await renderPng(iconSvg(glyphShape, 1024));
+    await writeFile(join(mediaDir, 'assistant-icon.png'), png);
+    console.log(`✓ ${join(mediaDir, 'assistant-icon.png')} (${png.length} bytes) — загрузить в R2 как brand/assistant-icon.png`);
+  }
 
   console.log('\nГотово. Проверь: npm run build должен показать ● /icon, ● /apple-icon, ● /manifest.webmanifest');
 }
