@@ -1503,8 +1503,8 @@ const en = {
     removed: 'Removed from favorites',
     toggleLabel: 'Save {name} to favorites',
     toggleLabelActive: 'Remove {name} from favorites',
-    addLabel: 'Add to favorites',
-    removeLabel: 'Remove from favorites',
+    addLabel: 'Add to favorite',
+    removeLabel: 'Remove from favorite',
   },
 
   danceStyles: {
