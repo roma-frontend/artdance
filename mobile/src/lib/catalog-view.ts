@@ -2,7 +2,7 @@ import type { Locale } from '@/i18n/config';
 import type { Messages } from '@/i18n/types';
 
 import { mediaUri, posterBadge, type CatalogItem } from './catalog';
-import { dateLabel, price, styleLabel, weekdayShort } from './format';
+import { dateLabel, levelLabel, price, styleLabel, weekdayShort } from './format';
 
 /** Как показать любой объект каталога одной карточкой: заголовок, фото, подпись, цена, бейдж. */
 export type CardView = {
@@ -13,6 +13,10 @@ export type CardView = {
   price?: string;
   rating?: number;
   badge: string | null;
+  /** «Мест нет» — бренд-цвет, «В тренде» — зелёный, как метка новинки. */
+  badgeTone?: 'accent' | 'fresh';
+  /** Уровень занятия в углу постера. */
+  corner?: string;
 };
 
 export function cardView(item: CatalogItem, t: Messages, locale: Locale): CardView {
@@ -26,6 +30,8 @@ export function cardView(item: CatalogItem, t: Messages, locale: Locale): CardVi
   if ('instructorName' in item) {
     return {
       ...base,
+      badgeTone: item.spotsLeft <= 0 ? 'accent' : 'fresh',
+      corner: levelLabel(item.level, t),
       title: item.title,
       meta: `${weekdayShort(item.weekday, locale)} · ${item.startTime} · ${item.instructorName}`,
       price: item.price > 0 ? price(item.price, locale) : t.common.labels.free,

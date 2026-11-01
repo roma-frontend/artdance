@@ -248,6 +248,7 @@ const en = {
     failed: 'Search is unavailable right now.',
   },
   home: {
+    topTen: 'Top 10',
     finder: {
       title: 'Find your dance. Start with a feeling.',
       subtitle: 'Choose a mood, your experience and an optional date. Explore real classes in the catalog — availability is confirmed there.',

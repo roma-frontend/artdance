@@ -53,7 +53,8 @@ export default function TabsLayout() {
   return (
     <Tabs
       tabBar={(props) => <GlassTabBar {...props} />}
-      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg } }}
+      // Смена вкладки — сдвиг с затуханием, а не мгновенная подмена экрана.
+      screenOptions={{ headerShown: false, sceneStyle: { backgroundColor: colors.bg }, animation: 'shift' }}
     >
       {Object.keys(ICONS).map((name) => (
         <Tabs.Screen key={name} name={name} options={{ title: titles[name] }} />

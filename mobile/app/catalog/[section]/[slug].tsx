@@ -649,7 +649,7 @@ function CatalogDetailBody() {
                       uri={view.uri}
                       title={view.title}
                       meta={view.meta}
-                      badge={view.badge}
+                      badge={view.badge} badgeTone={view.badgeTone} corner={view.corner}
                       price={view.price}
                       onPress={() => router.push({ pathname: '/catalog/[section]/[slug]', params: { section: 'classes', slug: item.slug } })}
                     />

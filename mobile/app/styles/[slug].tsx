@@ -163,7 +163,7 @@ export default function StyleHubScreen() {
                       uri={view.uri}
                       title={view.title}
                       meta={view.meta}
-                      badge={view.badge}
+                      badge={view.badge} badgeTone={view.badgeTone} corner={view.corner}
                       price={view.price}
                       width={cardWidth}
                       onPress={() => openItem('classes', view.slug)}

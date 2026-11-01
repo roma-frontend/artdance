@@ -37,6 +37,19 @@ const navTheme = {
   },
 };
 
+/**
+ * Экран-«лист»: выезжает снизу и закрывается свайпом вниз, как билет или форма в онлайн-кинотеатрах.
+ * Свайп начинается только в верхней зоне, чтобы не спорить с прокруткой формы.
+ */
+const SHEET = {
+  animation: 'slide_from_bottom',
+  gestureEnabled: true,
+  gestureDirection: 'vertical',
+  fullScreenGestureEnabled: true,
+  animationMatchesGesture: true,
+  gestureResponseDistance: { top: 160 },
+} as const;
+
 export default function RootLayout() {
   const [user, setUser] = useState<User | null | undefined>(undefined);
   const [offline, setOffline] = useState(false);
@@ -127,74 +140,80 @@ export default function RootLayout() {
         key={locale}
         screenOptions={{
           headerShown: false,
-          animation: 'fade',
-          animationDuration: 260,
+          // Переход как в iOS на обеих платформах: экран выезжает справа, предыдущий уходит с параллаксом.
+          animation: 'ios_from_right',
+          animationDuration: 350,
+          // Назад — свайпом от левой части экрана, а не только от самого края.
+          gestureEnabled: true,
+          fullScreenGestureEnabled: true,
+          animationMatchesGesture: true,
+          gestureResponseDistance: { start: 72 },
           contentStyle: { backgroundColor: colors.bg },
         }}
       >
-        <Stack.Screen name="sign-in" />
-        <Stack.Screen name="sign-up" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="catalog/[section]/index" options={{ animation: 'default' }} />
-        <Stack.Screen name="catalog/[section]/[slug]" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/bookings" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/orders" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/orders/[orderNumber]" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/favorites" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/subscription" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/wallet" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/referrals" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/data" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/notifications" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/dancer-profile" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/saved-searches" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/athlete" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/company" options={{ animation: 'default' }} />
-        <Stack.Screen name="account/security" options={{ animation: 'default' }} />
-        <Stack.Screen name="onboarding/dancer" options={{ animation: 'default' }} />
-        <Stack.Screen name="dance-match" options={{ animation: 'default' }} />
-        <Stack.Screen name="booking/[id]/pass" options={{ animation: 'default' }} />
-        <Stack.Screen name="booking/[id]/reschedule" options={{ animation: 'default' }} />
-        <Stack.Screen name="booking/[id]/review" options={{ animation: 'default' }} />
-        <Stack.Screen name="events/[slug]/register" options={{ animation: 'default' }} />
-        <Stack.Screen name="cart" options={{ animation: 'default' }} />
-        <Stack.Screen name="search" options={{ animation: 'default' }} />
-        <Stack.Screen name="checkout" options={{ animation: 'default' }} />
-        <Stack.Screen name="faq" options={{ animation: 'default' }} />
-        <Stack.Screen name="help" options={{ animation: 'default' }} />
-        <Stack.Screen name="about" options={{ animation: 'default' }} />
-        <Stack.Screen name="gift-cards" options={{ animation: 'default' }} />
-        <Stack.Screen name="gift-cards/redeem" options={{ animation: 'default' }} />
-        <Stack.Screen name="legal" options={{ animation: 'default' }} />
-        <Stack.Screen name="accessibility" options={{ animation: 'default' }} />
-        <Stack.Screen name="studio/index" options={{ animation: 'default' }} />
-        <Stack.Screen name="studio/[slug]/book" options={{ animation: 'default' }} />
-        <Stack.Screen name="studio/classes" options={{ animation: 'default' }} />
-        <Stack.Screen name="studio/availability" options={{ animation: 'default' }} />
-        <Stack.Screen name="studio/requests" options={{ animation: 'default' }} />
-        <Stack.Screen name="studio/reviews" options={{ animation: 'default' }} />
-        <Stack.Screen name="studio/analytics" options={{ animation: 'default' }} />
-        <Stack.Screen name="studio/boost" options={{ animation: 'default' }} />
-        <Stack.Screen name="support/index" options={{ animation: 'default' }} />
-        <Stack.Screen name="venue/index" options={{ animation: 'default' }} />
-        <Stack.Screen name="venue/room-assignment" options={{ animation: 'default' }} />
-        <Stack.Screen name="contact" options={{ animation: 'default' }} />
-      <Stack.Screen name="pricing" options={{ animation: 'default' }} />
-      <Stack.Screen name="become-instructor" options={{ animation: 'default' }} />
-      <Stack.Screen name="become-instructor/apply" options={{ animation: 'default' }} />
-      <Stack.Screen name="reset-password" options={{ animation: 'default' }} />
-      <Stack.Screen name="verify-email/[token]" options={{ animation: 'default' }} />
-      <Stack.Screen name="newsletter/confirm/[token]" options={{ animation: 'default' }} />
-      <Stack.Screen name="newsletter/unsubscribe/[token]" options={{ animation: 'default' }} />
-      <Stack.Screen name="list-your-studio" options={{ animation: 'default' }} />
-      <Stack.Screen name="blog" options={{ animation: 'default' }} />
-      <Stack.Screen name="schedule" options={{ animation: 'default' }} />
-      <Stack.Screen name="styles/index" options={{ animation: 'default' }} />
-      <Stack.Screen name="styles/[slug]" options={{ animation: 'default' }} />
-      <Stack.Screen name="cities/index" options={{ animation: 'default' }} />
-      <Stack.Screen name="cities/[city]/index" options={{ animation: 'default' }} />
-      <Stack.Screen name="cities/[city]/[district]" options={{ animation: 'default' }} />
-        <Stack.Screen name="book/[instructor]" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
+        <Stack.Screen name="sign-in" options={{ animation: 'fade_from_bottom' }} />
+        <Stack.Screen name="sign-up" options={{ animation: 'fade_from_bottom' }} />
+        <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+        <Stack.Screen name="catalog/[section]/index" />
+        <Stack.Screen name="catalog/[section]/[slug]" />
+        <Stack.Screen name="account/bookings" />
+        <Stack.Screen name="account/orders" />
+        <Stack.Screen name="account/orders/[orderNumber]" />
+        <Stack.Screen name="account/favorites" />
+        <Stack.Screen name="account/subscription" />
+        <Stack.Screen name="account/wallet" />
+        <Stack.Screen name="account/referrals" />
+        <Stack.Screen name="account/data" />
+        <Stack.Screen name="account/notifications" />
+        <Stack.Screen name="account/dancer-profile" />
+        <Stack.Screen name="account/saved-searches" />
+        <Stack.Screen name="account/athlete" />
+        <Stack.Screen name="account/company" />
+        <Stack.Screen name="account/security" />
+        <Stack.Screen name="onboarding/dancer" />
+        <Stack.Screen name="dance-match" />
+        <Stack.Screen name="booking/[id]/pass" options={SHEET} />
+        <Stack.Screen name="booking/[id]/reschedule" options={SHEET} />
+        <Stack.Screen name="booking/[id]/review" options={SHEET} />
+        <Stack.Screen name="events/[slug]/register" options={SHEET} />
+        <Stack.Screen name="cart" />
+        <Stack.Screen name="search" />
+        <Stack.Screen name="checkout" />
+        <Stack.Screen name="faq" />
+        <Stack.Screen name="help" />
+        <Stack.Screen name="about" />
+        <Stack.Screen name="gift-cards" />
+        <Stack.Screen name="gift-cards/redeem" options={SHEET} />
+        <Stack.Screen name="legal" />
+        <Stack.Screen name="accessibility" />
+        <Stack.Screen name="studio/index" />
+        <Stack.Screen name="studio/[slug]/book" options={SHEET} />
+        <Stack.Screen name="studio/classes" />
+        <Stack.Screen name="studio/availability" />
+        <Stack.Screen name="studio/requests" />
+        <Stack.Screen name="studio/reviews" />
+        <Stack.Screen name="studio/analytics" />
+        <Stack.Screen name="studio/boost" />
+        <Stack.Screen name="support/index" />
+        <Stack.Screen name="venue/index" />
+        <Stack.Screen name="venue/room-assignment" />
+        <Stack.Screen name="contact" />
+      <Stack.Screen name="pricing" />
+      <Stack.Screen name="become-instructor" />
+      <Stack.Screen name="become-instructor/apply" />
+      <Stack.Screen name="reset-password" />
+      <Stack.Screen name="verify-email/[token]" />
+      <Stack.Screen name="newsletter/confirm/[token]" />
+      <Stack.Screen name="newsletter/unsubscribe/[token]" />
+      <Stack.Screen name="list-your-studio" />
+      <Stack.Screen name="blog" />
+      <Stack.Screen name="schedule" />
+      <Stack.Screen name="styles/index" />
+      <Stack.Screen name="styles/[slug]" />
+      <Stack.Screen name="cities/index" />
+      <Stack.Screen name="cities/[city]/index" />
+      <Stack.Screen name="cities/[city]/[district]" />
+        <Stack.Screen name="book/[instructor]" options={SHEET} />
       </Stack>
       <PaymentSheetHost />
     </ThemeProvider>
