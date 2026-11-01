@@ -40,6 +40,7 @@ import { sendEmail } from '@/lib/email/send';
 import { buildPreview } from '@/lib/notifications/preview';
 import { toCsv } from '@/lib/security/export-safety';
 import { cancelBookingAsStaff } from '@/server/booking/staff-cancel';
+import { markInvoicePaid } from '@/server/corporate/service';
 import { activeAdminCount, ordersForExport } from '@/server/admin/people';
 import { authedAction } from '@/server/safe-action';
 
@@ -625,6 +626,40 @@ async function executeBulkBookingCancel(
   });
 }
 
+/**
+ * Отметка оплаты счёта после одобрения второго админа. Баланс меняет только
+ * `markInvoicePaid`; при неудаче он бросает ошибку, и `decideApproval` её логирует.
+ */
+async function executeCorporateInvoicePaid(
+  request: ApprovalRequestRef,
+  payload: unknown,
+  approver: Caller,
+  ipAddress: string | undefined,
+): Promise<void> {
+  const invoiceId = (payload as { invoiceId?: unknown } | null)?.invoiceId;
+  if (typeof invoiceId !== 'string') {
+    console.error('[approval] заявка на оплату счёта без счёта', { requestId: request.id });
+    return;
+  }
+
+  const { hasCapability } = await import('@/lib/auth/capabilities');
+  if (!(await hasCapability(approver.role, 'corporate.manage', approver.email))) {
+    console.error('[approval] у одобрившего нет права corporate.manage', { requestId: request.id });
+    return;
+  }
+
+  const invoice = await markInvoicePaid(invoiceId);
+
+  await recordAudit({
+    actor: approver,
+    action: 'admin.corporate.invoice.paid',
+    entityType: 'Invoice',
+    entityId: invoice.id,
+    after: { status: 'PAID', amount: invoice.amount, corporateAccountId: invoice.corporateAccountId },
+    ipAddress,
+  });
+}
+
 async function executeApprovedRequest(
   request: ApprovalRequestRef,
   approver: Caller,
@@ -640,6 +675,11 @@ async function executeApprovedRequest(
 
   if (raw.action === 'booking.bulkCancel') {
     await executeBulkBookingCancel(request, raw.payload, approver, ipAddress);
+    return;
+  }
+
+  if (raw.action === 'corporate.invoice.markPaid') {
+    await executeCorporateInvoicePaid(request, raw.payload, approver, ipAddress);
     return;
   }
 
