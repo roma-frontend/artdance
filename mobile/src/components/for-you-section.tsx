@@ -86,7 +86,7 @@ export function ForYouSection({ locale, onOpen, onDancePartner }: Props) {
                 uri={view.uri}
                 title={view.title}
                 meta={view.meta}
-                badge={view.badge}
+                badge={view.badge} badgeTone={view.badgeTone} corner={view.corner}
                 price={view.price}
                 onPress={() => onOpen(item.slug)}
               />

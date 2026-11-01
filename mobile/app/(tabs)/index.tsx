@@ -17,18 +17,25 @@ import {
   type ScrollViewInstance,
 } from 'react-native';
 import Animated, {
+  cancelAnimation,
+  Easing,
   Extrapolation,
   FadeIn,
   FadeInDown,
   FadeOut,
   interpolate,
+  useAnimatedReaction,
+  useAnimatedRef,
   useAnimatedScrollHandler,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withSpring,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 
 import { FiltersSheet } from '@/components/filters-sheet';
 import { ForYouSection } from '@/components/for-you-section';
@@ -49,13 +56,20 @@ import { cardView } from '@/lib/catalog-view';
 import { API_URL } from '@/lib/config';
 import { useEntitlements } from '@/lib/entitlements';
 import { dateLabel, initials, price } from '@/lib/format';
+import { hapticImpact, hapticSelection } from '@/lib/haptics';
 import { deviceLocale, greeting, messagesFor } from '@/lib/i18n';
 import { enterCard3D } from '@/lib/motion';
 import { useScrollChrome } from '@/lib/use-scroll-chrome';
+import { useSnapTick } from '@/lib/use-snap-tick';
 import { colors, fonts, gradients, radius, space, springs, type } from '@/theme';
 
 type SearchHit = { id: string; scope: string; title: string; subtitle: string; href: string };
 type IconName = ComponentProps<typeof Ionicons>['name'];
+
+/** Постер рельса 2:3, как у витрин онлайн-кинотеатров: следующая карточка выглядывает из-за края. */
+const POSTER_WIDTH = 150;
+/** Сколько показывается слайд hero до автопрокрутки. */
+const SPOTLIGHT_AUTOPLAY_MS = 5000;
 
 /** Настроения из веба (src/config/dance-experience.ts), порядок и стили совпадают. */
 const MOODS = [
@@ -286,6 +300,7 @@ export default function HomeScreen() {
 
   const filtersActive = (styleFilter ? 1 : 0) + (levelFilter ? 1 : 0);
   const gridCardWidth = Math.floor((width - space.xl * 2 - space.md) / 2);
+  const moodTick = useSnapTick(POSTER_WIDTH + space.md);
   const resetFilters = () => {
     setStyleFilter(null);
     setLevelFilter(null);
@@ -314,6 +329,7 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => {
+              hapticImpact('light');
               setRefreshing(true);
               setRefreshKey((k) => k + 1);
             }}
@@ -441,7 +457,7 @@ export default function HomeScreen() {
                         uri={view.uri}
                         title={view.title}
                         meta={view.meta}
-                        badge={view.badge}
+                        badge={view.badge} badgeTone={view.badgeTone} corner={view.corner}
                         price={view.price}
                         onPress={() => openDetail('classes', item.slug)}
                       />
@@ -498,7 +514,7 @@ export default function HomeScreen() {
                           uri={view.uri}
                           title={view.title}
                           meta={view.meta}
-                          badge={view.badge}
+                          badge={view.badge} badgeTone={view.badgeTone} corner={view.corner}
                           price={view.price}
                           onPress={() => openDetail('classes', item.slug)}
                         />
@@ -514,17 +530,20 @@ export default function HomeScreen() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.row}
                   decelerationRate="fast"
-                  snapToInterval={160 + space.md}
+                  snapToInterval={POSTER_WIDTH + space.md}
+                  onScroll={moodTick}
+                  scrollEventThrottle={32}
                   renderItem={({ item, index }) => {
                     const view = cardView(item, t, locale);
                     return (
                       <Animated.View entering={FadeInDown.delay(index * 60).duration(450)}>
                         <MediaCard
-                          width={160}
+                          width={POSTER_WIDTH}
+                          aspect={1.5}
                           uri={view.uri}
                           title={view.title}
                           meta={view.meta}
-                          badge={view.badge}
+                          badge={view.badge} badgeTone={view.badgeTone} corner={view.corner}
                           price={view.price}
                           onPress={() => openDetail('classes', item.slug)}
                         />
@@ -683,6 +702,35 @@ function Spotlight(props: {
   const onScroll = useAnimatedScrollHandler((e) => {
     x.value = e.contentOffset.x;
   });
+  const listRef = useAnimatedRef<FlatList<EventCard>>();
+  const count = props.events?.length ?? 0;
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const dragging = useRef(false);
+  const reduceMotion = useReducedMotion();
+  const autoplay = !reduceMotion && !paused && count > 1;
+
+  // Смена слайда: щелчок только под пальцем, автопрокрутка идёт молча, как в онлайн-кинотеатрах.
+  const onIndex = useCallback((index: number) => {
+    setActive(index);
+    if (dragging.current) hapticSelection();
+  }, []);
+  useAnimatedReaction(
+    () => Math.round(x.value / step),
+    (index, previous) => {
+      if (previous !== null && index !== previous) scheduleOnRN(onIndex, index);
+    },
+    [step],
+  );
+
+  useEffect(() => {
+    if (!autoplay) return;
+    const timer = setTimeout(() => {
+      const next = (active + 1) % count;
+      listRef.current?.scrollToOffset({ offset: next * step, animated: true });
+    }, SPOTLIGHT_AUTOPLAY_MS);
+    return () => clearTimeout(timer);
+  }, [active, autoplay, count, step, listRef]);
 
   if (props.events === null) {
     return (
@@ -696,6 +744,7 @@ function Spotlight(props: {
   return (
     <View style={styles.spotlightWrap}>
       <Animated.FlatList
+        ref={listRef}
         horizontal
         data={props.events}
         keyExtractor={(item) => item.slug}
@@ -704,6 +753,14 @@ function Spotlight(props: {
         showsHorizontalScrollIndicator={false}
         snapToInterval={step}
         decelerationRate="fast"
+        onScrollBeginDrag={() => {
+          dragging.current = true;
+          setPaused(true);
+        }}
+        onMomentumScrollEnd={() => {
+          dragging.current = false;
+          setPaused(false);
+        }}
         contentContainerStyle={{ paddingHorizontal: space.xl, gap: space.md }}
         renderItem={({ item, index }) => (
           <SpotlightCard
@@ -720,9 +777,13 @@ function Spotlight(props: {
         )}
       />
       {props.events.length > 1 ? (
-        <View style={styles.dots}>
+        <View style={styles.segments}>
           {props.events.map((item, index) => (
-            <Dot key={item.slug} index={index} x={x} step={step} />
+            <Segment
+              key={item.slug}
+              state={index < active ? 'done' : index === active ? 'active' : 'todo'}
+              running={autoplay}
+            />
           ))}
         </View>
       ) : null}
@@ -789,16 +850,30 @@ function SpotlightCard(props: {
   );
 }
 
-function Dot({ index, x, step }: { index: number; x: SharedValue<number>; step: number }) {
-  const style = useAnimatedStyle(() => {
-    const range = [(index - 1) * step, index * step, (index + 1) * step];
-    return {
-      width: interpolate(x.value, range, [6, 22, 6], Extrapolation.CLAMP),
-      opacity: interpolate(x.value, range, [0.35, 1, 0.35], Extrapolation.CLAMP),
-    };
-  });
-  return <Animated.View style={[styles.dot, style]} />;
+/**
+ * Полоска прогресса hero вместо точки: активная заполняется за время показа слайда, пройденные
+ * полные. На паузе (палец на слайдере) или при «уменьшить движение» активная просто полная.
+ */
+function Segment({ state, running }: { state: 'done' | 'active' | 'todo'; running: boolean }) {
+  const progress = useSharedValue(state === 'done' ? 1 : 0);
+  useEffect(() => {
+    cancelAnimation(progress);
+    if (state === 'done') progress.value = 1;
+    else if (state === 'todo') progress.value = 0;
+    else if (!running) progress.value = 1;
+    else {
+      progress.value = 0;
+      progress.value = withTiming(1, { duration: SPOTLIGHT_AUTOPLAY_MS, easing: Easing.linear });
+    }
+  }, [state, running, progress]);
+  const fill = useAnimatedStyle(() => ({ width: `${progress.value * 100}%` }));
+  return (
+    <View style={styles.segment}>
+      <Animated.View style={[styles.segmentFill, fill]} />
+    </View>
+  );
 }
+
 
 /** Инструкторы «как сторис»: фото в градиентном кольце бренда, имя и рейтинг. */
 function Stories({
@@ -1024,8 +1099,9 @@ const styles = StyleSheet.create({
   spotlightMeta: { fontSize: 13, color: colors.text2, flexShrink: 1 },
   spotlightPrice: { paddingVertical: 6, paddingHorizontal: 10, borderRadius: radius.pill, backgroundColor: colors.accent },
   spotlightPriceText: { fontSize: 12, fontWeight: '800', color: colors.white },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: space.lg },
-  dot: { height: 6, borderRadius: 3, backgroundColor: colors.text },
+  segments: { flexDirection: 'row', gap: 4, marginTop: space.lg, marginHorizontal: space.xl * 2 },
+  segment: { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden', backgroundColor: 'rgba(245,241,234,0.2)' },
+  segmentFill: { height: 3, borderRadius: 2, backgroundColor: colors.text },
   block: { marginTop: 40, gap: space.lg },
   moodBody: { ...type.bodySm, paddingHorizontal: space.xl, marginTop: -4 },
   row: { paddingHorizontal: space.xl, gap: space.md },

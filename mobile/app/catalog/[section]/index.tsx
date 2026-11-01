@@ -10,16 +10,18 @@ import * as Haptics from 'expo-haptics';
 import { BrandLogo } from '@/components/brand-logo';
 import { GestureHint } from '@/components/gesture-hint';
 import { ListSkeleton } from '@/components/skeleton';
+import { TopTenRail } from '@/components/top-ten-rail';
 import { CollapsingHeader } from '@/components/ui/collapsing-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FadeImage } from '@/components/ui/fade-image';
 import { GlassButton } from '@/components/ui/glass-button';
 import { MediaCard } from '@/components/ui/media-card';
 import { PressableScale } from '@/components/ui/pressable-scale';
+import { SectionHeader } from '@/components/ui/section-header';
 import { catalogFor } from '@/i18n/catalog';
 import type { Locale } from '@/i18n/config';
 import type { Messages } from '@/i18n/types';
-import { CatalogError, listCatalog, type CatalogItem, type Section } from '@/lib/catalog';
+import { CatalogError, listCatalog, type CatalogItem, type InstructorCard, type Section } from '@/lib/catalog';
 import { cardView } from '@/lib/catalog-view';
 import { plural, webUrl } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
@@ -130,6 +132,19 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
       alive = false;
     };
   }, [valid, page, term, styleSlug, reloadKey]);
+
+  // «Топ-10» по рейтингу — только в каталоге инструкторов; ошибка просто скрывает рельс.
+  const [top, setTop] = useState<InstructorCard[]>([]);
+  useEffect(() => {
+    if (valid !== 'instructors') return;
+    let alive = true;
+    listCatalog('instructors', { sort: 'ratingDesc', page: '1', pageSize: '10' })
+      .then((result) => alive && setTop(result.items as InstructorCard[]))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [valid, reloadKey]);
 
   const reload = useCallback(() => {
     setPage(1);
@@ -246,6 +261,12 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
           ) : null}
         </View>
       </View>
+      {valid === 'instructors' && !term && !styleSlug && top.length >= 3 ? (
+        <View style={styles.topTen}>
+          <SectionHeader title={t.home.topTen} />
+          <TopTenRail items={top} t={t} locale={locale} onOpen={open} onLongPress={(item) => void quickActions(item)} />
+        </View>
+      ) : null}
       {items[0] ? (
         <Featured
           item={items[0]}
@@ -295,7 +316,7 @@ function CatalogListBody({ sectionProp }: { sectionProp?: string }) {
                 uri={view.uri}
                 title={view.title}
                 meta={view.meta}
-                badge={view.badge}
+                badge={view.badge} badgeTone={view.badgeTone} corner={view.corner}
                 price={view.price}
                 rating={view.rating}
                 onPress={() => open(item.slug)}
@@ -433,6 +454,7 @@ const styles = StyleSheet.create({
   },
   scheduleText: { fontSize: 13, fontWeight: '700', color: colors.text },
   searchWrap: { paddingHorizontal: space.xl, marginBottom: space.xl },
+  topTen: { gap: space.lg, marginBottom: space.xxl },
   search: {
     flexDirection: 'row',
     alignItems: 'center',

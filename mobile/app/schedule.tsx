@@ -101,7 +101,7 @@ export default function ScheduleScreen() {
                 uri={view.uri}
                 title={view.title}
                 meta={view.meta}
-                badge={view.badge}
+                badge={view.badge} badgeTone={view.badgeTone} corner={view.corner}
                 price={view.price}
                 rating={view.rating}
                 onPress={() => open(item.slug)}
