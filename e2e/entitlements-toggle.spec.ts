@@ -13,6 +13,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { demoAccounts, demoBanners, demoPassword } from '../prisma/fixtures/demo';
 import { PrismaClient } from '../src/generated/prisma/client';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 // Панель entitlements открыта владельцам из config/security.ts (entitlementEmails): демо-аккаунт поддержки в их числе.
@@ -50,6 +51,11 @@ async function homeShowsPromo(page: Page): Promise<boolean> {
   const html = await (await page.request.get('/en')).text();
   return html.includes(promoTitle);
 }
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Вход ограничен по адресу клиента: у каждого теста свой адрес, чтобы соседи не делили лимит. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
 
 test('админ выключает магазин через entitlements: публичный сайт его больше не показывает', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'один тумблер на тестовую базу: только в desktop');
