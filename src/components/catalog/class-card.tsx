@@ -24,9 +24,9 @@
 import { ChevronRightIcon, GraduationCapIcon } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
+import { CardQuickActions } from '@/components/catalog/card-quick-actions';
 import { PortalLink } from '@/components/fx/portal-link';
 import { Badge } from '@/components/ui/badge';
-import { FavoriteButton } from '@/components/ui/favorite-button';
 import { Media } from '@/components/ui/media';
 import { Price } from '@/components/ui/price';
 import { SpotsLeft } from '@/components/ui/spots-left';
@@ -109,16 +109,14 @@ export function ClassCard({ item, locale, className }: ClassCardProps) {
           )
         )}
 
-        {/*
-          Сердечко поверх кадра. `z-10` обязателен: растянутый якорь названия
-          накрывает карточку целиком, и без слоя выше кнопка была бы под ним.
-        */}
-        <FavoriteButton
+        {/* Сердечко поверх кадра и тулбар «Explore / Book» у него — см. CardQuickActions. */}
+        <CardQuickActions
           target="class"
           slug={item.slug}
           name={item.title}
-          onMedia
-          className="absolute top-2.5 right-2.5 z-20"
+          exploreHref={routes.class(item.slug)}
+          bookHref={footHref}
+          bookLabel={bookAction}
         />
       </div>
 
