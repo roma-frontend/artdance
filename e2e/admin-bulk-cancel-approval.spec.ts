@@ -2,9 +2,12 @@
  * Массовая отмена броней: заявку подаёт один админ, одобряет другой, и только тогда
  * бронь отменяется. Автор заявки в списке одобрений видит её без кнопки «Одобрить».
  *
- * Подготовка создаёт одну бронь демо-клиента в тестовой базе; после теста заявка и
- * бронь удаляются. Запускается только в проекте desktop: одна бронь на базу.
+ * Бронь создаётся на отдельных тестовых клиенте и инструкторе: отмена пишет уведомления
+ * им, и демо-аккаунты, которыми входят другие тесты, в этом не участвуют. Всё созданное
+ * удаляется после теста. Запускается только в проекте desktop: одна бронь на базу.
  */
+
+import { randomUUID } from 'node:crypto';
 
 import { expect, test } from '@playwright/test';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -12,39 +15,74 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import { PrismaClient } from '../src/generated/prisma/client';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 const admin = demoAccounts.find((account) => account.role === 'ADMIN')!;
 const approver = demoAccounts.find((account) => account.role === 'SUPPORT')!;
-const client = demoAccounts.find((account) => account.role === 'CUSTOMER')!;
 
-test('второй админ одобряет заявку на массовую отмену, и бронь отменяется', async ({ page }) => {
-  test.skip(test.info().project.name !== 'desktop', 'одна тестовая бронь: только в desktop');
+test('второй админ одобряет заявку на массовую отмену, и бронь отменяется', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'одна тестовая бронь: только в desktop');
+  await isolateRateLimit(page, `bulk-cancel-approval-${testInfo.project.name}`);
 
   const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
+  const key = `approval-e2e-${randomUUID()}`;
   const reference = `E2E-APPROVE-${Date.now()}`;
+  let customerId: string | undefined;
+  let teacherId: string | undefined;
+  let instructorId: string | undefined;
+  let classId: string | undefined;
   let bookingId: string | undefined;
   let requestIds: string[] = [];
   try {
-    const customer = await db.user.findUniqueOrThrow({ where: { email: client.email }, select: { id: true } });
-    const session = await db.classSession.findFirstOrThrow({
-      where: { isCancelled: false, startsAt: { gt: new Date() } },
-      orderBy: { startsAt: 'asc' },
-      select: { startsAt: true, endsAt: true, classId: true },
+    const customer = await db.user.create({ data: { email: `${key}-customer@example.test`, name: 'Approval customer' } });
+    customerId = customer.id;
+    const teacher = await db.user.create({ data: { email: `${key}-teacher@example.test`, name: 'Approval teacher' } });
+    teacherId = teacher.id;
+    const instructor = await db.instructorProfile.create({
+      data: {
+        userId: teacher.id,
+        slug: key,
+        headline: 'Approval teacher',
+        bio: 'Approval lesson',
+        styles: ['BALLROOM'],
+        yearsExperience: 1,
+        hourlyRateFrom: 20000,
+        moderation: 'APPROVED',
+        publishedAt: new Date(),
+      },
     });
-    const danceClass = await db.danceClass.findUniqueOrThrow({
-      where: { id: session.classId },
-      select: { instructorId: true },
+    instructorId = instructor.id;
+    const danceClass = await db.danceClass.create({
+      data: {
+        instructorId: instructor.id,
+        slug: key,
+        title: 'Approval lesson',
+        description: 'Approval lesson',
+        style: 'BALLROOM',
+        level: 'BEGINNER',
+        durationMinutes: 60,
+        price: 20000,
+        capacity: 2,
+        learningPoints: [],
+        lessonType: 'PAIR',
+      },
     });
+    classId = danceClass.id;
+    const startsAt = new Date(Date.now() + 7 * 86_400_000);
+    startsAt.setUTCHours(10, 0, 0, 0);
+    const endsAt = new Date(startsAt.getTime() + 3_600_000);
+    await db.classSession.create({ data: { classId: danceClass.id, startsAt, endsAt, capacity: 2 } });
+
     const booking = await db.booking.create({
       data: {
         reference,
         subject: 'CLASS_SESSION',
         status: 'CONFIRMED',
         customerId: customer.id,
-        instructorId: danceClass.instructorId,
-        startsAt: session.startsAt,
-        endsAt: session.endsAt,
+        instructorId: instructor.id,
+        startsAt,
+        endsAt,
         basePrice: 10_000,
         totalPrice: 10_000,
         cancellationWindowHours: 24,
@@ -116,17 +154,18 @@ test('второй админ одобряет заявку на массову�
     expect(decided.status).toBe('APPROVED');
     expect(decided.reviewedById).toBe(approverUser.id);
   } finally {
-    if (bookingId) {
-      await db.notification.deleteMany({
-        where: {
-          OR: ['confirmed', 'cancelled'].map((action) => ({
-            payload: { path: ['dedupeKey'], equals: `booking:${bookingId}:${action}` },
-          })),
-        },
-      });
+    const userIds = [customerId, teacherId].filter((id): id is string => Boolean(id));
+    if (userIds.length > 0) {
+      await db.notification.deleteMany({ where: { userId: { in: userIds } } });
     }
     await db.approvalRequest.deleteMany({ where: { id: { in: requestIds } } });
-    await db.booking.deleteMany({ where: { reference } });
+    if (bookingId) await db.booking.deleteMany({ where: { id: bookingId } });
+    if (classId) {
+      await db.classSession.deleteMany({ where: { classId } });
+      await db.danceClass.delete({ where: { id: classId } });
+    }
+    if (instructorId) await db.instructorProfile.delete({ where: { id: instructorId } });
+    if (userIds.length > 0) await db.user.deleteMany({ where: { id: { in: userIds } } });
     await db.$disconnect();
   }
 });
