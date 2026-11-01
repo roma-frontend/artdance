@@ -60,6 +60,10 @@ const NATIVE_PATHS: ReadonlySet<string> = new Set([
   '/account/data',
   '/account/notifications',
   '/account/dancer-profile',
+  '/account/saved-searches',
+  '/account/athlete',
+  '/account/company',
+  '/account/security',
   '/cart',
   '/courses',
   '/faq',
@@ -232,6 +236,10 @@ export default function AccountScreen() {
         ...(supportAccess
           ? [{ icon: 'shield-checkmark' as IconName, label: c.admin.support.mobile.entry, path: '/support', tint: colors.accentBright, highlight: true, sub: c.admin.support.operatorMode }]
           : []),
+        { icon: 'bookmark', label: c.savedSearches.title, path: '/account/saved-searches', tint: '#E0607E' },
+        { icon: 'trophy', label: c.account.nav.athlete, path: '/account/athlete', tint: '#C9A96A' },
+        { icon: 'business', label: c.account.nav.company, path: '/account/company', tint: '#7A8BA6', feature: 'corporateCabinet' },
+        { icon: 'lock-closed', label: c.account.security.title, path: '/account/security', tint: '#3FB984' },
         { icon: 'ribbon', label: c.account.nav.subscription, path: '/account/subscription', tint: '#8E7CC3', feature: 'subscriptions' },
         { icon: 'people', label: c.account.nav.referrals, path: '/account/referrals', tint: '#5AA9E6', feature: 'referrals' },
         { icon: 'school', label: c.courses.title, path: '/courses', tint: '#3FB984', feature: 'courses' },

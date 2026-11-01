@@ -40,12 +40,15 @@ const PAYMENT_ICONS: Record<MobilePaymentMethod, ComponentProps<typeof Ionicons>
   ARCA: 'swap-horizontal-outline',
   IDRAM: 'wallet-outline',
   TELCELL: 'phone-portrait-outline',
+  CASH_ON_DELIVERY: 'cash-outline',
 };
 
 function paymentLabel(method: MobilePaymentMethod, c: Catalog): string {
   switch (method) {
     case 'CARD':
       return c.checkout.payment.methodCard;
+    case 'CASH_ON_DELIVERY':
+      return c.checkout.payment.methodCash;
     case 'ARCA':
       return c.checkout.payment.methodArca;
     case 'IDRAM':
@@ -181,6 +184,11 @@ export default function CheckoutScreen() {
         setPlaced(order);
       }
       const intent = await payMyOrder(order.id, method, locale);
+      if (method === 'CASH_ON_DELIVERY') {
+        // Наличные при получении: денег сейчас нет, оплата не открывается.
+        router.replace({ pathname: '/account/orders/[orderNumber]', params: { orderNumber: intent.orderNumber || order.orderNumber } });
+        return;
+      }
       const outcome = await startPayment(intent);
       if (outcome !== 'PAID' && outcome !== 'PENDING') {
         // Заказ уже создан: остаёмся на экране, повтор оплатит его же.
