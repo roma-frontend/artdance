@@ -394,9 +394,13 @@ model User {
   assignedTickets     SupportTicket[]          @relation("TicketAssignee")
   supportTemplates    SupportTemplate[]        @relation("TemplateAuthor")
   uploadedAttachments SupportAttachment[]      @relation("AttachmentUploader")
+  /// Компания, из кабинета которой видны баланс и счета. Назначает админ (B-06).
+  corporateAccountId  String?
+  corporateAccount    CorporateAccount?        @relation(fields: [corporateAccountId], references: [id], onDelete: SetNull)
 
   @@index([role, isActive])
   @@index([createdAt])
+  @@index([corporateAccountId])
 }
 
 /**
@@ -2423,6 +2427,7 @@ model CorporateAccount {
   balance      Int       @default(0)
   createdAt    DateTime  @default(now())
   invoices     Invoice[]
+  members      User[]
 }
 
 model Invoice {

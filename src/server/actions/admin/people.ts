@@ -40,7 +40,7 @@ import { sendEmail } from '@/lib/email/send';
 import { buildPreview } from '@/lib/notifications/preview';
 import { toCsv } from '@/lib/security/export-safety';
 import { cancelBookingAsStaff } from '@/server/booking/staff-cancel';
-import { markInvoicePaid } from '@/server/corporate/service';
+import { debitCorporateForOrder, markInvoicePaid } from '@/server/corporate/service';
 import { activeAdminCount, ordersForExport } from '@/server/admin/people';
 import { authedAction } from '@/server/safe-action';
 
@@ -660,6 +660,43 @@ async function executeCorporateInvoicePaid(
   });
 }
 
+/**
+ * Списание баланса компании за заказ после одобрения второго админа. Проверки
+ * повторяются при исполнении: баланс и статус заказа могли измениться за время заявки.
+ */
+async function executeCorporateOrderDebit(
+  request: ApprovalRequestRef,
+  payload: unknown,
+  approver: Caller,
+  ipAddress: string | undefined,
+): Promise<void> {
+  const parsed = payload as { corporateAccountId?: unknown; orderId?: unknown } | null;
+  if (typeof parsed?.corporateAccountId !== 'string' || typeof parsed?.orderId !== 'string') {
+    console.error('[approval] заявка на списание без компании или заказа', { requestId: request.id });
+    return;
+  }
+
+  const { hasCapability } = await import('@/lib/auth/capabilities');
+  if (!(await hasCapability(approver.role, 'corporate.manage', approver.email))) {
+    console.error('[approval] у одобрившего нет права corporate.manage', { requestId: request.id });
+    return;
+  }
+
+  const debit = await debitCorporateForOrder({
+    corporateAccountId: parsed.corporateAccountId,
+    orderId: parsed.orderId,
+  });
+
+  await recordAudit({
+    actor: approver,
+    action: 'admin.corporate.order.debited',
+    entityType: 'Order',
+    entityId: debit.orderId,
+    after: { orderNumber: debit.orderNumber, amount: debit.amount, corporateAccountId: parsed.corporateAccountId },
+    ipAddress,
+  });
+}
+
 async function executeApprovedRequest(
   request: ApprovalRequestRef,
   approver: Caller,
@@ -680,6 +717,11 @@ async function executeApprovedRequest(
 
   if (raw.action === 'corporate.invoice.markPaid') {
     await executeCorporateInvoicePaid(request, raw.payload, approver, ipAddress);
+    return;
+  }
+
+  if (raw.action === 'corporate.order.debit') {
+    await executeCorporateOrderDebit(request, raw.payload, approver, ipAddress);
     return;
   }
 

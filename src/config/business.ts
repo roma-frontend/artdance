@@ -523,6 +523,7 @@ export const security = {
     'promoCode.create',
     'booking.bulkCancel',
     'corporate.invoice.markPaid',
+    'corporate.order.debit',
   ] as const,
   /** Ограничители для делегированных админов. Superadmin не ограничен. */
   guardrails: {
