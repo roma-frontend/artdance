@@ -192,13 +192,20 @@ jobs:
   # Lighthouse CI (2.10/8.3): a11y и SEO — блокирующие пороги, performance —
   # только предупреждение (шумные на CI-раннере, см. комментарий lighthouserc.json).
   # Отчёты остаются приватными: без публичного upload (решение по публикации —
-  # за владельцем), только артефакт при падении. На пуше в main джоб обязателен,
-  # на PR — предостерегающий, чтобы не заслонять другие проверки при первом прогоне.
+  # за владельцем), только артефакт при падении.
+  #
+  # Каждая страница идёт отдельным заданием: три прогона одной страницы занимают
+  # около 2,5 минуты, три страницы подряд — около 7. Пороги и число прогонов те же,
+  # что в lighthouserc.json: меняется только набор URL в каждом задании.
+  # Не ждёт consistency, как и e2e: задания идут параллельно, падение любого краснит запуск.
   lighthouse:
-    name: Lighthouse CI
+    name: Lighthouse CI (${{ matrix.locale }})
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    needs: [consistency]
+    strategy:
+      fail-fast: false
+      matrix:
+        locale: [hy, ru, en]
     services:
       postgres:
         image: postgres:17-alpine
@@ -224,15 +231,17 @@ jobs:
       - run: npx prisma migrate deploy
       - run: npm run db:seed
       - run: npm run build
-      # LHCI: collect и assert локально, отчёты — в lighthouse-ci-reports/ (upload.target=filesystem
-      # в lighthouserc.json), в сеть не уходят. Пороги, URL и server command — из конфига.
+      # LHCI: тот же lighthouserc.json, но с одной страницей этого задания. Отчёты — в
+      # lighthouse-ci-reports/ (upload.target=filesystem), в сеть не уходят.
       - name: Lighthouse-сборка и пороги
-        run: npx @lhci/cli autorun --config=lighthouserc.json
+        run: |
+          node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('lighthouserc.json','utf8'));c.ci.collect.url=['http://localhost:3000/${{ matrix.locale }}'];fs.writeFileSync('lighthouserc.${{ matrix.locale }}.json',JSON.stringify(c,null,2))"
+          npx @lhci/cli autorun --config=lighthouserc.${{ matrix.locale }}.json
       - name: Артефакт при падении
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: lighthouse-reports
+          name: lighthouse-reports-${{ matrix.locale }}
           path: |
             lighthouse-ci-reports/
             .lighthouse-ci/
@@ -242,21 +251,22 @@ jobs:
   # раскладка на трёх ширинах. Unit-тесты на эти свойства ответить не могут,
   # а проверять их глазами на каждом изменении — значит однажды не проверить.
   #
-  # Набор (1215 тестов по трём профилям) разбит на четыре параллельных задания
-  # по --shard, около 300 тестов в каждом. Один джоб гонял весь набор 34 минуты
-  # на двух рабочих процессах, и ожидание слияния превышало полчаса. Каждый шард поднимает собственную базу, сидит её и
-  # собирает проект, поэтому шарды не делят состояние и не мешают друг другу.
+  # Набор (1215 тестов по трём профилям) разбит на восемь параллельных заданий
+  # по --shard, около 150 тестов в каждом. Один джоб гонял весь набор 34 минуты
+  # на двух рабочих процессах, и ожидание слияния превышало полчаса. Каждый шард
+  # поднимает собственную базу, сидит её и собирает проект, поэтому шарды не
+  # делят состояние и не мешают друг другу.
   e2e:
-    name: Поведение в браузере (${{ matrix.shard }}/4)
+    name: Поведение в браузере (${{ matrix.shard }}/8)
     runs-on: ubuntu-latest
-    # Шард собирает проект и прогоняет четверть набора: локально весь набор
+    # Шард собирает проект и прогоняет восьмую часть набора: локально весь набор
     # занимает 13 минут при двух рабочих процессах, на раннере — дольше.
+    # Не ждёт consistency: задания идут параллельно, падение любого краснит запуск.
     timeout-minutes: 30
-    needs: [consistency]
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     # Та же база, что и у сборки: экраны каталога читают Prisma, а проверки
     # входа — таблицы сессий и попыток. Без сида страницы пусты, и падают не
     # проверки поведения, а отсутствие данных.
@@ -288,7 +298,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       # Проверки идут против production-сборки: у dev-сервера другой CSS-конвейер.
       - run: npm run build
-      - run: npm run e2e -- --shard=${{ matrix.shard }}/4
+      - run: npm run e2e -- --shard=${{ matrix.shard }}/8
       - name: Отчёт при падении
         if: failure()
         uses: actions/upload-artifact@v4
