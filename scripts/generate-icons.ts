@@ -8,6 +8,7 @@
  */
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
 
@@ -90,7 +91,8 @@ async function main() {
   const glyphShape = parseGlyph(await readFile(join(ROOT, 'design', 'brand', 'letter-a.svg'), 'utf8'));
 
   const appDir = join(ROOT, 'src', 'app');
-  const mediaDir = join(ROOT, 'public', 'media');
+  // PWA-иконки не кладём в public: они уходят в R2 (media/app-icon-*.png), манифест читает их оттуда.
+  const mediaDir = join(tmpdir(), 'artdance-icons');
   const mobileAssets = join(ROOT, 'mobile', 'assets');
   await mkdir(mediaDir, { recursive: true });
 
@@ -104,7 +106,7 @@ async function main() {
   for (const t of pwa) {
     const png = await renderPng(iconSvg(glyphShape, t.size, { maskable: t.maskable, withRadius: t.radius }));
     await writeFile(join(mediaDir, t.file), png);
-    console.log(`✓ public/media/${t.file} (${png.length} bytes)`);
+    console.log(`✓ ${join(mediaDir, t.file)} (${png.length} bytes) — загрузить в R2 как media/${t.file}`);
   }
 
   // ——— favicon веба: 32px; app/icon.png отдаётся как /icon ———
