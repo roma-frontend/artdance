@@ -54,7 +54,7 @@ export default function GiftCardRedeemScreen() {
     setNotice(null);
     try {
       const card = await redeemGiftCard(code);
-      const balance = c.footer.redeemSuccess.replace('{balance}', price(card.balance, locale));
+      const balance = c.footer.redeemSuccess.replace('{balance}', price(card.balance, locale).replace('֏', '').trim());
       const until = card.expiresAt ? ` · ${dateLabel(card.expiresAt, locale, { day: 'numeric', month: 'long', year: 'numeric' })}` : '';
       setNotice({ tone: 'success', text: balance + until });
     } catch (error) {

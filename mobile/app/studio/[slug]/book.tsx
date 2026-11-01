@@ -12,17 +12,22 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { backLabel, goBack } from '@/lib/navigation';
 import { catalogFor } from '@/i18n/catalog';
-import { getBookingConsents } from '@/lib/bookings';
+import { getBookingConsents, payBooking } from '@/lib/bookings';
 import { bookingConsentForm, buildConsentBody, consentErrorField, type BookingConsentId, type BookingConsentRules, type ConsentField } from '@/lib/booking-consents';
 import { createRentalBooking, getRentalOptions, RentalsError, type RentalOptions } from '@/lib/rentals';
 import { price } from '@/lib/format';
 import { deviceLocale, messagesFor } from '@/lib/i18n';
+import { startPayment } from '@/lib/payment-url';
 import { serverMessageOf } from '@/lib/server-message';
 import { EASE_OUT } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 const YEREVAN_OFFSET = '+04:00';
 const YEREVAN_MS = 4 * 60 * 60 * 1000;
+
+/** Способы оплаты аренды: те же, что у занятий. Наличные при получении для аренды не предлагаются. */
+const RENT_PAY_METHODS = ['CARD', 'ARCA', 'IDRAM', 'TELCELL'] as const;
+type RentPayMethod = (typeof RENT_PAY_METHODS)[number];
 
 function yerevanDate(now = Date.now()): string {
   return new Date(now + YEREVAN_MS).toISOString().slice(0, 10);
@@ -102,6 +107,14 @@ export default function StudioBookScreen() {
     setConsentChecked((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]));
   }
 
+  const [payMethod, setPayMethod] = useState<RentPayMethod>('CARD');
+  const payLabels: Record<RentPayMethod, string> = {
+    CARD: c.checkout.payment.methodCard,
+    ARCA: c.checkout.payment.methodArca,
+    IDRAM: c.checkout.payment.methodIdram,
+    TELCELL: c.checkout.payment.methodTelcell,
+  };
+
   async function submit() {
     if (busy || !consentForm.ready) return;
     if (!room || !date || !time) {
@@ -125,6 +138,16 @@ export default function StudioBookScreen() {
         durationMinutes: duration,
         consentFields,
       });
+      if (result.booking.totalPrice > 0) {
+        try {
+          // Аренда оплачивается сразу после холда, как на вебе. Неудачный старт оплаты не отменяет бронь:
+          // оплатить её можно с экрана брони.
+          const payment = await payBooking(result.booking.id, payMethod);
+          await startPayment(payment);
+        } catch {
+          /* бронь уже создана */
+        }
+      }
       router.replace({ pathname: '/booking/[id]/pass', params: { id: result.booking.id } });
     } catch (next: unknown) {
       const consentField = consentErrorField(next instanceof RentalsError ? next.field : null);
@@ -255,6 +278,22 @@ export default function StudioBookScreen() {
         </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
+        <View style={styles.chips}>
+          {RENT_PAY_METHODS.map((value) => {
+            const selected = payMethod === value;
+            return (
+              <PressableScale
+                key={value}
+                onPress={() => setPayMethod(value)}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selected }}
+                style={[styles.chip, selected && styles.chipSelected]}
+              >
+                <Text style={type.caption}>{payLabels[value]}</Text>
+              </PressableScale>
+            );
+          })}
+        </View>
         <Button label={c.studio.rent.submit} onPress={submit} busy={busy} disabled={busy || !room || !consentForm.ready} />
       </ScrollView>
     </View>

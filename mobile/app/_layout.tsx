@@ -147,6 +147,10 @@ export default function RootLayout() {
         <Stack.Screen name="account/data" options={{ animation: 'default' }} />
         <Stack.Screen name="account/notifications" options={{ animation: 'default' }} />
         <Stack.Screen name="account/dancer-profile" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/saved-searches" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/athlete" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/company" options={{ animation: 'default' }} />
+        <Stack.Screen name="account/security" options={{ animation: 'default' }} />
         <Stack.Screen name="onboarding/dancer" options={{ animation: 'default' }} />
         <Stack.Screen name="dance-match" options={{ animation: 'default' }} />
         <Stack.Screen name="booking/[id]/pass" options={{ animation: 'default' }} />
@@ -167,6 +171,10 @@ export default function RootLayout() {
         <Stack.Screen name="studio/[slug]/book" options={{ animation: 'default' }} />
         <Stack.Screen name="studio/classes" options={{ animation: 'default' }} />
         <Stack.Screen name="studio/availability" options={{ animation: 'default' }} />
+        <Stack.Screen name="studio/requests" options={{ animation: 'default' }} />
+        <Stack.Screen name="studio/reviews" options={{ animation: 'default' }} />
+        <Stack.Screen name="studio/analytics" options={{ animation: 'default' }} />
+        <Stack.Screen name="studio/boost" options={{ animation: 'default' }} />
         <Stack.Screen name="support/index" options={{ animation: 'default' }} />
         <Stack.Screen name="venue/index" options={{ animation: 'default' }} />
         <Stack.Screen name="venue/room-assignment" options={{ animation: 'default' }} />

@@ -58,6 +58,13 @@ Bearer-токен проверен на живом стенде: вход дем
 | `/api/account/orders/[orderNumber]` | GET | сессия, только свой заказ |
 | `/api/account/dancer-profile` | GET, PUT | сессия; PUT ограничен лимитом `dancerProfile` |
 | `/api/account/notifications` | GET, PUT | сессия; PUT ограничен лимитом `notificationPrefs` |
+| `/api/account/athlete` | GET, PUT | сессия; `athlete` — `null`, пока нет регистрации на соревнование; PUT ограничен лимитом `dancerProfile` (DS-04) |
+| `/api/account/company` | GET | сессия, тумблер `corporateCabinet` (иначе `FEATURE_DISABLED`); `account` — `null`, если пользователь не привязан (B-06) |
+| `/api/studio/requests` | GET | роль инструктора; открытые заявки на бронь, ответ — `POST /api/studio/bookings/{id}/respond` (D-04) |
+| `/api/studio/reviews` | GET | роль инструктора; одобренные отзывы с ответом; ответ — `POST` и `DELETE /api/reviews/{id}/reply` |
+| `/api/studio/analytics` | GET | роль инструктора, тумблер `instructorAnalytics` (иначе `FEATURE_DISABLED`, 403) |
+| `/api/studio/boosts` | GET, POST | роль инструктора; GET — `{ enabled, campaigns }`; POST создаёт заявку на буст, правила ставки и срока проверяет сервер, тумблер `boost` (B-07) |
+| `/api/auth/list-sessions`, `/api/auth/revoke-other-sessions`, `/api/auth/two-factor/generate-backup-codes` | GET, POST | встроенные маршруты Better Auth с Bearer-токеном: устройства, выход с остальных, резервные коды (как `/account/security`) |
 | `/api/account/reviews` | POST | сессия, лимит `reviewSubmit` |
 | `/api/account/password/forgot` | POST | лимит `passwordReset`, капча (`assertCaptcha`) |
 | `/api/account/password/reset` | POST | лимит `passwordReset` |
@@ -139,8 +146,14 @@ capability-проверки (`requireCapability`), вебхуки подписа
    Лендинги (соревнования, социальные танцы, атлеты, федерации, партнёры, спонсорство, реклама,
    корпоратив) открываются в браузере из кабинета.
    Отзывы (`POST /api/account/reviews`) и уведомления (`/api/account/notifications`) подключены.
-   Админка в приложение не переносится.
-5. **Оплата.** После оплаты приложение открывает ссылку провайдера в браузере и предлагает
+   Кабинет атлета, кабинет компании, сохранённые поиски и безопасность (устройства, резервные коды)
+   есть в приложении и опираются на маршруты выше. Кабинет инструктора: заявки на бронь, отзывы с
+   ответом, аналитика и бусты. Аналитика и бусты показываются только при пакете, как на вебе.
+   Админка в приложение не переносится. Страницы, которые на вебе открываются по ссылкам из писем
+   (`/waitlist/{id}`, `/booking/{id}/confirm`), в приложении ведут в свой экран брони либо открываются в браузере.
+5. **Оплата.** Наличные при получении (`CASH_ON_DELIVERY`) не открывают экран оплаты: заказ сразу уходит в сборку.
+   Аренда студии после холда создаёт бронь и открывает оплату, как и занятия. ARCA QR в приложении не предлагается:
+   у провайдера пока нет адаптера (как и на вебе). После оплаты приложение открывает ссылку провайдера в браузере и предлагает
    перейти к броням. Статус оплаты в приложении не подтверждается: его выставляет вебхук или
    reconcile. При возврате приложения на передний план (`AppState` → `active`) заказы, брони и
    корзина перезагружаются (`useAppActive`). Запросы оплаты передают `fromApp: true`: страница результата получает `?app=1` и показывает кнопку `artdance://account/bookings` или `artdance://account/orders/{номер}`.

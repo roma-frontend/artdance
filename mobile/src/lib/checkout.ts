@@ -7,11 +7,11 @@ import { readServerMessage } from './server-message';
 import { getSessionToken } from './session';
 
 /**
- * Способы оплаты, которые мобильное приложение доводит до конца. ARCA QR сюда не входит:
- * его полезная нагрузка — QR-код, а мобильный экран его пока не рисует.
- * Наличные при доставке провайдером не обрабатываются, поэтому тоже не предлагаются.
+ * Способы оплаты, которые предлагает приложение: те же, что на вебе, кроме ARCA QR. У провайдера
+ * QR пока нет адаптера (как и у ARCA, IDRAM и TELCELL в проде). Наличные при получении провайдер
+ * не обрабатывает: заказ сразу уходит в сборку, поэтому экран оплаты для них не открывается.
  */
-export const mobilePaymentMethods = ['CARD', 'ARCA', 'IDRAM', 'TELCELL'] as const;
+export const mobilePaymentMethods = ['CARD', 'ARCA', 'IDRAM', 'TELCELL', 'CASH_ON_DELIVERY'] as const;
 export type MobilePaymentMethod = (typeof mobilePaymentMethods)[number];
 
 export type DeliveryMethod = 'COURIER' | 'PICKUP_POINT';

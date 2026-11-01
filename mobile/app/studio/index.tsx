@@ -16,16 +16,18 @@ import { EASE_OUT, enterItem } from '@/lib/motion';
 import { colors, radius, space, type } from '@/theme';
 
 /**
- * Кабинет инструктора-студии. Основные доступные разделы зеркалят веб `/studio`.
- * Заявки больше не показываются: в текущем веб-продукте для них нет источника
- * данных, поэтому мобильный интерфейс не обещает несуществующую функцию.
+ * Кабинет инструктора-студии. Разделы зеркалят веб `/studio`: заявки на бронь, отзывы с
+ * ответом, аналитика и бусты. Аналитика и бусты показываются только при пакете, как на вебе.
  */
 export default function StudioDashboardScreen() {
   const c = catalogFor(deviceLocale(undefined));
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<User | null | undefined>(undefined);
-  const eventsOn = useEntitlements()?.events === true;
+  const entitlements = useEntitlements();
+  const eventsOn = entitlements?.events === true;
+  const analyticsOn = entitlements?.instructorAnalytics === true;
+  const boostOn = entitlements?.boost === true;
 
   useEffect(() => {
     let alive = true;
@@ -82,8 +84,51 @@ export default function StudioDashboardScreen() {
             </PressableScale>
           </Animated.View>
 
+          <Animated.View entering={enterItem(2)}>
+            <PressableScale onPress={() => router.push('/studio/requests')} accessibilityRole="button">
+              <View style={styles.card}>
+                <Ionicons name="clipboard-outline" size={22} color={colors.accentBright} />
+                <Text style={type.h3}>{c.studio.requests.title}</Text>
+                <Text style={type.bodySm}>{c.studio.requests.subtitle}</Text>
+              </View>
+            </PressableScale>
+          </Animated.View>
+
+          <Animated.View entering={enterItem(3)}>
+            <PressableScale onPress={() => router.push('/studio/reviews')} accessibilityRole="button">
+              <View style={styles.card}>
+                <Ionicons name="star-outline" size={22} color={colors.accentBright} />
+                <Text style={type.h3}>{c.reviews.title}</Text>
+                <Text style={type.bodySm}>{c.reviews.studioSubtitle}</Text>
+              </View>
+            </PressableScale>
+          </Animated.View>
+
+          {analyticsOn ? (
+            <Animated.View entering={enterItem(4)}>
+              <PressableScale onPress={() => router.push('/studio/analytics')} accessibilityRole="button">
+                <View style={styles.card}>
+                  <Ionicons name="stats-chart-outline" size={22} color={colors.accentBright} />
+                  <Text style={type.h3}>{c.analytics.title}</Text>
+                </View>
+              </PressableScale>
+            </Animated.View>
+          ) : null}
+
+          {boostOn ? (
+            <Animated.View entering={enterItem(5)}>
+              <PressableScale onPress={() => router.push('/studio/boost')} accessibilityRole="button">
+                <View style={styles.card}>
+                  <Ionicons name="rocket-outline" size={22} color={colors.accentBright} />
+                  <Text style={type.h3}>{c.boost.studio.title}</Text>
+                  <Text style={type.bodySm}>{c.boost.studio.intro}</Text>
+                </View>
+              </PressableScale>
+            </Animated.View>
+          ) : null}
+
           {eventsOn ? (
-            <Animated.View entering={enterItem(2)}>
+            <Animated.View entering={enterItem(6)}>
               <PressableScale onPress={() => router.push('/studio/check-in')} accessibilityRole="button">
                 <View style={styles.card}>
                   <Ionicons name="qr-code-outline" size={22} color={colors.accentBright} />

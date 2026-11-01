@@ -15,10 +15,9 @@ const en = {
     name: 'ArtDance',
     tagline: 'Every body has a rhythm.',
     taglineAlt: 'Find your rhythm.',
-    positioning: "Armenia's premium dance marketplace",
+    positioning: 'Armenia\'s premium dance marketplace',
     madeIn: 'Made in Yerevan',
   },
-
   common: {
     actions: {
       book: 'Book',
@@ -93,11 +92,6 @@ const en = {
       location: 'Location',
       instructor: 'Instructor',
       studio: 'Studio',
-      /**
-       * Вид сущности одним словом. Используется на карточках для соцсетей, где
-       * метка отвечает «что это вообще»: занятие, преподаватель, событие.
-       * Единственное число, а не название раздела — речь об одном объекте.
-       */
       class: 'Class',
       event: 'Event',
       price: 'Price',
@@ -126,7 +120,6 @@ const en = {
       minutes: '{count, plural, one {# minute} other {# minutes}}',
       hours: '{count, plural, one {# hour} other {# hours}}',
       days: '{count, plural, one {# day} other {# days}}',
-      /** Диапазон дней: срок доставки. Отдельный ключ — плюрализация по диапазону невозможна. */
       daysRange: '{min}–{max} days',
       months: '{count, plural, one {# month} other {# months}}',
       years: '{count, plural, one {# year} other {# years}}',
@@ -163,7 +156,6 @@ const en = {
       liteOffHint: 'Full effects',
     },
   },
-
   nav: {
     home: 'Home',
     discover: 'Discover',
@@ -222,8 +214,20 @@ const en = {
     megaDescAbout: 'About ArtDance',
     megaDescContact: 'Get in touch',
   },
-
+  savedSearches: {
+    title: 'Saved searches',
+    empty: 'You have no saved searches yet',
+    emptyHint: 'Search for a class, an instructor or a style and save the search to get notified about new matches.',
+    open: 'Open search',
+    remove: 'Remove',
+    limitReached: 'You have reached the limit of saved searches. Remove one to save another.',
+  },
   search: {
+    saveSearch: 'Save this search',
+    saveSearchDone: 'Search saved. We will tell you about new matches.',
+    saveSearchLimit: 'You have reached the limit of saved searches. Remove one to save another.',
+    saveSearchError: 'Could not save the search. Try again.',
+    saveSearchSignIn: 'Sign in to save searches',
     placeholder: 'Search dancers, classes, studios…',
     heroPlaceholder: 'What do you want to dance?',
     scopeAll: 'Everything',
@@ -243,59 +247,57 @@ const en = {
     viewAll: 'See all results',
     failed: 'Search is unavailable right now.',
   },
-
   home: {
     finder: {
-      "title": "Find your dance. Start with a feeling.",
-      "subtitle": "Choose a mood, your experience and an optional date. Explore real classes in the catalog — availability is confirmed there.",
-      "badge": "Your first step",
-      "intentLabel": "How do you want to move?",
-      "styleLabel": "Suggested direction",
-      "levelLabel": "Your experience",
-      "dateLabel": "Preferred date (optional)",
-      "allStyles": "Explore all directions",
-      "allClasses": "Explore the class catalog",
-      "hint": "These are suggestions, not a test. You can change the direction and filters in the catalog.",
-      "empty": "No featured classes in this mood yet. Explore the full catalog instead.",
-      "cta": "Find classes",
-      "intents": {
-        "energy": {
-          "title": "With energy",
-          "body": "Groove, rhythm and sharp accents"
+      title: 'Find your dance. Start with a feeling.',
+      subtitle: 'Choose a mood, your experience and an optional date. Explore real classes in the catalog — availability is confirmed there.',
+      badge: 'Your first step',
+      intentLabel: 'How do you want to move?',
+      styleLabel: 'Suggested direction',
+      levelLabel: 'Your experience',
+      dateLabel: 'Preferred date (optional)',
+      allStyles: 'Explore all directions',
+      allClasses: 'Explore the class catalog',
+      hint: 'These are suggestions, not a test. You can change the direction and filters in the catalog.',
+      empty: 'No featured classes in this mood yet. Explore the full catalog instead.',
+      cta: 'Find classes',
+      intents: {
+        energy: {
+          title: 'With energy',
+          body: 'Groove, rhythm and sharp accents',
         },
-        "flow": {
-          "title": "With flow",
-          "body": "Lines, balance and expression"
+        flow: {
+          title: 'With flow',
+          body: 'Lines, balance and expression',
         },
-        "partner": {
-          "title": "Together",
-          "body": "Connection and partner dancing"
+        partner: {
+          title: 'Together',
+          body: 'Connection and partner dancing',
         },
-        "stage": {
-          "title": "For the stage",
-          "body": "Technique, tradition and performance"
-        }
-      }
+        stage: {
+          title: 'For the stage',
+          body: 'Technique, tradition and performance',
+        },
+      },
     },
     eventSpotlight: {
-      "eyebrow": "In the spotlight",
-      "cta": "Explore the event"
+      eyebrow: 'In the spotlight',
+      cta: 'Explore the event',
     },
     teacher: {
-      "languageLabel": "Teaching languages",
-      "scheduleHint": "Open the profile for classes, levels and available booking times.",
-      "languages": {
-        "hy": "Armenian",
-        "ru": "Russian",
-        "en": "English"
-      }
+      languageLabel: 'Teaching languages',
+      scheduleHint: 'Open the profile for classes, levels and available booking times.',
+      languages: {
+        hy: 'Armenian',
+        ru: 'Russian',
+        en: 'English',
+      },
     },
     hero: {
-      badge: "Yerevan's #1 Dance Platform",
+      badge: 'Yerevan\'s #1 Dance Platform',
       titleLine1: 'Move',
       titleAccent: 'Different',
-      subtitle:
-        "Discover classes, instructors, studios and everything you need to move. Armenia's premium dance marketplace.",
+      subtitle: 'Discover classes, instructors, studios and everything you need to move. Armenia\'s premium dance marketplace.',
       primaryCta: 'Explore Classes',
       secondaryCta: 'Find an Instructor',
       statActiveDancers: 'Active dancers',
@@ -313,7 +315,7 @@ const en = {
     },
     popular: {
       eyebrow: 'Popular right now',
-      title: "Classes everyone's talking about",
+      title: 'Classes everyone\'s talking about',
       subtitle: 'Booked most often over the last seven days.',
     },
     instructors: {
@@ -341,14 +343,12 @@ const en = {
     events: {
       eyebrow: 'Upcoming events',
       title: 'Workshops, battles & more.',
-      subtitle: "What's happening on the Yerevan dance scene.",
+      subtitle: 'What\'s happening on the Yerevan dance scene.',
     },
-    /* DanceSport-блоки лендинга (заказчик, 21.09.2026): DS-02, DS-05, DS-09. */
     competitions: {
       eyebrow: 'DanceSport',
       title: 'Two programs. Ten disciplines.',
-      subtitle:
-        'Standard and Latine — the competitive path our athletes train for, following the WDSF calendar.',
+      subtitle: 'Standard and Latine — the competitive path our athletes train for, following the WDSF calendar.',
       videoCta: 'Watch recent competitions',
     },
     federationsStrip: {
@@ -365,7 +365,6 @@ const en = {
       pause: 'Pause stories',
       dragHint: 'Drag or swipe to explore',
       position: 'Story {number} of {total}',
-
       eyebrow: 'Testimonials',
       title: 'What our dancers say.',
       subtitle: 'Real stories from the community.',
@@ -377,17 +376,17 @@ const en = {
       emailLabel: 'Email',
       emailPlaceholder: 'your@email.com',
       cta: 'Subscribe',
-      success: "You're in. Check your inbox to confirm.",
+      success: 'You\'re in. Check your inbox to confirm.',
       alreadySubscribed: 'This email is already on the list.',
       error: 'We could not subscribe you. Please try again.',
       consent: 'By subscribing you agree to our <privacyLink>Privacy policy</privacyLink>.',
       unsubscribed: 'You have been unsubscribed',
       unsubscribedHint: 'You will no longer receive marketing emails. You can resubscribe anytime on the homepage.',
       resubscribeCta: 'Resubscribe',
-      confirmedTitle: 'You’re subscribed',
-      confirmedHint: 'New classes and news will reach your inbox. You can unsubscribe from any email.',
       linkExpired: 'This link has expired',
       linkExpiredHint: 'Subscribe again on the home page to get a new confirmation email.',
+      confirmedTitle: 'You’re subscribed',
+      confirmedHint: 'New classes and news will reach your inbox. You can unsubscribe from any email.',
       homeCta: 'Back to home',
     },
     finalCta: {
@@ -402,20 +401,20 @@ const en = {
     },
     journey: {
       firstLesson: {
-        "title": "Your first class, without the guesswork.",
-        "subtitle": "A few things to check before you book. Each teacher and class can have different requirements.",
-        "partner": {
-          "question": "Do I need a partner?",
-          "answer": "Not always. Check the class description: some partner classes rotate partners, while others require a pair. Confirm with the teacher before booking."
+        title: 'Your first class, without the guesswork.',
+        subtitle: 'A few things to check before you book. Each teacher and class can have different requirements.',
+        partner: {
+          question: 'Do I need a partner?',
+          answer: 'Not always. Check the class description: some partner classes rotate partners, while others require a pair. Confirm with the teacher before booking.',
         },
-        "wear": {
-          "question": "What should I wear?",
-          "answer": "Choose clothes you can move in. Check the class requirements for footwear — studio floors and dance styles may need different shoes."
+        wear: {
+          question: 'What should I wear?',
+          answer: 'Choose clothes you can move in. Check the class requirements for footwear — studio floors and dance styles may need different shoes.',
         },
-        "experience": {
-          "question": "Can I start with no experience?",
-          "answer": "Look for a beginner class and read its requirements. If you are unsure, ask the teacher which group fits your experience."
-        }
+        experience: {
+          question: 'Can I start with no experience?',
+          answer: 'Look for a beginner class and read its requirements. If you are unsure, ask the teacher which group fits your experience.',
+        },
       },
       eyebrow: 'How it works',
       title: 'Four steps to the floor.',
@@ -442,16 +441,6 @@ const en = {
       },
     },
   },
-
-  /**
-   * Листинги каталога: `/discover`, `/classes`, `/instructors`, `/studios`,
-   * `/events`, `/shop`.
-   *
-   * Один namespace вместо шести почти одинаковых. Фильтры, сортировка, пустое
-   * состояние и пагинация у всех листингов общие, а расхождение подписи
-   * «Sort by» между разделами — не локализация, а ошибка, которую замечает
-   * пользователь и не замечает разработчик.
-   */
   catalog: {
     discover: {
       title: 'Discover classes',
@@ -512,12 +501,11 @@ const en = {
       summary: 'Page {page} of {total}',
     },
   },
-
   classDetail: {
     trendingBadge: 'Trending',
     fullBadge: 'Full',
     aboutTitle: 'About this class',
-    learnTitle: "What you'll learn",
+    learnTitle: 'What you\'ll learn',
     instructorTitle: 'Instructor',
     locationTitle: 'Location',
     reviewsTitle: 'Reviews',
@@ -530,10 +518,8 @@ const en = {
     similarTitle: 'Similar classes',
     similarEmpty: 'No similar classes in this style yet.',
   },
-
   instructor: {
     verifiedBadge: 'Verified',
-    reviewsAll: 'All reviews',
     aboutTitle: 'About {name}',
     stylesTitle: 'Styles',
     specializationsTitle: 'Specializations',
@@ -557,15 +543,16 @@ const en = {
     statsRating: '{rating} ({count})',
     statsStudents: '{count}+ students',
     becomeInstructorCta: 'Teach on ArtDance',
+    reviewsAll: 'All reviews',
   },
-
-  cabinet: {
-    notForRole: 'This cabinet is not available for your account.',
-  },
-
   studio: {
     title: 'Studios',
     subtitle: 'Rehearsal and teaching spaces across Yerevan.',
+    classes: {
+      title: 'Classes',
+      subtitle: 'Your upcoming classes at venues. Pick the room for each one.',
+      empty: 'No upcoming classes at a venue.',
+    },
     availability: {
       title: 'Availability',
       subtitle: 'Weekly hours students can book you, plus vacations and one-off windows.',
@@ -601,11 +588,6 @@ const en = {
         sun: 'Sunday',
       },
     },
-    classes: {
-      title: 'Classes',
-      subtitle: 'Upcoming classes at your venues. Pick a room for each session.',
-      empty: 'No upcoming classes at your venues.',
-    },
     aboutTitle: 'About the space',
     amenitiesTitle: 'Amenities',
     roomsTitle: 'Rooms',
@@ -618,23 +600,33 @@ const en = {
     capacityNote: 'Up to {count} dancers',
     districtLabel: 'District',
     bookCta: 'Book the space',
-    rentPerHour: '{price} / hour',
-    areaNote: '{area} · {amenities}',
-    listYourStudioCta: 'List your studio',
     rent: {
-      title: 'Book the space',
-      subtitle: 'Choose a room, date and duration. The final availability check happens when you submit.',
+      title: 'Rent a room',
+      subtitle: 'Pick a room, a date and a start time. The slot is held while you pay.',
       roomLabel: 'Room',
       dateLabel: 'Date',
       timeLabel: 'Start time',
       durationLabel: 'Duration',
-      durationOption: '{minutes} minutes',
+      durationOption: '{minutes} min',
       total: 'Total',
-      submit: 'Create booking',
-      submitting: 'Creating booking…',
+      hint: 'The rental is confirmed after payment.',
+      submit: 'Continue to payment',
+      submitting: 'Holding the slot…',
+      backToVenue: 'Back to the studio',
+      errors: {
+        slotTaken: 'This time is already taken. Pick another start time.',
+        holdExpired: 'The slot hold expired. Choose the time again.',
+        rateLimited: 'Too many attempts. Wait a moment and try again.',
+        featureDisabled: 'Room rental is not available right now.',
+        invalid: 'Check the room, date, time and duration.',
+        generic: 'Could not create the booking. Try again.',
+      },
       invalid: 'Choose a room, date and start time.',
       error: 'The room could not be booked. Check the time and try again.',
     },
+    rentPerHour: '{price} / hour',
+    areaNote: '{area} · {amenities}',
+    listYourStudioCta: 'List your studio',
     amenities: {
       mirrors: 'Mirrors',
       soundSystem: 'Sound system',
@@ -651,8 +643,20 @@ const en = {
       waterDispenser: 'Water dispenser',
       wheelchairAccess: 'Wheelchair access',
     },
+    requests: {
+      title: 'Booking requests',
+      subtitle: 'Accept or decline each request before its deadline. Without an answer the request expires automatically.',
+      empty: 'No open requests right now.',
+      participants: '{count, plural, one {# participant} other {# participants}}',
+      deadline: 'Answer by {when}',
+      accept: 'Accept',
+      decline: 'Decline',
+      confirmDecline: 'Confirm decline',
+      back: 'Back',
+      reasonLabel: 'Reason for the client (optional)',
+      error: 'Could not save your answer. Refresh the page and try again.',
+    },
   },
-
   events: {
     title: 'Events',
     subtitle: 'Workshops, battles, masterclasses and showcases.',
@@ -699,26 +703,6 @@ const en = {
     birthDatePlaceholder: 'YYYY-MM-DD',
     invalidBirthDate: 'Enter the date of birth as YYYY-MM-DD, not in the future.',
   },
-
-  notifications: {
-    title: 'Notifications',
-    emailTitle: 'Email notifications',
-    emailHint: 'Choose which notifications are sent to your email.',
-    historyTitle: 'Email history',
-    historyEmpty: 'No emails yet',
-    historyEmptyHint: 'Notifications about your bookings and waitlist will appear here.',
-    statusQueued: 'Queued',
-    statusSent: 'Sent',
-    statusFailed: 'Failed to send',
-    statusSuppressed: 'Not sent (turned off)',
-    types: {
-      'booking.confirmed': 'Booking confirmed',
-      'booking.reminder': 'Class reminder',
-      'booking.cancelled': 'Booking cancelled',
-      'waitlist.ready': 'Spot opened up',
-    },
-  },
-
   courses: {
     title: 'Online courses',
     subtitle: 'Learn at your own pace, from the instructors you already trust.',
@@ -730,7 +714,6 @@ const en = {
     curriculumTitle: 'Curriculum',
     requirementsTitle: 'Requirements',
   },
-
   shop: {
     title: 'Shop',
     subtitle: 'Premium dancewear, shoes and accessories.',
@@ -738,6 +721,7 @@ const en = {
     descriptionTitle: 'Description',
     variantTitle: 'Choose your option',
     relatedTitle: 'You may also like',
+    recommendedTitle: 'Often bought together',
     galleryLabel: 'Product photos',
     chooseAmount: 'Choose an amount',
     selectVariantFirst: 'Choose an option before adding to your bag',
@@ -753,7 +737,6 @@ const en = {
     freeDeliveryHint: 'Free delivery on orders over {threshold}.',
     returnsHint: '{days}-day returns.',
   },
-
   cart: {
     title: 'Your bag',
     empty: 'Your bag is empty',
@@ -771,7 +754,17 @@ const en = {
     trustPayments: 'ARCA / Idram / Telcell',
     removedToast: '{name} removed from your bag',
   },
-
+  paymentSheet: {
+    title: 'Payment',
+    description: 'Amount to pay: {amount}',
+    loading: 'Opening secure payment…',
+    processing: 'Processing payment…',
+    testHint: 'Test mode: 4242 4242 4242 4242 completes the payment, 4000 0000 0000 0002 is declined. Any future expiry and any CVV.',
+    testCardUnknown: 'Unknown test card. Use one of the numbers from the hint.',
+    declined: 'The card was declined. Try another card.',
+    notCompleted: 'The payment was not completed. Try again.',
+    unavailable: 'This payment method is not available right now.',
+  },
   checkout: {
     title: 'Checkout',
     steps: {
@@ -810,26 +803,17 @@ const en = {
       cardNumber: 'Card number',
       expiry: 'Expiry',
       cvv: 'CVV',
-      cardholder: 'Cardholder name',
       billingTitle: 'Billing address',
       sameAsDelivery: 'Same as delivery address',
       inAppNote: 'Payment is completed inside the app, without redirecting to another site.',
-      declined: 'Payment was declined. Your order is saved, please try again.',
-      canceled: 'Payment was not completed. Your order is saved: tap Pay to continue.',
-      unavailable: 'Could not start payment. Your order is saved, please try again.',
       submitCta: 'Complete payment — {total}',
       sectionArmenia: 'Armenia',
       sectionWorldwide: 'Worldwide card',
       sectionOther: 'Other',
-    },
-    sheet: {
-      title: 'Pay for order',
-      amountLabel: 'Amount due',
-      secure: 'Secure payment',
-      testMode: 'Test mode: no money is charged.',
-      testCards: 'Test cards: 4242 4242 4242 4242 succeeds, 4000 0000 0000 0002 is declined.',
-      useTestCard: 'Use test card 4242 4242 4242 4242 or 4000 0000 0000 0002.',
-      cardIncomplete: 'Enter the expiry date and CVV.',
+      cardholder: 'Cardholder name',
+      declined: 'Payment was declined. Your order is saved, please try again.',
+      canceled: 'Payment was not completed. Your order is saved: tap Pay to continue.',
+      unavailable: 'Could not start payment. Your order is saved, please try again.',
     },
     trust: {
       ssl: '256-bit SSL',
@@ -842,22 +826,162 @@ const en = {
       successSubtitle: 'Order {orderNumber} is confirmed. We emailed you the details.',
       pendingTitle: 'Payment is being processed',
       pendingSubtitle: 'This usually takes under a minute. We will email you as soon as it clears.',
+      codTitle: 'Order received',
+      codSubtitle: 'You pay in cash when you receive your order.',
       failedTitle: 'Payment did not go through',
       failedSubtitle: 'No money has been taken. You can try another method.',
       viewOrderCta: 'View order',
+      openInAppCta: 'Open in the app',
       retryCta: 'Try again',
     },
-    /**
-     * Ссылки — теги, а не плейсхолдеры: подпись ссылки должна переводиться
-     * вместе с фразой (в русском и армянском она стоит в косвенном падеже).
-     */
-    termsConsent:
-      'By placing this order you accept the <terms>Terms of Service</terms> and <refund>Refund Policy</refund>.',
+    termsConsent: 'By placing this order you accept the <terms>Terms of Service</terms> and <refund>Refund Policy</refund>.',
+    sheet: {
+      title: 'Pay for order',
+      amountLabel: 'Amount due',
+      secure: 'Secure payment',
+      testMode: 'Test mode: no money is charged.',
+      testCards: 'Test cards: 4242 4242 4242 4242 succeeds, 4000 0000 0000 0002 is declined.',
+      useTestCard: 'Use test card 4242 4242 4242 4242 or 4000 0000 0000 0002.',
+      cardIncomplete: 'Enter the expiry date and CVV.',
+    },
   },
-
+  forYou: {
+    title: 'For you',
+    intro: 'Classes in the styles from your profile. You can change your profile at any time.',
+    empty: 'No classes in your styles yet. Check back later or browse all classes.',
+    editProfile: 'Edit profile',
+  },
+  corporate: {
+    nav: {
+      admin: 'Corporate invoices',
+    },
+    cabinet: {
+      title: 'Company account',
+      intro: 'The balance and invoices of your company. Orders paid from the balance appear here.',
+      notLinked: 'Your account is not linked to a company. Ask the administrator to link it.',
+      balance: 'Balance',
+      invoicesTitle: 'Invoices',
+      number: 'Number',
+      amount: 'Amount',
+      orderHeader: 'Order',
+      issued: 'Issued',
+      statusHeader: 'Status',
+      statuses: {
+        PENDING: 'Awaiting payment',
+        PAID: 'Paid',
+        CANCELLED: 'Cancelled',
+      },
+      none: 'No invoices yet.',
+    },
+    admin: {
+      title: 'Corporate invoices',
+      subtitle: 'Company accounts, invoices paid by bank transfer, and their status.',
+      createAccount: 'New company account',
+      issueInvoice: 'Issue invoice',
+      accountsTitle: 'Company accounts',
+      invoicesTitle: 'Invoices',
+      name: 'Company name',
+      contactEmail: 'Contact email',
+      account: 'Company',
+      amount: 'Amount (AMD)',
+      balance: 'Balance',
+      openInvoices: 'Unpaid invoices',
+      number: 'Number',
+      issued: 'Issued',
+      statusHeader: 'Status',
+      actions: 'Actions',
+      status: {
+        PENDING: 'Awaiting payment',
+        PAID: 'Paid',
+        CANCELLED: 'Cancelled',
+      },
+      overdue: 'Overdue',
+      save: 'Save',
+      markPaid: 'Mark paid',
+      markPaidRequested: 'Sent for approval. The balance changes after a second administrator approves it.',
+      orderNumber: 'Order number (optional)',
+      orderHint: 'With an order, the invoice amount is the order total.',
+      orderHeader: 'Order',
+      memberTitle: 'Company member',
+      memberEmail: 'User email',
+      noCompany: 'No company',
+      debitOrder: 'Charge balance to order',
+      confirmDebit: 'Send this charge to a second administrator for approval? The company balance drops after approval.',
+      debitRequested: 'Sent for approval.',
+      confirmPaid: 'Send this invoice for approval as paid? The company balance grows after a second administrator approves.',
+      needAccount: 'Create a company account first.',
+      emptyAccounts: 'No company accounts yet.',
+      emptyInvoices: 'No invoices yet.',
+    },
+  },
+  analytics: {
+    title: 'Analytics',
+    intro: 'A class counts once its result is marked. Period: the last {days} days.',
+    notIncluded: 'Analytics is not included in your plan.',
+    none: 'No data yet',
+    cards: {
+      completed: 'Classes held',
+      revenue: 'Revenue (before commission)',
+      averageCheck: 'Average check',
+      attendance: 'Attendance',
+      cancelled: 'Cancelled',
+      noShows: 'No-shows',
+      unmarked: 'Awaiting result',
+      uniqueClients: 'Clients',
+      returningClients: 'Returning clients',
+      rating: 'Average rating',
+    },
+    ratingNote: 'Published reviews: {count}.',
+  },
+  boost: {
+    nav: {
+      admin: 'Boosts',
+    },
+    status: {
+      PENDING: 'Pending review',
+      APPROVED: 'Active',
+      REJECTED: 'Declined',
+    },
+    moderate: {
+      approve: 'Approve',
+      reject: 'Decline',
+    },
+    studio: {
+      title: 'Promotion',
+      intro: 'A boost moves your classes higher in search results for the chosen period. It takes effect after the administrator approves the request.',
+      newRequest: 'New request',
+      notIncluded: 'Promotion is not included in your plan.',
+      history: 'Your requests',
+      empty: 'No requests yet.',
+      bid: 'Bid, AMD',
+      bidHint: 'From {min} to {max} AMD, in steps of 100.',
+      start: 'Starts',
+      end: 'Ends',
+      submit: 'Send request',
+      requested: 'Request sent. It takes effect after approval.',
+      bidLabel: 'Bid {amount} AMD',
+    },
+    admin: {
+      title: 'Boosts',
+      subtitle: 'Instructor promotion requests. Approval raises the instructor in search for the period.',
+      empty: 'No boost requests yet.',
+      instructor: 'Instructor',
+      bid: 'Bid',
+      period: 'Period',
+      status: 'Status',
+      actions: 'Actions',
+    },
+  },
+  waitlistClaim: {
+    title: 'A spot opened up',
+    body: 'The spot is free. You can claim it until {when}.',
+    cta: 'Claim the spot',
+    failed: 'Could not claim the spot. Please try again.',
+    expired: 'The claim window has expired or the spot is taken. Browse other classes.',
+    otherClasses: 'All classes',
+  },
   booking: {
     title: 'Choose date & time',
-    /** Страница входа в бронирование: сначала инструктор, потом дата и время. */
     startTitle: 'Book a session',
     startSubtitle: 'Pick an instructor and choose a time that works for you.',
     noClassesTitle: 'Classes are on their way',
@@ -872,7 +996,6 @@ const en = {
     availableTimes: 'Available times — {date}',
     noSlots: 'No available times on this date',
     noSlotsHint: 'Try another day or check the instructor’s availability.',
-    /** Диапазон занятия: «18:00–19:30». Тире — не дефис, а короткое тире. */
     timeRange: '{start}–{end}',
     locationTitle: 'Location options',
     locationStudio: 'At the studio',
@@ -895,12 +1018,31 @@ const en = {
     classPassRemaining: '{count} lessons left · expires {date}',
     classPassHint: 'One lesson will be deducted after the booking is confirmed.',
     classPassApplied: 'Covered by your class package',
+    promoLabel: 'Promo code',
+    promoHint: 'Works on your first booking only. Cannot be combined with a class package.',
+    promoInvalid: 'This code cannot be applied to this booking.',
     continueCta: 'Continue to payment',
     cancellationNote: 'Free cancellation up to {hours} before the session.',
     holdNotice: 'This slot is held for you for {minutes}.',
     alternativesTitle: 'Next available times',
     alternativesHint: 'This group is full — these times are open with the same instructor.',
     holdExpired: 'Your slot hold expired. Please pick a time again.',
+    consent: {
+      title: 'Confirmations',
+      birthDateLabel: 'Participant’s date of birth',
+      birthDateHint: 'Used only to check whether a parent or guardian must confirm the booking. The date is not stored.',
+      draftNotice: 'Working draft. The text is awaiting review by a lawyer.',
+      required: 'Confirm the items below to continue.',
+      items: {
+        healthWaiver: 'I confirm that the participant is fit to take part in dance classes.',
+        shootingConsent: 'I agree that the studio may photograph and film the participant during classes.',
+        minorParentalConsent: 'I am the parent or legal guardian of the participant and I confirm this booking on their behalf.',
+      },
+    },
+    payTitle: 'Payment',
+    payHint: 'The booking is held until it is paid. Choose a payment method to confirm it.',
+    payCta: 'Pay now',
+    payError: 'Could not start the payment. Try again.',
     holdRateLimited: 'Too many attempts — try again in {seconds, plural, one {# second} other {# seconds}}.',
     conflictError: 'This time was just taken. Please choose another slot.',
     recurring: {
@@ -915,35 +1057,25 @@ const en = {
     cancelTitle: 'Cancel this booking?',
     cancelFree: 'You are within the free cancellation window — you will be refunded in full.',
     cancelLate: 'You are past the free window: {rate} of the price will be withheld.',
-    cancelledOnLabel: 'Cancelled on',
-    cancelledReasonLabel: 'Reason',
     rescheduleTitle: 'Reschedule booking',
-    sessionFull: 'Full',
-    waitlistTitle: 'Waitlist',
-    waitlistJoined: "You're on the waitlist, spot {n}. We'll let you know when a place opens.",
-    waitlistClaim: 'Claim the spot',
-    pairOnWeb: 'Pair classes are booked on the website for now.',
     rescheduleLimit: 'You have reached the maximum number of reschedules for this booking.',
     rescheduleWindowClosed: 'Reschedules close {hours} before the session. You can still cancel.',
-    capacityError:
-      '{count, plural, =0 {No spots left for this session} one {Only # spot left} other {Only # spots left}}',
+    capacityError: '{count, plural, =0 {No spots left for this session} one {Only # spot left} other {Only # spots left}}',
+    request: {
+      expired: 'This booking request has expired and was not confirmed.',
+      notPending: 'This booking request has already been answered.',
+    },
     cancelForbidden: 'This booking can no longer be cancelled online — contact support.',
     refundNotAllowed: 'This booking is not eligible for a refund.',
     duplicateEnrollment: 'You are already booked for this session.',
-    consent: {
-      title: 'Confirmations',
-      birthDateLabel: 'Participant’s date of birth',
-      birthDateHint: 'Used only to check whether a parent or guardian must confirm the booking. The date is not stored.',
-      draftNotice: 'Draft wording. The texts are awaiting review by a lawyer.',
-      required: 'Confirm the items below to continue.',
-      items: {
-        healthWaiver: 'I confirm that the participant is fit to take part in dance classes.',
-        shootingConsent: 'I agree that the studio may photograph and film the participant during classes.',
-        minorParentalConsent: 'I am the parent or legal guardian of the participant and I confirm this booking on their behalf.',
-      },
-    },
+    cancelledOnLabel: 'Cancelled on',
+    cancelledReasonLabel: 'Reason',
+    sessionFull: 'Full',
+    waitlistTitle: 'Waitlist',
+    waitlistJoined: 'You\'re on the waitlist, spot {n}. We\'ll let you know when a place opens.',
+    waitlistClaim: 'Claim the spot',
+    pairOnWeb: 'Pair classes are booked on the website for now.',
   },
-
   auth: {
     signIn: {
       title: 'Welcome back',
@@ -966,8 +1098,7 @@ const en = {
       submit: 'Create account',
       hasAccount: 'Already have an account?',
       signInLink: 'Sign in',
-      termsConsent:
-        'I accept the <termsLink>Terms of service</termsLink> and <privacyLink>Privacy policy</privacyLink>',
+      termsConsent: 'I accept the <termsLink>Terms of service</termsLink> and <privacyLink>Privacy policy</privacyLink>',
       emailTaken: 'An account with this email already exists.',
       verifySent: 'We sent a confirmation link to {email}.',
     },
@@ -986,17 +1117,22 @@ const en = {
       success: 'Password updated. You can sign in now.',
       invalidToken: 'This reset link is invalid or has expired.',
     },
-    verifyEmail: {
-      title: 'Verify email',
-      body: 'Confirmation links are sent to your email. Once your address is confirmed, sign in to continue.',
-    },
     otp: {
+      useBackup: 'Use a backup code',
+      useEmailCode: 'Use the code from email instead',
+      backupLabel: 'Backup code',
+      backupPlaceholder: 'xxxxx-xxxxx',
+      backupHint: 'Enter one of the backup codes you saved. Each code works once.',
       title: 'Enter the code',
       subtitle: 'We sent a {length}-digit code to {target}.',
       resend: 'Resend code',
       resendIn: 'Resend available in {seconds}',
       invalid: 'That code is not correct.',
       expired: 'The code has expired. Request a new one.',
+      tooMany: 'Too many wrong codes. Request a new one.',
+      smsBody: 'Your {brand} sign-in code: {code}. Valid for {minutes} minutes. Do not share it.',
+      back: 'Back to sign-in',
+      delivery: 'We could not send the code right now. Try again in a few minutes.',
     },
     roles: {
       customer: 'Dancer',
@@ -1005,11 +1141,29 @@ const en = {
       admin: 'Administrator',
       support: 'Support',
     },
+    verifyEmail: {
+      title: 'Verify email',
+      body: 'Confirmation links are sent to your email. Once your address is confirmed, sign in to continue.',
+    },
   },
-
   account: {
+    security: {
+      title: 'Security',
+      hint: 'Signed-in devices and backup codes for your account.',
+      sessionsTitle: 'Signed-in devices',
+      sessionCurrent: 'This device',
+      sessionStarted: 'Signed in {date}',
+      sessionUnknown: 'Unknown device',
+      signOutOthers: 'Sign out other devices',
+      signOutOthersDone: 'Other devices were signed out.',
+      backupTitle: 'Backup codes',
+      backupHint: 'Use a backup code if the email code does not reach you. Each code works once. New codes replace the old ones.',
+      backupPassword: 'Current password',
+      backupGenerate: 'Generate new codes',
+      backupSaveNotice: 'Save these codes now. They will not be shown again.',
+      backupWrongPassword: 'Wrong password.',
+    },
     title: 'My account',
-    /** Ссылка в админку. Видна только персоналу: у клиента её нет. */
     staffCta: 'Admin panel',
     studioCta: 'Studio',
     nav: {
@@ -1017,10 +1171,13 @@ const en = {
       bookings: 'Bookings',
       orders: 'Orders',
       favorites: 'Favorites',
+      savedSearches: 'Saved searches',
       reviews: 'My reviews',
       subscription: 'Subscription',
       wallet: 'Wallet',
       referrals: 'Referrals',
+      company: 'Company account',
+      athlete: 'Athlete profile',
       notifications: 'Notifications',
       dancerProfile: 'My level',
       data: 'My data',
@@ -1056,8 +1213,7 @@ const en = {
       notifyMarketing: 'News and offers',
       changePassword: 'Change password',
       deleteAccount: 'Delete account',
-      deleteAccountNote:
-        'Your account will be deactivated immediately and permanently deleted after {days}.',
+      deleteAccountNote: 'Your account will be deactivated immediately and permanently deleted after {days}.',
     },
     subscription: {
       title: 'My subscription',
@@ -1070,7 +1226,6 @@ const en = {
       cancelAtPeriodEnd: 'Cancels at the end of the period',
       usageTitle: 'This period',
       usageEmpty: 'Nothing used yet',
-      /** Квоты: подписи метрик из `SubscriptionUsage.metric`. */
       metrics: {
         groupClasses: 'Group classes',
         privateSessions: 'Private sessions',
@@ -1097,7 +1252,6 @@ const en = {
       topUpHint: 'The amount is credited after the payment is confirmed.',
       historyTitle: 'History',
       historyEmpty: 'No entries yet',
-      /** Виды проводок из `WalletEntry.kind`. */
       kinds: {
         CREDIT_TOPUP: 'Top-up',
         CREDIT_REFUND: 'Refund',
@@ -1109,10 +1263,12 @@ const en = {
       disabled: 'The wallet is not available on this plan.',
     },
   },
-
   onboarding: {
     dancer: {
-      meta: { title: 'Your dance level', description: 'Tell us about your dance experience.' },
+      meta: {
+        title: 'Your dance level',
+        description: 'Tell us about your dance experience.',
+      },
       eyebrow: 'Dancer profile',
       step: 'Step {current} of {total}',
       progressLabel: 'Progress',
@@ -1123,9 +1279,15 @@ const en = {
       level: {
         title: 'How would you rate your level?',
         hint: 'This helps our instructors know where to start.',
-        beginner: { description: 'I am just starting.' },
-        intermediate: { description: 'I take classes and know the basics.' },
-        advanced: { description: 'I dance confidently and want to grow further.' },
+        beginner: {
+          description: 'I am just starting.',
+        },
+        intermediate: {
+          description: 'I take classes and know the basics.',
+        },
+        advanced: {
+          description: 'I dance confidently and want to grow further.',
+        },
       },
       styles: {
         title: 'Which styles interest you?',
@@ -1143,10 +1305,12 @@ const en = {
         notePlaceholder: 'E.g. previous injury, preferences',
         visibleToInstructor: 'Your instructor will see these answers when viewing your booking.',
       },
-      edit: { title: 'My dance profile', hint: 'Update your answers whenever you want — instructors will see the latest version.' },
+      edit: {
+        title: 'My dance profile',
+        hint: 'Update your answers whenever you want — instructors will see the latest version.',
+      },
     },
   },
-  /** Что инструктор / администратор видит о танцоре. */
   dancerProfile: {
     title: 'About the dancer',
     level: 'Level',
@@ -1154,7 +1318,6 @@ const en = {
     goal: 'Goal',
     note: 'Note',
   },
-
   pricing: {
     eyebrow: 'Membership',
     title: 'Choose your path',
@@ -1251,7 +1414,6 @@ const en = {
       noUsable: 'No active pass — buy one first',
     },
   },
-
   wallet: {
     title: 'Wallet',
     balance: 'Balance',
@@ -1285,42 +1447,64 @@ const en = {
   dispute: {
     title: 'Dispute',
     open: 'Open dispute',
+    intro: 'If the lesson did not go as agreed, describe what happened. A moderator hears both sides before deciding.',
+    reasonLabel: 'What happened',
+    reasonPlaceholder: 'Describe what went wrong and when it happened.',
+    reasonHint: 'At least {min} characters.',
+    reasonInvalid: 'Check the description and try again.',
+    statusPending: 'Under review. A moderator will decide and let you know.',
+    statusApproved: 'Decided: the claim was upheld.',
+    statusRejected: 'Decided: the claim was rejected.',
   },
-    push: {
-      title: 'Push notifications',
-      enable: 'Enable',
+  map: {
+    loading: 'Loading the map…',
+    load: 'Show the map',
+    loadFailed: 'Could not load the map',
+    noKey: 'Map unavailable: set the Maps API key in the project config.',
+    openInMaps: 'Open in Google Maps',
+  },
+  push: {
+    title: 'Push notifications',
+    enable: 'Enable',
+  },
+  entitlements: {
+    preset: {
+      mvp: 'MVP — 5 000 000 ֏',
+      full: 'FULL — 9 200 000 ֏',
+      premium: 'PREMIUM — 13 000 000 ֏',
     },
-    entitlements: {
-      preset: {
-        mvp: 'MVP — 5 000 000 ֏',
-        full: 'FULL — 9 200 000 ֏',
-        premium: 'PREMIUM — 13 000 000 ֏',
-      },
-      presetHint: {
-        mvp: 'Contract volume: catalog, instructors, studios, booking, shop, auth, email, SEO. No video, no marketplace, no CRM.',
-        full: 'Adds booking engine, venues, Paynet, Email and Push, reviews, favorites, promo, maps, i18n (3), QA.',
-        premium: 'Adds video courses, marketplace commissions & payouts, CRM, reminders, calendar sync, advanced analytics.',
-      },
-      presetPrice: {
-        mvp: 'MVP · 5 000 000 ֏',
-        full: 'FULL · 9 200 000 ֏',
-        premium: 'PREMIUM · 13 000 000 ֏',
-      },
-      feature: {
-        shop: 'Shop & checkout',
-        events: 'Events catalog',
-        courses: 'Courses listing',
-        videoCourses: 'Video & lesson playback',
-        subscriptions: 'Subscriptions & pricing',
-        wallet: 'Wallet & commissions',
-        referrals: 'Referrals & loyalty',
-        packages: 'Class packages',
-        recurring: 'Recurring bookings',
-        push: 'Push notifications',
-        boost: 'Boost / promotion',
-        cms: 'CMS & content blocks',
-      },
+    presetHint: {
+      mvp: 'Contract volume: catalog, instructors, studios, booking, shop, auth, email, SEO. No video, no marketplace, no CRM.',
+      full: 'Adds booking engine, venues, Paynet, Email and Push, reviews, favorites, promo, maps, i18n (3), QA.',
+      premium: 'Adds video courses, marketplace commissions & payouts, CRM, reminders, calendar sync, advanced analytics.',
     },
+    presetPrice: {
+      mvp: 'MVP · 5 000 000 ֏',
+      full: 'FULL · 9 200 000 ֏',
+      premium: 'PREMIUM · 13 000 000 ֏',
+    },
+    feature: {
+      shop: 'Shop & checkout',
+      events: 'Events catalog',
+      courses: 'Courses listing',
+      videoCourses: 'Video & lesson playback',
+      subscriptions: 'Subscriptions & pricing',
+      wallet: 'Wallet & commissions',
+      referrals: 'Referrals & loyalty',
+      packages: 'Class packages',
+      recurring: 'Recurring bookings',
+      push: 'Push notifications',
+      boost: 'Boost / promotion',
+      instructorAnalytics: 'Instructor analytics',
+      corporateCabinet: 'Company account',
+      cms: 'CMS & content blocks',
+      calendarSync: 'Calendar sync',
+      forYou: 'Personal "For you" picks',
+      liveActivities: 'Live Activities (lock screen)',
+      homeWidgets: 'Home-screen widget',
+      dancePartner: 'Dance-partner match',
+    },
+  },
   reviews: {
     title: 'Reviews',
     writeTitle: 'Write a review',
@@ -1334,16 +1518,20 @@ const en = {
     notEnough: 'Not enough reviews yet',
     empty: 'No reviews yet',
     emptyHint: 'Be the first to share how it went.',
+    replyTitle: 'Reply from the provider',
+    replyLabel: 'Your reply',
+    replyPlaceholder: 'Answer the review briefly and factually.',
+    replyHint: 'At least {min} characters.',
+    replySubmit: 'Publish reply',
+    replyUpdate: 'Update reply',
+    replyDelete: 'Delete reply',
+    replySaved: 'Reply published.',
+    replyDeleted: 'Reply deleted.',
+    studioSubtitle: 'Replies to reviews of your classes. A reply appears under the review as soon as it is saved.',
     onlyAfterBooking: 'You can review a class after attending it.',
     windowClosed: 'The review window for this booking has closed.',
     alreadyReviewed: 'You have already left a review for this booking.',
   },
-
-  /**
-   * Избранное. Отдельный namespace, а не пара строк в `common.actions`: у
-   * кнопки есть состояние «нужен вход», у списка — пустое состояние, и оба они
-   * относятся к разделу, а не к надписи на кнопке.
-   */
   favorites: {
     title: 'Favorites',
     empty: 'Nothing saved yet',
@@ -1353,8 +1541,9 @@ const en = {
     removed: 'Removed from favorites',
     toggleLabel: 'Save {name} to favorites',
     toggleLabelActive: 'Remove {name} from favorites',
+    addLabel: 'Add to favorite',
+    removeLabel: 'Remove from favorite',
   },
-
   danceStyles: {
     hipHop: 'Hip-Hop',
     ballet: 'Ballet',
@@ -1376,7 +1565,6 @@ const en = {
     stretching: 'Stretching & Conditioning',
     kizomba: 'Kizomba',
   },
-
   levels: {
     allLevels: 'All levels',
     beginner: 'Beginner',
@@ -1384,22 +1572,11 @@ const en = {
     advanced: 'Advanced',
     professional: 'Professional',
   },
-
-  /**
-   * Хабы направлений (`/styles`, `/styles/[style]`).
-   *
-   * `styles.*` — редакционный материал платформы: чем этот танец является, кому
-   * подходит, что взять на первое занятие. Он и делает страницу самостоятельным
-   * документом, а не каталогом с подставленным названием. Остальные ключи —
-   * каркас, одинаковый для всех восемнадцати направлений, поэтому название
-   * подставляется плейсхолдером.
-   */
   styleHub: {
     eyebrow: 'Dance style',
     index: {
       title: 'Dance styles in Yerevan',
-      subtitle:
-        'Eighteen directions, from ballet to breaking. Open one to see who teaches it, where, at what level and for how much.',
+      subtitle: 'Eighteen directions, from ballet to breaking. Open one to see who teaches it, where, at what level and for how much.',
       liveTitle: 'On the timetable now',
       liveSubtitle: 'Directions with classes you can book this week.',
       allTitle: 'Every direction',
@@ -1411,8 +1588,7 @@ const en = {
     classesTitle: '{style} classes',
     classesAll: 'All {style} classes',
     classesEmptyTitle: 'No {style} classes on the timetable yet',
-    classesEmptyBody:
-      'Nobody is teaching {style} on ArtDance this week. Try a related direction below, or bring your own classes here.',
+    classesEmptyBody: 'Nobody is teaching {style} on ArtDance this week. Try a related direction below, or bring your own classes here.',
     instructorsTitle: 'Who teaches {style}',
     instructorsAll: 'All {style} instructors',
     instructorsEmptyTitle: 'No {style} instructors yet',
@@ -1427,126 +1603,105 @@ const en = {
       primary: 'Browse classes',
       secondary: 'Find an instructor',
     },
-    /** Направление объявлено, но преподавателя ещё нет. Честнее, чем «0 занятий». */
     seeking: 'Looking for instructors',
     styles: {
       hipHop: {
         lede: 'Groove, isolations and choreography out of the street tradition. The most-taught direction in Yerevan, and the easiest one to start with.',
-        about:
-          'Hip-hop grew out of block parties in the Bronx in the seventies and turned into a family of styles — from bouncy old-school grooves to hard-hitting choreography of the internet era. Classes teach the basics first: how weight moves, how a beat is answered. Routines come after that.',
+        about: 'Hip-hop grew out of block parties in the Bronx in the seventies and turned into a family of styles — from bouncy old-school grooves to hard-hitting choreography of the internet era. Classes teach the basics first: how weight moves, how a beat is answered. Routines come after that.',
         gear: 'Trainers with a flat sole, loose trousers, a t-shirt and water. Nothing else is needed for the first class.',
       },
       ballet: {
         lede: 'Barre, alignment and turnout — the school standing behind every other stage dance. Adults start here more often than children.',
-        about:
-          'Ballet is a four-hundred-year-old system with its own vocabulary in French and its own logic of movement. Adult classes keep the structure — barre, centre, allegro — without the ambition of a professional career: they build the alignment, control and strength every other style borrows.',
+        about: 'Ballet is a four-hundred-year-old system with its own vocabulary in French and its own logic of movement. Adult classes keep the structure — barre, centre, allegro — without the ambition of a professional career: they build the alignment, control and strength every other style borrows.',
         gear: 'Ballet slippers or thick socks, fitted clothes so the teacher can see the line, hair tied back.',
       },
       salsa: {
         lede: 'A Caribbean partner dance with fast turns and an open hold. Two lessons are enough to dance a whole social night.',
-        about:
-          'Salsa is counted in eight beats with a pause, and that pause is what makes it forgiving: the pattern comes back every bar. Yerevan dances mostly the linear LA style and the circular Cuban one. Both are taught in pairs with partners rotating, so coming alone is normal.',
+        about: 'Salsa is counted in eight beats with a pause, and that pause is what makes it forgiving: the pattern comes back every bar. Yerevan dances mostly the linear LA style and the circular Cuban one. Both are taught in pairs with partners rotating, so coming alone is normal.',
         gear: 'Shoes with a smooth sole that lets the foot turn, comfortable clothes, a spare t-shirt.',
       },
       bachata: {
         lede: 'Four steps, a hip on the fourth and a close hold. The gentlest way into partner dancing in the city.',
-        about:
-          'Bachata came from the Dominican Republic and reached the world in its modern, sensual form. The basic step takes a single class; everything after that is connection, body movement and musicality rather than new figures.',
+        about: 'Bachata came from the Dominican Republic and reached the world in its modern, sensual form. The basic step takes a single class; everything after that is connection, body movement and musicality rather than new figures.',
         gear: 'Shoes that turn easily, clothes you can move sideways in, deodorant — this is a close-hold dance.',
       },
       contemporary: {
         lede: 'Floorwork, breath and weight instead of fixed positions. The direction people choose when they want to dance their own thing.',
-        about:
-          'Contemporary grew from a refusal of classical rules and kept the technique: release, contraction, contact with the floor. A class is usually a warm-up on the floor, a travelling phrase and time for improvisation — the part most people come back for.',
+        about: 'Contemporary grew from a refusal of classical rules and kept the technique: release, contraction, contact with the floor. A class is usually a warm-up on the floor, a travelling phrase and time for improvisation — the part most people come back for.',
         gear: 'Bare feet or socks, knees covered for floorwork, layers you can peel off.',
       },
       heels: {
         lede: 'Choreography in heels: posture, ankle control and stage presence. Height comes later than technique.',
-        about:
-          'Heels is a young direction rooted in jazz and cabaret, built around the way heels change balance and lengthen a line. The first weeks go on walking, transferring weight and holding the ankle; choreography follows once the floor feels safe.',
+        about: 'Heels is a young direction rooted in jazz and cabaret, built around the way heels change balance and lengthen a line. The first weeks go on walking, transferring weight and holding the ankle; choreography follows once the floor feels safe.',
         gear: 'Closed-toe heels with a strap, five to seven centimetres for the first months, knee pads and water.',
       },
       kpop: {
         lede: 'Routines from Korean releases, learned note for note — as a group, in formation, with the camera in mind.',
-        about:
-          'K-pop covers are a discipline of precision: the class learns an existing routine in the original formation, with the same accents and the same framing. The technique comes from hip-hop and jazz-funk; the pleasure comes from moving in sync with seven other people.',
+        about: 'K-pop covers are a discipline of precision: the class learns an existing routine in the original formation, with the same accents and the same framing. The technique comes from hip-hop and jazz-funk; the pleasure comes from moving in sync with seven other people.',
         gear: 'Trainers, clothes close to the original if you like, and a phone with a full battery for the video.',
       },
       latin: {
         lede: 'Salsa, bachata, cha-cha and merengue in one course — the fastest way to find which of them is yours.',
-        about:
-          'Latin classes cover the family rather than a single dance: the same weight change and the same lead work in all of them, and the differences live in rhythm and character. Useful when you want to dance at any party rather than to specialise.',
+        about: 'Latin classes cover the family rather than a single dance: the same weight change and the same lead work in all of them, and the differences live in rhythm and character. Useful when you want to dance at any party rather than to specialise.',
         gear: 'Shoes with a smooth sole, comfortable clothes, water.',
       },
       tango: {
         lede: 'Argentine tango: an embrace, a walk and a pause. Danced slowly, learned for years, enjoyed from the first month.',
-        about:
-          'Tango is improvisation inside a strict frame: no set routine, only an embrace, a shared axis and a walk that answers the music. Classes work in pairs with rotation, and the first weeks go almost entirely on walking together.',
+        about: 'Tango is improvisation inside a strict frame: no set routine, only an embrace, a shared axis and a walk that answers the music. Classes work in pairs with rotation, and the first weeks go almost entirely on walking together.',
         gear: 'Shoes with a leather or suede sole and a secure heel, clothes that do not restrict the torso.',
       },
       armenianFolk: {
         lede: 'Kochari, Shalakho and the dances of the regions — the ones that open every wedding and every village celebration.',
-        about:
-          'Armenian folk dance is a set of regional traditions kept alive by ensembles and family celebrations: shoulder-to-shoulder circle dances, men’s dances with weight in the knees, women’s dances built on the wrists. Classes teach the steps and where they come from.',
+        about: 'Armenian folk dance is a set of regional traditions kept alive by ensembles and family celebrations: shoulder-to-shoulder circle dances, men’s dances with weight in the knees, women’s dances built on the wrists. Classes teach the steps and where they come from.',
         gear: 'Soft shoes with a flat sole, clothes that allow a wide step, nothing loose on the wrists.',
       },
       jazz: {
         lede: 'Stage jazz: clean lines, sharp accents and turns. The technique behind musical theatre and half of all show choreography.',
-        about:
-          'Jazz dance took ballet’s discipline and gave it syncopation and freedom in the torso. A class runs through a warm-up, isolations and progressions across the floor, then a combination — usually to something with brass in it.',
+        about: 'Jazz dance took ballet’s discipline and gave it syncopation and freedom in the torso. A class runs through a warm-up, isolations and progressions across the floor, then a combination — usually to something with brass in it.',
         gear: 'Jazz shoes or socks, fitted clothes, water.',
       },
       breaking: {
         lede: 'Toprock, footwork, freezes and power moves. An Olympic sport that is still a street dance.',
-        about:
-          'Breaking is the oldest of the street styles and the most physical: danced on the floor, in a circle, in exchanges with other dancers. Beginners spend months on toprock and six-step before anything spins, and that order is what protects wrists and shoulders.',
+        about: 'Breaking is the oldest of the street styles and the most physical: danced on the floor, in a circle, in exchanges with other dancers. Beginners spend months on toprock and six-step before anything spins, and that order is what protects wrists and shoulders.',
         gear: 'Trainers with a firm sole, long sleeves and long trousers, knee pads, a cap if you like.',
       },
       flamenco: {
         lede: 'The compás, footwork and arms of Andalusia — a dance you learn to clap before you learn to dance it.',
-        about:
-          'Flamenco is built on rhythmic cycles that the dancer marks with heels, hands and posture rather than on choreography. Classes start with palmas and the twelve-beat compás, because in flamenco the count carries the dance, not the step.',
+        about: 'Flamenco is built on rhythmic cycles that the dancer marks with heels, hands and posture rather than on choreography. Classes start with palmas and the twelve-beat compás, because in flamenco the count carries the dance, not the step.',
         gear: 'Shoes with a hard heel, a skirt or trousers that let you feel the leg, water.',
       },
       ballroom: {
         lede: 'Standard and Latin in pairs: waltz, tango, quickstep, cha-cha, rumba, jive. Learned as a couple, useful for life.',
-        about:
-          'Ballroom is a codified system of ten dances with strict frames, taught in couples from the first class. The technique transfers — posture, lead and follow, floorcraft — which is why couples preparing for a wedding and dancers preparing for competitions share the same room.',
+        about: 'Ballroom is a codified system of ten dances with strict frames, taught in couples from the first class. The technique transfers — posture, lead and follow, floorcraft — which is why couples preparing for a wedding and dancers preparing for competitions share the same room.',
         gear: 'Shoes with a suede sole, clothes with a defined waist, a partner if you have one — if not, we rotate.',
       },
       afro: {
         lede: 'Afrobeats and traditional West African dance: grounded weight, a loose chest and a great deal of rhythm.',
-        about:
-          'Afro classes in the city mix two things: traditional forms that follow live-drum logic, and modern Afrobeats out of Lagos and Accra. Both start low in the knees and ask the ribcage to move on its own — which is exactly what makes them the best cardio on the timetable.',
+        about: 'Afro classes in the city mix two things: traditional forms that follow live-drum logic, and modern Afrobeats out of Lagos and Accra. Both start low in the knees and ask the ribcage to move on its own — which is exactly what makes them the best cardio on the timetable.',
         gear: 'Bare feet or light trainers, clothes that breathe, water and a towel.',
       },
       weddingDance: {
         lede: 'Your first dance, rehearsed to the song you chose, in the shoes and the dress you will actually wear.',
-        about:
-          'A wedding dance is a short private course rather than a style: two to eight sessions in which a choreographer builds a routine around your song, your dress and your level. Most couples start six to eight weeks before the date; three sessions are enough for a calm, clean minute and a half.',
+        about: 'A wedding dance is a short private course rather than a style: two to eight sessions in which a choreographer builds a routine around your song, your dress and your level. Most couples start six to eight weeks before the date; three sessions are enough for a calm, clean minute and a half.',
         gear: 'From the second session — the shoes you will wear on the day, and a recording of your song.',
       },
       kids: {
         lede: 'Dance for children from four: coordination, rhythm and a stage they can walk onto without fear.',
-        about:
-          'Children’s classes are not adult classes made shorter. They are built around attention span and a growing body: games that teach rhythm, floor exercises instead of loaded jumps, and a small performance at the end of term — the part children remember.',
+        about: 'Children’s classes are not adult classes made shorter. They are built around attention span and a growing body: games that teach rhythm, floor exercises instead of loaded jumps, and a small performance at the end of term — the part children remember.',
         gear: 'Comfortable clothes with no hood or drawstrings, soft shoes, and a water bottle with a name on it.',
       },
       stretching: {
         lede: 'Stretching and conditioning for dancers: mobility, splits, and the strength that keeps them safe.',
-        about:
-          'This is the class that makes the other classes possible: hips and shoulders open, the spine articulates, the centre holds. Sessions mix active stretching with strength work, because range without strength is what injures dancers rather than what protects them.',
+        about: 'This is the class that makes the other classes possible: hips and shoulders open, the spine articulates, the centre holds. Sessions mix active stretching with strength work, because range without strength is what injures dancers rather than what protects them.',
         gear: 'A mat if you have one, fitted clothes, socks, and a belt or towel for holds.',
       },
       kizomba: {
         lede: 'The close, calm partner dance of Angola — slow steps, smooth leads, no rush.',
-        about:
-          'Kizomba lives in the connection: a soft close hold, grounded steps and musicality that rewards patience. Classes start with weight transfer and lead-follow conversation, then build into saidas, tarraxinha dynamics and urban-kiz styling for those who want it.',
+        about: 'Kizomba lives in the connection: a soft close hold, grounded steps and musicality that rewards patience. Classes start with weight transfer and lead-follow conversation, then build into saidas, tarraxinha dynamics and urban-kiz styling for those who want it.',
         gear: 'Comfortable clothes and clean indoor shoes with smooth soles — the dance is led through the frame, and the floor should let you glide.',
       },
     },
   },
-
   status: {
     booking: {
       pending: 'Pending',
@@ -1558,6 +1713,7 @@ const en = {
       rescheduled: 'Rescheduled',
       waitlisted: 'Waitlisted',
       expired: 'Expired',
+      awaitingResponse: 'Awaiting instructor response',
     },
     payment: {
       pending: 'Awaiting payment',
@@ -1578,7 +1734,6 @@ const en = {
       cancelled: 'Cancelled',
       returned: 'Returned',
     },
-    /** Статусы подписки клиента платформы (`SubscriptionStatus`). */
     subscription: {
       trialing: 'Trial',
       active: 'Active',
@@ -1599,10 +1754,8 @@ const en = {
       rejected: 'Rejected',
     },
   },
-
   footer: {
-    description:
-      "Armenia's premium dance marketplace. Connecting dancers, instructors and studios — and everything you need to move.",
+    description: 'Armenia\'s premium dance marketplace. Connecting dancers, instructors and studios — and everything you need to move.',
     exploreTitle: 'Explore',
     companyTitle: 'Company',
     communityTitle: 'Community',
@@ -1617,15 +1770,13 @@ const en = {
     becomeInstructor: 'Become an instructor',
     listStudio: 'List your studio',
     giftCards: 'Gift cards',
-    redeemGiftCard: 'Check gift card',
+    redeemGiftCard: 'Redeem gift card',
     activate: 'Activate',
-    activateHint: 'Enter the code from the email to see the balance. The card is applied at checkout',
+    activateHint: 'Enter the code from the email — it will credit your balance',
     giftCardCode: 'Gift card code',
-    redeemCta: 'Check balance',
-    redeemSuccess: 'Card balance: {balance}',
+    redeemCta: 'Redeem',
+    redeemSuccess: 'Gift card activated. Balance: {balance} ֏',
     redeemNotFound: 'Code not found or already used',
-    redeemExpired: 'This gift card has expired',
-    redeemAlreadyUsed: 'This gift card has already been used up',
     scheduleTitle: 'Weekly schedule',
     scheduleHint: 'Upcoming classes — full timetable will connect to sessions',
     searchTitle: 'Search',
@@ -1670,11 +1821,11 @@ const en = {
     offlineHint: 'No connection — cached pages will return when online',
     accessibilityNote: 'Goal — WCAG 2.1 AA. Known deviations — tokens/contrast.ts (burgundy on dark, §7 ADR)',
     citiesTitle: 'Cities',
-     districtHint: 'Studios and classes for this district appear here.',
+    districtHint: 'Studios and classes for this district appear here.',
     instructorReviewsTitle: 'Reviews — {slug}',
-    reviewsPage: 'Page {page} of {total}',
     reviewsPrev: 'Previous',
     reviewsNext: 'Next',
+    reviewsPage: 'Page {page} of {total}',
     studioCheckInTitle: 'Check-in',
     studioCheckInHint: 'QR pass scanner — attendance fact for payouts/disputes',
     orderInvoiceTitle: 'Invoice {number}',
@@ -1707,7 +1858,7 @@ const en = {
     paymentMethodsLabel: 'We accept',
     venueDashboardTitle: 'Venue',
     venueDashboardRooms: 'Rooms',
-    venueDashboardHint: 'Your rooms and upcoming bookings.',
+    venueDashboardHint: 'Your rooms and upcoming bookings. The room list is managed by the ArtDance team.',
     venueDashboardEmpty: 'No venues are linked to your account yet.',
     venueDashboardNoRooms: 'No rooms added yet.',
     venueDashboardRoomInactive: 'Inactive',
@@ -1724,8 +1875,19 @@ const en = {
     studioDashboardTitle: 'Studio',
     studioDashboardAvailability: 'Availability',
     studioDashboardClasses: 'Classes',
+    studioDashboardReviews: 'Reviews',
+    studioDashboardBoost: 'Boost',
+    studioDashboardAnalytics: 'Analytics',
     studioDashboardRequests: 'Requests',
     notificationsTitle: 'Notifications',
+    notificationsHint: 'Channel settings are unavailable.',
+    pushTitle: 'Push notifications',
+    pushHint: 'Get booking updates on this device, even when the site is closed.',
+    pushEnable: 'Enable on this device',
+    pushDisable: 'Turn off on this device',
+    pushUnavailable: 'Push notifications are not available in this browser yet.',
+    pushDenied: 'Notifications are blocked for this site. Allow them in your browser settings and try again.',
+    pushError: 'Could not update push notifications. Please try again.',
     cityCoordinates: 'Coordinates: {coords}',
     cityDistricts: '· {count} districts',
     verifyEmailTitle: 'Verify email',
@@ -1757,13 +1919,9 @@ const en = {
     checkInAlreadyCheckedIn: 'Already checked in',
     checkInMarkAttendance: 'Mark attendance',
     checkInDone: 'Done',
+    redeemExpired: 'This gift card has expired',
+    redeemAlreadyUsed: 'This gift card has already been used up',
   },
-
-  /**
-   * Нерабочие праздники РА. Список и даты — `src/domain/holidays.ts`; здесь
-   * только названия. Показываются в календаре доступности («14 сентября — нет
-   * занятий») и в объяснении срока доставки.
-   */
   holidays: {
     newYear: 'New Year’s Day',
     newYearSecond: 'New Year holiday',
@@ -1779,7 +1937,6 @@ const en = {
     independenceDay: 'Independence Day',
     newYearEve: 'New Year’s Eve',
   },
-
   errors: {
     generic: {
       title: 'Something went wrong',
@@ -1820,46 +1977,6 @@ const en = {
       description: '{name} is no longer available in the selected variant.',
     },
   },
-
-  instructorApply: {
-    cta: 'Apply to teach',
-    title: 'Instructor application',
-    stepOf: 'Step {current} of {total}',
-    steps: { about: 'About you', experience: 'Your experience', documents: 'Documents' },
-    fields: {
-      name: 'Full name',
-      email: 'Email',
-      phone: 'Phone (optional)',
-      bio: 'About you and what you teach',
-      styles: 'Styles you teach',
-      stylesHint: 'Pick at least one',
-    },
-    documents: {
-      title: 'Upload documents',
-      hint: 'ID or passport, diploma or certificate. PDF, JPEG, PNG or WebP, up to 10 MB each.',
-      add: 'Add document',
-      remove: 'Remove',
-      count: '{count} of {max} added',
-      empty: 'Attach at least one document.',
-      privacy: 'Only our moderators see documents. They are never published.',
-      kind: { identity: 'ID or passport', diploma: 'Diploma', certificate: 'Certificate' },
-    },
-    actions: { next: 'Continue', back: 'Back', submit: 'Send application' },
-    success: {
-      title: 'Application sent',
-      body: 'We review applications and reply by email.',
-      done: 'Done',
-    },
-    errors: {
-      documentsRequired: 'Attach at least one document.',
-      tooManyDocuments: 'No more than {max} documents.',
-      fileTooLarge: 'File is larger than {max} MB.',
-      fileType: 'Only PDF, JPEG, PNG or WebP files.',
-      pickFailed: 'Could not open the file. Try again.',
-      submitFailed: 'Could not send the application. Try again.',
-    },
-  },
-
   validation: {
     required: 'This field is required',
     email: 'Enter a valid email address',
@@ -1885,27 +2002,22 @@ const en = {
     termsRequired: 'You need to accept the terms to continue',
     captchaRequired: 'Please complete the verification',
   },
-
   seo: {
     home: {
-      title: "Dance classes, instructors and studios in Yerevan",
-      description:
-        'Book dance classes, private lessons and studio time in Yerevan. Verified instructors, real reviews, secure payment in AMD.',
+      title: 'Dance classes, instructors and studios in Yerevan',
+      description: 'Book dance classes, private lessons and studio time in Yerevan. Verified instructors, real reviews, secure payment in AMD.',
     },
     discover: {
       title: 'Discover dance classes in Yerevan',
-      description:
-        'Browse hip-hop, ballet, salsa, bachata, contemporary and more. Filter by level, price and schedule.',
+      description: 'Browse hip-hop, ballet, salsa, bachata, contemporary and more. Filter by level, price and schedule.',
     },
     classes: {
       title: 'Dance classes in Yerevan',
-      description:
-        'Group classes for every level and style. Compare schedules, prices and instructors, and book online.',
+      description: 'Group classes for every level and style. Compare schedules, prices and instructors, and book online.',
     },
     styles: {
       title: 'Dance styles in Yerevan',
-      description:
-        'Hip-hop, ballet, salsa, bachata, contemporary, heels and twelve more directions — what each one is, who teaches it and what it costs.',
+      description: 'Hip-hop, ballet, salsa, bachata, contemporary, heels and twelve more directions — what each one is, who teaches it and what it costs.',
     },
     instructors: {
       title: 'Dance instructors in Yerevan',
@@ -1921,17 +2033,15 @@ const en = {
     },
     events: {
       title: 'Dance events, workshops and battles',
-      description: "What's on in Yerevan's dance scene — workshops, masterclasses, battles and socials.",
+      description: 'What\'s on in Yerevan\'s dance scene — workshops, masterclasses, battles and socials.',
     },
     competitions: {
       title: 'DanceSport competitions in Armenia',
-      description:
-        'National and international DanceSport competitions following the WDSF calendar: cups, championships, open tournaments.',
+      description: 'National and international DanceSport competitions following the WDSF calendar: cups, championships, open tournaments.',
     },
     socialEvents: {
       title: 'Social dance events in Yerevan',
-      description:
-        'Bachata, salsa, kizomba and Argentine tango socials — weekly nights, guest DJs and warm-up classes.',
+      description: 'Bachata, salsa, kizomba and Argentine tango socials — weekly nights, guest DJs and warm-up classes.',
     },
     pricing: {
       title: 'Prices',
@@ -1939,33 +2049,27 @@ const en = {
     },
     about: {
       title: 'About ArtDance',
-      description:
-        "Who we are and why we built Armenia's dance marketplace: verified instructors, transparent prices, booking in one minute.",
+      description: 'Who we are and why we built Armenia\'s dance marketplace: verified instructors, transparent prices, booking in one minute.',
     },
     athletes: {
       title: 'DanceSport athletes',
-      description:
-        'Competitors of the Armenian DanceSport scene who teach on ArtDance: disciplines, results, booking a lesson.',
+      description: 'Competitors of the Armenian DanceSport scene who teach on ArtDance: disciplines, results, booking a lesson.',
     },
     federations: {
       title: 'DanceSport federations: WDSF and WDC',
-      description:
-        'The two world governing bodies of DanceSport, both present in Armenia. The competition calendar in Armenia follows WDSF.',
+      description: 'The two world governing bodies of DanceSport, both present in Armenia. The competition calendar in Armenia follows WDSF.',
     },
     partners: {
       title: 'Partners of ArtDance',
-      description:
-        'Studios, federations and brands that make DanceSport and social dance happen in Armenia — and how to join them.',
+      description: 'Studios, federations and brands that make DanceSport and social dance happen in Armenia — and how to join them.',
     },
     sponsors: {
       title: 'Donations and sponsorship',
-      description:
-        'Sponsor a competition, a couple or a scholarship. Season reports show where every dram goes.',
+      description: 'Sponsor a competition, a couple or a scholarship. Season reports show where every dram goes.',
     },
     advertise: {
       title: 'Advertise on ArtDance',
-      description:
-        'Banners, featured placement and newsletters for brands that matter to dancers, parents and studios.',
+      description: 'Banners, featured placement and newsletters for brands that matter to dancers, parents and studios.',
     },
     contact: {
       title: 'Contact us',
@@ -1973,8 +2077,7 @@ const en = {
     },
     faq: {
       title: 'Frequently asked questions',
-      description:
-        'Booking, payments, cancellations, refunds, delivery and working with us as an instructor or studio.',
+      description: 'Booking, payments, cancellations, refunds, delivery and working with us as an instructor or studio.',
     },
     help: {
       title: 'Help centre',
@@ -1982,27 +2085,23 @@ const en = {
     },
     becomeInstructor: {
       title: 'Teach dance in Yerevan',
-      description:
-        'Bring your classes to ArtDance: students who are already searching, an automatic schedule, online payments and weekly payouts.',
+      description: 'Bring your classes to ArtDance: students who are already searching, an automatic schedule, online payments and weekly payouts.',
     },
     listYourStudio: {
       title: 'Rent out your dance studio',
-      description:
-        'List your hall on ArtDance and fill the empty hours: one calendar, prepaid rentals, weekly payouts.',
+      description: 'List your hall on ArtDance and fill the empty hours: one calendar, prepaid rentals, weekly payouts.',
     },
     giftCards: {
       title: 'Dance gift cards',
       description: 'A gift card for classes, private lessons, studio time and the shop. Valid for a year.',
     },
   },
-
   legal: {
     lastUpdated: 'Last updated {date}',
     tocTitle: 'On this page',
     contactNote: 'Questions about this document? Write to {email}.',
     versionNote: 'Version {version}, in force from {date}',
-    draftNotice:
-      'Working draft. The text below states how the platform actually operates and is awaiting review by a lawyer before it becomes binding.',
+    draftNotice: 'Working draft. The text below states how the platform actually operates and is awaiting review by a lawyer before it becomes binding.',
     documentsTitle: 'All documents',
     cookieBanner: {
       title: 'Cookies',
@@ -2015,8 +2114,7 @@ const en = {
     documents: {
       terms: {
         title: 'Terms of service',
-        intro:
-          'These terms govern the use of the {brand} platform. By creating an account or making a booking you accept them.',
+        intro: 'These terms govern the use of the {brand} platform. By creating an account or making a booking you accept them.',
         sections: {
           role: {
             title: 'What we are',
@@ -2054,8 +2152,7 @@ const en = {
       },
       privacy: {
         title: 'Privacy policy',
-        intro:
-          'What we collect, why, and what you can demand from us. Written to be read, not to be survived.',
+        intro: 'What we collect, why, and what you can demand from us. Written to be read, not to be survived.',
         sections: {
           controller: {
             title: 'Who is responsible',
@@ -2123,8 +2220,7 @@ const en = {
       },
       cancellationPolicy: {
         title: 'Cancellation policy',
-        intro:
-          'One rule for everyone, recorded at the moment of booking so it cannot change afterwards.',
+        intro: 'One rule for everyone, recorded at the moment of booking so it cannot change afterwards.',
         sections: {
           window: {
             title: 'Free cancellation',
@@ -2144,7 +2240,7 @@ const en = {
           },
           providerCancels: {
             title: 'If the provider cancels',
-            body: 'You receive the full amount back whatever the timing, plus the closest alternatives for the same style and level. Repeated cancellations affect a provider\u2019s standing in the catalogue.',
+            body: 'You receive the full amount back whatever the timing, plus the closest alternatives for the same style and level. Repeated cancellations affect a provider’s standing in the catalogue.',
           },
           rentals: {
             title: 'Hall rentals',
@@ -2180,12 +2276,11 @@ const en = {
       },
       communityGuidelines: {
         title: 'Community guidelines',
-        intro:
-          'A dance floor is a shared space. These rules keep it usable for everyone — including the people teaching in it.',
+        intro: 'A dance floor is a shared space. These rules keep it usable for everyone — including the people teaching in it.',
         sections: {
           respect: {
             title: 'Respect comes first',
-            body: 'No discrimination by gender, origin, body, age or ability. No unsolicited comments on someone\u2019s appearance. Ask before touching, and stop when asked.',
+            body: 'No discrimination by gender, origin, body, age or ability. No unsolicited comments on someone’s appearance. Ask before touching, and stop when asked.',
           },
           reviews: {
             title: 'Honest reviews',
@@ -2197,7 +2292,7 @@ const en = {
           },
           offPlatform: {
             title: 'Keeping bookings on the platform',
-            body: 'Moving payment off the platform removes your protection: no record, no refund, no support if something goes wrong. Systematically doing so ends a provider\u2019s account.',
+            body: 'Moving payment off the platform removes your protection: no record, no refund, no support if something goes wrong. Systematically doing so ends a provider’s account.',
           },
           enforcement: {
             title: 'What we do about breaches',
@@ -2207,7 +2302,6 @@ const en = {
       },
     },
   },
-
   email: {
     common: {
       greeting: 'Hi {name},',
@@ -2237,7 +2331,7 @@ const en = {
     },
     bookingReminder: {
       subject: 'Reminder: {title} {when}',
-       heading: 'Class reminder',
+      heading: 'Class reminder',
       body: '{title} with {instructor} starts {when} at {location}.',
       cta: 'View booking',
     },
@@ -2246,6 +2340,12 @@ const en = {
       heading: 'Your booking was cancelled',
       body: '{title} on {when} has been cancelled. Refund: {refund}.',
       cta: 'Find another class',
+    },
+    bookingRequestDue: {
+      subject: 'Booking request awaits your answer — {title}',
+      heading: 'A booking request needs your answer',
+      body: '{title} on {when} is waiting for your reply. Please accept or decline it by {deadline}; otherwise it is cancelled automatically.',
+      cta: 'Open your studio',
     },
     orderConfirmed: {
       subject: 'Order {orderNumber} confirmed',
@@ -2266,12 +2366,55 @@ const en = {
       cta: 'Confirm subscription',
       footnote: 'If you did not request this, ignore the email — nothing will be sent.',
     },
+    twoFactor: {
+      subject: 'Your {brand} sign-in code',
+      heading: 'Your sign-in code',
+      body: 'Enter this code to finish signing in. It is valid for {minutes} minutes and works once.',
+      footnote: 'If you did not try to sign in, change your password right away and do not share this code with anyone.',
+    },
+    newDevice: {
+      subject: 'New sign-in to your {brand} account',
+      heading: 'Signed in from a new device',
+      body: 'Your account was just signed in from a device we have not seen before. If this was you, no action is needed.',
+      footnote: 'If this was not you, change your password right away and sign out the other sessions in your account.',
+    },
+    cartAbandoned: {
+      subject: 'Your cart is waiting',
+      heading: 'Your classes are still in the cart',
+      body: 'Some classes in your cart are not booked yet. You can complete the booking whenever it suits you.',
+      cta: 'Open cart',
+    },
+    onboardingWelcome: {
+      subject: 'Welcome to ArtDance',
+      heading: 'Thanks for joining us',
+      body: 'Browse the dance classes and find the style and instructor that suit you. Your first class is the best place to start.',
+      cta: 'Browse classes',
+    },
+    onboardingHowToBook: {
+      subject: 'How to book your first class',
+      heading: 'Booking takes a minute',
+      body: 'Pick a class or an instructor, choose a time that suits you and confirm the booking.',
+      cta: 'Find an instructor',
+    },
+    savedSearchMatch: {
+      subject: 'New matches for "{query}"',
+      heading: 'You have new matches',
+      body: 'New matches: {count}. For example: {title}. Open the search to see all of them.',
+      cta: 'Open search',
+    },
+    onboardingBonus: {
+      subject: 'A bonus for inviting friends',
+      heading: 'Invite a friend and get a bonus',
+      body: 'Share your referral link. When your friend makes their first paid purchase, you both receive a bonus.',
+      cta: 'Get my referral link',
+    },
+    waitlistReady: {
+      subject: 'Your waitlist spot is ready',
+      heading: 'A spot is free for you',
+      body: 'A spot opened up. Claim it before {when}.',
+      cta: 'Claim spot',
+    },
   },
-
-  /*
-   * DANCESPORT — таксономия и разделы сообщества (требование заказчика от
-   * 21.09.2026). Официальная терминология WDSF: «Latine», «Viennese Waltz».
-   */
   dancesport: {
     disciplines: {
       'slow-waltz': 'Slow Waltz',
@@ -2296,17 +2439,14 @@ const en = {
     latineNote: 'Five disciplines of rhythm, rotation and athletic footwork.',
     viewSchedule: 'Schedule',
     federations: {
-      WDSF:
-        'The world governing body for DanceSport. Its calendar and competition rules guide Armenian DanceSport; the Armenian federation is a WDSF member.',
+      WDSF: 'The world governing body for DanceSport. Its calendar and competition rules guide Armenian DanceSport; the Armenian federation is a WDSF member.',
       WDC: 'The professional world council. Its Armenian branch hosts its own competition circuit alongside the WDSF one.',
     },
   },
-
   about: {
     eyebrow: 'About us',
     title: 'We are building the shortest path from wanting to dance to dancing.',
-    subtitle:
-      'ArtDance connects dancers, instructors and studios in Yerevan. One place to find a class, book a private lesson, rent a hall and buy what you need to move.',
+    subtitle: 'ArtDance connects dancers, instructors and studios in Yerevan. One place to find a class, book a private lesson, rent a hall and buy what you need to move.',
     mission: {
       title: 'Why we exist',
       body: 'Finding a class in Yerevan used to mean asking friends, scrolling Instagram and hoping someone replied. Instructors lost students to unanswered messages; studios stood empty between rehearsals. We put schedules, prices and availability in one place — and made booking take a minute instead of a week.',
@@ -2341,25 +2481,75 @@ const en = {
       secondary: 'Work with us',
     },
   },
-
-  /* ——— Разделы сообщества DanceSport (заказчик, 21.09.2026) ——— */
-
   competitions: {
     title: 'DanceSport competitions',
     subtitle: 'National and international events following the WDSF calendar.',
     videoTitle: 'Recent competitions',
   },
-
   socialEvents: {
     title: 'Social events',
     subtitle: 'Bachata, salsa, kizomba and tango — every week, no partner needed.',
   },
-
+  athlete: {
+    cabinet: {
+      title: 'Athlete profile',
+      profileTitle: 'Profile',
+      programs: 'Programs',
+      club: 'Club',
+      rank: 'Rank',
+      save: 'Save',
+      saved: 'Saved.',
+      wdsfId: 'WDSF ID',
+      registrationsTitle: 'Competition registrations',
+      noRegistrations: 'No registrations yet.',
+      event: 'Competition',
+      category: 'Category',
+      partner: 'Partner',
+      statusHeader: 'Status',
+      statuses: {
+        PENDING: 'Pending',
+        APPROVED: 'Approved',
+        REJECTED: 'Rejected',
+        CANCELLED: 'Cancelled',
+      },
+      notRegistered: 'Your athlete profile appears after you register for a competition.',
+      ratingTitle: 'Rating',
+      ratingNote: 'Points for places in the last {months} months.',
+      achievementsTitle: 'Achievements',
+      noAchievements: 'No recorded results yet.',
+    },
+  },
+  competitionResults: {
+    nav: {
+      admin: 'Competition results',
+    },
+    admin: {
+      title: 'Competition results',
+      subtitle: 'Places of athletes after competitions. They feed the athlete rating and achievements.',
+      recordTitle: 'Record a place',
+      registration: 'Registration',
+      place: 'Place',
+      record: 'Record',
+      saved: 'Saved.',
+      nothingToRecord: 'No approved registrations waiting for a place.',
+      recentTitle: 'Recent results',
+      recentEmpty: 'No results recorded yet.',
+      athlete: 'Athlete',
+      event: 'Competition',
+      category: 'Category',
+    },
+  },
+  competitionPlace: {
+    GOLD: 'Gold',
+    SILVER: 'Silver',
+    BRONZE: 'Bronze',
+    FINALIST: 'Finalist',
+    PARTICIPANT: 'Participant',
+  },
   athletes: {
     eyebrow: 'Athletes',
     title: 'The competitors of our platform.',
-    subtitle:
-      'DanceSport athletes who teach and train here — their disciplines, results and schedules.',
+    subtitle: 'DanceSport athletes who teach and train here — their disciplines, results and schedules.',
     disciplinesTitle: 'Disciplines',
     experienceTitle: 'Competition record',
     resultGold: 'Gold',
@@ -2371,24 +2561,19 @@ const en = {
     bookLesson: 'Book a lesson',
     empty: 'Athlete profiles are being prepared.',
   },
-
   federations: {
     eyebrow: 'Federations',
     title: 'Two world bodies, one dance floor.',
-    subtitle:
-      'DanceSport is governed by two international federations. Both are present in Armenia — the Armenian scene follows the WDSF calendar.',
+    subtitle: 'DanceSport is governed by two international federations. Both are present in Armenia — the Armenian scene follows the WDSF calendar.',
     preferredBadge: 'WDSF calendar',
     visitSite: 'Official website',
     nationalTitle: 'In Armenia',
-    nationalBody:
-      'The national federation members represent both world bodies. National and international sections of the season calendar follow the official WDSF schedule — national cups, world and other open competitions.',
+    nationalBody: 'The national federation members represent both world bodies. National and international sections of the season calendar follow the official WDSF schedule — national cups, world and other open competitions.',
   },
-
   partners: {
     eyebrow: 'Partners',
     title: 'Companies that move with us.',
-    subtitle:
-      'Studios, schools and brands that make DanceSport and social dance happen in Armenia.',
+    subtitle: 'Studios, schools and brands that make DanceSport and social dance happen in Armenia.',
     becomeCta: 'Become a partner',
     tiersTitle: 'How partnership works',
     tierStudio: {
@@ -2404,12 +2589,10 @@ const en = {
       body: 'Co-branded projects, community initiatives, content collaborations.',
     },
   },
-
   sponsors: {
     eyebrow: 'Donations & sponsors',
     title: 'Back the season.',
-    subtitle:
-      'Sponsorship keeps the community running and helps young athletes reach international floors.',
+    subtitle: 'Sponsorship keeps the community running and helps young athletes reach international floors.',
     supportCta: 'Support the community',
     packagesTitle: 'Sponsorship packages',
     packageEvent: {
@@ -2425,15 +2608,13 @@ const en = {
       body: 'A training grant for a talented athlete selected with the coaches.',
     },
     transparencyTitle: 'Where the money goes',
-    transparencyBody:
-      'Every sponsored program publishes a season report: what was funded and what it achieved.',
+    transparencyBody: 'Every sponsored program publishes a season report: what was funded and what it achieved.',
   },
-
   advertise: {
+    slotLabel: 'Advertisement',
     eyebrow: 'Advertising',
     title: 'Reach people who dance.',
-    subtitle:
-      'Banners, featured placement and newsletters for brands that matter to our audience.',
+    subtitle: 'Banners, featured placement and newsletters for brands that matter to our audience.',
     formatsTitle: 'Formats',
     formatBanner: {
       title: 'Site banner',
@@ -2448,11 +2629,9 @@ const en = {
       body: 'A dedicated block in our weekly email to subscribers.',
     },
     audienceTitle: 'Who sees it',
-    audienceBody:
-      'Dancers, parents of young athletes, instructors and studio owners — an audience that buys shoes, apparel, travel and training.',
+    audienceBody: 'Dancers, parents of young athletes, instructors and studio owners — an audience that buys shoes, apparel, travel and training.',
     contactCta: 'Request a media kit',
   },
-
   contact: {
     eyebrow: 'Contact',
     title: 'Talk to a human',
@@ -2481,6 +2660,7 @@ const en = {
         booking: 'A booking or class',
         order: 'An order from the shop',
         instructor: 'Becoming an instructor or listing a studio',
+        corporate: 'Corporate request: team-building and group bookings',
         press: 'Press and partnerships',
         other: 'Something else',
       },
@@ -2490,7 +2670,6 @@ const en = {
       failedBody: 'Something broke on our side. Write to {email} directly — that inbox is monitored.',
     },
   },
-
   faq: {
     eyebrow: 'FAQ',
     title: 'Questions people actually ask',
@@ -2501,13 +2680,11 @@ const en = {
         items: {
           howToBook: {
             question: 'How do I book a class?',
-            answer:
-              'Pick a class, choose a time, and pay online. Your place is confirmed the moment the payment goes through, and the confirmation arrives by email.',
+            answer: 'Pick a class, choose a time, and pay online. Your place is confirmed the moment the payment goes through, and the confirmation arrives by email.',
           },
           account: {
             question: 'Do I need an account?',
-            answer:
-              'For a class booking, yes — the booking has to belong to someone so it can be cancelled, moved or refunded. Signing up takes an email and a password.',
+            answer: 'For a class booking, yes — the booking has to belong to someone so it can be cancelled, moved or refunded. Signing up takes an email and a password.',
           },
           leadTime: {
             question: 'How late can I book?',
@@ -2515,13 +2692,11 @@ const en = {
           },
           waitlist: {
             question: 'The class is full. What now?',
-            answer:
-              'Join the waitlist. If someone cancels, the first person in line gets {claimHours} to claim the place before it moves on.',
+            answer: 'Join the waitlist. If someone cancels, the first person in line gets {claimHours} to claim the place before it moves on.',
           },
           firstTime: {
             question: 'I have never danced. Where do I start?',
-            answer:
-              'Filter by the beginner level, or pick a class marked for all levels — those are built so that a first-timer and a returning dancer can stand in the same room.',
+            answer: 'Filter by the beginner level, or pick a class marked for all levels — those are built so that a first-timer and a returning dancer can stand in the same room.',
           },
         },
       },
@@ -2530,8 +2705,7 @@ const en = {
         items: {
           methods: {
             question: 'How can I pay?',
-            answer:
-              'Local cards and payment services, in Armenian drams. Cash is not accepted for online bookings: the place is only held once payment clears.',
+            answer: 'Local cards and payment services, in Armenian drams. Cash is not accepted for online bookings: the place is only held once payment clears.',
           },
           vat: {
             question: 'Are prices final?',
@@ -2539,8 +2713,7 @@ const en = {
           },
           currency: {
             question: 'Can I pay in another currency?',
-            answer:
-              'Prices can be displayed in other currencies for reference, but the charge is always in drams — that is what your bank will show.',
+            answer: 'Prices can be displayed in other currencies for reference, but the charge is always in drams — that is what your bank will show.',
           },
           receipt: {
             question: 'Will I get a receipt?',
@@ -2553,13 +2726,11 @@ const en = {
         items: {
           freeWindow: {
             question: 'Can I cancel?',
-            answer:
-              'Cancel more than {hours} before the start and the refund is full. Later than that, {feeRate} of the price is kept — that is the instructor\u2019s time, which can no longer be resold.',
+            answer: 'Cancel more than {hours} before the start and the refund is full. Later than that, {feeRate} of the price is kept — that is the instructor’s time, which can no longer be resold.',
           },
           reschedule: {
             question: 'Can I move a booking instead?',
-            answer:
-              'Yes, up to {maxTimes} times, no later than {hours} before the start. If the new session costs more, you pay the difference.',
+            answer: 'Yes, up to {maxTimes} times, no later than {hours} before the start. If the new session costs more, you pay the difference.',
           },
           noShow: {
             question: 'What if I simply do not come?',
@@ -2567,8 +2738,7 @@ const en = {
           },
           providerCancels: {
             question: 'What if the instructor cancels?',
-            answer:
-              'You get the full amount back, whatever the timing, plus a list of the closest alternatives for the same style.',
+            answer: 'You get the full amount back, whatever the timing, plus a list of the closest alternatives for the same style.',
           },
           refundTiming: {
             question: 'How long does a refund take?',
@@ -2581,23 +2751,19 @@ const en = {
         items: {
           join: {
             question: 'How do I teach on ArtDance?',
-            answer:
-              'Send a profile with your styles, experience and rates. We check it, help you set up your schedule, and you go live in the catalogue.',
+            answer: 'Send a profile with your styles, experience and rates. We check it, help you set up your schedule, and you go live in the catalogue.',
           },
           commission: {
             question: 'What does it cost?',
-            answer:
-              'No subscription and no listing fee. The platform keeps {instructorRate} of a class and {venueRate} of a hall rental, and only when a booking is actually paid.',
+            answer: 'No subscription and no listing fee. The platform keeps {instructorRate} of a class and {venueRate} of a hall rental, and only when a booking is actually paid.',
           },
           payout: {
             question: 'When do I get paid?',
-            answer:
-              'Weekly, {holdbackDays} days after the session is completed, once the balance passes {minimum}. The delay is the dispute window, not our float.',
+            answer: 'Weekly, {holdbackDays} days after the session is completed, once the balance passes {minimum}. The delay is the dispute window, not our float.',
           },
           ownStudents: {
             question: 'Do I keep my own students?',
-            answer:
-              'They are yours. We do not hide your name, we do not forbid your own channels, and we do not charge for students who found you elsewhere.',
+            answer: 'They are yours. We do not hide your name, we do not forbid your own channels, and we do not charge for students who found you elsewhere.',
           },
         },
       },
@@ -2606,24 +2772,20 @@ const en = {
         items: {
           delivery: {
             question: 'How does delivery work?',
-            answer:
-              'Yerevan in {yerevanDays}, other regions in {regionDays}. Orders over {threshold} ship free; below that, delivery is added at checkout.',
+            answer: 'Yerevan in {yerevanDays}, other regions in {regionDays}. Orders over {threshold} ship free; below that, delivery is added at checkout.',
           },
           returns: {
             question: 'Can I return something?',
-            answer:
-              'Unworn items with tags can be returned within {days} days. Gift cards and delivery fees are not refundable.',
+            answer: 'Unworn items with tags can be returned within {days} days. Gift cards and delivery fees are not refundable.',
           },
           giftCards: {
             question: 'How do gift cards work?',
-            answer:
-              'You choose the amount, the recipient gets a code, and it covers anything on the platform for {months} months.',
+            answer: 'You choose the amount, the recipient gets a code, and it covers anything on the platform for {months} months.',
           },
         },
       },
     },
   },
-
   help: {
     eyebrow: 'Help centre',
     title: 'What do you need help with?',
@@ -2660,18 +2822,25 @@ const en = {
         cta: 'Shop answers',
       },
     },
+    search: {
+      label: 'Search the help centre',
+      placeholder: 'For example: cancellation, refund, waitlist',
+      submit: 'Search',
+      hint: 'Enter at least two characters.',
+      topicsTitle: 'Topics',
+      faqTitle: 'Questions and answers',
+      empty: 'Nothing matched. Try another word or write to us.',
+    },
     stillStuck: {
       title: 'Still stuck?',
       body: 'Write to us with your booking or order number and we will sort it out.',
       cta: 'Contact support',
     },
   },
-
   becomeInstructor: {
     eyebrow: 'For instructors',
     title: 'Teach. We handle the rest.',
-    subtitle:
-      'Bring your classes to a place where students are already looking. Schedule, payments, reminders and receipts are ours; the dancing is yours.',
+    subtitle: 'Bring your classes to a place where students are already looking. Schedule, payments, reminders and receipts are ours; the dancing is yours.',
     primaryCta: 'Start the conversation',
     secondaryCta: 'See the commission',
     benefits: {
@@ -2705,7 +2874,7 @@ const en = {
       },
       publish: {
         title: 'Set your schedule',
-        body: 'Availability, class formats, prices, and where you teach — a studio, the client\u2019s place or online.',
+        body: 'Availability, class formats, prices, and where you teach — a studio, the client’s place or online.',
       },
       earn: {
         title: 'Take bookings',
@@ -2734,12 +2903,10 @@ const en = {
       secondary: 'Read the terms',
     },
   },
-
   listYourStudio: {
     eyebrow: 'For studios',
     title: 'Fill the hours your hall stands empty.',
-    subtitle:
-      'Rehearsal and teaching space rented by the hour, to instructors and dancers who are already on the platform looking for a room.',
+    subtitle: 'Rehearsal and teaching space rented by the hour, to instructors and dancers who are already on the platform looking for a room.',
     primaryCta: 'List your space',
     secondaryCta: 'See the commission',
     benefits: {
@@ -2777,7 +2944,7 @@ const en = {
       },
       earn: {
         title: 'Take rentals',
-        body: 'Bookings arrive with the renter\u2019s details paid in advance, and payouts run weekly.',
+        body: 'Bookings arrive with the renter’s details paid in advance, and payouts run weekly.',
       },
     },
     earnings: {
@@ -2802,12 +2969,10 @@ const en = {
       secondary: 'Read the terms',
     },
   },
-
   giftCards: {
     eyebrow: 'Gift cards',
     title: 'Give someone the thing they keep meaning to start.',
-    subtitle:
-      'A gift card works for anything on the platform: group classes, private lessons, studio time and the shop.',
+    subtitle: 'A gift card works for anything on the platform: group classes, private lessons, studio time and the shop.',
     amountsTitle: 'Choose an amount',
     amountsNote: 'Any amount from {min} to {max}, in steps of {step}.',
     validityNote: 'Valid for {months} months from purchase.',
@@ -2835,16 +3000,15 @@ const en = {
       noExpiryReset: 'The balance can be spent in several bookings — it does not have to go all at once.',
       nonRefundable: 'A gift card cannot be exchanged for cash and is not refundable.',
       combinable: 'It works alongside catalogue prices, but not together with a promo code on the same order.',
-      lostCode: 'Lost the code? We can resend it to the buyer\u2019s email.',
+      lostCode: 'Lost the code? We can resend it to the buyer’s email.',
     },
     cta: {
-      title: 'Gift cards are almost ready',
-      subtitle: 'Buying them online is part of the shop release. Until then, write to us and we will issue one by hand.',
-      primary: 'Contact us',
+      title: 'Choose a gift card',
+      subtitle: 'Pick a value, add it to your basket and complete the same checkout as any other shop item.',
+      primary: 'Buy a gift card',
       secondary: 'Read the refund policy',
     },
   },
-
   commandPalette: {
     openLabel: 'Open command palette',
     title: 'Command palette',
@@ -2859,7 +3023,6 @@ const en = {
       quickActions: 'Quick actions',
     },
   },
-
   a11y: {
     ratingStars: 'Rated {rating} out of {max}',
     mainNav: 'Main navigation',
@@ -2880,20 +3043,6 @@ const en = {
     searchScope: 'Search scope',
     galleryThumbnail: 'Show photo {index}',
   },
-
-  /**
-   * АДМИНКА. Отдельный неймспейс, потому что это отдельный продукт: тексты здесь
-   * читает владелец платформы, а не посетитель, и тон у них другой — точный,
-   * без маркетинга.
-   *
-   * Три решения, сокращающие словарь втрое:
-   *  • `fields.*` — один словарь подписей полей на все сущности. «Цена» пишется
-   *    один раз, а не в занятии, товаре, зале и подарочной карте по отдельности.
-   *  • `list.*` / `form.*` — тексты таблицы и формы общие: их печатают
-   *    универсальные страницы `/admin/[resource]`, а не двадцать копий экрана.
-   *  • статусы, валидация и общие действия не дублируются — берутся из
-   *    `status.*`, `validation.*`, `common.*`.
-   */
   admin: {
     title: 'Admin',
     subtitle: 'Platform management',
@@ -2902,7 +3051,6 @@ const en = {
     closeMenu: 'Close admin menu',
     backToSite: 'Back to site',
     sectionNav: 'Admin sections',
-
     groups: {
       overview: 'Overview',
       catalog: 'Catalog',
@@ -2911,7 +3059,6 @@ const en = {
       people: 'People',
       system: 'System',
     },
-
     nav: {
       dashboard: 'Dashboard',
       support: 'Command center',
@@ -2936,19 +3083,43 @@ const en = {
       promoCodes: 'Promo codes',
       giftCards: 'Gift cards',
       users: 'Users',
-    cities: 'Cities',
-    districts: 'Districts',
-    footerLinks: 'Footer links',
+      cities: 'Cities',
+      districts: 'Districts',
+      footerLinks: 'Footer links',
       moderation: 'Moderation',
       reports: 'Reports',
       auditLog: 'Audit log',
       settings: 'Access settings',
       approvals: 'Approvals',
       integrations: 'Integrations',
-      /** Корзина. Раздел общий на все разделы каталога, поэтому в конце списка. */
+      emails: 'Emails',
       trash: 'Trash',
     },
-
+    emails: {
+      title: 'Emails',
+      subtitle: 'Every notification in three languages, with a test send to your own address.',
+      typeLabel: 'Notification',
+      localeLabel: 'Language',
+      subjectLabel: 'Subject',
+      sample: 'Sample values (title, time, links) are filled in for preview only.',
+      scopeHint: 'Notification templates only. Transactional emails (sign-in, orders, payouts) are not listed here.',
+      sendTest: 'Send a test to me',
+      sendingTest: 'Sending…',
+      testSent: 'Test email sent to your address.',
+      testNotSent: 'Email not sent. Check the mail integration.',
+      types: {
+        bookingConfirmed: 'Booking confirmed',
+        bookingReminder: 'Class reminder',
+        bookingCancelled: 'Booking cancelled',
+        bookingRequestDue: 'Booking request due',
+        waitlistReady: 'Waitlist spot',
+        cartAbandoned: 'Cart reminder',
+        onboardingWelcome: 'Welcome',
+        onboardingHowToBook: 'How to book',
+        onboardingBonus: 'Referral bonus',
+        savedSearchMatch: 'Saved search match',
+      },
+    },
     actions: {
       newRecord: 'Add',
       activate: 'Activate',
@@ -2971,19 +3142,8 @@ const en = {
       duplicate: 'Duplicate',
       previous: 'Previous',
       openRecord: 'Open',
-      /**
-       * «Удалить навсегда» — не «удалить». Разница между двумя кнопками должна
-       * читаться до нажатия, а не после.
-       */
       purge: 'Delete permanently',
     },
-
-    /**
-     * КОРЗИНА.
-     *
-     * Слово «удалить» в админке означает перенос сюда. Здесь и только здесь оно
-     * означает то, что означает, поэтому подписи говорят про необратимость прямо.
-     */
     trash: {
       title: 'Trash',
       subtitle: 'Deleted records, recoverable within {days} days',
@@ -2996,12 +3156,11 @@ const en = {
       restoreHint: 'The record returns to its section with the same address.',
       purgeNotice: 'Deleting permanently also removes attached files from storage.',
     },
-
     dashboard: {
       title: 'Dashboard',
       subtitle: 'The platform at a glance',
       shortcuts: 'Shortcuts',
-      manualsTitle: "Owner's Manuals & System Documentation (PDF)",
+      manualsTitle: 'Owner\'s Manuals & System Documentation (PDF)',
       manualEn: 'Platform Manual (English, 63 pages)',
       manualHy: 'Platform Manual (Հայերեն, 63 pages)',
       manualsHint: 'Practical illustrated guide to the current admin interface, with verified routes and procedures.',
@@ -3019,57 +3178,7 @@ const en = {
         users: 'Active users',
       },
     },
-
     support: {
-      mobile: {
-        entry: 'Support',
-        tabOverview: 'Overview',
-        tabQueue: 'Queue',
-        tabEntitlements: 'Entitlements',
-        tabPayouts: 'Payouts',
-        tabIntegrations: 'Integrations',
-        noAccess: 'No access to the Command center',
-        retry: 'Retry',
-        noTickets: 'No open tickets',
-        noPayouts: 'No pending payouts',
-        presetLabel: 'Preset',
-        overridden: 'override',
-        reset: 'Reset',
-        hold: 'Hold',
-        release: 'Release',
-        resolve: 'Resolve',
-        markPending: 'In progress',
-        on: 'on',
-        off: 'off',
-        changePreset: 'Change preset?',
-        changeFeature: 'Change feature?',
-        resetOverride: 'Reset override?',
-        holdPayout: 'Hold payout?',
-        releasePayout: 'Release payout?',
-        resolveTicket: 'Resolve ticket?',
-        setPending: 'Mark in progress?',
-        cancel: 'Cancel',
-        confirm: 'Confirm',
-        actionFailed: 'Action failed',
-        unknownError: 'Unknown error',
-        groupStore: 'Store',
-        groupContent: 'Content',
-        groupPlatform: 'Platform',
-        lockTitle: 'Support is locked',
-        lockHint: 'Confirm it is you to open the dashboard.',
-        useBiometric: 'Use biometrics',
-        biometricPrompt: 'Unlock the Support dashboard',
-        createPinTitle: 'Create a PIN',
-        createPinHint: 'Set a 6-digit PIN. It is required to open the dashboard.',
-        repeatPinTitle: 'Repeat the PIN',
-        repeatPinHint: 'Enter the same PIN again.',
-        enterPinTitle: 'Enter PIN',
-        pinMismatch: 'PINs do not match. Start again.',
-        pinWrong: 'Wrong PIN',
-        pinLocked: 'Too many attempts. Wait one minute and try again.',
-        biometricFailed: 'Biometric check failed. Enter your PIN.',
-        pinDelete: 'Delete',
-      },
       title: 'Command center',
       subtitle: 'A complete operator cockpit for resolving platform issues end to end.',
       operatorMode: 'Operator mode',
@@ -3081,7 +3190,10 @@ const en = {
       adminSearchLoading: 'Searching operator records…',
       adminSearchEmpty: 'No matching operator records.',
       adminSearchFailed: 'Search is temporarily unavailable. Try again.',
-      adminSearchNavigate: 'navigate', adminSearchPreview: 'Preview record', adminSearchOpenRecord: 'Open full record', adminSearchClosePreview: 'Close preview',
+      adminSearchNavigate: 'navigate',
+      adminSearchPreview: 'Preview record',
+      adminSearchOpenRecord: 'Open full record',
+      adminSearchClosePreview: 'Close preview',
       adminSearchOpen: 'open',
       adminSearchClose: 'close',
       openTickets: 'Open support tickets',
@@ -3172,7 +3284,6 @@ const en = {
       terminalCmdRevalidate: 'Invalidate Next.js cache (default /)',
       terminalCmdOpen: 'Suggest a link to open in a new tab (copy URL)',
       terminalCmdClear: 'Clear terminal output (client only)',
-
       terminalHintNext: 'next →',
       terminalHintInsert: 'insert',
       terminalHintStartLabel: 'Start with a command',
@@ -3214,7 +3325,8 @@ const en = {
       terminalHintDbForceRequired: '--force required — confirm deletion',
       terminalHintDbForceHardDesc: '--force required; --hard optional (purge forever)',
       terminalHintDbModelAndId: 'Next: model name and record id',
-      commandHealth: 'All configured checks are readable',      accessTitle: 'Access and impersonation',
+      commandHealth: 'All configured checks are readable',
+      accessTitle: 'Access and impersonation',
       accessHint: 'Operator access is time-bound where possible and never bypasses server guards.',
       openAccessSettings: 'Open permission matrix',
       impersonate: 'Preview account',
@@ -3225,7 +3337,46 @@ const en = {
       serviceMedia: 'Media storage',
       servicePayments: 'Payment provider',
       serviceCron: 'Cron secret',
-      repliesTitle: 'Conversation', replyTitle: 'Reply to requester', replyLabel: 'Reply', replyPlaceholder: 'Write a clear response…', sendReply: 'Send reply', internalNote: 'Internal note', openTicket: 'Open ticket', featuresTitle: 'Feature controls', featuresHint: 'Switch product modules without a redeploy. Every change is audited.', flagEnabled: 'Enabled', flagDisabled: 'Disabled', flagOverride: 'Operator override', flagDefault: 'Default configuration', fromPreset: 'Preset', presetValue: 'Preset', effective: 'Live', activeBadge: 'Active', applyPreset: 'Apply', presetActive: 'Current', entitlementsTitle: 'Entitlements', entitlementsHint: 'Contract tiers MVP / FULL / PREMIUM plus fine toggles. Owner-only, every change is audited and live without a redeploy.', entitlementsCurrent: 'Current entitlement', entitlementsCurrentHint: 'What the public sees right now. Preset below overrides the previous selection; fine toggles override the preset.', entitlementsAdvanced: 'Advanced toggles', entitlementsAdvancedHint: 'Fine overrides per feature. Leave empty to follow the preset. Every switch is cached for 30 seconds.', entitlementsReset: 'Reset to MVP', entitlementsResetHint: 'Clears all fine overrides and returns to MVP.', entitlementsResetConfirm: 'Reset entitlements to MVP and clear all overrides?', entitlementsDiffHint: 'You are about to change the contract preset. Review what the customer will gain or lose:', entitlementsDiffEmpty: 'No visible change — fine overrides already produce this picture.', entitlementsPresetUnset: 'No preset chosen yet — pages behave like env flags. Pick MVP / FULL / PREMIUM.', entitlementsSubscriptionsWarning: 'Subscriptions will be enabled. Make sure tariffs starter / pro / elite are configured in src/config/pricing.ts.', entitlementsDiffCancel: 'Cancel', entitlementsDiffConfirm: 'Confirm switch', entitlementsOpenAsClient: 'Open as customer', entitlementsOpenAsClientHint: 'Opens the public site in a new tab — check 404s in MVP.', entitlementsTimelineTitle: 'Recent entitlement changes', entitlementsTimelineHint: 'Last 12 switches — who, when, what.', entitlementBadge: 'Plan: {preset}', entitlementHubLink: 'Manage entitlements',
+      repliesTitle: 'Conversation',
+      replyTitle: 'Reply to requester',
+      replyLabel: 'Reply',
+      replyPlaceholder: 'Write a clear response…',
+      sendReply: 'Send reply',
+      internalNote: 'Internal note',
+      openTicket: 'Open ticket',
+      featuresTitle: 'Feature controls',
+      featuresHint: 'Switch product modules without a redeploy. Every change is audited.',
+      flagEnabled: 'Enabled',
+      flagDisabled: 'Disabled',
+      flagOverride: 'Operator override',
+      flagDefault: 'Default configuration',
+      fromPreset: 'Preset',
+      presetValue: 'Preset',
+      effective: 'Live',
+      activeBadge: 'Active',
+      applyPreset: 'Apply',
+      presetActive: 'Current',
+      entitlementsTitle: 'Entitlements',
+      entitlementsHint: 'Contract tiers MVP / FULL / PREMIUM plus fine toggles. Owner-only, every change is audited and live without a redeploy.',
+      entitlementsCurrent: 'Current entitlement',
+      entitlementsCurrentHint: 'What the public sees right now. Preset below overrides the previous selection; fine toggles override the preset.',
+      entitlementsAdvanced: 'Advanced toggles',
+      entitlementsAdvancedHint: 'Fine overrides per feature. Leave empty to follow the preset. Every switch is cached for 30 seconds.',
+      entitlementsReset: 'Reset to MVP',
+      entitlementsResetHint: 'Clears all fine overrides and returns to MVP.',
+      entitlementsResetConfirm: 'Reset entitlements to MVP and clear all overrides?',
+      entitlementsDiffHint: 'You are about to change the contract preset. Review what the customer will gain or lose:',
+      entitlementsDiffEmpty: 'No visible change — fine overrides already produce this picture.',
+      entitlementsPresetUnset: 'No preset chosen yet — pages behave like env flags. Pick MVP / FULL / PREMIUM.',
+      entitlementsSubscriptionsWarning: 'Subscriptions will be enabled. Make sure tariffs starter / pro / elite are configured in src/config/pricing.ts.',
+      entitlementsDiffCancel: 'Cancel',
+      entitlementsDiffConfirm: 'Confirm switch',
+      entitlementsOpenAsClient: 'Open as customer',
+      entitlementsOpenAsClientHint: 'Opens the public site in a new tab — check 404s in MVP.',
+      entitlementsTimelineTitle: 'Recent entitlement changes',
+      entitlementsTimelineHint: 'Last 12 switches — who, when, what.',
+      entitlementBadge: 'Plan: {preset}',
+      entitlementHubLink: 'Manage entitlements',
       god: {
         heroSubtitle: 'You own the platform. One screen, full control.',
         allowlistBadge: 'allowlist · isSupportOperator',
@@ -3265,7 +3416,6 @@ const en = {
         healthDb: 'DB',
         healthPostgres: 'PostgreSQL',
         healthCronReady: 'cron ready',
-        allSystemsOperational: 'All systems operational',
         healthLocked: '{count} locked',
         healthSla: 'SLA 24h',
         lastSync: 'last sync {time}',
@@ -3367,9 +3517,58 @@ const en = {
         overviewPreviewQueue: 'Open queue →',
         overviewPreviewTools: 'Browse all tools →',
         globalSearchFallback: 'globalOperatorSearch',
+        allSystemsOperational: 'All systems operational',
+      },
+      mobile: {
+        entry: 'Support',
+        tabOverview: 'Overview',
+        tabQueue: 'Queue',
+        tabEntitlements: 'Entitlements',
+        tabPayouts: 'Payouts',
+        tabIntegrations: 'Integrations',
+        noAccess: 'No access to the Command center',
+        retry: 'Retry',
+        noTickets: 'No open tickets',
+        noPayouts: 'No pending payouts',
+        presetLabel: 'Preset',
+        overridden: 'override',
+        reset: 'Reset',
+        hold: 'Hold',
+        release: 'Release',
+        resolve: 'Resolve',
+        markPending: 'In progress',
+        on: 'on',
+        off: 'off',
+        changePreset: 'Change preset?',
+        changeFeature: 'Change feature?',
+        resetOverride: 'Reset override?',
+        holdPayout: 'Hold payout?',
+        releasePayout: 'Release payout?',
+        resolveTicket: 'Resolve ticket?',
+        setPending: 'Mark in progress?',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        actionFailed: 'Action failed',
+        unknownError: 'Unknown error',
+        groupStore: 'Store',
+        groupContent: 'Content',
+        groupPlatform: 'Platform',
+        lockTitle: 'Support is locked',
+        lockHint: 'Confirm it is you to open the dashboard.',
+        useBiometric: 'Use biometrics',
+        biometricPrompt: 'Unlock the Support dashboard',
+        createPinTitle: 'Create a PIN',
+        createPinHint: 'Set a 6-digit PIN. It is required to open the dashboard.',
+        repeatPinTitle: 'Repeat the PIN',
+        repeatPinHint: 'Enter the same PIN again.',
+        enterPinTitle: 'Enter PIN',
+        pinMismatch: 'PINs do not match. Start again.',
+        pinWrong: 'Wrong PIN',
+        pinLocked: 'Too many attempts. Wait one minute and try again.',
+        biometricFailed: 'Biometric check failed. Enter your PIN.',
+        pinDelete: 'Delete',
       },
     },
-
     list: {
       searchLabel: 'Search',
       searchPlaceholder: 'Title, slug, code…',
@@ -3397,14 +3596,12 @@ const en = {
       parentFilter: 'Filtered by parent record: {name}',
       tableCaption: '{resource}: {count, plural, one {# record} other {# records}}',
     },
-
     form: {
       createTitle: 'New entry',
       editTitle: 'Editing',
       generalSection: 'Main',
       translationsSection: 'Translations',
-      translationsHint:
-        'Main fields hold the {locale} version. An empty field in another language falls back to it.',
+      translationsHint: 'Main fields hold the {locale} version. An empty field in another language falls back to it.',
       relationsSection: 'Links',
       pricingSection: 'Price and capacity',
       publishingSection: 'Publishing',
@@ -3418,8 +3615,7 @@ const en = {
       deleteConfirm: 'Delete permanently',
       selectPlaceholder: 'Not selected',
       emptyOptions: 'Create a linked entry first',
-      mediaAfterCreateHint:
-        'Save first — you will be taken to the edit page where you can upload images. Images have a 5 MB limit; choose Card vs Background and where the card click leads.',
+      mediaAfterCreateHint: 'Save first — you will be taken to the edit page where you can upload images. Images have a 5 MB limit; choose Card vs Background and where the card click leads.',
       moneyHint: 'Whole drams, no fractions.',
       slugHint: 'Latin letters, digits and hyphens — this becomes part of the public address.',
       rateHint: 'A share between 0 and 1: 0.15 means 15%.',
@@ -3427,7 +3623,6 @@ const en = {
       listHint: 'One item per line.',
       localizedLabel: '{field} ({language})',
     },
-
     fields: {
       id: 'Identifier',
       slug: 'URL slug',
@@ -3452,7 +3647,6 @@ const en = {
       moderation: 'Moderation',
       type: 'Type',
       actions: 'Actions',
-
       price: 'Price',
       basePrice: 'Base price',
       compareAtPrice: 'Compare-at price',
@@ -3473,7 +3667,6 @@ const en = {
       commissionRate: 'Commission rate',
       platformFee: 'Platform fee',
       providerNet: 'Payable to provider',
-
       durationMinutes: 'Duration, minutes',
       totalMinutes: 'Total minutes',
       capacity: 'Capacity',
@@ -3487,7 +3680,6 @@ const en = {
       usageCount: 'Times used',
       perUserLimit: 'Limit per customer',
       appliesTo: 'Applies to',
-
       sku: 'Article number',
       size: 'Size',
       color: 'Colour',
@@ -3495,7 +3687,6 @@ const en = {
       brand: 'Brand',
       category: 'Category',
       parentCategory: 'Parent category',
-
       style: 'Dance style',
       styles: 'Dance styles',
       danceSportDiscipline: 'DanceSport discipline',
@@ -3513,7 +3704,6 @@ const en = {
       studentCount: 'Students',
       rating: 'Rating',
       ratingCount: 'Ratings',
-
       instructor: 'Instructor',
       venue: 'Venue',
       room: 'Room',
@@ -3526,7 +3716,6 @@ const en = {
       customer: 'Client',
       author: 'Author',
       user: 'User',
-
       district: 'District',
       city: 'City',
       addressLine: 'Address',
@@ -3540,7 +3729,6 @@ const en = {
       areaSqm: 'Area, m²',
       locationName: 'Location name',
       locationOption: 'Where it happens',
-
       startsAt: 'Starts',
       endsAt: 'Ends',
       startTime: 'Start time',
@@ -3555,12 +3743,10 @@ const en = {
       periodStart: 'Period start',
       periodEnd: 'Period end',
       paidAt: 'Paid',
-
       initialAmount: 'Initial amount',
       balance: 'Balance',
       recipientEmail: 'Recipient email',
       message: 'Message',
-
       role: 'Role',
       capability: 'Permission',
       enabled: 'Allowed',
@@ -3583,7 +3769,6 @@ const en = {
       entryFee: 'Entry fee',
       maxEntries: 'Maximum entries',
       partnerName: 'Partner name',
-
       orderNumber: 'Order number',
       contactName: 'Contact name',
       contactEmail: 'Contact email',
@@ -3592,7 +3777,6 @@ const en = {
       deliveryNotes: 'Delivery notes',
       paymentMethod: 'Payment method',
       provider: 'Provider',
-
       altText: 'Alt text',
       focalPoint: 'Focal point',
       mimeType: 'File type',
@@ -3619,7 +3803,6 @@ const en = {
       readingMinutes: 'Reading time',
       viewCount: 'Views',
       tags: 'Tags',
-
       action: 'Operation',
       entityType: 'Entity',
       entityId: 'Entity identifier',
@@ -3630,13 +3813,6 @@ const en = {
       rescheduleWindow: 'Free reschedule window',
       maxReschedules: 'Reschedules used',
     },
-
-    /**
-     * Подписи значений enum, у которых их ещё не было: тип скидки, тип позиции
-     * заказа, способ доставки, место проведения. Ключ = значение enum, поэтому
-     * подпись собирается шаблоном (`admin.enums.lineItem.${value}`) и опечатка
-     * ловится типом `MessageKey`, а не глазами на приёмке.
-     */
     enums: {
       discountType: {
         PERCENT: 'Percent',
@@ -3687,8 +3863,7 @@ const en = {
         CANCELLED: 'Cancelled',
       },
     },
-
-     resources: {
+    resources: {
       banners: {
         title: 'Banners',
         subtitle: 'Floating promo bar at the bottom of the screen — title, link and thumbnail.',
@@ -3774,28 +3949,26 @@ const en = {
         subtitle: 'Uploaded images with alt text and owners.',
       },
     },
-
     blog: {
       title: 'Blog',
       subtitle: 'Dance stories, guides and news from Yerevan.',
       featuredTitle: 'Featured',
       latestTitle: 'Latest stories',
       empty: 'No stories yet',
-       emptyHint: 'No new posts are available.',
+      emptyHint: 'No new posts are available.',
       filterAll: 'All',
       readMore: 'Read story',
       readingTime: '{count, plural, one {# min read} other {# min read}}',
       publishedOn: 'Published {date}',
       shareTitle: 'Share',
       relatedTitle: 'More stories',
-       relatedEmpty: 'No related stories yet.',
+      relatedEmpty: 'No related stories yet.',
       tocTitle: 'In this story',
       backToBlog: 'Back to blog',
       categoryLabel: 'Category',
       tagsLabel: 'Tags',
       viewsLabel: '{count, plural, one {# view} other {# views}}',
     },
-
     orders: {
       title: 'Orders',
       subtitle: 'Shop orders, their payment and fulfilment.',
@@ -3806,6 +3979,7 @@ const en = {
       totalsSection: 'Totals',
       statusSection: 'Status',
       nextStatus: 'Move to status',
+      cashCollectedCta: 'Cash collected',
       statusChanged: 'Status updated',
       noPayments: 'No payment attempts recorded',
       refundTitle: 'Refund',
@@ -3816,29 +3990,31 @@ const en = {
       refundLimit: 'Manual refunds above {max} need a second administrator.',
       refundNoPayment: 'Nothing to refund: the order has no successful payment.',
     },
-
     bookings: {
       title: 'Bookings',
       subtitle: 'Class, private session and hall bookings.',
       empty: 'No bookings yet',
       policySection: 'Terms recorded at booking time',
-      policyNotice:
-        'These numbers are frozen at booking time. Changing the config does not rewrite history — a dispute is settled by what is written here.',
+      policyNotice: 'These numbers are frozen at booking time. Changing the config does not rewrite history — a dispute is settled by what is written here.',
       confirmCta: 'Confirm',
       completeCta: 'Mark completed',
       noShowCta: 'Mark no-show',
       cancelTitle: 'Cancel booking',
       cancelReasonLabel: 'Cancellation reason',
       cancelCta: 'Cancel booking',
+      bulkCancelCta: 'Cancel selected',
+      bulkCancelTitle: 'Cancel selected bookings',
+      bulkCancelDescription: 'Nothing is cancelled right away: the request goes to a second administrator in approvals. After approval each booking is cancelled the same way as a single cancellation.',
+      bulkCancelByProvider: 'Cancelled by the venue or instructor, not the customer',
+      bulkCancelSubmit: 'Send for approval',
+      bulkCancelRequested: 'Cancellation request for {count} bookings sent for approval',
       cancelled: 'Booking cancelled',
       statusChanged: 'Status updated',
       feeNotice: 'Late cancellation fee: {amount}',
       refundNotice: 'Refund to the client: {amount}',
       freeNotice: 'Cancellation is free of charge.',
-      overrideNotice:
-        'You are acting as an administrator: platform windows do not apply, but the fee is calculated from the recorded terms.',
+      overrideNotice: 'You are acting as an administrator: platform windows do not apply, but the fee is calculated from the recorded terms.',
     },
-
     payouts: {
       title: 'Payouts',
       subtitle: 'Money owed to instructors and venues.',
@@ -3852,12 +4028,15 @@ const en = {
       minimumNotice: 'Minimum payout amount — {amount}.',
       pendingCommission: 'Unpaid commission records: {count}',
     },
-
     moderation: {
       title: 'Moderation',
       subtitle: 'Reviews and profiles waiting for a decision.',
       empty: 'Nothing to moderate',
       reviewsTab: 'Reviews',
+      disputesTab: 'Disputes',
+      disputeHint: 'The losing side gets a reliability penalty.',
+      disputeWinClaimant: 'Opener is right',
+      disputeWinRespondent: 'Other side is right',
       instructorsTab: 'Instructor profiles',
       venuesTab: 'Venues',
       targetLabel: 'About',
@@ -3867,7 +4046,6 @@ const en = {
       rejected: 'Rejected',
       ratingsRecalculated: 'Ratings recalculated',
     },
-
     users: {
       title: 'Users',
       subtitle: 'Accounts, roles and access.',
@@ -3875,28 +4053,40 @@ const en = {
       profileSection: 'Profile',
       accessSection: 'Access',
       activitySection: 'Activity',
-      supportActionsTitle: 'Support quick actions', copyUserId: 'Copy user ID', copyEmail: 'Copy email', revokeSessions: 'Sign out all sessions', revokeSessionsHint: 'This will sign the user out on every device. Their account and data will remain unchanged.', confirmRevokeSessions: 'Revoke sessions', cancelAction: 'Cancel',
-      timelineTitle: 'Support timeline', timelineHint: 'Bookings, orders, tickets and audited operator activity in one view.', timelineBookings: 'bookings', timelineOrders: 'orders', timelineTickets: 'tickets', timelineSessions: 'sessions', timelineEmpty: 'No activity yet.',
+      supportActionsTitle: 'Support quick actions',
+      copyUserId: 'Copy user ID',
+      copyEmail: 'Copy email',
+      revokeSessions: 'Sign out all sessions',
+      revokeSessionsHint: 'This will sign the user out on every device. Their account and data will remain unchanged.',
+      confirmRevokeSessions: 'Revoke sessions',
+      cancelAction: 'Cancel',
+      timelineTitle: 'Support timeline',
+      timelineHint: 'Bookings, orders, tickets and audited operator activity in one view.',
+      timelineBookings: 'bookings',
+      timelineOrders: 'orders',
+      timelineTickets: 'tickets',
+      timelineSessions: 'sessions',
+      timelineEmpty: 'No activity yet.',
       dangerSection: 'Danger zone',
       roleTitle: 'Change role',
       roleCta: 'Apply role',
       roleChanged: 'Role changed',
-      roleWarning:
-        'A role changes what the person can do across the whole platform. The change is recorded in the audit log.',
+      roleWarning: 'A role changes what the person can do across the whole platform. The change is recorded in the audit log.',
       suspendTitle: 'Suspend account?',
+      resetTwoFactorCta: 'Reset code lockout',
+      resetTwoFactorTitle: 'Reset the code lockout?',
+      resetTwoFactorBody: 'Clears the wrong-code lock and trusted devices, so the next sign-in asks for a code again. Passwords and sessions are not changed.',
       suspendBody: 'The person loses access immediately, including active sessions. Data is kept.',
       suspended: 'Account suspended',
       restored: 'Access restored',
       lastAdminNotice: 'This is the last active administrator — access cannot be removed.',
       selfNotice: 'You cannot change your own access.',
     },
-
     roles: {
       title: 'Access settings',
       subtitle: 'What each role may do, and temporary grants.',
       matrixTitle: 'Permission matrix',
-      matrixHint:
-        'No record means allowed. Administrator is never restricted: a wrong row must not lock the owner out of the admin area.',
+      matrixHint: 'No record means allowed. Administrator is never restricted: a wrong row must not lock the owner out of the admin area.',
       capabilityColumn: 'Permission',
       saved: 'Matrix updated',
       grantsTitle: 'Temporary grants',
@@ -3909,7 +4099,6 @@ const en = {
       nonGrantableNotice: 'Money and roles are not granted temporarily — that is a deliberate role decision.',
       expiresIn: 'Expires {time}',
     },
-
     approvals: {
       title: 'Approvals',
       subtitle: 'Operations that need a second administrator.',
@@ -3922,7 +4111,6 @@ const en = {
       selfBlocked: 'The author of a request cannot approve it.',
       expiredNotice: 'The request has expired and can no longer be executed.',
     },
-
     audit: {
       title: 'Audit log',
       subtitle: 'Who changed what, and when.',
@@ -3939,7 +4127,6 @@ const en = {
       alreadyReverted: 'This entry has already been reverted',
       notRevertable: 'This operation cannot be reverted automatically',
     },
-
     integrations: {
       title: 'Integrations',
       subtitle: 'External services health',
@@ -3956,7 +4143,6 @@ const en = {
       turnstileName: 'Turnstile',
       turnstileDetail: 'CAPTCHA on auth / contact',
     },
-
     reports: {
       title: 'Reports',
       subtitle: 'Revenue, bookings and commission over a period.',
@@ -3974,7 +4160,6 @@ const en = {
       exportHint: 'CSV opens in Excel and Google Sheets; the delimiter is a semicolon.',
       exportTooLarge: 'Too many rows for one file — narrow the period.',
     },
-
     media: {
       title: 'Media library',
       subtitle: 'Images used by the catalog.',
@@ -3982,8 +4167,7 @@ const en = {
       uploadCta: 'Upload images',
       uploadHint: 'JPEG, PNG, WebP or AVIF, up to {max} each. Location data is stripped on upload.',
       dropHint: 'Drop files here or choose them on your device',
-      dropHintDetailed:
-        'Drag files here or choose with the button. Card click opens the object; background goes to the object page.',
+      dropHintDetailed: 'Drag files here or choose with the button. Card click opens the object; background goes to the object page.',
       uploading: 'Uploading {done} of {total}…',
       uploaded: '{count, plural, one {# file uploaded} other {# files uploaded}}',
       failed: 'Could not upload {name}',
@@ -3994,10 +4178,6 @@ const en = {
       ownerLabel: 'Attached to',
       unassigned: 'Not attached',
       replaceCta: 'Replace file',
-      /**
-       * Удаление кадра из формы владельца. Текст не обещает необратимости: кадр
-       * уходит в корзину и восстановим — необратимое удаление живёт там.
-       */
       deletePhoto: 'Remove photo',
       deletePhotoBody: 'Move “{name}” to the trash? The file stays recoverable until the trash is emptied.',
       storageLocal: 'Local storage: files live in the project folder, not in a bucket.',
@@ -4059,7 +4239,6 @@ const en = {
         courseCover: 'Course cover 1280×720, up to 5 MB',
       },
     },
-
     overview: {
       title: 'Overview',
       subtitle: 'Key metrics — queue depth, funnel and fill rate',
@@ -4076,7 +4255,6 @@ const en = {
       ctaReports: 'Open reports',
       ctaSchedule: 'Open schedule',
     },
-
     content: {
       title: 'Content',
       subtitle: 'Homepage, banners and featured collections',
@@ -4091,7 +4269,6 @@ const en = {
       previewHint: 'Homepage preview uses the same ContentRenderer as the public site.',
       ctaManageBlocks: 'Manage blocks',
     },
-
     errors: {
       notFound: 'This entry no longer exists',
       capabilityMissing: 'Your access level does not cover this operation',
@@ -4109,26 +4286,123 @@ const en = {
       endBeforeStart: 'The end must come after the start',
     },
   },
-
   blog: {
     title: 'Blog',
     subtitle: 'Dance stories, guides and news from Yerevan.',
     featuredTitle: 'Featured',
     latestTitle: 'Latest stories',
     empty: 'No stories yet',
-     emptyHint: 'No new posts are available.',
+    emptyHint: 'No new posts are available.',
     filterAll: 'All',
     readMore: 'Read story',
     readingTime: '{count, plural, one {# min read} other {# min read}}',
     publishedOn: 'Published {date}',
     shareTitle: 'Share',
     relatedTitle: 'More stories',
-     relatedEmpty: 'No related stories yet.',
+    relatedEmpty: 'No related stories yet.',
     tocTitle: 'In this story',
     backToBlog: 'Back to blog',
     categoryLabel: 'Category',
     tagsLabel: 'Tags',
     viewsLabel: '{count, plural, one {# view} other {# views}}',
+  },
+  bot: {
+    name: 'ArtDance Bot',
+    tagline: 'Platform control from your phone',
+    welcome: '👋 *Welcome to ArtDance Bot!*\n\nI manage the platform while you are away: CI status, repo info, and a dev assistant that knows the codebase.\n\nType /help to see all commands.',
+    help: {
+      title: 'ArtDance bot — control from your phone',
+      commands: '**Commands:**\n/help — this help\n/status — latest CI runs (GitHub Actions)\n/repo — repo info\n/ask [question] — ask the dev assistant\n/task [task] — give a task to the bot agent',
+      examples: '**Examples:**\n/ask how does the cart work?\n/task check CI and clean up empty carts',
+      footer: 'Secrets are read from .env.local / Vercel — they never appear in chat.',
+    },
+    status: {
+      title: 'CI runs',
+      empty: 'No CI runs found.',
+    },
+    repo: {
+      title: 'Repo',
+    },
+    ask: {
+      notConfigured: 'ABHIBOTS not configured: set ABHIBOTS_BASE_URL and ABHIBOTS_API_KEY in .env.local / Vercel, then redeploy.',
+      error: 'ask error',
+    },
+    task: {
+      notConfigured: 'ABHIBOTS not configured: set ABHIBOTS_BASE_URL and ABHIBOTS_API_KEY in .env.local / Vercel, then redeploy.',
+      error: 'task error',
+    },
+    generalError: 'error',
+  },
+  cabinet: {
+    notForRole: 'This cabinet is not available for your account.',
+  },
+  notifications: {
+    title: 'Notifications',
+    emailTitle: 'Email notifications',
+    emailHint: 'Choose which notifications are sent to your email.',
+    historyTitle: 'Email history',
+    historyEmpty: 'No emails yet',
+    historyEmptyHint: 'Notifications about your bookings and waitlist will appear here.',
+    statusQueued: 'Queued',
+    statusSent: 'Sent',
+    statusFailed: 'Failed to send',
+    statusSuppressed: 'Not sent (turned off)',
+    types: {
+      'booking.confirmed': 'Booking confirmed',
+      'booking.reminder': 'Class reminder',
+      'booking.cancelled': 'Booking cancelled',
+      'waitlist.ready': 'Spot opened up',
+    },
+  },
+  instructorApply: {
+    cta: 'Apply to teach',
+    title: 'Instructor application',
+    stepOf: 'Step {current} of {total}',
+    steps: {
+      about: 'About you',
+      experience: 'Your experience',
+      documents: 'Documents',
+    },
+    fields: {
+      name: 'Full name',
+      email: 'Email',
+      phone: 'Phone (optional)',
+      bio: 'About you and what you teach',
+      styles: 'Styles you teach',
+      stylesHint: 'Pick at least one',
+    },
+    documents: {
+      title: 'Upload documents',
+      hint: 'ID or passport, diploma or certificate. PDF, JPEG, PNG or WebP, up to 10 MB each.',
+      add: 'Add document',
+      remove: 'Remove',
+      count: '{count} of {max} added',
+      empty: 'Attach at least one document.',
+      privacy: 'Only our moderators see documents. They are never published.',
+      kind: {
+        identity: 'ID or passport',
+        diploma: 'Diploma',
+        certificate: 'Certificate',
+      },
+    },
+    actions: {
+      next: 'Continue',
+      back: 'Back',
+      submit: 'Send application',
+    },
+    success: {
+      title: 'Application sent',
+      body: 'We review applications and reply by email.',
+      done: 'Done',
+    },
+    errors: {
+      documentsRequired: 'Attach at least one document.',
+      tooManyDocuments: 'No more than {max} documents.',
+      fileTooLarge: 'File is larger than {max} MB.',
+      fileType: 'Only PDF, JPEG, PNG or WebP files.',
+      pickFailed: 'Could not open the file. Try again.',
+      submitFailed: 'Could not send the application. Try again.',
+    },
   },
 } as const;
 
