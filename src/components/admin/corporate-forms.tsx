@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * Формы корпоративных счетов в админке: аккаунт, выставление счёта и отметка оплаты.
- * Отметка «оплачено» пополняет баланс аккаунта, поэтому перед отправкой просим
- * подтверждение, а не полагаемся на один клик.
+ * Формы корпоративных счетов в админке: аккаунт, выставление счёта, привязка сотрудника,
+ * отметка оплаты и списание баланса за заказ. Денежные действия не выполняются сразу:
+ * отметка оплаты и списание уходят на согласование второму администратору, поэтому перед
+ * отправкой просим подтверждение, а не полагаемся на один клик.
  */
 
 import { useTranslations } from 'next-intl';
@@ -20,6 +21,8 @@ import {
   createCorporateAccountAction,
   issueCorporateInvoiceAction,
   markCorporateInvoicePaidAction,
+  requestCorporateOrderDebitAction,
+  setCorporateMemberAction,
 } from '@/server/actions/admin/corporate';
 
 export function CreateCorporateAccountForm() {
@@ -75,10 +78,12 @@ export function IssueCorporateInvoiceForm({ accounts }: { accounts: readonly { i
   const router = useRouter();
   const [corporateAccountId, setCorporateAccountId] = useState(accounts[0]?.id ?? '');
   const [amount, setAmount] = useState('');
+  const [orderNumber, setOrderNumber] = useState('');
 
   const { execute, status, result } = useAction(issueCorporateInvoiceAction, {
     onSuccess: () => {
       setAmount('');
+      setOrderNumber('');
       router.refresh();
     },
   });
@@ -86,7 +91,8 @@ export function IssueCorporateInvoiceForm({ accounts }: { accounts: readonly { i
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    execute({ corporateAccountId, amount: Number(amount) });
+    const order = orderNumber.trim();
+    execute(order ? { corporateAccountId, orderNumber: order } : { corporateAccountId, amount: Number(amount) });
   }
 
   if (accounts.length === 0) return <p className="text-body-sm text-content-secondary">{t('needAccount')}</p>;
@@ -108,6 +114,11 @@ export function IssueCorporateInvoiceForm({ accounts }: { accounts: readonly { i
         </select>
       </div>
       <div className="flex flex-col gap-1.5">
+        <Label htmlFor="corporate-invoice-order">{t('orderNumber')}</Label>
+        <Input id="corporate-invoice-order" value={orderNumber} onChange={(e) => setOrderNumber(e.target.value)} maxLength={64} />
+        <span className="text-caption text-content-secondary">{t('orderHint')}</span>
+      </div>
+      <div className="flex flex-col gap-1.5">
         <Label htmlFor="corporate-invoice-amount">{t('amount')}</Label>
         <Input
           id="corporate-invoice-amount"
@@ -117,8 +128,58 @@ export function IssueCorporateInvoiceForm({ accounts }: { accounts: readonly { i
           step={1}
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          required
+          disabled={orderNumber.trim().length > 0}
+          required={orderNumber.trim().length === 0}
         />
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={busy}>{t('save')}</Button>
+        <ActionError error={result.serverError} t={tRoot} />
+      </div>
+    </form>
+  );
+}
+
+export function SetCorporateMemberForm({ accounts }: { accounts: readonly { id: string; name: string }[] }) {
+  const t = useTranslations('corporate.admin');
+  const tRoot = useTranslations() as unknown as Translate;
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [corporateAccountId, setCorporateAccountId] = useState('');
+
+  const { execute, status, result } = useAction(setCorporateMemberAction, {
+    onSuccess: () => {
+      setEmail('');
+      router.refresh();
+    },
+  });
+  const busy = status === 'executing';
+
+  function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    execute({ email, corporateAccountId: corporateAccountId || null });
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="flex flex-col gap-3">
+      <h2 className="text-card-title">{t('memberTitle')}</h2>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="corporate-member-email">{t('memberEmail')}</Label>
+        <Input id="corporate-member-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={190} />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="corporate-member-account">{t('account')}</Label>
+        <select
+          id="corporate-member-account"
+          value={corporateAccountId}
+          onChange={(e) => setCorporateAccountId(e.target.value)}
+          className="h-10 rounded-md border border-border-default bg-surface-card px-3 text-body-sm"
+        >
+          <option value="">{t('noCompany')}</option>
+          {accounts.map((account) => (
+            <option key={account.id} value={account.id}>{account.name}</option>
+          ))}
+        </select>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={busy}>{t('save')}</Button>
@@ -149,6 +210,32 @@ export function MarkCorporateInvoicePaidButton({ id }: { id: string }) {
         {t('markPaid')}
       </Button>
       {result.data ? <p className="text-caption text-content-secondary">{t('markPaidRequested')}</p> : null}
+      <ActionError error={result.serverError} t={tRoot} />
+    </div>
+  );
+}
+
+export function RequestCorporateOrderDebitButton({ corporateAccountId, orderId }: { corporateAccountId: string; orderId: string }) {
+  const t = useTranslations('corporate.admin');
+  const tRoot = useTranslations() as unknown as Translate;
+  const router = useRouter();
+
+  const { execute, status, result } = useAction(requestCorporateOrderDebitAction, {
+    onSuccess: () => router.refresh(),
+  });
+  const busy = status === 'executing';
+
+  function onClick() {
+    if (!window.confirm(t('confirmDebit'))) return;
+    execute({ corporateAccountId, orderId });
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-2">
+      <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onClick}>
+        {t('debitOrder')}
+      </Button>
+      {result.data ? <p className="text-caption text-content-secondary">{t('debitRequested')}</p> : null}
       <ActionError error={result.serverError} t={tRoot} />
     </div>
   );

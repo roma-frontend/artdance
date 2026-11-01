@@ -17,7 +17,12 @@ import { domainErrors } from '@/domain/errors';
 import { recordAudit } from '@/lib/audit';
 import { requireCapability } from '@/lib/auth/guards';
 import { db } from '@/lib/db';
-import { createCorporateAccount, issueInvoice } from '@/server/corporate/service';
+import {
+  createCorporateAccount,
+  issueInvoice,
+  prepareCorporateOrderDebit,
+  setCorporateMember,
+} from '@/server/corporate/service';
 import { authedAction } from '@/server/safe-action';
 
 export const createCorporateAccountAction = authedAction
@@ -49,13 +54,21 @@ export const issueCorporateInvoiceAction = authedAction
   .inputSchema(
     z.object({
       corporateAccountId: z.string().trim().min(1).max(64),
-      amount: z.number().int().positive().max(100_000_000),
+      /* Без заказа — свободная сумма; с заказом сумма берётся из заказа. */
+      orderNumber: z.string().trim().max(64).optional(),
+      amount: z.number().int().positive().max(100_000_000).optional(),
     }),
   )
   .action(async ({ parsedInput, ctx }): Promise<{ id: string; number: string }> => {
     const caller = await requireCapability('corporate.manage');
+    const orderId = parsedInput.orderNumber
+      ? (await db.order.findUnique({ where: { orderNumber: parsedInput.orderNumber }, select: { id: true } }))?.id
+      : undefined;
+    if (parsedInput.orderNumber && !orderId) throw domainErrors.notFound();
+
     const invoice = await issueInvoice({
       corporateAccountId: parsedInput.corporateAccountId,
+      orderId,
       amount: parsedInput.amount,
     });
 
@@ -64,11 +77,94 @@ export const issueCorporateInvoiceAction = authedAction
       action: 'admin.corporate.invoice.issue',
       entityType: 'Invoice',
       entityId: invoice.id,
-      after: { number: invoice.number, amount: invoice.amount, corporateAccountId: parsedInput.corporateAccountId },
+      after: {
+        number: invoice.number,
+        amount: invoice.amount,
+        corporateAccountId: parsedInput.corporateAccountId,
+        orderNumber: parsedInput.orderNumber ?? null,
+      },
       ipAddress: ctx.identifier,
     });
 
     return { id: invoice.id, number: invoice.number };
+  });
+
+export const setCorporateMemberAction = authedAction
+  .metadata({ rateLimit: 'adminMutation', audit: 'admin.corporate.member.set' })
+  .inputSchema(
+    z.object({
+      email: z.string().trim().email().max(190),
+      corporateAccountId: z.string().trim().min(1).max(64).nullable(),
+    }),
+  )
+  .action(async ({ parsedInput, ctx }): Promise<{ linked: boolean }> => {
+    const caller = await requireCapability('corporate.manage');
+    const user = await setCorporateMember(parsedInput);
+
+    await recordAudit({
+      actor: caller,
+      action: 'admin.corporate.member.set',
+      entityType: 'User',
+      entityId: user.id,
+      after: { corporateAccountId: user.corporateAccountId },
+      ipAddress: ctx.identifier,
+    });
+
+    return { linked: user.corporateAccountId !== null };
+  });
+
+/**
+ * Списание баланса за заказ — денежное движение, поэтому, как и отметка оплаты,
+ * идёт через заявку второму админу. Баланс меняется только при исполнении.
+ */
+export const requestCorporateOrderDebitAction = authedAction
+  .metadata({ rateLimit: 'adminMutation', audit: 'admin.corporate.order.debitRequested' })
+  .inputSchema(
+    z.object({
+      corporateAccountId: z.string().trim().min(1).max(64),
+      orderId: z.string().trim().min(1).max(64),
+    }),
+  )
+  .action(async ({ parsedInput, ctx }): Promise<{ requestId: string }> => {
+    const caller = await requireCapability('corporate.manage');
+    const prepared = await prepareCorporateOrderDebit(parsedInput);
+
+    /* Одна заявка на заказ за раз: повторное списание ждёт решения по первой. */
+    const pending = await db.approvalRequest.findFirst({
+      where: {
+        action: 'corporate.order.debit',
+        status: 'PENDING',
+        payload: { path: ['orderId'], equals: prepared.orderId },
+      },
+      select: { id: true },
+    });
+    if (pending) throw domainErrors.validationFailed('status');
+
+    const request = await db.approvalRequest.create({
+      data: {
+        action: 'corporate.order.debit',
+        payload: {
+          corporateAccountId: parsedInput.corporateAccountId,
+          orderId: prepared.orderId,
+          orderNumber: prepared.orderNumber,
+          amount: prepared.amount,
+        },
+        requestedById: caller.id,
+        expiresAt: new Date(Date.now() + security.guardrails.approvalTtlHours * 60 * 60 * 1000),
+      },
+      select: { id: true },
+    });
+
+    await recordAudit({
+      actor: caller,
+      action: 'admin.corporate.order.debitRequested',
+      entityType: 'ApprovalRequest',
+      entityId: request.id,
+      after: { orderNumber: prepared.orderNumber, amount: prepared.amount },
+      ipAddress: ctx.identifier,
+    });
+
+    return { requestId: request.id };
   });
 
 export const markCorporateInvoicePaidAction = authedAction

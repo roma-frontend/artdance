@@ -20,20 +20,153 @@ export async function createCorporateAccount(input: { name: string; contactEmail
   });
 }
 
-export async function issueInvoice(input: { corporateAccountId: string; orderId?: string | null; amount: number }, now = new Date()) {
-  if (!Number.isInteger(input.amount) || input.amount <= 0) throw domainErrors.validationFailed('amount');
+/**
+ * Выставляет счёт. Со ссылкой на заказ сумма равна сумме заказа, а не числу из формы:
+ * счёт не может разойтись с тем, что компания должна за заказ.
+ */
+export async function issueInvoice(
+  input: { corporateAccountId: string; orderId?: string | null; amount?: number | null },
+  now = new Date(),
+) {
+  if (!input.orderId && (!Number.isInteger(input.amount) || (input.amount ?? 0) <= 0)) {
+    throw domainErrors.validationFailed('amount');
+  }
   const account = await db.corporateAccount.findUnique({ where: { id: input.corporateAccountId }, select: { id: true } });
   if (!account) throw domainErrors.notFound();
+
+  let amount = input.amount ?? 0;
+  if (input.orderId) {
+    const order = await db.order.findUnique({ where: { id: input.orderId }, select: { status: true, total: true } });
+    if (!order) throw domainErrors.notFound();
+    if (order.status !== 'CREATED') throw domainErrors.validationFailed('status');
+    const invoiced = await db.invoice.findUnique({ where: { orderId: input.orderId }, select: { id: true } });
+    if (invoiced) throw domainErrors.validationFailed('order');
+    amount = order.total;
+  }
+  if (!Number.isInteger(amount) || amount <= 0) throw domainErrors.validationFailed('amount');
+
   return db.invoice.create({
     data: {
       corporateAccountId: input.corporateAccountId,
       orderId: input.orderId ?? null,
       number: invoiceNumber(now),
-      amount: input.amount,
+      amount,
       issuedAt: now,
     },
     select: { id: true, number: true, amount: true, status: true },
   });
+}
+
+/**
+ * Привязывает пользователя к компании: из её кабинета видны баланс и счета. Пустой
+ * `corporateAccountId` отвязывает. Назначает только админ с правом `corporate.manage`.
+ */
+export async function setCorporateMember(input: { email: string; corporateAccountId: string | null }) {
+  const user = await db.user.findUnique({ where: { email: input.email.trim().toLowerCase() }, select: { id: true } });
+  if (!user) throw domainErrors.notFound();
+  if (input.corporateAccountId) {
+    const account = await db.corporateAccount.findUnique({ where: { id: input.corporateAccountId }, select: { id: true } });
+    if (!account) throw domainErrors.notFound();
+  }
+  return db.user.update({
+    where: { id: user.id },
+    data: { corporateAccountId: input.corporateAccountId },
+    select: { id: true, corporateAccountId: true },
+  });
+}
+
+/** Кабинет компании: баланс и последние счета; `null`, если пользователь не в компании. */
+export async function corporateCabinetFor(userId: string) {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: {
+      corporateAccount: {
+        select: {
+          name: true,
+          balance: true,
+          invoices: {
+            orderBy: { issuedAt: 'desc' },
+            take: 50,
+            select: {
+              number: true,
+              amount: true,
+              status: true,
+              issuedAt: true,
+              paidAt: true,
+              order: { select: { orderNumber: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+  return user?.corporateAccount ?? null;
+}
+
+/**
+ * Проверка перед заявкой на списание: счёт по заказу оплачен, заказ ещё не оплачен,
+ * баланса хватает. Вызывается и при подаче заявки, и при её исполнении.
+ */
+export async function prepareCorporateOrderDebit(input: { corporateAccountId: string; orderId: string }) {
+  const invoice = await db.invoice.findUnique({
+    where: { orderId: input.orderId },
+    select: { id: true, status: true, corporateAccountId: true },
+  });
+  if (!invoice || invoice.corporateAccountId !== input.corporateAccountId || invoice.status !== 'PAID') {
+    throw domainErrors.validationFailed('invoice');
+  }
+  const order = await db.order.findUnique({
+    where: { id: input.orderId },
+    select: { status: true, total: true, orderNumber: true },
+  });
+  if (!order) throw domainErrors.notFound();
+  if (order.status !== 'CREATED') throw domainErrors.validationFailed('status');
+  const account = await db.corporateAccount.findUnique({
+    where: { id: input.corporateAccountId },
+    select: { balance: true },
+  });
+  if (!account || account.balance < order.total) throw domainErrors.validationFailed('balance');
+  return { invoiceId: invoice.id, orderId: input.orderId, orderNumber: order.orderNumber, amount: order.total };
+}
+
+/**
+ * Списывает баланс компании за заказ и переводит заказ в оплаченный. Условные
+ * обновления защищают от двойного списания: второй вызов упадёт на статусе заказа.
+ * Доставку запускает `settlePaidOrder`, как и при оплате провайдером.
+ */
+export async function debitCorporateForOrder(input: { corporateAccountId: string; orderId: string }, now = new Date()) {
+  const debit = await db.$transaction(async (tx) => {
+    const invoice = await tx.invoice.findUnique({
+      where: { orderId: input.orderId },
+      select: { status: true, corporateAccountId: true },
+    });
+    if (!invoice || invoice.corporateAccountId !== input.corporateAccountId || invoice.status !== 'PAID') {
+      throw domainErrors.validationFailed('invoice');
+    }
+    const order = await tx.order.findUnique({
+      where: { id: input.orderId },
+      select: { status: true, total: true, orderNumber: true },
+    });
+    if (!order) throw domainErrors.notFound();
+
+    const charged = await tx.corporateAccount.updateMany({
+      where: { id: input.corporateAccountId, balance: { gte: order.total } },
+      data: { balance: { decrement: order.total } },
+    });
+    if (charged.count !== 1) throw domainErrors.validationFailed('balance');
+
+    const paid = await tx.order.updateMany({
+      where: { id: input.orderId, status: 'CREATED' },
+      data: { status: 'PAID', paidAt: now },
+    });
+    if (paid.count !== 1) throw domainErrors.validationFailed('status');
+
+    return { orderId: input.orderId, orderNumber: order.orderNumber, amount: order.total };
+  });
+
+  const { settlePaidOrder } = await import('@/server/payments/settle');
+  await settlePaidOrder(debit.orderId, now);
+  return debit;
 }
 
 /**
@@ -104,6 +237,7 @@ export interface CorporateInvoiceRow {
   paidAt: Date | null;
   overdue: boolean;
   account: { id: string; name: string } | null;
+  order: { id: string; orderNumber: string } | null;
 }
 
 /** Последние счета с признаком просрочки; просрочен только неоплаченный счёт старше срока. */
@@ -119,6 +253,7 @@ export async function listCorporateInvoices(now = new Date(), limit = 200): Prom
       issuedAt: true,
       paidAt: true,
       corporateAccount: { select: { id: true, name: true } },
+      order: { select: { id: true, orderNumber: true } },
     },
   });
   return invoices.map((invoice) => ({
@@ -130,5 +265,6 @@ export async function listCorporateInvoices(now = new Date(), limit = 200): Prom
     paidAt: invoice.paidAt,
     overdue: invoice.status === 'PENDING' && invoiceOverdue(invoice.issuedAt, null, now, tax.invoiceDueHours),
     account: invoice.corporateAccount,
+    order: invoice.order,
   }));
 }

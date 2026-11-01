@@ -190,6 +190,7 @@ export const routes = {
   accountSubscription: () => '/account/subscription',
   accountWallet: () => '/account/wallet',
   accountReferrals: () => '/account/referrals',
+  accountCompany: () => '/account/company',
   accountNotifications: () => '/account/notifications',
   accountSecurity: () => '/account/security',
   accountSettings: () => '/account/settings',

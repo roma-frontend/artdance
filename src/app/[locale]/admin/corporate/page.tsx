@@ -2,8 +2,9 @@
  * КОРПОРАТИВНЫЕ СЧЕТА (B-06) — аккаунты, баланс и выставленные счета.
  *
  * Заявка приходит через контактную форму с темой `corporate` (страница /corporate).
- * Здесь администратор создаёт аккаунт, выставляет счёт и отмечает оплату переводом.
- * Баланс пополняется только при отметке оплаты.
+ * Здесь администратор создаёт аккаунт, выставляет счёт (в том числе на заказ),
+ * привязывает сотрудника компании и отправляет оплату и списание на согласование.
+ * Баланс меняется только после одобрения второго администратора.
  */
 
 import { getFormatter, getTranslations, setRequestLocale } from 'next-intl/server';
@@ -13,6 +14,8 @@ import {
   CreateCorporateAccountForm,
   IssueCorporateInvoiceForm,
   MarkCorporateInvoicePaidButton,
+  RequestCorporateOrderDebitButton,
+  SetCorporateMemberForm,
 } from '@/components/admin/corporate-forms';
 import { AccessDenied } from '@/components/ui/access-denied';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -39,6 +42,7 @@ export default async function AdminCorporatePage({ params }: PageProps) {
     getFormatter(),
   ]);
   const dateFormat = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeZone: 'Asia/Yerevan' });
+  const accountOptions = accounts.map(({ id, name }) => ({ id, name }));
 
   const statusLabel = (status: string) => {
     if (status === 'PAID') return t('status.PAID');
@@ -50,12 +54,15 @@ export default async function AdminCorporatePage({ params }: PageProps) {
     <>
       <AdminPageHeader titleKey="corporate.admin.title" subtitleKey="corporate.admin.subtitle" />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
         <section className="rounded-xl border border-border-default bg-surface-card p-5 shadow-sm">
           <CreateCorporateAccountForm />
         </section>
         <section className="rounded-xl border border-border-default bg-surface-card p-5 shadow-sm">
-          <IssueCorporateInvoiceForm accounts={accounts.map(({ id, name }) => ({ id, name }))} />
+          <IssueCorporateInvoiceForm accounts={accountOptions} />
+        </section>
+        <section className="rounded-xl border border-border-default bg-surface-card p-5 shadow-sm">
+          <SetCorporateMemberForm accounts={accountOptions} />
         </section>
       </div>
 
@@ -100,6 +107,7 @@ export default async function AdminCorporatePage({ params }: PageProps) {
                 <tr>
                   <th className="px-4 py-3">{t('number')}</th>
                   <th className="px-4 py-3">{t('account')}</th>
+                  <th className="px-4 py-3">{t('orderHeader')}</th>
                   <th className="px-4 py-3">{t('amount')}</th>
                   <th className="px-4 py-3">{t('issued')}</th>
                   <th className="px-4 py-3">{t('statusHeader')}</th>
@@ -111,6 +119,7 @@ export default async function AdminCorporatePage({ params }: PageProps) {
                   <tr key={invoice.id} className="border-t border-border-subtle">
                     <td className="px-4 py-3 font-mono">{invoice.number}</td>
                     <td className="px-4 py-3">{invoice.account?.name ?? '—'}</td>
+                    <td className="px-4 py-3 font-mono">{invoice.order?.orderNumber ?? '—'}</td>
                     <td className="px-4 py-3">{format.number(invoice.amount, 'price')}</td>
                     <td className="px-4 py-3">{dateFormat.format(invoice.issuedAt)}</td>
                     <td className="px-4 py-3">
@@ -119,6 +128,9 @@ export default async function AdminCorporatePage({ params }: PageProps) {
                     </td>
                     <td className="px-4 py-3">
                       {invoice.status === 'PENDING' ? <MarkCorporateInvoicePaidButton id={invoice.id} /> : null}
+                      {invoice.status === 'PAID' && invoice.order && invoice.account ? (
+                        <RequestCorporateOrderDebitButton corporateAccountId={invoice.account.id} orderId={invoice.order.id} />
+                      ) : null}
                     </td>
                   </tr>
                 ))}
