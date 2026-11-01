@@ -19,7 +19,6 @@ const approver = demoAccounts.find((account) => account.role === 'SUPPORT')!;
 const client = demoAccounts.find((account) => account.role === 'CUSTOMER')!;
 
 test('второй админ одобряет заявку на массовую отмену, и бронь отменяется', async ({ page }) => {
-  test.skip(true, 'временно отключён: проверка, не он ли вызывает падение входа в соседних тестах');
   test.skip(test.info().project.name !== 'desktop', 'одна тестовая бронь: только в desktop');
 
   const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
