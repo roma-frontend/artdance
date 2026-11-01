@@ -23,6 +23,7 @@ export const features = {
   push: true,
   boost: true,
   instructorAnalytics: true,
+  corporateCabinet: true,
   cms: true,
   calendarSync: true,
   forYou: true,

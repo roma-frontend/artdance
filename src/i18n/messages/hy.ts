@@ -1474,6 +1474,7 @@ const hy: Messages = {
       push: "Push",
       boost: "Առաջխաղացում",
       instructorAnalytics: "Հրահանգչի վերլուծություն",
+      corporateCabinet: "Ընկերության հաշիվ",
       cms: "Բովանդակություն",
       calendarSync: "Օրացույցի համաժամեցում",
       forYou: "Անձնական «Քեզ համար» ընտրանի",
