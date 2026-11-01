@@ -12,7 +12,13 @@ import { PrismaClient } from '../src/generated/prisma/client';
 
 import en from '../src/i18n/messages/en';
 import { demoAccounts, demoPassword, demoVenues } from '../prisma/fixtures/demo';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Вход ограничен по адресу клиента: у каждого теста свой адрес, чтобы соседи не делили лимит. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
 
 test.describe('Карта площадки (2.10)', () => {
   const venue = demoVenues[0]!;

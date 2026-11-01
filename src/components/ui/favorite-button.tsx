@@ -72,6 +72,8 @@ export function FavoriteButton({ target, slug, name, onMedia, className }: Favor
       type="button"
       aria-pressed={isFavorite}
       aria-label={isFavorite ? t('toggleLabelActive', { name }) : t('toggleLabel', { name })}
+      // Подпись курсора-кольца над сердечком: иначе над карточкой показывался бы «Explore».
+      data-cursor-label={isFavorite ? t('removeLabel') : t('addLabel')}
       onClick={(event) => {
         event.preventDefault();
         event.stopPropagation();

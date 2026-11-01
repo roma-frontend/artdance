@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 const admin = demoAccounts.find(account => account.role === 'ADMIN')!;
@@ -22,6 +23,11 @@ test.afterEach(async () => {
   await db.promoCode.delete({ where: { id: trashedPromoId } });
   await db.$disconnect();
   trashedPromoId = undefined;
+});
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Вход ограничен по адресу клиента: у каждого теста свой адрес, чтобы соседи не делили лимит. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
 });
 
 test('админка: общий скролл и правая sticky-колонка как у инструктора', async ({ page }, testInfo) => {

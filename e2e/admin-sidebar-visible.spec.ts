@@ -2,9 +2,15 @@ import { expect, test } from '@playwright/test';
 
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 const admin = demoAccounts.find(account => account.role === 'ADMIN')!;
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Вход ограничен по адресу клиента: у каждого теста свой адрес, чтобы соседи не делили лимит. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
 
 test('админка: нижний пункт сайдбара остаётся в окне после клика', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'в мобильной раскладке сайдбар скрыт в шторке');
