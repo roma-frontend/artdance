@@ -522,6 +522,7 @@ export const security = {
     'user.roleChange',
     'promoCode.create',
     'booking.bulkCancel',
+    'corporate.invoice.markPaid',
   ] as const,
   /** Ограничители для делегированных админов. Superadmin не ограничен. */
   guardrails: {

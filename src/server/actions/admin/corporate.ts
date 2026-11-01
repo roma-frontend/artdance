@@ -4,13 +4,20 @@
  * КОРПОРАТИВНЫЕ СЧЕТА (B-06) — действия админки: аккаунт, выставленный счёт и
  * отметка оплаты переводом. Баланс меняется только в `markInvoicePaid`, и только
  * при переходе счёта из PENDING в PAID. Каждое действие пишет в журнал аудита.
+ *
+ * Отметка оплаты денежная, поэтому она не выполняется сразу: создаётся заявка на
+ * согласование, и второй администратор подтверждает её на странице одобрений.
+ * Исполняет заявку `decideApproval` (см. `actions/admin/people.ts`).
  */
 
 import { z } from 'zod';
 
-import { requireCapability } from '@/lib/auth/guards';
+import { security } from '@/config/business';
+import { domainErrors } from '@/domain/errors';
 import { recordAudit } from '@/lib/audit';
-import { createCorporateAccount, issueInvoice, markInvoicePaid } from '@/server/corporate/service';
+import { requireCapability } from '@/lib/auth/guards';
+import { db } from '@/lib/db';
+import { createCorporateAccount, issueInvoice } from '@/server/corporate/service';
 import { authedAction } from '@/server/safe-action';
 
 export const createCorporateAccountAction = authedAction
@@ -65,20 +72,46 @@ export const issueCorporateInvoiceAction = authedAction
   });
 
 export const markCorporateInvoicePaidAction = authedAction
-  .metadata({ rateLimit: 'adminMutation', audit: 'admin.corporate.invoice.paid' })
+  .metadata({ rateLimit: 'adminMutation', audit: 'admin.corporate.invoice.paidRequested' })
   .inputSchema(z.object({ id: z.string().trim().min(1).max(64) }))
-  .action(async ({ parsedInput, ctx }): Promise<{ status: 'PAID' }> => {
+  .action(async ({ parsedInput, ctx }): Promise<{ requestId: string }> => {
     const caller = await requireCapability('corporate.manage');
-    const invoice = await markInvoicePaid(parsedInput.id);
+    const invoice = await db.invoice.findUnique({
+      where: { id: parsedInput.id },
+      select: { id: true, status: true, amount: true },
+    });
+    if (!invoice) throw domainErrors.notFound();
+    if (invoice.status !== 'PENDING') throw domainErrors.validationFailed('status');
+
+    /* Повторная заявка на тот же счёт не нужна: одна ждёт второго админа. */
+    const pending = await db.approvalRequest.findFirst({
+      where: {
+        action: 'corporate.invoice.markPaid',
+        status: 'PENDING',
+        payload: { path: ['invoiceId'], equals: invoice.id },
+      },
+      select: { id: true },
+    });
+    if (pending) throw domainErrors.validationFailed('status');
+
+    const request = await db.approvalRequest.create({
+      data: {
+        action: 'corporate.invoice.markPaid',
+        payload: { invoiceId: invoice.id, amount: invoice.amount },
+        requestedById: caller.id,
+        expiresAt: new Date(Date.now() + security.guardrails.approvalTtlHours * 60 * 60 * 1000),
+      },
+      select: { id: true },
+    });
 
     await recordAudit({
       actor: caller,
-      action: 'admin.corporate.invoice.paid',
-      entityType: 'Invoice',
-      entityId: invoice.id,
-      after: { status: 'PAID', amount: invoice.amount, corporateAccountId: invoice.corporateAccountId },
+      action: 'admin.corporate.invoice.paidRequested',
+      entityType: 'ApprovalRequest',
+      entityId: request.id,
+      after: { invoiceId: invoice.id, amount: invoice.amount },
       ipAddress: ctx.identifier,
     });
 
-    return { status: 'PAID' };
+    return { requestId: request.id };
   });

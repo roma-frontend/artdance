@@ -148,6 +148,7 @@ export function MarkCorporateInvoicePaidButton({ id }: { id: string }) {
       <Button type="button" size="sm" variant="outline" disabled={busy} onClick={onClick}>
         {t('markPaid')}
       </Button>
+      {result.data ? <p className="text-caption text-content-secondary">{t('markPaidRequested')}</p> : null}
       <ActionError error={result.serverError} t={tRoot} />
     </div>
   );
