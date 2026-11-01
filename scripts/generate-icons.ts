@@ -1,5 +1,6 @@
 /**
- * Генерация иконок бренда: PWA, favicon, apple touch, иконки мобильного приложения.
+ * Генерация иконок бренда: PWA (в R2), иконка ассистента (в R2), favicon и apple touch веба.
+ * Иконки мобильного приложения (заставка, нативные) этим скриптом не трогаются.
  *
  * Источник формы — буква «A» из логотипа (танцовщица): `design/brand/letter-a.svg`, вектор.
  * Буква вписывается в квадрат на бордовом фоне бренда. PNG рендерятся через sharp, растра нет.
@@ -93,7 +94,6 @@ async function main() {
   const appDir = join(ROOT, 'src', 'app');
   // PWA-иконки не кладём в public: они уходят в R2 (media/app-icon-*.png), манифест читает их оттуда.
   const mediaDir = join(tmpdir(), 'artdance-icons');
-  const mobileAssets = join(ROOT, 'mobile', 'assets');
   await mkdir(mediaDir, { recursive: true });
 
   // ——— PWA icons (в R2 под ключами media/app-icon-*.png) ———
@@ -133,23 +133,11 @@ async function main() {
     console.log(`✓ src/app/favicon.ico (${ico.length} bytes, ${sizes.join('/')}px)`);
   }
 
-  // ——— Мобильное приложение (Expo): иконки в mobile/assets, см. mobile/app.json ———
-  const mobile: Array<{ file: string; size: number; svg: string }> = [
-    // Основная иконка: квадрат без скруглений (iOS и Android сами накладывают маску).
-    { file: 'icon.png', size: 1024, svg: iconSvg(glyphShape, 1024) },
-    // Android: фон отдельно, буква — передний план в безопасной зоне, монохром — тот же силуэт.
-    { file: 'android-icon-background.png', size: 1024, svg: iconSvg(glyphShape, 1024, { background: true, glyph: false }) },
-    { file: 'android-icon-foreground.png', size: 1024, svg: iconSvg(glyphShape, 1024, { maskable: true, background: false }) },
-    { file: 'android-icon-monochrome.png', size: 1024, svg: iconSvg(glyphShape, 1024, { maskable: true, background: false }) },
-    // Заставка: буква на прозрачном фоне, фон даёт экран заставки.
-    { file: 'splash-icon.png', size: 1024, svg: iconSvg(glyphShape, 1024, { background: false }) },
-    // Веб-версия Expo: favicon на бордовом фоне.
-    { file: 'favicon.png', size: 48, svg: iconSvg(glyphShape, 48) },
-  ];
-  for (const t of mobile) {
-    const png = await renderPng(t.svg);
-    await writeFile(join(mobileAssets, t.file), png);
-    console.log(`✓ mobile/assets/${t.file} (${png.length} bytes)`);
+  // ——— Иконка ассистента в приложении (R2 brand/assistant-icon.png): 1024, чтобы большая иконка на экране не мылилась ———
+  {
+    const png = await renderPng(iconSvg(glyphShape, 1024));
+    await writeFile(join(mediaDir, 'assistant-icon.png'), png);
+    console.log(`✓ ${join(mediaDir, 'assistant-icon.png')} (${png.length} bytes) — загрузить в R2 как brand/assistant-icon.png`);
   }
 
   console.log('\nГотово. Проверь: npm run build должен показать ● /icon, ● /apple-icon, ● /manifest.webmanifest');
