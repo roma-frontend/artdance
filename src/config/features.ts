@@ -22,6 +22,7 @@ export const features = {
   recurring: true,
   push: true,
   boost: true,
+  instructorAnalytics: true,
   cms: true,
   calendarSync: true,
   forYou: true,

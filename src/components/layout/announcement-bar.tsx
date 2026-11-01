@@ -6,6 +6,8 @@
  * `content:banners` обновляется server action-ом, поэтому production не требует
  * пересборки.
  *
+ * Модуль `cms` в entitlements выключает полосу целиком: баннеры при этом не читаются.
+ *
  * **Почему полоса не в первой секции.** Главная открывается кинематографичным
  * первым экраном во всю высоту окна с видео. Любая полоса над ним занимает его
  * место и «отрезает» кадр. Поэтому баннер вынесен из потока на самый низ окна и
@@ -26,12 +28,14 @@ import { resolveMedia } from '@/domain/content';
 import type { Locale } from '@/i18n/config';
 import { Link } from '@/i18n/routing';
 import { getLiveBanners, type LiveBanner } from '@/server/content/banners';
+import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 
 interface AnnouncementBarProps {
   locale: Locale;
 }
 
 export async function AnnouncementBar({ locale }: AnnouncementBarProps) {
+  if (!(await getEffectiveEntitlementsSafe()).cms) return null;
   const banner = (await getLiveBanners(locale))[0];
   if (!banner) return null;
   const t = await getTranslations('common');

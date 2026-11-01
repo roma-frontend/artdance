@@ -31,6 +31,8 @@ export default async function StudioPage({ params }: { params: Promise<{ locale:
         <Button asChild variant="outline"><Link href={routes.instructorAvailability()}>{tFooter('studioDashboardAvailability')}</Link></Button>
         <Button asChild variant="outline"><Link href={routes.instructorClasses()}>{tFooter('studioDashboardClasses')}</Link></Button>
         <Button asChild variant="outline"><Link href={routes.instructorStudioReviews()}>{tFooter('studioDashboardReviews')}</Link></Button>
+        <Button asChild variant="outline"><Link href={routes.instructorStudioBoost()}>{tFooter('studioDashboardBoost')}</Link></Button>
+        <Button asChild variant="outline"><Link href={routes.instructorStudioAnalytics()}>{tFooter('studioDashboardAnalytics')}</Link></Button>
         <Button asChild variant="outline"><Link href={routes.instructorCheckIn()}>{tFooter('studioCheckInTitle')}</Link></Button>
         <Button asChild variant="outline"><Link href={routes.account()}>{tCommon('actions.continue')}</Link></Button>
       </div>

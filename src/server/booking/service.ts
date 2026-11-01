@@ -22,6 +22,7 @@ import { checkBookingConsents, storeBookingConsents } from '@/server/booking/con
 import { flagBookingContactText } from '@/server/booking/guardrails';
 import { isLateCancellation } from '@/domain/reliability';
 import { recordReliabilityEvent } from '@/server/reliability/service';
+import { offerFreedSeat } from '@/server/booking/waitlist-offer';
 import { applyFirstBookingPromo, consumeFirstBookingPromo } from '@/server/promo/first-booking';
 function isUniqueViolation(error: unknown): boolean { return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'; }
 function refFromId(id: string): string { return 'BK-' + id.slice(-8).toUpperCase(); }
@@ -361,6 +362,7 @@ export async function expireUnpaidBookings(now: Date): Promise<{ expired: number
       return true;
     });
     if (claimed) expired += 1;
+    if (claimed && b.sessionId) await offerFreedSeat(b.sessionId, now);
   }
   return { expired };
 }
@@ -427,11 +429,15 @@ export async function claimWaitlistSlot(input: { sessionId: string; userId: stri
   if (!entry) throw domainErrors.notFound();
   if (!entry.notifiedAt || !entry.claimUntil) throw domainErrors.validationFailed('claimUntil');
   if (input.now.getTime() > entry.claimUntil.getTime()) throw domainErrors.validationFailed('claimUntil');
-  const session = await db.classSession.findUnique({ where:{ id: input.sessionId }, select:{ id:true, startsAt:true, endsAt:true, classId:true, roomId:true }});
+  const session = await db.classSession.findUnique({ where:{ id: input.sessionId }, select:{ id:true, startsAt:true, endsAt:true, classId:true, capacity:true, bookedCount:true }});
   if (!session) throw domainErrors.notFound();
+  // Место должно быть свободным на момент занятия, а не только на момент письма.
+  if (session.bookedCount >= session.capacity) throw domainErrors.capacityExceeded(0);
   const danceClass = await db.danceClass.findUnique({ where:{ id: session.classId }, select:{ instructorId:true }});
   const expiresAt = new Date(input.now.getTime() + booking.holdTtlMinutes * 60_000);
-  const hold = await db.slotHold.create({ data:{ instructorId: danceClass?.instructorId, roomId: session.roomId, sessionId: session.id, startsAt: session.startsAt, endsAt: session.endsAt, userId: input.userId, expiresAt, extensions:0 }, select:{ id:true, expiresAt:true }});
+  // Занятие держит инструктор, аудитория не назначается: так же, как в маршруте /api/booking/hold.
+  // Таблица SlotHold требует ровно один из ресурсов (SlotHold_resource_check).
+  const hold = await db.slotHold.create({ data:{ instructorId: danceClass?.instructorId, roomId: null, sessionId: session.id, startsAt: session.startsAt, endsAt: session.endsAt, userId: input.userId, expiresAt, extensions:0 }, select:{ id:true, expiresAt:true }});
   await db.waitlistEntry.delete({ where:{ id: entry.id }});
   const rest = await db.waitlistEntry.findMany({ where:{ sessionId: input.sessionId }, orderBy:{ position:'asc' }, select:{ id:true }});
   for (const [i, row] of rest.entries()) await db.waitlistEntry.update({ where:{ id: row.id }, data:{ position: i+1 }});

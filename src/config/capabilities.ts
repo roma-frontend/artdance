@@ -81,6 +81,7 @@ export const capabilities = [
   'application.review',
   'dispute.resolve',
   'boost.manage',
+  'corporate.manage',
   'support.manage',
 ] as const;
 

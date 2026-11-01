@@ -158,6 +158,8 @@ export const routes = {
   booking: () => '/booking',
   bookingConfirm: (holdId: string) => `/booking/${holdId}/confirm`,
   bookingPass: (id: string) => `/booking/${id}/pass`,
+  /** Занять место, которое освободилось в листе ожидания (ссылка из письма). */
+  waitlistClaim: (sessionId: string) => `/waitlist/${encodeURIComponent(sessionId)}`,
   search: (params?: ListingParams) => withQuery('/search', params),
 
   /* Аутентификация */
@@ -212,6 +214,8 @@ export const routes = {
   instructorProfile: () => '/studio/profile',
   instructorCheckIn: () => '/studio/check-in',
   instructorStudioReviews: () => '/studio/reviews',
+  instructorStudioBoost: () => '/studio/boost',
+  instructorStudioAnalytics: () => '/studio/analytics',
 
   /* Кабинет владельца площадки */
   venueDashboard: () => '/venue',
@@ -233,6 +237,8 @@ export const routes = {
    */
   admin: () => adminRoot,
   adminSupport: () => adminPath('support'),
+  adminBoosts: () => adminPath('boosts'),
+  adminCorporate: () => adminPath('corporate'),
   adminOperatorTool: (tool: string, params?: Record<string, string | number | undefined>) => withQuery(`${adminPath('support')}/${tool}`, params),
   adminResource: (resource: AdminResource, params?: AdminListParams) =>
     withQuery(adminPath(resource), params),
@@ -316,6 +322,7 @@ export const apiRoutes = {
   savedSearch: (id: string) => `/api/saved-searches/${encodeURIComponent(id)}`,
   availability: () => '/api/availability',
   slotHold: () => '/api/booking/hold',
+  waitlistClaim: () => '/api/waitlist/claim',
   booking: () => '/api/booking',
   bookingPay: (bookingId: string) => `/api/booking/${encodeURIComponent(bookingId)}/pay`,
   bookingDispute: (bookingId: string) => `/api/booking/${encodeURIComponent(bookingId)}/dispute`,
@@ -483,6 +490,7 @@ export const noIndexPathPrefixes = [
   '/checkout',
   '/cart',
   '/booking',
+  '/waitlist',
   '/orders',
   '/reviews/new',
   '/unsubscribe',

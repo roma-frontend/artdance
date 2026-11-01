@@ -1,9 +1,14 @@
 /*
- * Service worker для Web Push (C-07). Без импортов и сборки: лежит в public/,
- * регистрируется с корня сайта, поэтому его область (scope) — весь сайт.
+ * Service worker сайта: Web Push (C-07) и офлайн-заглушка (A-20). Один файл на оба
+ * назначения, а имя прежнее: по нему уже зарегистрированы подписки на push.
+ * Без импортов и сборки: лежит в public/, регистрируется с корня сайта, поэтому
+ * его область (scope) — весь сайт.
  *
- * Сервер шлёт JSON вида { title, body, href, tag }. Ссылка открывается только внутри
- * этого сайта: чужие адреса и некорректные значения заменяются на «/».
+ * Push: сервер шлёт JSON вида { title, body, href, tag }. Ссылка открывается только
+ * внутри этого сайта: чужие адреса и некорректные значения заменяются на «/».
+ *
+ * Офлайн: при сбое сети навигация отдаёт заглушку /<локаль>/offline. Кешируется
+ * только она. Страницы и данные не кешируются, поэтому устаревшие брони офлайн не покажутся.
  */
 
 self.addEventListener('push', (event) => {
@@ -51,4 +56,71 @@ async function openOrFocus(target) {
     if (client.url === target) return client.focus();
   }
   return self.clients.openWindow(target);
+}
+
+/* ───────────────────────── Офлайн-заглушка (A-20) ───────────────────────── */
+
+const OFFLINE_CACHE = 'artdance-offline-v1';
+// Локали из src/i18n/config.ts. Скрипт без сборки и импортов, поэтому список повторён здесь.
+const LOCALES = ['hy', 'ru', 'en'];
+const DEFAULT_LOCALE = 'hy';
+// Заглушка ссылается на хешированные файлы сборки: после деплоя её нужно перекешировать.
+const OFFLINE_REFRESH_MS = 60 * 60 * 1000;
+const lastOfflineRefresh = new Map();
+
+// Заглушки при установке не качаем: установка не должна конкурировать с первой загрузкой страницы.
+// Первая успешная навигация сама положит заглушку локали в кеш (см. fetch ниже).
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+// Только навигация. API, медиа и POST сюда не попадают и идут в сеть как обычно.
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.mode !== 'navigate' || request.method !== 'GET') return;
+  event.respondWith(
+    fetch(request)
+      .then((response) => {
+        if (response.ok) event.waitUntil(refreshOfflinePage(localeOf(request.url)));
+        return response;
+      })
+      .catch(() => offlineResponse(request.url)),
+  );
+});
+
+/**
+ * Перекладывает заглушку в кеш. Вызывается после успешной навигации, но не чаще раза в час:
+ * иначе каждый переход по сайту тянул бы страницу заново.
+ */
+async function refreshOfflinePage(locale) {
+  const last = lastOfflineRefresh.get(locale) || 0;
+  if (Date.now() - last < OFFLINE_REFRESH_MS) return;
+  lastOfflineRefresh.set(locale, Date.now());
+  try {
+    const response = await fetch(`/${locale}/offline`, { cache: 'reload' });
+    if (response.ok) {
+      const cache = await caches.open(OFFLINE_CACHE);
+      await cache.put(`/${locale}/offline`, response);
+    }
+  } catch {
+    // Сети нет: заглушка останется прежней, и следующая навигация попробует снова.
+    lastOfflineRefresh.delete(locale);
+  }
+}
+
+async function offlineResponse(url) {
+  const cache = await caches.open(OFFLINE_CACHE);
+  const locale = localeOf(url);
+  const page = (await cache.match(`/${locale}/offline`)) || (await cache.match(`/${DEFAULT_LOCALE}/offline`));
+  return page || Response.error();
+}
+
+/** Локаль из первого сегмента пути; без неё — локаль по умолчанию, как в middleware. */
+function localeOf(url) {
+  const segment = new URL(url).pathname.split('/')[1];
+  return LOCALES.includes(segment) ? segment : DEFAULT_LOCALE;
 }
