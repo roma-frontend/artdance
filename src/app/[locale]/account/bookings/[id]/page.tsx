@@ -10,6 +10,7 @@ import { CancelBookingButton } from '@/components/booking/cancel-booking-button'
 import { DisputeOpenForm } from '@/components/booking/dispute-open-form';
 import { RescheduleBookingButton } from '@/components/booking/reschedule-booking-button';
 import { routes, site } from '@/config';
+import { booking as bookingPolicy } from '@/config/business';
 import { disputeOpenable } from '@/domain/dispute';
 import { bookingGuardrails } from '@/domain/booking/policy';
 import { bookingStatuses, type BookingStatus } from '@/domain/enums';
@@ -174,7 +175,7 @@ export default async function AccountBookingPage({ params }: PageProps) {
                 <div className="mt-4 grid min-w-0 gap-3">
                   {canReschedule ? <RescheduleBookingButton bookingId={booking.id} /> : null}
                   <CancelBookingButton bookingId={booking.id} />
-                  <p className="text-caption leading-relaxed text-content-tertiary [overflow-wrap:anywhere]">{tBooking('cancellationNote', { hours: String(24) } as never)}</p>
+                  <p className="text-caption leading-relaxed text-content-tertiary [overflow-wrap:anywhere]">{tBooking('cancellationNote', { hours: String(bookingPolicy.freeCancellationHours) } as never)}</p>
                 </div>
               ) : (
                 <p className="mt-3 text-body-sm text-content-secondary [overflow-wrap:anywhere]">{isCancelled ? tBooking('cancelTitle') : tBooking('confirmedTitle')}</p>
