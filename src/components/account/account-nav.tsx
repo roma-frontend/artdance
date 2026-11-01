@@ -50,6 +50,7 @@ const entries: readonly AccountNavEntry[] = [
   { href: routes.accountWallet(), labelKey: 'account.nav.wallet', feature: 'wallet' },
   { href: routes.accountReferrals(), labelKey: 'account.nav.referrals', feature: 'referrals' },
   { href: routes.accountCompany(), labelKey: 'account.nav.company', feature: 'corporateCabinet' },
+  { href: routes.accountAthlete(), labelKey: 'account.nav.athlete' },
   { href: routes.accountNotifications(), labelKey: 'account.nav.notifications' },
   { href: routes.accountSecurity(), labelKey: 'account.security.title' },
   { href: routes.accountDancerProfile(), labelKey: 'account.nav.dancerProfile' },

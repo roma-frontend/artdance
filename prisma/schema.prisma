@@ -1248,6 +1248,8 @@ model AthleteProfile {
   userId                   String                    @unique
   wdsfId                   String?                   @unique
   category                 String?
+  /// Программы, в которых атлет выступает (Standard / Latine). Заполняет сам атлет.
+  programs                 DanceSportProgram[]       @default([])
   clubName                 String?
   rank                     String?
   birthDate                DateTime?

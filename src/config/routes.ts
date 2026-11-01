@@ -191,6 +191,7 @@ export const routes = {
   accountWallet: () => '/account/wallet',
   accountReferrals: () => '/account/referrals',
   accountCompany: () => '/account/company',
+  accountAthlete: () => '/account/athlete',
   accountNotifications: () => '/account/notifications',
   accountSecurity: () => '/account/security',
   accountSettings: () => '/account/settings',
