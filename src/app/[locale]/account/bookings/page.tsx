@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Price } from '@/components/ui/price';
 import { StatusBadge } from '@/components/data/status-badge';
 import { routes, site } from '@/config';
+import { booking as bookingPolicy } from '@/config/business';
 import { bookingStatuses, type BookingStatus } from '@/domain/enums';
 import type { Locale } from '@/i18n/config';
 import { Link, redirect } from '@/i18n/routing';
@@ -106,7 +107,7 @@ export default async function AccountBookingsPage({ params, searchParams }: Page
           <div>
             <p className="text-eyebrow uppercase text-content-tertiary">{tNav('account')}</p>
             <h1 className="text-heading-2 mt-2">{t('bookings.title')}</h1>
-            <p className="text-body mt-2 text-content-secondary">{tBooking('cancellationNote', { hours: String(24) } as never)} · {total}</p>
+            <p className="text-body mt-2 text-content-secondary">{tBooking('cancellationNote', { hours: String(bookingPolicy.freeCancellationHours) } as never)} · {total}</p>
           </div>
           <ViewToggle value={view} />
         </div>
