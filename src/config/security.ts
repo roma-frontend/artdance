@@ -127,8 +127,6 @@ export const baseSecurityHeaders: ReadonlyArray<readonly [string, string]> = [
       'geolocation=(self)',
       'payment=()',
       'usb=()',
-      'interest-cohort=()',
-      'browsing-topics=()',
     ].join(', '),
   ],
   ...(isProduction
