@@ -1490,6 +1490,8 @@ const ru: Messages = {
     removed: 'Удалено из избранного',
     toggleLabel: 'Сохранить «{name}» в избранное',
     toggleLabelActive: 'Убрать «{name}» из избранного',
+    addLabel: 'В избранное',
+    removeLabel: 'Убрать из избранного',
   },
 
   danceStyles: {

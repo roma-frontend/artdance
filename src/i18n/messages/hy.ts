@@ -1497,6 +1497,8 @@ const hy: Messages = {
     removed: "Հեռացվեց ընտրյալներից",
     toggleLabel: "Պահել «{name}»-ը ընտրյալներում",
     toggleLabelActive: "Հեռացնել «{name}»-ը ընտրյալներից",
+    addLabel: "Ավելացնել ընտրյալներում",
+    removeLabel: "Հեռացնել ընտրյալներից",
   },
 
   danceStyles: {
