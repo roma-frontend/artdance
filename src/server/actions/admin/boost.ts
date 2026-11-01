@@ -7,8 +7,10 @@
  * Действие пишет в журнал аудита: кто и когда одобрил кампанию.
  */
 
+import { updateTag } from 'next/cache';
 import { z } from 'zod';
 
+import { cacheTags } from '@/config/cache';
 import { requireCapability } from '@/lib/auth/guards';
 import { recordAudit } from '@/lib/audit';
 import { approveBoost, rejectBoost } from '@/server/boost/service';
@@ -28,6 +30,12 @@ export const moderateBoost = authedAction
 
     if (parsedInput.approve) await approveBoost(parsedInput.id);
     else await rejectBoost(parsedInput.id);
+
+    /*
+     * Выдача кешируется по тегу инструкторов. Без сброса одобренный буст не поднимает
+     * инструктора до истечения кеша: `boostedUntil` уже в базе, а выдача ещё старая.
+     */
+    updateTag(cacheTags.instructors());
 
     await recordAudit({
       actor: caller,
