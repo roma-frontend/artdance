@@ -7,9 +7,15 @@ import { expect, test } from '@playwright/test';
 
 import { demoInstructors, demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 const instructor = demoInstructors[0]!;
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Вход ограничен по адресу клиента: у каждого теста свой адрес, чтобы соседи не делили лимит. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
 
 test('инструктор открывает аналитику и видит показатели', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'один вход на тестовую базу: только в desktop');

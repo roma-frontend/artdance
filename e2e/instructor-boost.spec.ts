@@ -14,6 +14,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import { PrismaClient } from '../src/generated/prisma/client';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 const admin = demoAccounts.find((account) => account.role === 'ADMIN')!;
@@ -45,6 +46,11 @@ async function instructorOrder(page: Page): Promise<string[]> {
 function localInput(date: Date): string {
   return date.toISOString().slice(0, 16);
 }
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Вход ограничен по адресу клиента: у каждого теста свой адрес, чтобы соседи не делили лимит. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
 
 test('одобренный буст поднимает инструктора в выдаче', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'один вход на тестовую базу: только в desktop');

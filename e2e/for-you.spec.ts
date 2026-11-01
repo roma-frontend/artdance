@@ -12,6 +12,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import { PrismaClient } from '../src/generated/prisma/client';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 const client = demoAccounts.find((account) => account.role === 'CUSTOMER')!;
@@ -42,6 +43,11 @@ async function withDancerStyles(styles: string[], check: () => Promise<void>): P
     await db.$disconnect();
   }
 }
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Вход ограничен по адресу клиента: у каждого теста свой адрес, чтобы соседи не делили лимит. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
 
 test('с направлениями в анкете подборка показывает только занятия этих направлений', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'один вход на тестовую базу: только в desktop');

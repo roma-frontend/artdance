@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { hashPassword } from 'better-auth/crypto';
 import { demoPassword } from '../prisma/fixtures/demo';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 const CREDENTIAL_PROVIDER = 'credential';
@@ -18,6 +19,11 @@ const CREDENTIAL_PROVIDER = 'credential';
  * AvailabilityException, а чужие строки недоступны (updateMany по instructorId
  * не трогает чужое правило — второй инструктор остаётся с окном).
  */
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Вход ограничен по адресу клиента: у каждого теста свой адрес, чтобы соседи не делили лимит. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
+
 test('instructor edits availability: rule saved, exception saved, other rows untouched', async ({ page }, testInfo) => {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString || !['localhost', '127.0.0.1', '[::1]'].includes(new URL(connectionString).hostname)) {

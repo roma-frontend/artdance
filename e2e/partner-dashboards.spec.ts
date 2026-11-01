@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { demoInstructors, demoPassword, demoVenueOwnerEmail, demoVenues } from '../prisma/fixtures/demo';
 import { routes } from '../src/config/routes';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 const instructor = demoInstructors[0]!;
@@ -32,6 +33,11 @@ const dashboards: Array<{
     sections: [{ role: 'heading', name: en.footer.venueDashboardRooms }],
   },
 ];
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Вход ограничен по адресу клиента: у каждого теста свой адрес, чтобы соседи не делили лимит. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
 
 for (const dashboard of dashboards) {
   test(`${dashboard.path}: demo-вход работает, будущие разделы не ведут на 404`, async ({ page, baseURL }, testInfo) => {

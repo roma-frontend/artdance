@@ -12,6 +12,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { demoAccounts, demoPassword } from '../prisma/fixtures/demo';
 import { PrismaClient } from '../src/generated/prisma/client';
 import en from '../src/i18n/messages/en';
+import { isolateRateLimit } from './support/rate-limit';
 import { completeTwoFactor } from './support/two-factor';
 
 const admin = demoAccounts.find((account) => account.role === 'ADMIN')!;
@@ -21,6 +22,11 @@ const AMOUNT = 50_000;
 function formWithHeading(page: Page, heading: string) {
   return page.locator('form').filter({ has: page.getByRole('heading', { name: heading, exact: true }) });
 }
+
+test.beforeEach(async ({ page }, testInfo) => {
+  /* Вход ограничен по адресу клиента: у каждого теста свой адрес, чтобы соседи не делили лимит. */
+  await isolateRateLimit(page, `${testInfo.project.name}-${testInfo.title}`);
+});
 
 test('админ создаёт аккаунт компании, выставляет счёт и отмечает его оплаченным', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'одна тестовая база: только в desktop');
