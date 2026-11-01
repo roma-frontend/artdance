@@ -12,7 +12,7 @@
 
 ## Не реализовано — начинать отсюда
 
-Сверено с кодом 31.10.2026: маршруты в `src/app`, вызовы сервисов по `src/`. Статусы в фазах и в `docs/07` совпадают с этим списком. Закрыл пункт — поставь ✅ в строке фазы и в `docs/07`, удали строку отсюда.
+Сверено с кодом 31.10.2026, B-06 и B-07 обновлены 01.11.2026: маршруты в `src/app`, вызовы сервисов по `src/`. Статусы в фазах и в `docs/07` совпадают с этим списком. Закрыл пункт — поставь ✅ в строке фазы и в `docs/07`, удали строку отсюда.
 
 Сначала таблица 1: ответы и внешние блокеры. Таблица 2 — инженерная работа; ответы заказчика для неё не нужны, если в колонке «Приоритет» не указано иное и нет блокера из таблицы 1.
 
@@ -45,8 +45,8 @@
 | D-05 | P0 | 🔶 Частично (код локально закрыт, ждёт провайдера): модели `SmsDispatch` и `ReviewQueueEntry`, бюджет SMS (`checkSmsBudget`, лимиты 200 в сутки / 3000 за 30 дней) и запись в очередь проверки работают — `src/lib/sms/budget.ts`, тесты `src/lib/sms/budget.test.ts` зелёные. SMS-провайдера нет: `sendSms` в `src/lib/sms/send.ts` честно отвечает «не настроено», `SmsDispatch` при реальной отправке не пишется (ветка недостижима до подключения). Не сделано: лимиты от заказчика (в `src/config/sms.ts` временные), источник данных по карте/устройству для антифрода, провайдер SMS (блокер 0.7) | `src/lib/sms/budget.ts`, `src/lib/sms/send.ts`, `src/config/sms.ts` |
 | 3.10 | P0 (через D-04) | Код расписания есть: `.github/workflows/booking-cron.yml` вызывает `POST /api/cron/booking` каждые 15 мин. Закрыто 2026-10-29: секрет `CRON_SECRET` и переменная `APP_URL` заданы в GitHub (тот же секрет, что в продакшене), первый прогон прошёл. Vercel Hobby даёт один ежедневный cron, поэтому расписание вне `vercel.json` | `.github/workflows/booking-cron.yml`, `src/app/api/cron/booking/route.ts` |
 | C-07 | P1 | Push отправляется через `web-push` (`notify` → `preferredChannel` → `deliverByPush`) при заданных VAPID-ключах; проверка в production — smoke test. SMS — заглушка | `src/lib/notifications/send.ts`, `src/lib/notifications/push.ts`, `src/lib/sms/send.ts` |
-| B-06 | P1 | `createCorporateAccount`, `issueInvoice`, `markInvoicePaid` не вызываются из маршрутов и действий; решение по пакету | `src/server/corporate/service.ts` |
-| B-07 | P2 | `createBoost`, `approveBoost`, `activeBoosts` не вызываются; решение по пакету | `src/server/boost/service.ts` |
+| B-06 | P1 | 🔶 Подключено в админке (PR #7, 01.11): `/admin/corporate`, `createCorporateAccountAction`, `issueCorporateInvoiceAction`, `markCorporateInvoicePaidAction`. Открыто: счёт к заказу (`Order.invoiceId` не заполняется), кабинет клиента с балансом, просрочка 120 ч (ждёт бухгалтера); решение по пакету | `src/server/corporate/service.ts` |
+| B-07 | P2 | ✅ Подключено (01.11): студия — `requestBoost` → `createBoost`; админка — `moderateBoost` → `approveBoost` / `rejectBoost`. Одобрение поднимает `boostedUntil`, его читает ранжирование. `activeBoosts` не вызывается. Открыто: решение по пакету | `src/server/boost/service.ts` |
 | D-07 | P1 | 🔶 Частично: `recordReliabilityEvent` пишет `NO_SHOW` (ручная отметка в админке), `LATE_CANCEL` (отмены) и `COMPLETED` (cron). `reliabilityScore` нигде не читается: `reliabilityFor` без вызовов, индекс не влияет ни на выдачу, ни на допуск к броням | `src/server/reliability/service.ts`, `src/domain/reliability.ts` |
 | 2.10 | P0 | ✅ Закрыто (commit `01137e8`): `MapView` (iframe Google Maps, 0 KB кастомного JS, заглушка без `NEXT_PUBLIC_MAPS_API_KEY`) и `StaticMapImage` (Google Static Maps через `Media`, новый preset `mapThumb`) — `src/components/media/`; i18n-ключи `map.*` (hy/ru/en), `remotePattern` `maps.googleapis.com` в `next.config.ts`; подключено на странице студии. E2E — `e2e/mvp-gaps.spec.ts` | `src/components/media/map-view.tsx`, `src/components/media/static-map-image.tsx`, `src/config/media.ts` |
 | 8.3 | P0 | ✅ Закрыто (commit `01137e8`): джоб `lighthouse` в `.github/workflows/ci.yml` (Postgres + миграции + сид + `next build` + `@lhci/cli autorun`); `upload.target: filesystem` в `lighthouserc.json` (отчёты в `lighthouse-ci-reports/`, без публичного upload), артефакт при падении; `@lhci/cli` в devDependencies | `.github/workflows/ci.yml`, `lighthouserc.json`, `package.json` |
@@ -294,7 +294,7 @@
 - **Всё из `docs/07-feature-backlog.md` сверх помеченного P0** — кошелёк,
   рефералки, абонементы, рекуррентные оплаты, push, бусты и прочее. Эти
   не входят в пресет MVP; как их продавать (в пресет или отдельным пакетом) — не решено, нужно согласовать с заказчиком.
-  **Состояние на 28.10.2026** (полный список и точки входа — раздел «Не реализовано — начинать отсюда» в начале файла): статусы модулей сверены с кодом и отмечены в `docs/07`: не подключены бусты, корпоративные счета,
+  **Состояние на 28.10.2026** (полный список и точки входа — раздел «Не реализовано — начинать отсюда» в начале файла): статусы модулей сверены с кодом и отмечены в `docs/07`: бусты и корпоративные счета подключены 01.11 (см. `docs/07`), не подключены
   скидка на первое занятие и онбординг-серия; ответ на отзыв, споры, индекс надёжности и привязка реферала не подключены (вызовов нет), алерты сохранённых поисков не реализованы. Состав пресетов (`src/server/entitlements/catalog.ts`): кошелёк, рефералки,
   абонементы, пакеты, бусты, рекуррентные брони и push входят в пресет PREMIUM;
   рекуррентные брони и push — в FULL. Продавать их в пресете или отдельным пакетом — не решено (см. `docs/07` §8).
