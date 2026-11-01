@@ -244,7 +244,7 @@
       <tr><td>Рефералы</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Привязка при регистрации</td></tr>
       <tr><td>Бусты (промо-размещение)</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Слит в mvp/closeout (PR #5). Студия подаёт заявку, админка одобряет, одобрение поднимает инструктора в выдаче. Кеш выдачи сбрасывается при одобрении (PR #13, в main), e2e проверяет подъём. Пакет не решён (B-07)</td></tr>
       <tr><td>Аналитика инструктора (/studio/analytics)</td><td>PREMIUM</td><td><span class="pill ok">Готово</span></td><td class="muted">Слита в mvp/closeout (PR #6). Карточки за 30 дней, гейт по entitlements. Не смотрели на заполненных данных</td></tr>
-      <tr><td>Корпоративные счета (админка, B-06)</td><td>PREMIUM (решено 01.11)</td><td><span class="pill part">Частично</span></td><td class="muted">Слита в mvp/closeout (PR #7). Отметка оплаты через второго админа (PR #18). Счёт к заказу и кабинет с балансом — по принятым правилам, пока не реализованы; просрочка 120 ч ждёт бухгалтера</td></tr>
+      <tr><td>Корпоративные счета (админка, B-06)</td><td>PREMIUM (решено 01.11)</td><td><span class="pill ok">Сделано</span></td><td class="muted">Счёт на заказ, привязка сотрудника, списание с баланса через второго админа и кабинет компании `/account/company` (PR #21, #22). Кабинет за пакетом PREMIUM. Просрочка счёта 120 ч ждёт бухгалтера</td></tr>
 
       <tr class="group"><td colspan="4">Магазин и клиент</td></tr>
       <tr><td>Корзина, чекаут, заказы, склад, промокоды, подарочные карты</td><td>MVP</td><td><span class="pill ok">Готово</span></td><td class="muted">—</td></tr>
@@ -300,7 +300,7 @@
       <tr><td><b>Состав пакетов:</b> рекуррентные брони и push</td><td><span class="pill dec">Решено 01.11</span></td><td>FULL, как в <code>catalog.ts</code> (рекомендация, владелец может пересмотреть)</td></tr>
       <tr><td><b>Пакеты для корпоративных счетов (B-06) и бустов (B-07)</b></td><td><span class="pill dec">Решено 01.11</span></td><td>PREMIUM (рекомендация). Бусты уже в пресете PREMIUM; гейта по пакету у B-06 пока нет</td></tr>
       <tr><td><b>Подтверждение брони исполнителем</b> (<code>bookingRequestRules</code>)</td><td><span class="pill dec">Решено 01.11</span></td><td>Выключено до запуска эквайринга; механизм SLA 24 ч и авто-отказа 48 ч готов (D-04)</td></tr>
-      <tr><td><b>Счёт к заказу и баланс (B-06)</b></td><td><span class="pill dec">Решено 01.11</span></td><td>Счёт на заказ компании, оплата переводом только по её заказам; баланс списывает админ отдельной операцией; возврат на баланс — как у кошелька (рекомендация)</td></tr>
+      <tr><td><b>Счёт к заказу и баланс (B-06)</b></td><td><span class="pill ok">Сделано (PR #21, #22)</span></td><td>Счёт на заказ компании, оплата переводом только по её заказам; баланс списывает админ отдельной операцией через второго админа; возврат на баланс — как у кошелька (рекомендация владельца)</td></tr>
       <tr><td><b>Индекс надёжности (D-07)</b></td><td><span class="pill dec">Решено 01.11</span></td><td>Отдельного индекса в выдаче не вводим: ранжирование уже учитывает отмены и неявки. Поле <code>reliabilityScore</code> удалять отдельным решением (миграция)</td></tr>
       <tr><td><b>Бизнес-параметры</b> 0.1: комиссии, отмена, выезд</td><td><span class="pill no">Открыто</span></td><td>Работают значения по умолчанию из сообщения заказчику</td></tr>
       <tr><td><b>Просрочка счёта</b> 120 часов (<code>invoiceDueHours</code>)</td><td><span class="pill part">Решено, ждёт бухгалтера</span></td><td>Оставляем 120 ч по умолчанию; бухгалтер подтверждает до первого счёта в проде</td></tr>
@@ -336,6 +336,8 @@
       <tr><td><code>docs/fix-map-status-06</code><br><b>PR #17</b></td><td>Статус карты (2.10) в docs/06: компоненты есть</td><td><span class="pill ok">Слит в main (65c2c16)</span></td></tr>
       <tr><td><code>feat/corporate-invoice-second-approver</code><br><b>PR #18</b></td><td>Отметка оплаты счёта через второго админа (maker-checker); баланс растёт после одобрения</td><td><span class="pill ok">Слит в main (5939f93)</span></td></tr>
       <tr><td><code>docs/decisions-2026-11-01</code><br><b>PR #19</b></td><td>Решения по открытым вопросам в docs/06 и docs/07</td><td><span class="pill ok">Слит в main (3b19946)</span></td></tr>
+      <tr><td><code>feat/corporate-order-debit</code><br><b>PR #21</b></td><td>B-06: счёт на заказ, привязка сотрудника, списание с баланса через второго админа, кабинет компании</td><td><span class="pill ok">Слит в main (2c55c4f)</span></td></tr>
+      <tr><td><b>PR #22</b></td><td>E2E на списание баланса за заказ через второго админа</td><td><span class="pill ok">Слит в main (161b3a5)</span></td></tr>
     </tbody>
   </table>
   <h2>Подробнее по изменениям</h2>

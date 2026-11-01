@@ -18,6 +18,7 @@ import { redirect } from '@/i18n/routing';
 import { getCaller } from '@/lib/auth/guards';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { corporateCabinetFor } from '@/server/corporate/service';
+import { assertEntitlementOrNotFound } from '@/server/entitlements/guard';
 import { getEffectiveEntitlementsSafe } from '@/server/entitlements/service';
 
 interface PageProps { params: Promise<{ locale: string }> }
@@ -31,6 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function AccountCompanyPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale as Locale);
+  await assertEntitlementOrNotFound('corporateCabinet');
 
   const caller = await getCaller();
   if (!caller) {

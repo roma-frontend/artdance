@@ -1467,6 +1467,7 @@ const ru: Messages = {
       push: 'Push-уведомления',
       boost: 'Продвижение',
       instructorAnalytics: 'Аналитика инструктора',
+      corporateCabinet: 'Счёт компании',
       cms: 'Контент и блоки',
       calendarSync: 'Синхронизация с календарём',
       forYou: 'Персональная подборка «Для тебя»',

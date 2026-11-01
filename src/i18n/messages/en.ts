@@ -1479,6 +1479,7 @@ const en = {
         push: 'Push notifications',
         boost: 'Boost / promotion',
         instructorAnalytics: 'Instructor analytics',
+        corporateCabinet: 'Company account',
         cms: 'CMS & content blocks',
         calendarSync: 'Calendar sync',
         forYou: 'Personal "For you" picks',
